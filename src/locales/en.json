@@ -1,0 +1,341 @@
+{
+  "common": {
+    "closeGlyph": "×",
+    "emptyValue": "-",
+    "notAvailable": "N/A"
+  },
+  "storyBuilder": {
+    "narration": {
+      "button": "Audio narrator"
+    },
+    "chapters": {
+      "title": "Chapters",
+      "empty": "Position viewer, then Add Chapter.",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "confirmDelete": "Delete this chapter?"
+    },
+    "actions": {
+      "add": "+ Add Chapter",
+      "save": "Save / Export",
+      "saving": "Saving…",
+      "saveSuccess": "Saved successfully",
+      "saveFailed": "Save failed"
+    },
+    "chapter": {
+      "header": "Chapter Settings",
+      "manifestLabel": "Manifest URL",
+      "manifestLoad": "Load / Reload",
+      "manifestHint": "Load a manifest to start capturing chapters.",
+      "language": "Language",
+      "narration": "Narration",
+      "start": "Start (HH:MM:SS)",
+      "end": "End (HH:MM:SS)",
+      "useCurrentTime": "Use current time",
+      "preview": "Preview segment",
+      "markInOut": "Mark In / Out (HH:MM:SS)",
+      "markIn": "Mark In",
+      "markOut": "Mark Out",
+      "markHint": "Mark Out must be greater than Mark In for audio / video.",
+      "annotation": "Annotation ({lang})",
+      "advance": "Advance",
+      "advanceHint": "Auto-play will move to the next chapter after the delay below. Leave empty to stay on manual.",
+      "advanceDelay": "Delay between chapters (seconds)",
+      "save": "Save",
+      "saveHint": "Select a chapter to save settings."
+    },
+    "export": {
+      "title": "Export story JSON",
+      "copy": "Copy JSON",
+      "download": "Download .json"
+    }
+  },
+  "viewer": {
+    "status": {
+      "waiting": "Waiting for a manifest.",
+      "loading": "Loading manifest...",
+      "error": "Error loading manifest.",
+      "loaded": "Manifest loaded."
+    },
+    "brand": {
+      "title": "Mango IIIF Viewer Demo",
+      "tag": "Mango Shell"
+    },
+    "manifest": {
+      "label": "Manifest",
+      "awaitingId": "Awaiting manifest ID"
+    },
+    "panels": {
+      "leftLabel": "Left panels",
+      "rightLabel": "Right panels",
+      "annotations": {
+        "label": "Annotations panel",
+        "title": "Annotations",
+        "export": "Export Annotations",
+        "close": "Close annotation editor",
+        "modes": "Annotation modes",
+        "edit": "Edit",
+        "create": "Create",
+        "helpEdit": "Click on an annotation to select and edit it.",
+        "helpCreate": "Draw on the canvas to create a new annotation.",
+        "emptyCreate": "Use the toolbar to add rectangles or notes.",
+        "emptyList": "No annotations on this canvas.",
+        "fallback": "Annotation",
+        "editor": {
+          "createTitle": "Create Annotation",
+          "detailsTitle": "Annotation Details",
+          "details": "Details",
+          "motivation": "Motivation",
+          "motivations": {
+            "painting": "painting",
+            "supplementing": "supplementing",
+            "contextualizing": "contextualizing",
+            "contentState": "contentState",
+            "highlighting": "highlighting",
+            "commenting": "commenting",
+            "tagging": "tagging"
+          },
+          "layer": "Layer",
+          "layersLabel": "Layers",
+          "label": "Label",
+          "labelPlaceholder": "Annotation Label",
+          "text": "Text",
+          "textPlaceholder": "Add annotation text content...",
+          "tags": "Tags",
+          "tagPlaceholder": "Add tag and press Enter",
+          "addTag": "Add",
+          "removeTag": "Remove {tag}",
+          "notes": "Notes",
+          "privateNotes": "Private Notes",
+          "notesPlaceholder": "Add private research notes...",
+          "saveAnnotation": "Save Annotation",
+          "saveChanges": "Save Changes",
+          "deleteAnnotation": "Delete Annotation",
+          "empty": "Select an annotation to inspect details.",
+          "id": "ID",
+          "type": "Type",
+          "searchPlaceholder": "Search annotations",
+          "pagination": "{current} of {total}",
+          "showLayer": "Show layer",
+          "hideLayer": "Hide layer",
+          "layers": {
+            "research": "Research Notes",
+            "transcription": "Transcription",
+            "highlights": "Highlights",
+            "mine": "My Annotations"
+          },
+          "tools": {
+            "select": "Select / Pan",
+            "rectangle": "Rectangle",
+            "polygon": "Polygon",
+            "point": "Point",
+            "freehand": "Freehand",
+            "line": "Line"
+          }
+        }
+      },
+      "contents": {
+        "label": "Contents panel",
+        "title": "Contents",
+        "close": "Close contents",
+        "tabs": "Contents tabs",
+        "tocTab": "Chapters",
+        "transcriptTab": "Transcript",
+        "tocLabel": "Table of contents",
+        "transcriptLabel": "Transcript",
+        "emptyToc": "No table of contents available.",
+        "emptyTranscript": "No transcript available.",
+        "fallback": "Untitled entry"
+      },
+      "tools": {
+        "label": "Tools panel",
+        "title": "Tools",
+        "close": "Close tools",
+        "note": "Image adjustments are available on image canvases.",
+        "brightness": "Brightness",
+        "contrast": "Contrast",
+        "saturation": "Saturation",
+        "effects": "Effects",
+        "invert": "Invert",
+        "grayscale": "Grayscale",
+        "reset": "Reset"
+      },
+      "search": {
+        "label": "Search panel",
+        "title": "Search",
+        "close": "Close search",
+        "labelText": "Search annotations",
+        "placeholder": "Search annotations",
+        "clear": "Clear",
+        "hint": "Matches highlight on the canvas.",
+        "matchCount_one": "{count} match",
+        "matchCount_other": "{count} matches",
+        "noMatches": "No matches.",
+        "empty": "Type to search annotations.",
+        "hitFallback": "Untitled annotation"
+      },
+      "metadata": {
+        "label": "Metadata panel",
+        "title": "Metadata",
+        "close": "Close metadata",
+        "attribution": "Attribution",
+        "license": "License",
+        "empty": "No manifest metadata available."
+      },
+      "layers": {
+        "label": "Layers panel",
+        "title": "Layers",
+        "close": "Close layers"
+      }
+    },
+    "stage": {
+      "label": "Viewer stage",
+      "loading": "Loading manifest...",
+      "error": "Unable to load manifest.",
+      "empty": "No media source resolved for this canvas yet.",
+      "nav": {
+        "label": "Canvas navigation",
+        "prev": "Previous canvas",
+        "next": "Next canvas"
+      },
+      "controls": {
+        "label": "Viewer controls",
+        "toggleGallery": "Toggle gallery",
+        "toggleContents": "Toggle contents",
+        "toggleSearch": "Toggle search",
+        "toggleMetadata": "Toggle metadata",
+        "toggleAnnotations": "Toggle annotations",
+        "toggleTools": "Toggle tools",
+        "showGallery": "Show gallery",
+        "showContents": "Show contents",
+        "hideGallery": "Hide gallery",
+        "hideContents": "Hide contents",
+        "showSearch": "Show search",
+        "hideSearch": "Hide search",
+        "showInfo": "Show info",
+        "hideInfo": "Hide info",
+        "showAnnotations": "Show annotations",
+        "hideAnnotations": "Hide annotations",
+        "showTools": "Show tools",
+        "hideTools": "Hide tools",
+        "toggleLayers": "Toggle layers",
+        "showLayers": "Show layers",
+        "hideLayers": "Hide layers"
+      }
+    },
+    "toolbar": {
+      "label": "Stage controls",
+      "zoom": "Zoom",
+      "zoomPercent": "Zoom percent",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "canvasNumber": "Canvas number",
+      "home": "Home",
+      "rotateLeft": "Rotate left",
+      "rotateRight": "Rotate right",
+      "start": "Start",
+      "stop": "Stop",
+      "pause": "Pause",
+      "forward": "Fast forward 10 seconds",
+      "rewind": "Rewind 10 seconds",
+      "media": "Media",
+      "mediaSelect": "Select media source"
+    },
+    "gallery": {
+      "label": "Thumbnail gallery",
+      "title": "Gallery",
+      "hide": "Hide gallery",
+      "empty": "No canvases available.",
+      "canvasAlt": "Canvas {index}"
+    },
+    "dock": {
+      "gallery": "G",
+      "contents": "C",
+      "search": "S",
+      "info": "I",
+      "annotations": "A",
+      "tools": "T",
+      "layers": "L"
+    }
+  },
+  "workspace": {
+    "settings": "Settings",
+    "layout": "Layout",
+    "theme": "Theme",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "language": "Language",
+    "viewMode": "Page Layout",
+    "viewModeSingle": "Single",
+    "viewModePaged": "Side by Side",
+    "viewModeContinuous": "Continuous Scroll",
+    "viewModeGallery": "Gallery",
+    "activeViewport": "Active Viewport",
+    "activeViewportHint": "Manifest context follows active window focus.",
+    "canvasPosition": "Canvas {current} of {total}",
+    "searchHint": "Search panel is bound to active window manifest.",
+    "annotationsHint": "Annotation context is bound to active window."
+  },
+  "media": {
+    "type": {
+      "image": "Image",
+      "video": "Video",
+      "audio": "Audio",
+      "pdf": "PDF",
+      "model": "3D"
+    }
+  },
+  "renderers": {
+    "audio": {
+      "noSource": "No audio source.",
+      "accompanyingLabel": "Accompanying image",
+      "cuesTitle": "Cue points",
+      "cueFallback": "Cue"
+    },
+    "video": {
+      "noSource": "No video source.",
+      "cuesTitle": "Cues",
+      "cueFallback": "Annotation"
+    },
+    "image": {
+      "noSource": "No image source available."
+    },
+    "pdf": {
+      "noSource": "No PDF source.",
+      "prev": "Prev",
+      "next": "Next",
+      "prevAria": "Previous page",
+      "nextAria": "Next page",
+      "zoomOut": "Zoom -",
+      "zoomIn": "Zoom +",
+      "zoomOutAria": "Zoom out",
+      "zoomInAria": "Zoom in",
+      "status": "Page {pageNumber} / {pageCount}"
+    },
+    "model": {
+      "label": "3D viewer",
+      "noSource": "No 3D source."
+    },
+    "osd": {
+      "label": "Image viewer"
+    }
+  },
+  "plugins": {
+    "hello": {
+      "label": "Hello panel",
+      "noManifest": "No manifest",
+      "nextCanvas": "Next canvas"
+    },
+    "annotation": {
+      "label": "Add annotation",
+      "note": "Drop a quick annotation on the current view.",
+      "button": "Add annotation",
+      "added": "Added via plugin"
+    }
+  },
+  "warnings": {
+    "invalidConfig": "Invalid config JSON on <mango-viewer>.",
+    "pluginMissingId": "ViewerPlugin must include an id."
+  }
+}

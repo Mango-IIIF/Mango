@@ -1,0 +1,341 @@
+{
+  "common": {
+    "closeGlyph": "×",
+    "emptyValue": "-",
+    "notAvailable": "D/A"
+  },
+  "storyBuilder": {
+    "narration": {
+      "button": "Adroddwr sain"
+    },
+    "chapters": {
+      "title": "Penodau",
+      "empty": "Lleolwch y gwyliwr, yna Ychwanegwch Bennod.",
+      "edit": "Golygu",
+      "delete": "Dileu",
+      "cancel": "Canslo",
+      "confirmDelete": "Dileu'r bennod hon?"
+    },
+    "actions": {
+      "add": "+ Ychwanegu Pennod",
+      "save": "Cadw / Allforio",
+      "saving": "Wrthi'n cadw...",
+      "saveSuccess": "Wedi cadw'n llwyddiannus",
+      "saveFailed": "Methwyd â chadw"
+    },
+    "chapter": {
+      "header": "Gosodiadau Pennod",
+      "manifestLabel": "URL y Maniffest",
+      "manifestLoad": "Llwytho / Aillwytho",
+      "manifestHint": "Llwythwch faniffest i ddechrau dal penodau.",
+      "language": "Iaith",
+      "narration": "Adroddiant",
+      "start": "Dechrau (HH:MM:SS)",
+      "end": "Diwedd (HH:MM:SS)",
+      "useCurrentTime": "Defnyddio'r amser cyfredol",
+      "preview": "Rhagolwg segment",
+      "markInOut": "Nodi Dechrau / Diwedd (HH:MM:SS)",
+      "markIn": "Nodi Dechrau",
+      "markOut": "Nodi Diwedd",
+      "markHint": "Rhaid i'r Nod Diwedd fod yn fwy na'r Nod Dechrau ar gyfer sain / fideo.",
+      "annotation": "Anodiad ({lang})",
+      "advance": "Symud ymlaen",
+      "advanceHint": "Bydd chwarae awtomatig yn symud i'r bennod nesaf ar ôl yr oedi isod. Gadewch yn wag i aros ar ddull llaw.",
+      "advanceDelay": "Oedi rhwng penodau (eiliadau)",
+      "save": "Cadw",
+      "saveHint": "Dewiswch bennod i gadw gosodiadau."
+    },
+    "export": {
+      "title": "Allforio JSON y stori",
+      "copy": "Copïo JSON",
+      "download": "Lawrlwytho .json"
+    }
+  },
+  "viewer": {
+    "status": {
+      "waiting": "Yn aros am faniffest.",
+      "loading": "Wrthi'n llwytho maniffest...",
+      "error": "Gwall wrth lwytho maniffest.",
+      "loaded": "Wedi llwytho maniffest."
+    },
+    "brand": {
+      "title": "Demo Gwyliwr IIIF Mango",
+      "tag": "Mango Shell"
+    },
+    "manifest": {
+      "label": "Maniffest",
+      "awaitingId": "Yn aros am ID y maniffest"
+    },
+    "panels": {
+      "leftLabel": "Paneli chwith",
+      "rightLabel": "Paneli dde",
+      "annotations": {
+        "label": "Panel anodiadau",
+        "title": "Anodiadau",
+        "export": "Allforio Anodiadau",
+        "close": "Cau golygydd anodiadau",
+        "modes": "Dulliau anodi",
+        "edit": "Golygu",
+        "create": "Creu",
+        "helpEdit": "Cliciwch ar anodiad i'w ddewis a'i olygu.",
+        "helpCreate": "Arlunio ar y cynfas i creu anodiad newydd.",
+        "emptyCreate": "Defnyddiwch y far offer i ychwanegu petryalau neu nodiadau.",
+        "emptyList": "Dim anodiadau ar y cynfas hwn.",
+        "fallback": "Anodiad",
+        "editor": {
+          "createTitle": "Creu Anodiad",
+          "detailsTitle": "Manylion Anodiad",
+          "details": "Manylion",
+          "motivation": "Ysgogiad",
+          "motivations": {
+            "painting": "peintio (painting)",
+            "supplementing": "ategu (supplementing)",
+            "contextualizing": "cyd-destunoli (contextualizing)",
+            "contentState": "cyflwr cynnwys (contentState)",
+            "highlighting": "amlygu (highlighting)",
+            "commenting": "sylwi (commenting)",
+            "tagging": "tagio (tagging)"
+          },
+          "layer": "Haen",
+          "layersLabel": "Haenau",
+          "label": "Label",
+          "labelPlaceholder": "Label Anodiad",
+          "text": "Testun",
+          "textPlaceholder": "Ychwanegwch gynnwys testun anodiad...",
+          "tags": "Tagiau",
+          "tagPlaceholder": "Ychwanegwch dag a gwasgwch Enter",
+          "addTag": "Ychwanegu",
+          "removeTag": "Tynnu {tag}",
+          "notes": "Nodiadau",
+          "privateNotes": "Nodiadau Preifat",
+          "notesPlaceholder": "Ychwanegwch nodiadau ymchwil preifat...",
+          "saveAnnotation": "Cadw Anodiad",
+          "saveChanges": "Cadw Newidiadau",
+          "deleteAnnotation": "Dileu Anodiad",
+          "empty": "Dewiswch anodiad i archwilio manylion.",
+          "id": "ID",
+          "type": "Math",
+          "searchPlaceholder": "Chwilio anodiadau",
+          "pagination": "{current} o {total}",
+          "showLayer": "Dangos haen",
+          "hideLayer": "Cuddio haen",
+          "layers": {
+            "research": "Nodiadau Ymchwil",
+            "transcription": "Trawsgrifiad",
+            "highlights": "Amlygiadau",
+            "mine": "Fy Anodiadau"
+          },
+          "tools": {
+            "select": "Dewis / Padell",
+            "rectangle": "Petryal",
+            "polygon": "Polygon",
+            "point": "Pwynt",
+            "freehand": "Llaw rydd",
+            "line": "Llinell"
+          }
+        }
+      },
+      "contents": {
+        "label": "Panel cynnwys",
+        "title": "Cynnwys",
+        "close": "Cau cynnwys",
+        "tabs": "Tabiau cynnwys",
+        "tocTab": "Penodau",
+        "transcriptTab": "Trawsgrifiad",
+        "tocLabel": "Rhestr cynnwys",
+        "transcriptLabel": "Trawsgrifiad",
+        "emptyToc": "Dim rhestr cynnwys ar gael.",
+        "emptyTranscript": "Dim trawsgrifiad ar gael.",
+        "fallback": "Cofnod heb deitl"
+      },
+      "tools": {
+        "label": "Panel offer",
+        "title": "Offer",
+        "close": "Cau offer",
+        "note": "Mae addasiadau delwedd ar gael ar gynfasau delwedd.",
+        "brightness": "Disgleirdeb",
+        "contrast": "Cyferbyniad",
+        "saturation": "Dirlawnder",
+        "effects": "Effeithiau",
+        "invert": "Gwrthdroi",
+        "grayscale": "Graddlwyd",
+        "reset": "Ailosod"
+      },
+      "search": {
+        "label": "Panel chwilio",
+        "title": "Chwilio",
+        "close": "Cau chwilio",
+        "labelText": "Chwilio anodiadau",
+        "placeholder": "Chwilio anodiadau",
+        "clear": "Clirio",
+        "hint": "Mae cyfatebiaethau'n amlygu ar y cynfas.",
+        "matchCount_one": "{count} cyfatebiaeth",
+        "matchCount_other": "{count} cyfatebiaeth",
+        "noMatches": "Dim cyfatebiaethau.",
+        "empty": "Teipiwch i chwilio anodiadau.",
+        "hitFallback": "Anodiad heb deitl"
+      },
+      "metadata": {
+        "label": "Panel metadata",
+        "title": "Metadata",
+        "close": "Cau metadata",
+        "attribution": "Priodoliad",
+        "license": "Trwydded",
+        "empty": "Dim metadata maniffest ar gael."
+      },
+      "layers": {
+        "label": "Panel haenau",
+        "title": "Haenau",
+        "close": "Cau haenau"
+      }
+    },
+    "stage": {
+      "label": "Llwyfan y gwyliwr",
+      "loading": "Wrthi'n llwytho maniffest...",
+      "error": "Methu llwytho maniffest.",
+      "empty": "Dim ffynhonnell cyfryngau wedi'i datrys ar gyfer y cynfas hwn eto.",
+      "nav": {
+        "label": "Llywio cynfas",
+        "prev": "Cynfas blaenorol",
+        "next": "Cynfas nesaf"
+      },
+      "controls": {
+        "label": "Rheolyddion y gwyliwr",
+        "toggleGallery": "Togl galeri",
+        "toggleContents": "Togl cynnwys",
+        "toggleSearch": "Togl chwilio",
+        "toggleMetadata": "Togl metadata",
+        "toggleAnnotations": "Togl anodiadau",
+        "toggleTools": "Togl offer",
+        "showGallery": "Dangos galeri",
+        "showContents": "Dangos cynnwys",
+        "hideGallery": "Cuddio galeri",
+        "hideContents": "Cuddio cynnwys",
+        "showSearch": "Dangos chwilio",
+        "hideSearch": "Cuddio chwilio",
+        "showInfo": "Dangos gwybodaeth",
+        "hideInfo": "Cuddio gwybodaeth",
+        "showAnnotations": "Dangos anodiadau",
+        "hideAnnotations": "Cuddio anodiadau",
+        "showTools": "Dangos offer",
+        "hideTools": "Cuddio offer",
+        "toggleLayers": "Togl haenau",
+        "showLayers": "Dangos haenau",
+        "hideLayers": "Cuddio haenau"
+      }
+    },
+    "toolbar": {
+      "label": "Rheolyddion y llwyfan",
+      "zoom": "Chwyddo",
+      "zoomPercent": "Canran chwyddo",
+      "zoomOut": "Chwyddo allan",
+      "zoomIn": "Chwyddo mewn",
+      "canvasNumber": "Rhif cynfas",
+      "home": "Hafan",
+      "rotateLeft": "Cylchdroi i'r chwith",
+      "rotateRight": "Cylchdroi i'r dde",
+      "start": "Dechrau",
+      "stop": "Stopio",
+      "pause": "Oedi",
+      "forward": "Chwarae ymlaen 10 eiliad",
+      "rewind": "Ailddirwyn 10 eiliad",
+      "media": "Cyfryngau",
+      "mediaSelect": "Dewis ffynhonnell cyfryngau"
+    },
+    "gallery": {
+      "label": "Galeri mini-ddelweddau",
+      "title": "Galeri",
+      "hide": "Cuddio galeri",
+      "empty": "Dim cynfasau ar gael.",
+      "canvasAlt": "Cynfas {index}"
+    },
+    "dock": {
+      "gallery": "G",
+      "contents": "C",
+      "search": "S",
+      "info": "I",
+      "annotations": "A",
+      "tools": "T",
+      "layers": "L"
+    }
+  },
+  "workspace": {
+    "settings": "Gosodiadau",
+    "layout": "Cynllun",
+    "theme": "Thema",
+    "themeDark": "Tywyll",
+    "themeLight": "Golau",
+    "language": "Iaith",
+    "viewMode": "Gosodiad Tudalen",
+    "viewModeSingle": "Sengl",
+    "viewModePaged": "Ochr yn Ochr",
+    "viewModeContinuous": "Sgrolio Di-dor",
+    "viewModeGallery": "Galeri",
+    "activeViewport": "Porth Gwylio Gweithredol",
+    "activeViewportHint": "Mae cyd-destun y maniffest yn dilyn ffocws y ffenestr weithredol.",
+    "canvasPosition": "Cynfas {current} o {total}",
+    "searchHint": "Mae'r panel chwilio wedi'i rwymo i faniffest y ffenestr weithredol.",
+    "annotationsHint": "Mae cyd-destun anodi wedi'i rwymo i'r ffenestr weithredol."
+  },
+  "media": {
+    "type": {
+      "image": "Delwedd",
+      "video": "Fideo",
+      "audio": "Sain",
+      "pdf": "PDF",
+      "model": "3D"
+    }
+  },
+  "renderers": {
+    "audio": {
+      "noSource": "Dim ffynhonnell sain.",
+      "accompanyingLabel": "Delwedd ategol",
+      "cuesTitle": "Pwyntiau ciw",
+      "cueFallback": "Ciw"
+    },
+    "video": {
+      "noSource": "Dim ffynhonnell fideo.",
+      "cuesTitle": "Ciwiau",
+      "cueFallback": "Anodiad"
+    },
+    "image": {
+      "noSource": "Dim ffynhonnell delwedd ar gael."
+    },
+    "pdf": {
+      "noSource": "Dim ffynhonnell PDF.",
+      "prev": "Blaenorol",
+      "next": "Nesaf",
+      "prevAria": "Tudalen flaenorol",
+      "nextAria": "Tudalen nesaf",
+      "zoomOut": "Chwyddo -",
+      "zoomIn": "Chwyddo +",
+      "zoomOutAria": "Chwyddo allan",
+      "zoomInAria": "Chwyddo mewn",
+      "status": "Tudalen {pageNumber} / {pageCount}"
+    },
+    "model": {
+      "label": "Gwyliwr 3D",
+      "noSource": "Dim ffynhonnell 3D."
+    },
+    "osd": {
+      "label": "Gwyliwr delwedd"
+    }
+  },
+  "plugins": {
+    "hello": {
+      "label": "Panel Helo",
+      "noManifest": "Dim maniffest",
+      "nextCanvas": "Cynfas nesaf"
+    },
+    "annotation": {
+      "label": "Ychwanegu anodiad",
+      "note": "Gollyngwch anodiad cyflym ar y golygfa gyfredol.",
+      "button": "Ychwanegu anodiad",
+      "added": "Ychwanegwyd trwy ategyn"
+    }
+  },
+  "warnings": {
+    "invalidConfig": "JSON ffurfweddu annilys ar <mango-viewer>.",
+    "pluginMissingId": "Rhaid i ViewerPlugin gynnwys id."
+  }
+}

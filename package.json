@@ -1,0 +1,98 @@
+{
+  "name": "@mango/iiif-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@10.9.0",
+  "files": [
+    "src/dist"
+  ],
+  "main": "./src/dist/index.js",
+  "module": "./src/dist/index.js",
+  "types": "./src/dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./src/dist/index.js",
+      "types": "./src/dist/index.d.ts"
+    },
+    "./all": {
+      "import": "./src/dist/all.js",
+      "types": "./src/dist/all.d.ts"
+    },
+    "./element": {
+      "import": "./src/dist/element.js"
+    },
+    "./element/viewer": {
+      "import": "./src/dist/element-viewer.js"
+    },
+    "./element/story-viewer": {
+      "import": "./src/dist/element-story-viewer.js"
+    },
+    "./element/story-builder": {
+      "import": "./src/dist/element-story-builder.js"
+    },
+    "./element/annotation-editor": {
+      "import": "./src/dist/element-annotation-editor.js"
+    },
+    "./annotation-editor": {
+      "import": "./src/dist/annotation-editor.js",
+      "types": "./src/dist/annotation-editor.d.ts"
+    },
+    "./story-viewer": {
+      "import": "./src/dist/story-viewer.js",
+      "types": "./src/dist/story-viewer.d.ts"
+    },
+    "./story-builder": {
+      "import": "./src/dist/story-builder.js",
+      "types": "./src/dist/story-builder.d.ts"
+    },
+    "./element.iife": "./src/dist/mango-viewer-element.iife.js",
+    "./style.css": "./src/dist/style.css"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run build:demo && vite apps/demo",
+    "build:lib": "NODE_OPTIONS=--experimental-global-webcrypto vite build --config vite.config.lib.ts",
+    "build:element": "NODE_OPTIONS=--experimental-global-webcrypto vite build --config vite.config.element.ts",
+    "build:types": "tsc -p tsconfig.build.json",
+    "build": "npm run build:all",
+    "sync:demo": "node scripts/sync-demo.mjs",
+    "build:demo": "npm run build:lib && npm run build:element && npm run sync:demo",
+    "build:all": "npm run build:lib && npm run build:element && npm run build:types && npm run build:demo",
+    "build:dist": "npm run build:all",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run --config vitest.config.ts",
+    "test:e2e": "playwright test"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "dependencies": {
+    "@google/model-viewer": "^4.1.0",
+    "manifesto.js": "^4.3.0",
+    "openseadragon": "^5.0.1",
+    "pdfjs-dist": "^4.9.155"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@playwright/test": "^1.49.1",
+    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@types/node": "^24.1.0",
+    "eslint": "^9.19.0",
+    "eslint-plugin-svelte": "^2.46.1",
+    "globals": "^15.14.0",
+    "jsdom": "^27.0.1",
+    "prettier": "^3.4.2",
+    "prettier-plugin-svelte": "^3.2.8",
+    "svelte": "^5.43.8",
+    "svelte-eslint-parser": "^0.43.0",
+    "tsx": "^4.22.3",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.19.1",
+    "vite": "^6.4.1",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Mango Viewer - Language Configuration Example</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Mango Viewer - Language Configuration Examples</h1>
+      
+      <div class="example">
+        <h2>Example 1: Spanish UI (es)</h2>
+        <p>This viewer is configured with Spanish language:</p>
+        <div class="code">
+          &lt;mango-viewer<br>
+          &nbsp;&nbsp;manifest-id="..."<br>
+          &nbsp;&nbsp;config='{"language":"es"}'<br>
+          &gt;&lt;/mango-viewer&gt;
+        </div>
+        <div class="viewer-container">
+          <mango-viewer
+            mode="viewer"
+            manifest-id="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
+            config='{"language":"es"}'
+          ></mango-viewer>
+        </div>
+      </div>
+
+      <div class="example">
+        <h2>Example 2: English UI (en) - Explicit</h2>
+        <p>Explicitly set to English:</p>
+        <div class="code">
+          &lt;mango-viewer<br>
+          &nbsp;&nbsp;manifest-id="..."<br>
+          &nbsp;&nbsp;config='{"language":"en"}'<br>
+          &gt;&lt;/mango-viewer&gt;
+        </div>
+        <div class="viewer-container">
+          <mango-viewer
+            mode="viewer"
+            manifest-id="https://iiif.harvardartmuseums.org/manifests/object/299843"
+            config='{"language":"en"}'
+          ></mango-viewer>
+        </div>
+      </div>
+
+      <div class="example">
+        <h2>Example 3: No Language Config (Browser Default)</h2>
+        <p>When no language is specified, the viewer uses the browser's language (navigator.language), falling back to English if unavailable:</p>
+        <div class="code">
+          &lt;mango-viewer<br>
+          &nbsp;&nbsp;manifest-id="..."<br>
+          &gt;&lt;/mango-viewer&gt;
+        </div>
+        <p><strong>Your browser language:</strong> <code id="browser-lang"></code></p>
+        <div class="viewer-container">
+          <mango-viewer
+            mode="viewer"
+            manifest-id="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
+          ></mango-viewer>
+        </div>
+      </div>
+
+      <div class="example">
+        <h2>How Language Resolution Works</h2>
+        <p>The viewer resolves the UI language in this priority order:</p>
+        <ol>
+          <li><strong>Config language</strong> (highest priority): <code>config='{"language":"es"}'</code></li>
+          <li><strong>Browser language</strong>: Falls back to <code>navigator.language</code></li>
+          <li><strong>Default</strong>: Uses <code>'en'</code> if nothing else is available</li>
+        </ol>
+        
+        <h3>Supported Language Formats</h3>
+        <ul>
+          <li>Simple codes: <code>"en"</code>, <code>"es"</code>, <code>"fr"</code>, <code>"de"</code></li>
+          <li>Locale variants: <code>"en-US"</code>, <code>"en-GB"</code>, <code>"fr-CA"</code>, <code>"es-MX"</code></li>
+        </ul>
+
+        <h3>Available Translations</h3>
+        <p>Currently, the viewer has translations for:</p>
+        <ul>
+          <li><strong>en</strong> - English (default)</li>
+          <li><strong>es</strong> - Spanish (Español)</li>
+        </ul>
+        <p>Other language codes will fall back to English.</p>
+      </div>
+    </div>
+    
+    <script type="module" src="dist/index.js"></script>
+    <script>
+      // Display browser language
+      document.getElementById('browser-lang').textContent = navigator.language || 'Not available';
+    </script>
+  </body>
+</html>

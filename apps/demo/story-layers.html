@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Mango Layers Transition Demo</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <div class="page page--story-viewer">
+      <header class="hero">
+        <div class="hero__title">Layers Transition Demo</div>
+        <p class="hero__subtitle">
+          Smoothly fading between the Natural Light and X-Ray layers of the John Dee manifest.
+        </p>
+      </header>
+
+      <section class="viewer-shell">
+        <mango-viewer
+          mode="story-viewer"
+          story-url="test-story/layers.json"
+          config='{"showThumbnails":false,"showSearch":false,"showMetadata":false,"showAnnotations":false,"showTools":false}'
+        ></mango-viewer>
+
+        <nav class="viewer-actions" aria-label="Story actions">
+          <a class="viewer-actions__link" href="index.html">Back to Home</a>
+          <a class="viewer-actions__link" href="story-edit.html">Edit stories</a>
+        </nav>
+      </section>
+    </div>
+
+    <script type="module" src="dist/index.js"></script>
+  </body>
+</html>

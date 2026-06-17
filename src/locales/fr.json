@@ -1,0 +1,341 @@
+{
+  "common": {
+    "closeGlyph": "×",
+    "emptyValue": "-",
+    "notAvailable": "N/A"
+  },
+  "storyBuilder": {
+    "narration": {
+      "button": "Narrateur audio"
+    },
+    "chapters": {
+      "title": "Chapitres",
+      "empty": "Positionnez le visualiseur, puis ajoutez un chapitre.",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "confirmDelete": "Supprimer ce chapitre ?"
+    },
+    "actions": {
+      "add": "+ Ajouter un chapitre",
+      "save": "Enregistrer / Exporter",
+      "saving": "Enregistrement...",
+      "saveSuccess": "Enregistré avec succès",
+      "saveFailed": "Échec de l'enregistrement"
+    },
+    "chapter": {
+      "header": "Paramètres du chapitre",
+      "manifestLabel": "URL du manifeste",
+      "manifestLoad": "Charger / Recharger",
+      "manifestHint": "Chargez un manifeste pour commencer à capturer des chapitres.",
+      "language": "Langue",
+      "narration": "Narration",
+      "start": "Début (HH:MM:SS)",
+      "end": "Fin (HH:MM:SS)",
+      "useCurrentTime": "Utiliser l'heure actuelle",
+      "preview": "Aperçu du segment",
+      "markInOut": "Marquer Début / Fin (HH:MM:SS)",
+      "markIn": "Marquer Début",
+      "markOut": "Marquer Fin",
+      "markHint": "Le marquage de fin doit être supérieur au marquage de début pour l'audio / la vidéo.",
+      "annotation": "Annotation ({lang})",
+      "advance": "Avance",
+      "advanceHint": "La lecture automatique passera au chapitre suivant après le délai ci-dessous. Laissez vide pour rester en manuel.",
+      "advanceDelay": "Délai entre les chapitres (secondes)",
+      "save": "Enregistrer",
+      "saveHint": "Sélectionnez un chapitre pour enregistrer les paramètres."
+    },
+    "export": {
+      "title": "Exporter le JSON de l'histoire",
+      "copy": "Copier le JSON",
+      "download": "Télécharger le .json"
+    }
+  },
+  "viewer": {
+    "status": {
+      "waiting": "En attente d'un manifeste.",
+      "loading": "Chargement du manifeste...",
+      "error": "Erreur lors du chargement du manifeste.",
+      "loaded": "Manifeste chargé."
+    },
+    "brand": {
+      "title": "Démo du visualiseur IIIF Mango",
+      "tag": "Mango Shell"
+    },
+    "manifest": {
+      "label": "Manifeste",
+      "awaitingId": "En attente de l'ID du manifeste"
+    },
+    "panels": {
+      "leftLabel": "Panneaux de gauche",
+      "rightLabel": "Panneaux de droite",
+      "annotations": {
+        "label": "Panneau des annotations",
+        "title": "Annotations",
+        "export": "Exporter les annotations",
+        "close": "Fermer l'éditeur d'annotations",
+        "modes": "Modes d'annotation",
+        "edit": "Modifier",
+        "create": "Créer",
+        "helpEdit": "Cliquez sur une annotation pour la sélectionner et la modifier.",
+        "helpCreate": "Dessinez sur le canevas pour créer une nouvelle annotation.",
+        "emptyCreate": "Utilisez la barre d'outils pour ajouter des rectangles ou des notes.",
+        "emptyList": "Aucune annotation sur ce canevas.",
+        "fallback": "Annotation",
+        "editor": {
+          "createTitle": "Créer une annotation",
+          "detailsTitle": "Détails de l'annotation",
+          "details": "Détails",
+          "motivation": "Motivation",
+          "motivations": {
+            "painting": "peinture (painting)",
+            "supplementing": "supplément (supplementing)",
+            "contextualizing": "contextualisation (contextualizing)",
+            "contentState": "état du contenu (contentState)",
+            "highlighting": "surlignage (highlighting)",
+            "commenting": "commentaire (commenting)",
+            "tagging": "étiquetage (tagging)"
+          },
+          "layer": "Calque",
+          "layersLabel": "Calques",
+          "label": "Étiquette",
+          "labelPlaceholder": "Étiquette de l'annotation",
+          "text": "Texte",
+          "textPlaceholder": "Ajouter le contenu textuel de l'annotation...",
+          "tags": "Mots-clés",
+          "tagPlaceholder": "Ajouter un mot-clé et appuyer sur Entrée",
+          "addTag": "Ajouter",
+          "removeTag": "Supprimer {tag}",
+          "notes": "Notes",
+          "privateNotes": "Notes privées",
+          "notesPlaceholder": "Ajouter des notes de recherche privées...",
+          "saveAnnotation": "Enregistrer l'annotation",
+          "saveChanges": "Enregistrer les modifications",
+          "deleteAnnotation": "Supprimer l'annotation",
+          "empty": "Sélectionnez une annotation pour inspecter les détails.",
+          "id": "ID",
+          "type": "Type",
+          "searchPlaceholder": "Rechercher des annotations",
+          "pagination": "{current} sur {total}",
+          "showLayer": "Afficher le calque",
+          "hideLayer": "Masquer le calque",
+          "layers": {
+            "research": "Notes de recherche",
+            "transcription": "Transcription",
+            "highlights": "Surlignages",
+            "mine": "Mes annotations"
+          },
+          "tools": {
+            "select": "Sélection / Panoramique",
+            "rectangle": "Rectangle",
+            "polygon": "Polygone",
+            "point": "Point",
+            "freehand": "Dessin libre",
+            "line": "Ligne"
+          }
+        }
+      },
+      "contents": {
+        "label": "Panneau des contenus",
+        "title": "Contenus",
+        "close": "Fermer les contenus",
+        "tabs": "Onglets de contenus",
+        "tocTab": "Chapitres",
+        "transcriptTab": "Transcription",
+        "tocLabel": "Table des matières",
+        "transcriptLabel": "Transcription",
+        "emptyToc": "Aucune table des matières disponible.",
+        "emptyTranscript": "Aucune transcription disponible.",
+        "fallback": "Entrée sans titre"
+      },
+      "tools": {
+        "label": "Panneau d'outils",
+        "title": "Outils",
+        "close": "Fermer les outils",
+        "note": "Les réglages d'image sont disponibles sur les canevas d'image.",
+        "brightness": "Luminosité",
+        "contrast": "Contraste",
+        "saturation": "Saturation",
+        "effects": "Effets",
+        "invert": "Inverser",
+        "grayscale": "Niveaux de gris",
+        "reset": "Réinitialiser"
+      },
+      "search": {
+        "label": "Panneau de recherche",
+        "title": "Recherche",
+        "close": "Fermer la recherche",
+        "labelText": "Rechercher des annotations",
+        "placeholder": "Rechercher des annotations",
+        "clear": "Effacer",
+        "hint": "Les correspondances sont surlignées sur le canevas.",
+        "matchCount_one": "{count} correspondance",
+        "matchCount_other": "{count} correspondances",
+        "noMatches": "Aucune correspondance.",
+        "empty": "Tapez pour rechercher des annotations.",
+        "hitFallback": "Annotation sans titre"
+      },
+      "metadata": {
+        "label": "Panneau de métadonnées",
+        "title": "Métadonnées",
+        "close": "Fermer les métadonnées",
+        "attribution": "Attribution",
+        "license": "Licence",
+        "empty": "Aucune métadonnée de manifeste disponible."
+      },
+      "layers": {
+        "label": "Panneau des calques",
+        "title": "Calques",
+        "close": "Fermer les calques"
+      }
+    },
+    "stage": {
+      "label": "Scène du visualiseur",
+      "loading": "Chargement du manifeste...",
+      "error": "Impossible de charger le manifeste.",
+      "empty": "Aucune source média résolue pour ce canevas pour le moment.",
+      "nav": {
+        "label": "Navigation dans les canevas",
+        "prev": "Canevas précédent",
+        "next": "Canevas suivant"
+      },
+      "controls": {
+        "label": "Contrôles du visualiseur",
+        "toggleGallery": "Afficher/Masquer la galerie",
+        "toggleContents": "Afficher/Masquer les contenus",
+        "toggleSearch": "Afficher/Masquer la recherche",
+        "toggleMetadata": "Afficher/Masquer les métadonnées",
+        "toggleAnnotations": "Afficher/Masquer les annotations",
+        "toggleTools": "Afficher/Masquer les outils",
+        "showGallery": "Afficher la galerie",
+        "showContents": "Afficher les contenus",
+        "hideGallery": "Masquer la galerie",
+        "hideContents": "Masquer les contenus",
+        "showSearch": "Afficher la recherche",
+        "hideSearch": "Masquer la recherche",
+        "showInfo": "Afficher les infos",
+        "hideInfo": "Masquer les infos",
+        "showAnnotations": "Afficher les annotations",
+        "hideAnnotations": "Masquer les annotations",
+        "showTools": "Afficher les outils",
+        "hideTools": "Masquer les outils",
+        "toggleLayers": "Basculer les calques",
+        "showLayers": "Afficher les calques",
+        "hideLayers": "Masquer les calques"
+      }
+    },
+    "toolbar": {
+      "label": "Contrôles de scène",
+      "zoom": "Zoom",
+      "zoomPercent": "Pourcentage de zoom",
+      "zoomOut": "Zoom arrière",
+      "zoomIn": "Zoom avant",
+      "canvasNumber": "Numéro de canevas",
+      "home": "Accueil",
+      "rotateLeft": "Tourner à gauche",
+      "rotateRight": "Tourner à droite",
+      "start": "Démarrer",
+      "stop": "Arrêter",
+      "pause": "Pause",
+      "forward": "Avancer de 10 secondes",
+      "rewind": "Reculer de 10 secondes",
+      "media": "Média",
+      "mediaSelect": "Sélectionner la source média"
+    },
+    "gallery": {
+      "label": "Galerie de vignettes",
+      "title": "Galerie",
+      "hide": "Masquer la galerie",
+      "empty": "Aucun canevas disponible.",
+      "canvasAlt": "Canevas {index}"
+    },
+    "dock": {
+      "gallery": "G",
+      "contents": "C",
+      "search": "R",
+      "info": "I",
+      "annotations": "A",
+      "tools": "O",
+      "layers": "L"
+    }
+  },
+  "workspace": {
+    "settings": "Paramètres",
+    "layout": "Disposition",
+    "theme": "Thème",
+    "themeDark": "Sombre",
+    "themeLight": "Clair",
+    "language": "Langue",
+    "viewMode": "Mise en page",
+    "viewModeSingle": "Simple",
+    "viewModePaged": "Double page",
+    "viewModeContinuous": "Défilement continu",
+    "viewModeGallery": "Galerie",
+    "activeViewport": "Fenêtre active",
+    "activeViewportHint": "Le contexte du manifeste suit le focus de la fenêtre active.",
+    "canvasPosition": "Canevas {current} sur {total}",
+    "searchHint": "Le panneau de recherche est lié au manifeste de la fenêtre active.",
+    "annotationsHint": "Le contexte d'annotation est lié à la fenêtre active."
+  },
+  "media": {
+    "type": {
+      "image": "Image",
+      "video": "Vidéo",
+      "audio": "Audio",
+      "pdf": "PDF",
+      "model": "3D"
+    }
+  },
+  "renderers": {
+    "audio": {
+      "noSource": "Aucune source audio.",
+      "accompanyingLabel": "Image d'accompagnement",
+      "cuesTitle": "Points de repère",
+      "cueFallback": "Repère"
+    },
+    "video": {
+      "noSource": "Aucune source vidéo.",
+      "cuesTitle": "Repères",
+      "cueFallback": "Annotation"
+    },
+    "image": {
+      "noSource": "Aucune source d'image disponible."
+    },
+    "pdf": {
+      "noSource": "Aucune source PDF.",
+      "prev": "Préc.",
+      "next": "Suiv.",
+      "prevAria": "Page précédente",
+      "nextAria": "Page suivante",
+      "zoomOut": "Zoom -",
+      "zoomIn": "Zoom +",
+      "zoomOutAria": "Zoom arrière",
+      "zoomInAria": "Zoom avant",
+      "status": "Page {pageNumber} / {pageCount}"
+    },
+    "model": {
+      "label": "Visualiseur 3D",
+      "noSource": "Aucune source 3D."
+    },
+    "osd": {
+      "label": "Visualiseur d'image"
+    }
+  },
+  "plugins": {
+    "hello": {
+      "label": "Panneau d'accueil",
+      "noManifest": "Aucun manifeste",
+      "nextCanvas": "Canevas suivant"
+    },
+    "annotation": {
+      "label": "Ajouter une annotation",
+      "note": "Déposer une annotation rapide sur la vue actuelle.",
+      "button": "Ajouter une annotation",
+      "added": "Ajouté via le plugin"
+    }
+  },
+  "warnings": {
+    "invalidConfig": "JSON de configuration non valide sur <mango-viewer>.",
+    "pluginMissingId": "Le plugin de visualisation doit inclure un identifiant."
+  }
+}

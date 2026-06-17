@@ -1,0 +1,341 @@
+{
+  "common": {
+    "closeGlyph": "×",
+    "emptyValue": "-",
+    "notAvailable": "N/D"
+  },
+  "storyBuilder": {
+    "narration": {
+      "button": "Narrador de audio"
+    },
+    "chapters": {
+      "title": "Capítulos",
+      "empty": "Posicione el visor y luego añada un capítulo.",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "cancel": "Cancelar",
+      "confirmDelete": "¿Eliminar este capítulo?"
+    },
+    "actions": {
+      "add": "+ Añadir capítulo",
+      "save": "Guardar / Exportar",
+      "saving": "Guardando…",
+      "saveSuccess": "Guardado correctamente",
+      "saveFailed": "Error al guardar"
+    },
+    "chapter": {
+      "header": "Ajustes de capítulo",
+      "manifestLabel": "URL del manifiesto",
+      "manifestLoad": "Cargar / Recargar",
+      "manifestHint": "Cargue un manifiesto para empezar a capturar capítulos.",
+      "language": "Idioma",
+      "narration": "Narración",
+      "start": "Inicio (HH:MM:SS)",
+      "end": "Fin (HH:MM:SS)",
+      "useCurrentTime": "Usar tiempo actual",
+      "preview": "Previsualizar segmento",
+      "markInOut": "Marcar entrada / salida (HH:MM:SS)",
+      "markIn": "Marcar entrada",
+      "markOut": "Marcar salida",
+      "markHint": "La salida debe ser mayor que la entrada para audio / vídeo.",
+      "annotation": "Anotación ({lang})",
+      "advance": "Avance",
+      "advanceHint": "La reproducción automática pasa al siguiente capítulo tras la demora indicada. Dejar vacío mantiene el modo manual.",
+      "advanceDelay": "Demora entre capítulos (segundos)",
+      "save": "Guardar",
+      "saveHint": "Seleccione un capítulo para guardar ajustes."
+    },
+    "export": {
+      "title": "Exportar JSON de la historia",
+      "copy": "Copiar JSON",
+      "download": "Descargar .json"
+    }
+  },
+  "viewer": {
+    "status": {
+      "waiting": "Esperando un manifiesto.",
+      "loading": "Cargando manifiesto...",
+      "error": "Error al cargar el manifiesto.",
+      "loaded": "Manifiesto cargado."
+    },
+    "brand": {
+      "title": "Demo del visor IIIF Mango",
+      "tag": "Mango Shell"
+    },
+    "manifest": {
+      "label": "Manifiesto",
+      "awaitingId": "Esperando ID del manifiesto"
+    },
+    "panels": {
+      "leftLabel": "Paneles izquierdos",
+      "rightLabel": "Paneles derechos",
+      "annotations": {
+        "label": "Panel de anotaciones",
+        "title": "Editor de anotaciones",
+        "export": "Exportar anotaciones",
+        "close": "Cerrar editor de anotaciones",
+        "modes": "Modos de anotación",
+        "edit": "Editar",
+        "create": "Crear",
+        "helpEdit": "Haz clic en una anotación para seleccionarla y editarla.",
+        "helpCreate": "Dibuja en el lienzo para crear una nueva anotación.",
+        "emptyCreate": "Usa la barra de herramientas para agregar rectángulos o notas.",
+        "emptyList": "No hay anotaciones en este lienzo.",
+        "fallback": "Anotación",
+        "editor": {
+          "createTitle": "Crear anotación",
+          "detailsTitle": "Detalles de la anotación",
+          "details": "Detalles",
+          "motivation": "Motivación",
+          "motivations": {
+            "painting": "pintura (painting)",
+            "supplementing": "suplemento (supplementing)",
+            "contextualizing": "contextualización (contextualizing)",
+            "contentState": "estado de contenido (contentState)",
+            "highlighting": "resaltado (highlighting)",
+            "commenting": "comentario (commenting)",
+            "tagging": "etiquetado (tagging)"
+          },
+          "layer": "Capa",
+          "layersLabel": "Capas",
+          "label": "Etiqueta",
+          "labelPlaceholder": "Etiqueta de anotación",
+          "text": "Texto",
+          "textPlaceholder": "Añadir texto de anotación...",
+          "tags": "Etiquetas",
+          "tagPlaceholder": "Añadir etiqueta y pulsar Enter",
+          "addTag": "Añadir",
+          "removeTag": "Eliminar {tag}",
+          "notes": "Notas",
+          "privateNotes": "Notas privadas",
+          "notesPlaceholder": "Añadir notas privadas de investigación...",
+          "saveAnnotation": "Guardar anotación",
+          "saveChanges": "Guardar cambios",
+          "deleteAnnotation": "Eliminar anotación",
+          "empty": "Seleccione una anotación para ver los detalles.",
+          "id": "ID",
+          "type": "Tipo",
+          "searchPlaceholder": "Buscar anotaciones",
+          "pagination": "{current} de {total}",
+          "showLayer": "Mostrar capa",
+          "hideLayer": "Ocultar capa",
+          "layers": {
+            "research": "Notas de investigación",
+            "transcription": "Transcripción",
+            "highlights": "Destacados",
+            "mine": "Mis anotaciones"
+          },
+          "tools": {
+            "select": "Seleccionar / Desplazar",
+            "rectangle": "Rectángulo",
+            "polygon": "Polígono",
+            "point": "Punto",
+            "freehand": "Mano alzada",
+            "line": "Línea"
+          }
+        }
+      },
+      "contents": {
+        "label": "Panel de contenidos",
+        "title": "Contenidos",
+        "close": "Cerrar contenidos",
+        "tabs": "Pestañas de contenidos",
+        "tocTab": "Capítulos",
+        "transcriptTab": "Transcripción",
+        "tocLabel": "Tabla de contenidos",
+        "transcriptLabel": "Transcripción",
+        "emptyToc": "No hay tabla de contenidos disponible.",
+        "emptyTranscript": "No hay transcripción disponible.",
+        "fallback": "Entrada sin título"
+      },
+      "tools": {
+        "label": "Panel de herramientas",
+        "title": "Herramientas",
+        "close": "Cerrar herramientas",
+        "note": "Los ajustes de imagen están disponibles en lienzos de imagen.",
+        "brightness": "Brillo",
+        "contrast": "Contraste",
+        "saturation": "Saturación",
+        "effects": "Efectos",
+        "invert": "Invertir",
+        "grayscale": "Escala de grises",
+        "reset": "Restablecer"
+      },
+      "search": {
+        "label": "Panel de búsqueda",
+        "title": "Buscar",
+        "close": "Cerrar búsqueda",
+        "labelText": "Buscar anotaciones",
+        "placeholder": "Buscar anotaciones",
+        "clear": "Limpiar",
+        "hint": "Las coincidencias resaltan en el lienzo.",
+        "matchCount_one": "{count} coincidencia",
+        "matchCount_other": "{count} coincidencias",
+        "noMatches": "Sin coincidencias.",
+        "empty": "Escribe para buscar anotaciones.",
+        "hitFallback": "Anotación sin título"
+      },
+      "metadata": {
+        "label": "Panel de metadatos",
+        "title": "Metadatos",
+        "close": "Cerrar metadatos",
+        "attribution": "Atribución",
+        "license": "Licencia",
+        "empty": "No hay metadatos del manifiesto."
+      },
+      "layers": {
+        "label": "Panel de capas",
+        "title": "Capas",
+        "close": "Cerrar capas"
+      }
+    },
+    "stage": {
+      "label": "Escenario del visor",
+      "loading": "Cargando manifiesto...",
+      "error": "No se pudo cargar el manifiesto.",
+      "empty": "No se resolvió una fuente multimedia para este lienzo.",
+      "nav": {
+        "label": "Navegación de lienzos",
+        "prev": "Lienzo anterior",
+        "next": "Siguiente lienzo"
+      },
+      "controls": {
+        "label": "Controles del visor",
+        "toggleGallery": "Alternar galería",
+        "toggleContents": "Alternar contenidos",
+        "toggleSearch": "Alternar búsqueda",
+        "toggleMetadata": "Alternar metadatos",
+        "toggleAnnotations": "Alternar anotaciones",
+        "toggleTools": "Alternar herramientas",
+        "showGallery": "Mostrar galería",
+        "showContents": "Mostrar contenidos",
+        "hideGallery": "Ocultar galería",
+        "hideContents": "Ocultar contenidos",
+        "showSearch": "Mostrar búsqueda",
+        "hideSearch": "Ocultar búsqueda",
+        "showInfo": "Mostrar información",
+        "hideInfo": "Ocultar información",
+        "showAnnotations": "Mostrar anotaciones",
+        "hideAnnotations": "Ocultar anotaciones",
+        "showTools": "Mostrar herramientas",
+        "hideTools": "Ocultar herramientas",
+        "toggleLayers": "Alternar capas",
+        "showLayers": "Mostrar capas",
+        "hideLayers": "Ocultar capas"
+      }
+    },
+    "toolbar": {
+      "label": "Controles del escenario",
+      "zoom": "Zoom",
+      "zoomPercent": "Porcentaje de zoom",
+      "zoomOut": "Alejar",
+      "zoomIn": "Acercar",
+      "canvasNumber": "Número de lienzo",
+      "home": "Inicio",
+      "rotateLeft": "Girar a la izquierda",
+      "rotateRight": "Girar a la derecha",
+      "start": "Iniciar",
+      "stop": "Detener",
+      "pause": "Pausar",
+      "forward": "Avanzar 10 segundos",
+      "rewind": "Retroceder 10 segundos",
+      "media": "Medios",
+      "mediaSelect": "Seleccionar fuente multimedia"
+    },
+    "gallery": {
+      "label": "Galería de miniaturas",
+      "title": "Galería",
+      "hide": "Ocultar galería",
+      "empty": "No hay lienzos disponibles.",
+      "canvasAlt": "Lienzo {index}"
+    },
+    "dock": {
+      "gallery": "G",
+      "contents": "C",
+      "search": "B",
+      "info": "I",
+      "annotations": "A",
+      "tools": "T",
+      "layers": "L"
+    }
+  },
+  "workspace": {
+    "settings": "Configuración",
+    "layout": "Diseño",
+    "theme": "Tema",
+    "themeDark": "Oscuro",
+    "themeLight": "Claro",
+    "language": "Idioma",
+    "viewMode": "Diseño de página",
+    "viewModeSingle": "Única",
+    "viewModePaged": "Doble página",
+    "viewModeContinuous": "Desplazamiento continuo",
+    "viewModeGallery": "Galería",
+    "activeViewport": "Vista activa",
+    "activeViewportHint": "El contexto del manifiesto sigue la ventana activa.",
+    "canvasPosition": "Lienzo {current} de {total}",
+    "searchHint": "El panel de búsqueda está vinculado al manifiesto de la ventana activa.",
+    "annotationsHint": "El contexto de anotaciones está vinculado a la ventana activa."
+  },
+  "media": {
+    "type": {
+      "image": "Imagen",
+      "video": "Video",
+      "audio": "Audio",
+      "pdf": "PDF",
+      "model": "3D"
+    }
+  },
+  "renderers": {
+    "audio": {
+      "noSource": "Sin fuente de audio.",
+      "accompanyingLabel": "Imagen acompañante",
+      "cuesTitle": "Puntos de cue",
+      "cueFallback": "Cue"
+    },
+    "video": {
+      "noSource": "Sin fuente de video.",
+      "cuesTitle": "Cues",
+      "cueFallback": "Anotación"
+    },
+    "image": {
+      "noSource": "No hay fuente de imagen disponible."
+    },
+    "pdf": {
+      "noSource": "Sin fuente PDF.",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "prevAria": "Página anterior",
+      "nextAria": "Página siguiente",
+      "zoomOut": "Zoom -",
+      "zoomIn": "Zoom +",
+      "zoomOutAria": "Alejar",
+      "zoomInAria": "Acercar",
+      "status": "Página {pageNumber} / {pageCount}"
+    },
+    "model": {
+      "label": "Visor 3D",
+      "noSource": "Sin fuente 3D."
+    },
+    "osd": {
+      "label": "Visor de imagen"
+    }
+  },
+  "plugins": {
+    "hello": {
+      "label": "Panel de saludo",
+      "noManifest": "Sin manifiesto",
+      "nextCanvas": "Siguiente lienzo"
+    },
+    "annotation": {
+      "label": "Agregar anotación",
+      "note": "Agrega una anotación rápida en la vista actual.",
+      "button": "Agregar anotación",
+      "added": "Agregado vía plugin"
+    }
+  },
+  "warnings": {
+    "invalidConfig": "JSON de configuración inválido en <mango-viewer>.",
+    "pluginMissingId": "ViewerPlugin debe incluir un id."
+  }
+}

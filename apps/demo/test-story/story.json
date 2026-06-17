@@ -1,0 +1,211 @@
+{
+  "version": 1,
+  "exportedAt": "2026-02-02T17:45:46.066Z",
+  "meta": {
+    "source": "storybuilder"
+  },
+  "data": {
+    "version": "1.0",
+    "type": "story",
+    "chapters": [
+      {
+        "id": "chapter_1",
+        "manifest": "https://iiif.harvardartmuseums.org/manifests/object/299843",
+        "canvasIndex": 0,
+        "narrationSegment": {
+          "en": {
+            "start": 0,
+            "end": 11
+          },
+          "cy": {
+            "start": 12,
+            "end": 17
+          }
+        },
+        "viewBox": {
+          "x": -1412.0555555555554,
+          "y": 0,
+          "w": 4911.111111111111,
+          "h": 2550
+        },
+        "annotations": {
+          "_default": {
+            "placement": "centre"
+          }
+        },
+        "transitionTimeMs": 2000
+      },
+      {
+        "id": "chapter_2",
+        "manifest": "https://iiif.harvardartmuseums.org/manifests/object/299843",
+        "canvasIndex": 0,
+        "narrationSegment": {
+          "en": {
+            "start": 18,
+            "end": 34
+          }
+        },
+        "viewBox": {
+          "x": 544.895944072931,
+          "y": 800.3461946046995,
+          "w": 1142.167482196989,
+          "h": 593.0485003715137
+        },
+        "annotations": {
+          "_default": {
+            "placement": "centre"
+          }
+        },
+        "transitionTimeMs": 2000
+      },
+      {
+        "id": "chapter_3",
+        "manifest": "https://iiif.harvardartmuseums.org/manifests/object/299843",
+        "canvasIndex": 0,
+        "narrationSegment": {
+          "en": {
+            "start": 161,
+            "end": 176
+          }
+        },
+        "viewBox": {
+          "x": 1018.8910565804233,
+          "y": 765.2973319658782,
+          "w": 898.181818181818,
+          "h": 466.3636363636363
+        },
+        "annotations": {
+          "_default": {
+            "placement": "centre"
+          }
+        },
+        "transitionTimeMs": 2000
+      },
+      {
+        "id": "chapter_4",
+        "manifest": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
+        "canvasIndex": 0,
+        "narrationSegment": {
+          "en": {
+            "start": 181,
+            "end": 189
+          }
+        },
+        "viewBox": {
+          "x": -2127.277777777778,
+          "y": 0,
+          "w": 6823.555555555556,
+          "h": 3543
+        },
+        "annotations": {
+          "_default": {
+            "placement": "centre"
+          }
+        },
+        "transitionTimeMs": 2000
+      },
+      {
+        "id": "chapter_5",
+        "manifest": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
+        "canvasIndex": 0,
+        "narrationSegment": {
+          "en": {
+            "start": 190,
+            "end": 199
+          }
+        },
+        "viewBox": {
+          "x": 625.542016426038,
+          "y": 1089.7890849318778,
+          "w": 1322.4507808574945,
+          "h": 686.6571362144682
+        },
+        "annotations": {
+          "_default": {
+            "placement": "centre"
+          }
+        },
+        "transitionTimeMs": 2000
+      },
+      {
+        "id": "chapter_6",
+        "manifest": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
+        "canvasIndex": 1,
+        "narrationSegment": {
+          "en": {
+            "start": 205,
+            "end": 211
+          }
+        },
+        "viewBox": {
+          "x": -2041.6111111111106,
+          "y": 2.6767477123712524e-13,
+          "w": 6494.222222222222,
+          "h": 3371.9999999999995
+        },
+        "annotations": {
+          "_default": {
+            "placement": "centre"
+          }
+        },
+        "transitionTimeMs": 2000
+      },
+      {
+        "id": "chapter_7",
+        "manifest": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
+        "canvasIndex": 1,
+        "narrationSegment": {
+          "en": {
+            "start": 212,
+            "end": 230
+          }
+        },
+        "viewBox": {
+          "x": 726.4650217682754,
+          "y": 804.7416267769182,
+          "w": 1048.8531454161894,
+          "h": 544.5968255045599
+        },
+        "annotations": {
+          "_default": {
+            "placement": "centre"
+          }
+        },
+        "transitionTimeMs": 2000
+      },
+      {
+        "id": "chapter_8",
+        "manifest": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
+        "canvasIndex": 1,
+        "narrationSegment": {
+          "en": {
+            "start": 356,
+            "end": 367
+          }
+        },
+        "viewBox": {
+          "x": 27.744087363384835,
+          "y": 1301.583949631106,
+          "w": 2234.9637818181814,
+          "h": 1160.4619636363636
+        },
+        "annotations": {
+          "_default": {
+            "placement": "centre"
+          }
+        },
+        "transitionTimeMs": 2000
+      }
+    ],
+    "narration": {
+      "tracks": {
+        "en": {
+          "src": "https://www.peoplescollection.wales/sites/default/files/audio/2017/March/StephenMorrell%28PCW%29.mp3"
+        },
+        "cy": {
+          "src": "https://www.peoplescollection.wales/sites/default/files/audio/2017/March/StephenMorrell%28PCW%29.mp3"
+        }
+      }
+    }
+  }
+}

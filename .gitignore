@@ -1,0 +1,11 @@
+node_modules
+/demo
+/apps/demo/demo
+**/node_modules
+**/dist
+**/.svelte-kit
+pnpm-lock.yaml
+*.log
+test-results
+.vscode
+**/.DS_Store

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Mango IIIF Viewer Demo</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero__title">Mango IIIF Viewer</div>
+        <form class="manifest-form" data-manifest-form>
+          <label class="manifest-form__label" for="manifest-input">
+            Manifest URL
+          </label>
+          <div class="manifest-form__row">
+            <input
+              id="manifest-input"
+              class="manifest-form__input"
+              type="url"
+              placeholder="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
+              data-manifest-input
+            />
+            <button class="manifest-form__button" type="submit">
+              Load
+            </button>
+          </div>
+        </form>
+      </header>
+
+      <section class="viewer-shell">
+        <!-- Example: Set UI language to Spanish. Change "es" to any language code like "en", "fr", "de", etc. -->
+        <!-- If omitted, viewer will use browser language (navigator.language) as fallback -->
+        <mango-viewer
+          mode="viewer"
+          manifest-id="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
+        ></mango-viewer>
+      </section>
+    </div>
+    <script type="module" src="dist/index.js"></script>
+    <script>
+      const form = document.querySelector('[data-manifest-form]');
+      const input = document.querySelector('[data-manifest-input]');
+      const viewer = document.querySelector('mango-viewer');
+
+      if (input && viewer instanceof HTMLElement) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const iiifContent =
+          urlParams.get('iiif-content') ||
+          urlParams.get('manifest') ||
+          urlParams.get('iiifManifestId');
+        if (iiifContent) {
+          viewer.setAttribute('manifest-id', iiifContent);
+          input.value = iiifContent;
+        } else {
+          const current = viewer.getAttribute('manifest-id');
+          if (current) input.value = current;
+        }
+      }
+
+      form?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (!input || !(viewer instanceof HTMLElement)) return;
+        const value = input.value.trim();
+        if (value) viewer.setAttribute('manifest-id', value);
+      });
+    </script>
+  </body>
+</html>

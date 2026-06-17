@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Mango Annotation Editor Demo</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero__title">Mango Annotation Editor</div>
+        <p class="hero__subtitle">
+          Draw annotations directly on the canvas
+        </p>
+      </header>
+
+      <section class="viewer-shell">
+        <mango-viewer
+          manifest-id="https://api.artic.edu/api/v1/artworks/80607/manifest.json"
+          mode="annotation-editor"
+          config='{"showThumbnails":false,"showSearch":false,"showMetadata":false,"showAnnotations":true,"showTools":false}'
+        ></mango-viewer>
+      </section>
+    </div>
+    <script type="module" src="dist/index.js"></script>
+    <script>
+      const viewer = document.querySelector('mango-viewer');
+      if (viewer) {
+        viewer.addEventListener('exportAnnotations', (event) => {
+          console.log('Exported Annotations:', event.detail.annotations);
+        });
+      }
+    </script>
+  </body>
+</html>
