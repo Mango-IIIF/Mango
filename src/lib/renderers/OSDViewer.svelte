@@ -977,6 +977,10 @@
     inset: 0;
   }
 
+  .osd__viewport {
+    touch-action: none;
+  }
+
   .osd__overlays {
     pointer-events: none;
   }

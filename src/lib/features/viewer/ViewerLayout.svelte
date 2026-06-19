@@ -534,19 +534,20 @@
     isViewerFullscreen = isViewerFullscreenActive();
   };
 
+  const allowsFullscreenTouchInteraction = (target: EventTarget) =>
+    target instanceof Element &&
+    (target.classList.contains('gallery__list') ||
+      target.classList.contains('panel-stack--left') ||
+      target.classList.contains('stage-gallery-view') ||
+      target.classList.contains('osd') ||
+      target.classList.contains('osd__viewport') ||
+      target.classList.contains('openseadragon-canvas'));
+
   const guardFullscreenDrag = (event: TouchEvent | PointerEvent) => {
     if (!isViewerFullscreenActive()) return;
     if ('pointerType' in event && event.pointerType !== 'touch') return;
     const path = event.composedPath();
-    if (
-      path.some(
-        (target) =>
-          target instanceof Element &&
-          (target.classList.contains('gallery__list') ||
-            target.classList.contains('panel-stack--left') ||
-            target.classList.contains('stage-gallery-view')),
-      )
-    ) {
+    if (path.some(allowsFullscreenTouchInteraction)) {
       return;
     }
     event.preventDefault();
