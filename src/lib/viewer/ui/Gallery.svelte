@@ -179,7 +179,11 @@
     grid-auto-columns: minmax(96px, 130px);
     gap: 12px;
     overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
     padding-bottom: 6px;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
   }
 
   .gallery__item {

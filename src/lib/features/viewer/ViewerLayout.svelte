@@ -537,6 +537,18 @@
   const guardFullscreenDrag = (event: TouchEvent | PointerEvent) => {
     if (!isViewerFullscreenActive()) return;
     if ('pointerType' in event && event.pointerType !== 'touch') return;
+    const path = event.composedPath();
+    if (
+      path.some(
+        (target) =>
+          target instanceof Element &&
+          (target.classList.contains('gallery__list') ||
+            target.classList.contains('panel-stack--left') ||
+            target.classList.contains('stage-gallery-view')),
+      )
+    ) {
+      return;
+    }
     event.preventDefault();
   };
 
