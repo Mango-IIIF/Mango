@@ -283,6 +283,8 @@
   let storyPlayState: 'idle' | 'playing' | 'paused' = $state('idle');
   let viewerRoot: HTMLDivElement | null = $state(null);
   let isViewerFullscreen = $state(false);
+  let isViewerFullscreenFallback = $state(false);
+  let fullscreenFallbackCleanup: (() => void) | null = null;
   let storyChapterThumbnails: Array<string | null> = $state([]);
   const storyThumbnailCache = new Map<string, string>();
   let storyChapterDurationSec = $state(0);
@@ -447,11 +449,32 @@
   };
   const handleStoryFullscreen = async () => {
     if (typeof document === 'undefined') return;
-    if (!isViewerFullscreenActive()) {
-      await viewerRoot?.requestFullscreen?.();
+    if (isViewerFullscreenFallback) {
+      setViewerFullscreenFallback(false);
       return;
     }
-    await document.exitFullscreen?.();
+    if (isNativeViewerFullscreenActive()) {
+      await document.exitFullscreen?.();
+      syncFullscreenState();
+      return;
+    }
+    if (!viewerRoot) return;
+
+    if (canUseNativeFullscreen()) {
+      try {
+        await viewerRoot.requestFullscreen({ navigationUI: 'hide' });
+        syncFullscreenState();
+        if (!isNativeViewerFullscreenActive()) {
+          setViewerFullscreenFallback(true);
+        }
+        return;
+      } catch {
+        setViewerFullscreenFallback(true);
+        return;
+      }
+    }
+
+    setViewerFullscreenFallback(true);
   };
 
   const closeMobileLeftDrawer = () => {
@@ -464,7 +487,7 @@
     controller.setPanelOpen('layers', false);
   };
 
-  const isViewerFullscreenActive = () => {
+  const isNativeViewerFullscreenActive = () => {
     if (!viewerRoot || typeof document === 'undefined') return false;
     const rootNode = viewerRoot.getRootNode();
     const shadowFullscreenElement =
@@ -477,6 +500,36 @@
     );
   };
 
+  const isViewerFullscreenActive = () =>
+    isViewerFullscreenFallback || isNativeViewerFullscreenActive();
+
+  const canUseNativeFullscreen = () =>
+    Boolean(viewerRoot?.requestFullscreen) && document.fullscreenEnabled !== false;
+
+  const setViewerFullscreenFallback = (active: boolean) => {
+    if (typeof document === 'undefined') return;
+    if (isViewerFullscreenFallback === active) {
+      syncFullscreenState();
+      return;
+    }
+    fullscreenFallbackCleanup?.();
+    fullscreenFallbackCleanup = null;
+    isViewerFullscreenFallback = active;
+    if (active) {
+      const body = document.body;
+      const root = document.documentElement;
+      const previousBodyOverflow = body.style.overflow;
+      const previousRootOverflow = root.style.overflow;
+      body.style.overflow = 'hidden';
+      root.style.overflow = 'hidden';
+      fullscreenFallbackCleanup = () => {
+        body.style.overflow = previousBodyOverflow;
+        root.style.overflow = previousRootOverflow;
+      };
+    }
+    syncFullscreenState();
+  };
+
   const syncFullscreenState = () => {
     isViewerFullscreen = isViewerFullscreenActive();
   };
@@ -485,6 +538,12 @@
     if (!isViewerFullscreenActive()) return;
     if ('pointerType' in event && event.pointerType !== 'touch') return;
     event.preventDefault();
+  };
+
+  const handleFullscreenKeydown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || !isViewerFullscreenFallback) return;
+    event.preventDefault();
+    setViewerFullscreenFallback(false);
   };
 
   let wasMobileLayout = initialMobileLayout;
@@ -503,6 +562,7 @@
     syncMobileLayout();
     syncFullscreenState();
     document.addEventListener('fullscreenchange', syncFullscreenState);
+    document.addEventListener('keydown', handleFullscreenKeydown, { capture: true });
     root?.addEventListener('touchmove', guardFullscreenDrag, {
       capture: true,
       passive: false,
@@ -519,6 +579,10 @@
     }
     return () => {
       document.removeEventListener('fullscreenchange', syncFullscreenState);
+      document.removeEventListener('keydown', handleFullscreenKeydown, {
+        capture: true,
+      });
+      setViewerFullscreenFallback(false);
       root?.removeEventListener('touchmove', guardFullscreenDrag, {
         capture: true,
       });
@@ -1216,6 +1280,7 @@
 
 <div
   class="viewer"
+  class:viewer--fullscreen-fallback={isViewerFullscreenFallback}
   data-theme={viewerSettingsTheme}
   aria-live="polite"
   bind:this={viewerRoot}
@@ -2017,11 +2082,31 @@
     touch-action: none;
   }
 
+  .viewer.viewer--fullscreen-fallback {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+
   .viewer:fullscreen .viewer__grid {
     max-height: 100%;
   }
 
   .viewer:-webkit-full-screen .viewer__grid {
+    max-height: 100%;
+  }
+
+  .viewer.viewer--fullscreen-fallback .viewer__grid {
     max-height: 100%;
   }
 

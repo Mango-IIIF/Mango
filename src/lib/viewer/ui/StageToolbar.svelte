@@ -417,10 +417,7 @@
   }
 
   .stage__toolbar-group--single {
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    min-height: 0;
+    border-radius: 10px;
   }
 
   .stage__toolbar-button {
@@ -449,10 +446,10 @@
 
   .stage__toolbar-button--single {
     width: 36px;
-    height: 36px;
-    border: 1px solid var(--viewer-toolbar-group-border, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--viewer-toolbar-group-bg, rgba(20, 30, 45, 0.55));
+    height: 34px;
+    border: 0;
+    border-radius: 0;
+    background: var(--viewer-toolbar-button-bg, rgba(255, 255, 255, 0.03));
   }
 
   .stage__toolbar-value {
@@ -534,7 +531,7 @@
     }
 
     .stage__toolbar-group--single {
-      min-height: 0;
+      min-height: 27px;
     }
 
     .stage__toolbar-button {
@@ -547,7 +544,7 @@
       width: 23px;
       height: 25px;
       min-height: 25px;
-      border-radius: 8px;
+      border-radius: 0;
     }
 
     .stage__toolbar-value {
@@ -587,7 +584,7 @@
     }
 
     .stage__toolbar-group--single {
-      min-height: 0;
+      min-height: 27px;
     }
 
     .stage__toolbar-separator {
@@ -603,7 +600,7 @@
     .stage__toolbar-button--single {
       width: 23px;
       height: 25px;
-      border-radius: 8px;
+      border-radius: 0;
       min-height: 25px;
     }
 

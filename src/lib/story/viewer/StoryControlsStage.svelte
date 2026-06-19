@@ -94,13 +94,6 @@
 </script>
 
 <div class="story-shell" data-testid="story-controls-stage">
-  <header class="story-shell__topbar">
-    <nav class="story-shell__actions" aria-label="Story actions">
-      <button class="story-shell__action" type="button"> Share </button>
-      <button class="story-shell__action" type="button"> Info </button>
-    </nav>
-  </header>
-
   <div class="story-shell__body">
     <aside class="story-shell__sidebar">
       <p class="story-shell__chapter-label">
@@ -241,7 +234,7 @@
     --story-accent-2: #4bc6ff;
 
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-rows: minmax(0, 1fr) auto auto;
     gap: 14px;
     height: 100%;
     min-height: 100%;
@@ -250,30 +243,6 @@
     border-radius: 18px;
     background: linear-gradient(180deg, #10161e 0%, #0b1118 100%);
     border: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .story-shell__topbar {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .story-shell__actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .story-shell__action {
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 12px;
-    background: rgba(7, 17, 32, 0.66);
-    color: var(--story-text);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 10px 14px;
-    cursor: pointer;
   }
 
   .story-shell__body {
@@ -435,7 +404,6 @@
     overflow: hidden;
   }
 
-  .story-shell__action:hover:not(:disabled),
   .story-shell__chapter:hover:not(:disabled),
   .story-shell__transport-btn:hover:not(:disabled),
   .story-shell__play-btn:hover:not(:disabled) {
@@ -443,7 +411,6 @@
   }
 
   .story-shell__chapter:disabled,
-  .story-shell__action:disabled,
   .story-shell__transport-btn:disabled,
   .story-shell__play-btn:disabled {
     opacity: 0.5;
