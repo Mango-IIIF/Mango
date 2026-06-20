@@ -2410,8 +2410,7 @@
     .viewer__control-rail {
       grid-row: 2;
       grid-column: 1;
-      width: 100%;
-      max-width: 100%;
+
       height: auto;
       box-sizing: border-box;
       padding: 4px 6px;
