@@ -84,9 +84,13 @@ export default defineConfig({
       formats: ['iife'],
       fileName: () => 'mango-viewer-element.iife.js',
     },
-    rollupOptions: {
+    rolldownOptions: {
+      transform: {
+        define: {
+          'import.meta': '{}',
+        },
+      },
       output: {
-        inlineDynamicImports: true,
         assetFileNames: 'mango-viewer-element.[ext]',
       },
     },

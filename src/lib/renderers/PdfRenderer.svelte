@@ -17,6 +17,7 @@
 
 <script lang="ts">
   import { createEventDispatcher, onDestroy } from 'svelte';
+  import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
   import { t } from '../i18n';
   import type { MediaSource } from '../iiif/mediaResolver';
   import type { ViewBox } from '../core/types/viewer';
@@ -70,10 +71,7 @@
   const loadPdf = async () => {
     if (!source) return;
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf');
-    pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
-      import.meta.url,
-    ).toString();
+    pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
     loadingTask?.destroy?.();
     loadingTask = pdfjs.getDocument(source.src);

@@ -392,7 +392,6 @@
     flex: 1 1 auto;
     min-height: clamp(260px, 44vh, 620px);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
     overflow: hidden;
     background: transparent;
   }
