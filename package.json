@@ -1,9 +1,29 @@
 {
-  "name": "@mango/iiif-viewer",
+  "name": "@mango-iiif/iiif-viewer",
   "version": "0.1.0",
-  "private": true,
+  "description": "A Svelte-based viewer and story toolkit for IIIF resources.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mango-Viewer/Mango.git"
+  },
+  "homepage": "https://github.com/Mango-Viewer/Mango#readme",
+  "bugs": {
+    "url": "https://github.com/Mango-Viewer/Mango/issues"
+  },
+  "keywords": [
+    "iiif",
+    "viewer",
+    "svelte",
+    "annotations",
+    "digital-collections"
+  ],
   "type": "module",
   "packageManager": "npm@10.9.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "files": [
     "src/dist"
   ],
@@ -47,7 +67,7 @@
       "types": "./src/dist/story-builder.d.ts"
     },
     "./element.iife": "./src/dist/mango-viewer-element.iife.js",
-    "./style.css": "./src/dist/style.css"
+    "./style.css": "./src/dist/iiif-viewer.css"
   },
   "workspaces": [
     "apps/*"
@@ -59,9 +79,10 @@
     "build:types": "tsc -p tsconfig.build.json",
     "build": "npm run build:all",
     "sync:demo": "node scripts/sync-demo.mjs",
-    "build:demo": "npm run build:lib && npm run build:element && npm run sync:demo",
-    "build:all": "npm run build:lib && npm run build:element && npm run build:types && npm run build:demo",
-    "build:dist": "npm run build:all",
+    "build:demo": "npm run build:dist && npm run sync:demo",
+    "build:all": "npm run build:demo",
+    "build:dist": "npm run build:lib && npm run build:element && npm run build:types",
+    "prepack": "npm run build:dist",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run --config vitest.config.ts",
