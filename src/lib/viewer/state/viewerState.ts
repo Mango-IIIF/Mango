@@ -47,22 +47,33 @@ export const createViewerState = (
     manifestId: string;
     config: ViewerConfig;
     plugins: ViewerPlugin[];
+    selectedCanvasIndex: number;
+    layoutMode: 'single' | 'two-page' | 'continuous' | 'gallery';
+    rotation: number;
+    viewBox: ViewBox | null;
   }>,
-): ViewerStateStores => ({
+): ViewerStateStores => {
+  const sidebarOpen =
+    initial?.config?.sidebar?.enabled !== false && initial?.config?.sidebar?.open !== false;
+  const activePanel = initial?.config?.sidebar?.activePanel ?? 'metadata';
+
+  return {
   manifestId: writable(initial?.manifestId ?? ''),
   config: writable(initial?.config),
   plugins: writable(initial?.plugins ?? []),
-  selectedCanvasIndex: writable(0),
+  selectedCanvasIndex: writable(initial?.selectedCanvasIndex ?? 0),
   selectedMediaIndex: writable(0),
   showThumbnails: writable(true),
-  showContents: writable(true),
-  showMetadata: writable(true),
-  showSearch: writable(true),
-  showAnnotations: writable(true),
-  showTools: writable(false),
-  showSettings: writable(false),
-  showLayers: writable(false),
-  layoutMode: writable<'single' | 'two-page' | 'continuous' | 'gallery'>('single'),
+  showContents: writable(sidebarOpen && activePanel === 'contents'),
+  showMetadata: writable(sidebarOpen && activePanel === 'metadata'),
+  showSearch: writable(sidebarOpen && activePanel === 'search'),
+  showAnnotations: writable(sidebarOpen && activePanel === 'annotations'),
+  showTools: writable(sidebarOpen && activePanel === 'tools'),
+  showSettings: writable(sidebarOpen && activePanel === 'settings'),
+  showLayers: writable(sidebarOpen && activePanel === 'layers'),
+  layoutMode: writable<'single' | 'two-page' | 'continuous' | 'gallery'>(
+    initial?.layoutMode ?? 'single',
+  ),
   layerOpacities: writable<Record<string, number>>({}),
   annotationMode: writable('edit'),
   searchQuery: writable(''),
@@ -70,12 +81,13 @@ export const createViewerState = (
   activeAnnotationId: writable<string | null>(null),
   hoverAnnotationId: writable<string | null>(null),
   imageFilters: writable({ ...DEFAULT_IMAGE_FILTERS }),
-  viewBox: writable(null),
+  viewBox: writable(initial?.viewBox ?? null),
   zoom: writable(0),
-  rotation: writable(0),
+  rotation: writable(initial?.rotation ?? 0),
   mediaTime: writable(0),
   mediaDuration: writable(undefined),
   userAnnotations: writable({}),
   externalAnnotations: writable({}),
   iiifSearchResults: writable([]),
-});
+  };
+};

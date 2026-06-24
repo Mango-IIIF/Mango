@@ -1,4 +1,4 @@
-import { get } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import { describe, expect, it, vi } from 'vitest';
 import { createViewerDerived } from '../viewerDerived';
 import { createViewerState, type ViewerStateStores } from '../viewerState';
@@ -15,6 +15,48 @@ const leftPanelState = (state: ViewerStateStores) => ({
 });
 
 describe('PanelController', () => {
+  it('starts with every left panel closed when sidebar.open is false', () => {
+    const state = createViewerState({ config: { sidebar: { open: false } } });
+    const derived = createViewerDerived(state);
+    createPanelController({
+      state,
+      derived,
+      emitEvent: vi.fn(),
+      emitStateChange: vi.fn(),
+      initialOpen: false,
+    });
+
+    expect(leftPanelState(state)).toEqual({
+      contents: false,
+      annotations: false,
+      tools: false,
+      settings: false,
+      search: false,
+      metadata: false,
+      layers: false,
+    });
+  });
+
+  it('selects the configured active panel when it is available', () => {
+    const state = createViewerState({
+      config: { sidebar: { activePanel: 'search' } },
+    });
+    const derived = {
+      ...createViewerDerived(state),
+      allowSearch: writable(true),
+    };
+    createPanelController({
+      state,
+      derived,
+      emitEvent: vi.fn(),
+      emitStateChange: vi.fn(),
+      initialActivePanel: 'search',
+    });
+
+    expect(get(state.showSearch)).toBe(true);
+    expect(get(state.showMetadata)).toBe(false);
+  });
+
   it('does not reopen the last left panel when permissions change after all left panels are closed', () => {
     const state = createViewerState({ config: {} });
     const derived = createViewerDerived(state);

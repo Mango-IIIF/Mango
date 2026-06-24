@@ -82,28 +82,22 @@
   };
 
   const handleLabelInput = (val: string) => {
-    console.log('[RightInspector] handleLabelInput called with:', val);
     localLabel = val;
     if (annotation) {
-      console.log('[RightInspector] Dispatching label update for ID:', annotation.id);
       onupdate?.({ id: annotation.id, patch: { label: val } });
     }
   };
 
   const handleTextInput = (val: string) => {
-    console.log('[RightInspector] handleTextInput called with:', val);
     localText = val;
     if (annotation) {
-      console.log('[RightInspector] Dispatching text update for ID:', annotation.id);
       onupdate?.({ id: annotation.id, patch: { text: val } });
     }
   };
 
   const handleNotesInput = (val: string) => {
-    console.log('[RightInspector] handleNotesInput called with:', val);
     localNotes = val;
     if (annotation) {
-      console.log('[RightInspector] Dispatching notes update for ID:', annotation.id);
       onupdate?.({ id: annotation.id, patch: { notes: val } });
     }
   };

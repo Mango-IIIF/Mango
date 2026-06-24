@@ -27,7 +27,6 @@
         initPromise = result as Promise<void>;
         await initPromise;
       }
-      console.log(`Plugin "${plugin.label}" (${plugin.id}) initialized successfully`);
     } catch (error) {
       hasError = true;
       initError = error instanceof Error ? error : new Error(String(error));

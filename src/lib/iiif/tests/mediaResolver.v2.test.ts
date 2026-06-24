@@ -38,7 +38,7 @@ const v2ManifestJson = {
 };
 
 describe('resolveMedia with v2 manifest', () => {
-  it('should debug v2 manifest structure', () => {
+  it('exposes the expected v2 image resource structure', () => {
     const manifestoObject = manifesto.parseManifest(v2ManifestJson);
     expect(manifestoObject).toBeTruthy();
 
@@ -46,36 +46,16 @@ describe('resolveMedia with v2 manifest', () => {
     const canvases = sequences[0].getCanvases();
     const canvas = canvases[0];
     
-    console.log('Canvas has getImages:', typeof canvas.getImages);
-    
-    if (typeof canvas.getImages === 'function') {
-      const images = canvas.getImages();
-      console.log('Images count:', images.length);
-      
-      if (images.length > 0) {
-        const image = images[0];
-        console.log('Image methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(image)));
-        console.log('Image has getBody:', typeof image.getBody);
-        console.log('Image has getResource:', typeof image.getResource);
-        
-        if (typeof image.getBody === 'function') {
-          const body = image.getBody();
-          console.log('getBody() result:', body);
-          console.log('getBody() type:', typeof body);
-          console.log('getBody() is array:', Array.isArray(body));
-        }
-        
-        if (typeof image.getResource === 'function') {
-          const resource = image.getResource();
-          console.log('getResource() result:', resource);
-          console.log('Resource has getProperty:', typeof resource?.getProperty);
-          console.log('Resource id:', resource?.id);
-          if (resource && typeof resource.getProperty === 'function') {
-            console.log('Resource service:', resource.getProperty('service'));
-          }
-        }
-      }
-    }
+    expect(typeof canvas.getImages).toBe('function');
+
+    const images = canvas.getImages();
+    expect(images).toHaveLength(1);
+
+    const resource = images[0].getResource();
+    expect(resource?.id).toContain('/flowers/');
+    expect(resource?.getProperty('service')).toMatchObject({
+      '@id': 'https://iiif.io/api/image/2.1/example/reference/flowers',
+    });
   });
   
   it('should resolve image from v2 manifest', () => {
@@ -83,8 +63,6 @@ describe('resolveMedia with v2 manifest', () => {
     expect(manifestoObject).toBeTruthy();
 
     const result = resolveMedia(manifestoObject, 'https://example.org/canvas/1', 0);
-    
-    console.log('Result:', JSON.stringify(result, null, 2));
     
     expect(result.primary).toBeTruthy();
     expect(result.primary?.type).toBe('image');
@@ -96,6 +74,7 @@ describe('resolveMedia with v2 manifest', () => {
     const json = await res.json();
     const manifestoObject = manifesto.parseManifest(json);
     const result = resolveMedia(manifestoObject, 'https://iiif.io/api/cookbook/recipe/0033-choice/canvas/p1', 0);
-    console.log('V3 CHOICE RESULT:', JSON.stringify(result, null, 2));
+    expect(result.primary?.type).toBe('image');
+    expect(result.alternates).toHaveLength(1);
   });
 });

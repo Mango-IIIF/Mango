@@ -109,9 +109,6 @@ export const createAnnotationController = ({
     if (!annotation || typeof annotation !== 'object') {
       return null;
     }
-    console.log('[toResolvedAnnotation] input keys:', Object.keys(annotation));
-    console.log('[toResolvedAnnotation] input label:', (annotation as any).label);
-    console.log('[toResolvedAnnotation] input text:', (annotation as any).text);
     const value = annotation as {
       id?: string;
       rect?: AnnotationRect;

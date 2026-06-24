@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mango Viewer Configurator</title>
+    <link rel="stylesheet" href="demo.css" />
+    <link rel="stylesheet" href="config-demo.css" />
+  </head>
+  <body>
+    <main class="config-page">
+      <header class="config-hero">
+        <div>
+          <a class="config-back" href="viewer.html">← Viewer demo</a>
+          <h1>Mango Viewer Configurator</h1>
+          <p>Change any option to recreate the viewer and inspect the resulting JSON config.</p>
+        </div>
+        <label class="config-manifest">
+          <span>Manifest URL</span>
+          <input
+            id="manifest-id"
+            type="url"
+            value="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
+          />
+        </label>
+      </header>
+
+      <div class="config-workspace">
+        <aside class="config-sidebar" aria-label="Viewer configuration controls">
+          <form id="config-form">
+            <fieldset>
+              <legend>General</legend>
+              <label>Language <input data-config-path="language" value="en" /></label>
+              <label>
+                Theme
+                <select data-config-path="theme">
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="showThumbnails" checked /> Thumbnails
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="showMetadata" checked /> Metadata
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="showSearch" checked /> Search
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="showAnnotations" checked /> Annotations
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="showTools" /> Tools
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="showLayers" /> Layers
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="showSettings" checked /> Show settings button
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Sidebar</legend>
+              <label class="config-check">
+                <input id="enable-sidebar" type="checkbox" data-config-path="sidebar.enabled" checked /> Enable sidebar
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="sidebar.open" checked /> Open initially
+              </label>
+              <label>
+                Active panel
+                <select data-config-path="sidebar.activePanel">
+                  <option value="metadata">Metadata</option>
+                  <option value="search">Search</option>
+                  <option value="annotations">Annotations</option>
+                  <option value="tools">Tools</option>
+                  <option value="contents">Contents</option>
+                  <option value="settings">Settings</option>
+                  <option value="layers">Layers</option>
+                </select>
+              </label>
+              <label>
+                Position
+                <select data-config-path="sidebar.position">
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Initial view</legend>
+              <label>
+                Canvas index (zero-based)
+                <input type="number" min="0" data-config-path="initialCanvasIndex" value="0" />
+              </label>
+              <label>
+                Layout
+                <select data-config-path="initialLayoutMode">
+                  <option value="single">Single</option>
+                  <option value="two-page">Two page</option>
+                  <option value="continuous">Continuous</option>
+                  <option value="gallery">Gallery</option>
+                </select>
+              </label>
+              <label>
+                Rotation
+                <select data-config-path="initialRotation" data-value-type="number">
+                  <option value="0">0°</option>
+                  <option value="90">90°</option>
+                  <option value="180">180°</option>
+                  <option value="270">270°</option>
+                </select>
+              </label>
+              <label class="config-check">
+                <input type="checkbox" id="enable-initial-view-box" /> Apply initial view box
+              </label>
+              <div class="config-coordinate-grid">
+                <label>X <input type="number" data-config-path="initialViewBox.x" data-optional-group="initial-view-box" value="0" /></label>
+                <label>Y <input type="number" data-config-path="initialViewBox.y" data-optional-group="initial-view-box" value="0" /></label>
+                <label>Width <input type="number" min="1" data-config-path="initialViewBox.w" data-optional-group="initial-view-box" value="1000" /></label>
+                <label>Height <input type="number" min="1" data-config-path="initialViewBox.h" data-optional-group="initial-view-box" value="1000" /></label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>OpenSeadragon</legend>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="osd.preserveViewport" /> Preserve viewport
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="osd.showNavigator" /> Show navigator
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="osd.showRotationControl" /> Rotation control
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="osd.clickToZoomEnabled" /> Click to zoom
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>PDF</legend>
+              <label>
+                Initial page (one-based)
+                <input type="number" min="1" data-config-path="pdf.page" value="1" />
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Story</legend>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="story.enabled" /> Story enabled
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="story.showDebug" /> Show debug tools
+              </label>
+              <label>
+                Languages (comma separated)
+                <input data-config-path="story.languages" data-value-type="list" value="en" />
+              </label>
+              <label class="config-check">
+                <input type="checkbox" data-config-path="story.save.enabled" /> Enable save endpoint
+              </label>
+              <label>Save endpoint <input data-config-path="story.save.endpoint" value="" /></label>
+              <label>
+                Save method
+                <select data-config-path="story.save.method">
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                </select>
+              </label>
+              <label>
+                Save headers
+                <textarea data-config-path="story.save.headers" data-value-type="json">{}</textarea>
+              </label>
+              <label>
+                Timeout (ms)
+                <input type="number" min="0" data-config-path="story.save.timeoutMs" value="10000" />
+              </label>
+              <label>
+                Credentials
+                <select data-config-path="story.save.credentials">
+                  <option value="same-origin">Same origin</option>
+                  <option value="include">Include</option>
+                  <option value="omit">Omit</option>
+                </select>
+              </label>
+            </fieldset>
+
+            <div class="config-actions">
+              <button type="reset">Reset options</button>
+            </div>
+          </form>
+        </aside>
+
+        <section class="config-preview">
+          <div class="config-viewer-shell" id="viewer-shell">
+            <mango-viewer id="config-viewer" mode="viewer"></mango-viewer>
+          </div>
+
+          <section class="config-json" aria-labelledby="config-json-title">
+            <div class="config-json__header">
+              <div>
+                <h2 id="config-json-title">Current config</h2>
+                <span id="config-status" role="status" aria-live="polite">Ready</span>
+              </div>
+              <button id="copy-config" type="button">Copy JSON</button>
+            </div>
+            <pre id="config-output"></pre>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="dist/mango-viewer-element.iife.js?config-demo=2"></script>
+    <script type="module" src="config-demo.js"></script>
+  </body>
+</html>

@@ -1,0 +1,239 @@
+.config-page {
+  min-height: 100vh;
+  padding: clamp(18px, 3vw, 40px);
+}
+
+.config-hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.config-hero h1 {
+  margin: 6px 0;
+  font-size: clamp(30px, 5vw, 52px);
+}
+
+.config-hero p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.config-back {
+  color: var(--accent-dark);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.config-manifest {
+  width: min(540px, 100%);
+}
+
+.config-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.config-sidebar,
+.config-json {
+  border: 1px solid rgba(43, 37, 32, 0.1);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: 0 18px 45px rgba(88, 66, 48, 0.12);
+}
+
+.config-sidebar {
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  position: sticky;
+  top: 20px;
+  padding: 16px;
+}
+
+.config-sidebar form {
+  display: grid;
+  gap: 14px;
+}
+
+.config-sidebar fieldset {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid rgba(43, 37, 32, 0.1);
+  border-radius: 14px;
+}
+
+.config-sidebar legend {
+  padding: 0 7px;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.config-sidebar label,
+.config-manifest {
+  display: grid;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.config-sidebar input,
+.config-sidebar select,
+.config-sidebar textarea,
+.config-manifest input {
+  width: 100%;
+  border: 1px solid rgba(43, 37, 32, 0.16);
+  border-radius: 9px;
+  padding: 9px 10px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.config-sidebar textarea {
+  min-height: 76px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.config-sidebar .config-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.config-sidebar .config-check input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+}
+
+.config-help {
+  margin: -4px 0 2px 26px;
+  color: var(--ink-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.config-coordinate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.config-invalid {
+  border-color: #b42318 !important;
+  outline: 2px solid rgba(180, 35, 24, 0.15);
+}
+
+.config-actions button,
+.config-json button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.config-preview {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.config-viewer-shell {
+  position: relative;
+  height: clamp(820px, 100vh, 980px);
+  min-height: 820px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #151b22;
+  box-shadow: 0 18px 45px rgba(34, 27, 22, 0.2);
+}
+
+.config-viewer-shell mango-viewer {
+  display: block;
+  width: 100%;
+  height: 100%;
+  --viewer-frame-shadow: none;
+}
+
+.config-viewer-shell .config-viewer--pending {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.config-json {
+  overflow: hidden;
+}
+
+.config-json__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(43, 37, 32, 0.1);
+}
+
+.config-json h2 {
+  margin: 0 0 3px;
+  font-size: 17px;
+}
+
+#config-status {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+#config-status[data-state='error'] {
+  color: #b42318;
+}
+
+#config-output {
+  max-height: 460px;
+  margin: 0;
+  overflow: auto;
+  padding: 18px;
+  background: #211d1a;
+  color: #f8efe7;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+@media (max-width: 960px) {
+  .config-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .config-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .config-sidebar {
+    max-height: none;
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .config-viewer-shell {
+    height: 820px;
+  }
+}

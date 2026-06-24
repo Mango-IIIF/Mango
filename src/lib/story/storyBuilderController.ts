@@ -228,8 +228,6 @@ export const createStoryBuilderController = (
   let activePlaybackChapterId: string | null = null;
   let activeMediaEnd: number | null = null;
   let pendingMediaSyncToken = 0; // Token for media type sync (safety timeout only)
-  const enableStoryBuilderLogs = true;
-  const enableModelLogging = false;
   
   // Preview mode state
   const isPreviewing = writable(false);
@@ -284,42 +282,6 @@ export const createStoryBuilderController = (
   const syncMediaMarks = () => {
     mediaMarksState.set(mediaMarks.getState());
     avMarksValid.set(mediaMarks.hasValidMarks());
-  };
-
-  const stripModelDetails = (value: unknown): unknown => {
-    const bannedKeys = new Set([
-      'modelPose',
-      'chapterModel',
-      'model',
-      'cameraOrbit',
-      'cameraTarget',
-      'orientation',
-      'fieldOfView',
-    ]);
-    if (Array.isArray(value)) {
-      return value.map((entry) => stripModelDetails(entry));
-    }
-    if (value && typeof value === 'object') {
-      const next: Record<string, unknown> = {};
-      for (const [key, entry] of Object.entries(value)) {
-        if (bannedKeys.has(key)) continue;
-        next[key] = stripModelDetails(entry);
-      }
-      return next;
-    }
-    return value;
-  };
-
-  const logStoryBuilder = (label: string, detail?: Record<string, unknown>) => {
-    if (!enableStoryBuilderLogs) return;
-    if (typeof console === 'undefined') return;
-    if (!enableModelLogging && label.toLowerCase().includes('model')) return;
-    if (detail) {
-      const payload = enableModelLogging ? detail : stripModelDetails(detail);
-      console.log('[StoryBuilder]', label, payload);
-    } else {
-      console.log('[StoryBuilder]', label);
-    }
   };
 
   const isValidSegment = (start?: number, end?: number) =>
@@ -383,7 +345,6 @@ export const createStoryBuilderController = (
   const maybeStartPlayback = (chapter: Chapter) => {
     // In preview mode, we want audio/narration to play
     if (get(isPreviewing)) {
-      logStoryBuilder('Preview mode: starting playback for chapter', { chapterId: chapter.id });
       startPlaybackForChapter(chapter);
       return;
     }
@@ -661,7 +622,6 @@ export const createStoryBuilderController = (
 
   const handleCaptureResult = (result: ReturnType<typeof capture>) => {
     if (!result.ok) {
-      logStoryBuilder('AddChapter capture failed', { reason: result.reason });
       if (result.reason === 'missing-manifest') {
         setError(null);
         selectedChapterId.set(null);
@@ -678,12 +638,6 @@ export const createStoryBuilderController = (
     if (lastId) {
       selectedChapterId.set(lastId);
     }
-    logStoryBuilder('Chapter created', {
-      chapterId: lastId,
-      capture: result.capture,
-      chapter: storyValue.chapters.find((chapter) => chapter.id === lastId) ?? null,
-      modelPose: getCurrentModelPose(),
-    });
     setTimeout(() => {
       if (get(selectedChapterId) === lastId) {
         uiMode.set('chapterEdit');
@@ -694,10 +648,6 @@ export const createStoryBuilderController = (
 
   const handleUpdateResult = (result: ReturnType<typeof capture>, chapterId: string) => {
     if (!result.ok) {
-      logStoryBuilder('UpdateChapter capture failed', {
-        chapterId,
-        reason: result.reason,
-      });
       if (result.reason === 'missing-manifest') {
         setError(null);
         uiMode.set('chapterEdit');
@@ -708,12 +658,6 @@ export const createStoryBuilderController = (
     }
     setError(null);
     storyStoreWrapper.updateChapterFromCapture({ chapterId, capture: result.capture });
-    logStoryBuilder('Chapter updated', {
-      chapterId,
-      capture: result.capture,
-      chapter: get(storyStore).chapters.find((chapter) => chapter.id === chapterId) ?? null,
-      modelPose: getCurrentModelPose(),
-    });
     return true;
   };
 
@@ -732,10 +676,8 @@ export const createStoryBuilderController = (
   };
 
   const capture = () => {
-    console.log('[DEBUG] capture() executing. viewer =', Boolean(viewer));
     if (!viewer) return { ok: false as const, reason: 'missing-manifest' as const };
     const manifestResolution = resolveManifest();
-    console.log('[DEBUG] manifestResolution =', JSON.stringify(manifestResolution));
     if (!manifestResolution.ok) {
       return { ok: false as const, reason: 'missing-manifest' as const };
     }
@@ -744,16 +686,13 @@ export const createStoryBuilderController = (
       : manifestResolution.manifest;
 
     const type = viewer.getMediaType();
-    console.log('[DEBUG] mediaType =', type);
     if (type === 'audio' || type === 'video') {
       return captureAudioVideo(viewer, mediaMarks.getSegment(), manifestOverride);
     }
     if (type === 'model') {
       return captureModel(viewer, modelPose.getPose(), manifestOverride);
     }
-    const res = captureImagePdf(viewer, manifestOverride);
-    console.log('[DEBUG] captureImagePdf res =', JSON.stringify(res));
-    return res;
+    return captureImagePdf(viewer, manifestOverride);
   };
 
   const attach = (ctx: PluginContext) => {
@@ -839,13 +778,6 @@ export const createStoryBuilderController = (
         'modelChange',
         ({ cameraOrbit, cameraTarget, fieldOfView, orientation }) => {
           modelPose.updateFromEvent({ cameraOrbit, cameraTarget, fieldOfView, orientation });
-        logStoryBuilder('Model pose changed', {
-          cameraOrbit,
-          cameraTarget,
-          fieldOfView,
-          orientation,
-          current: modelPose.getPose(),
-        });
         updateModelPoseDebug(modelPose.getPose());
       },
       );
@@ -861,10 +793,6 @@ export const createStoryBuilderController = (
         
         if (chapter?.media && time < chapter.media.start) {
           // If playback started before Mark In, seek to Mark In
-          logStoryBuilder('Media play: seeking to Mark In', { 
-            time, 
-            markIn: chapter.media.start 
-          });
           viewer?.seekTo?.(chapter.media.start);
         }
         
@@ -872,9 +800,6 @@ export const createStoryBuilderController = (
         if (chapter?.media) {
           activeMediaEnd = chapter.media.end;
           activePlaybackChapterId = chapter.id;
-          logStoryBuilder('Media play: set up Mark Out stop', { 
-            markOut: chapter.media.end 
-          });
         }
       });
       
@@ -905,12 +830,9 @@ export const createStoryBuilderController = (
   };
 
   const addChapter = () => {
-    console.log('[DEBUG] addChapter called! pendingAddChapter =', pendingAddChapter);
     if (pendingAddChapter) return;
     pushHistorySnapshot();
-    console.log('[DEBUG] selectedChapterId =', get(selectedChapterId), 'uiMode =', get(uiMode));
     let result = capture();
-    console.log('[DEBUG] capture result =', JSON.stringify(result));
     if (result.ok) {
       handleCaptureResult(result);
       return;
@@ -933,11 +855,6 @@ export const createStoryBuilderController = (
     if (!id) return;
     if (pendingUpdateChapter) return;
     pushHistorySnapshot();
-    logStoryBuilder('UpdateChapter requested', {
-      chapterId: id,
-      uiMode: get(uiMode),
-      modelPose: getCurrentModelPose(),
-    });
     let result = capture();
     if (result.ok) {
       handleUpdateResult(result, id);
@@ -993,21 +910,11 @@ export const createStoryBuilderController = (
       stopChapterPlayback();
       mediaMarks.clear();
       syncMediaMarks();
-      logStoryBuilder('SelectChapter', {
-        chapterId,
-        modelPose: getCurrentModelPose(),
-        chapterModel: null,
-      });
       return;
     }
     const storyValue = get(storyStore);
     const chapter = storyValue.chapters.find((item) => item.id === chapterId);
     stopChapterPlayback();
-    logStoryBuilder('SelectChapter', {
-      chapterId,
-      modelPose: getCurrentModelPose(),
-      chapterModel: chapter?.model ?? null,
-    });
     if (chapter?.media) {
       mediaMarks.setSegment(chapter.media.start, chapter.media.end);
     } else {
@@ -1033,21 +940,16 @@ export const createStoryBuilderController = (
   const closeChapter = () => uiMode.set('idle');
 
   const startPreview = async () => {
-    logStoryBuilder('StartPreview called');
-    
     // Prevent multiple concurrent preview sessions
     if (get(isPreviewing)) {
-      logStoryBuilder('StartPreview: already previewing, returning');
       return;
     }
     
     const storyValue = get(storyStore);
     if (!storyValue.chapters || storyValue.chapters.length === 0) {
-      logStoryBuilder('StartPreview: no chapters, returning');
       return;
     }
-    
-    logStoryBuilder('StartPreview: starting preview', { chapters: storyValue.chapters.length });
+
     isPreviewing.set(true);
     previewChapterIndex = 0;
     const token = ++previewToken;
@@ -1062,10 +964,6 @@ export const createStoryBuilderController = (
       if (previewChapterIndex >= currentStory.chapters.length) break;
       
       const chapter = currentStory.chapters[previewChapterIndex];
-      logStoryBuilder('StartPreview: applying chapter', { 
-        index: previewChapterIndex,
-        chapterId: chapter.id 
-      });
       
       // Select and apply the chapter
       selectedChapterId.set(chapter.id);
@@ -1077,7 +975,6 @@ export const createStoryBuilderController = (
       
       // Wait for chapter playback to complete
       const duration = await getChapterDuration(chapter);
-      logStoryBuilder('StartPreview: waiting for duration', { duration });
       await new Promise(resolve => setTimeout(resolve, duration));
       
       // Check if preview was stopped
@@ -1088,7 +985,6 @@ export const createStoryBuilderController = (
     
     // Preview completed or stopped
     if (token === previewToken) {
-      logStoryBuilder('StartPreview: preview completed');
       isPreviewing.set(false);
       previewChapterIndex = 0;
     }
@@ -1119,29 +1015,24 @@ export const createStoryBuilderController = (
     if (narration) {
       const narrationDuration = (narration.end - narration.start) * 1000;
       totalDuration += narrationDuration;
-      logStoryBuilder('ChapterDuration: narration', { duration: narrationDuration });
     }
     
     // Add media (audio/video) duration (plays after narration)
     if (chapter.media) {
       const mediaDuration = (chapter.media.end - chapter.media.start) * 1000;
       totalDuration += mediaDuration;
-      logStoryBuilder('ChapterDuration: media', { duration: mediaDuration });
     }
     
     // Add advance delay (plays after narration and media)
     if (chapter.advance?.mode === 'auto' && chapter.advance.delayMs) {
       totalDuration += chapter.advance.delayMs;
-      logStoryBuilder('ChapterDuration: advance delay', { duration: chapter.advance.delayMs });
     }
     
     // Use default duration if nothing else is configured
     if (totalDuration === 0) {
       totalDuration = 2000;
-      logStoryBuilder('ChapterDuration: using default', { duration: totalDuration });
     }
     
-    logStoryBuilder('ChapterDuration: total', { duration: totalDuration });
     return totalDuration;
   };
 
@@ -1275,14 +1166,6 @@ export const createStoryBuilderController = (
 
   const saveChapterSettings = () => {
     setError(null);
-    logStoryBuilder('SaveChapterSettings', {
-      chapterId: get(selectedChapterId),
-      chapter:
-        get(storyStore).chapters.find(
-          (chapter) => chapter.id === get(selectedChapterId),
-        ) ?? null,
-      modelPose: getCurrentModelPose(),
-    });
     uiMode.set('idle');
   };
 

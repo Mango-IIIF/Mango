@@ -12,6 +12,7 @@
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { PluginContext, ViewerPlugin } from '../../core/types/plugin';
   import type { RendererEventHandlers } from '../types/rendererEvents';
+  import type { ViewerConfig } from '../../core/types/config';
   import AnnotationLayer from '../../features/annotations/AnnotationLayer.svelte';
   import AnnotationEditorLayer from '../../features/annotations/AnnotationEditorLayer.svelte';
   import RectanglePlacementEditor from '../../features/annotations/RectanglePlacementEditor.svelte';
@@ -45,6 +46,7 @@
     error?: string;
     imageFilters: ImageFilters;
     mediaType?: MediaType | null;
+    viewerConfig?: ViewerConfig;
     allowThumbnails?: boolean;
     allowSearch?: boolean;
     allowMetadata?: boolean;
@@ -104,6 +106,7 @@
     error = '',
     imageFilters,
     mediaType = null,
+    viewerConfig = {},
     allowThumbnails = true,
     allowSearch = true,
     allowMetadata = true,
@@ -449,6 +452,7 @@
         {hoverAnnotationId}
         {imageFilters}
         {mediaType}
+        {viewerConfig}
         {rendererHandlers}
         {rotation}
         {initialViewBox}

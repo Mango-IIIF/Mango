@@ -24,6 +24,8 @@ export type PanelControllerConfig = {
   derived: ViewerDerivedStores;
   emitEvent: <K extends string>(event: K, payload: any) => void;
   emitStateChange: () => void;
+  initialOpen?: boolean;
+  initialActivePanel?: string;
 };
 
 export type PanelController = {
@@ -36,6 +38,8 @@ export const createPanelController = ({
   derived: derivedStores,
   emitEvent,
   emitStateChange,
+  initialOpen = true,
+  initialActivePanel = 'metadata',
 }: PanelControllerConfig): PanelController => {
   
   const leftPanelOrder: ViewerPanel[] = [
@@ -48,7 +52,13 @@ export const createPanelController = ({
     'layers',
   ];
 
-  let lastOpenedLeftPanel: ViewerPanel | null = 'metadata';
+  const configuredInitialPanel = leftPanelOrder.includes(
+    initialActivePanel as ViewerPanel,
+  )
+    ? (initialActivePanel as ViewerPanel)
+    : 'metadata';
+  let lastOpenedLeftPanel: ViewerPanel | null = configuredInitialPanel;
+  let awaitingInitialPanel = initialOpen;
 
   const leftPanelStores: Partial<Record<ViewerPanel, typeof state.showContents>> = {
     contents: state.showContents,
@@ -64,6 +74,7 @@ export const createPanelController = ({
     panel !== 'thumbnails';
 
   const leftPanelAllowed = (panel: ViewerPanel): boolean => {
+    if (get(state.config)?.sidebar?.enabled === false) return false;
     switch (panel) {
       case 'contents':
         return get(derivedStores.contentsAvailable);
@@ -78,7 +89,7 @@ export const createPanelController = ({
       case 'layers':
         return get(derivedStores.allowLayers);
       case 'settings':
-        return true;
+        return get(state.config)?.showSettings !== false;
       default:
         return false;
     }
@@ -131,8 +142,13 @@ export const createPanelController = ({
     }
   };
 
-  // Initialize panel state
-  enforceSingleLeftPanel(lastOpenedLeftPanel);
+  // Initialize panel state. A configured panel may become available after the manifest loads.
+  if (initialOpen && leftPanelAllowed(configuredInitialPanel)) {
+    enforceSingleLeftPanel(configuredInitialPanel);
+    awaitingInitialPanel = false;
+  } else {
+    enforceSingleLeftPanel(null, false);
+  }
 
   const setPanelOpen = (panel: ViewerPanel, open: boolean) => {
     if (panel === 'thumbnails') {
@@ -180,6 +196,11 @@ export const createPanelController = ({
         derivedStores.contentsAvailable,
       ],
       () => {
+        if (awaitingInitialPanel && leftPanelAllowed(configuredInitialPanel)) {
+          enforceSingleLeftPanel(configuredInitialPanel, false);
+          awaitingInitialPanel = false;
+          return;
+        }
         enforceSingleLeftPanel(hasOpenLeftPanel() ? lastOpenedLeftPanel : null, false);
       },
     );
