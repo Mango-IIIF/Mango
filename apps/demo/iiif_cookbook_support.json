@@ -1,0 +1,782 @@
+[
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0001",
+    "name": "Simplest Manifest - Single Image File",
+    "url": "https://iiif.io/api/cookbook/recipe/0001-mvm-image/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0001-mvm-image/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Renders the image correctly using Mango's default ImageRenderer and OpenSeadragon."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0002",
+    "name": "Simplest Manifest - Audio",
+    "url": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Audio content is resolved and played using the custom AudioRenderer component."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0003",
+    "name": "Simplest Manifest - Video",
+    "url": "https://iiif.io/api/cookbook/recipe/0003-mvm-video/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0003-mvm-video/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Video files are played using the custom HTML5 VideoRenderer with full controls."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0005",
+    "name": "Support Deep Viewing with Basic Use of a IIIF Image Service",
+    "url": "https://iiif.io/api/cookbook/recipe/0005-image-service/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0005-image-service/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Integrates with standard IIIF Image API services (v2 and v3) via OpenSeadragon for multi-tile deep zoom."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0006",
+    "name": "Internationalization and Multi-language Values (label, summary, metadata, requiredStatement)",
+    "url": "https://iiif.io/api/cookbook/recipe/0006-text-language/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0006-text-language/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Handles IIIF language maps, selecting the active locale (English, French, Spanish, Welsh) dynamically."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0009",
+    "name": "Simple Manifest - Book",
+    "url": "https://iiif.io/api/cookbook/recipe/0009-book-1/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0009-book-1/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Displays sequential canvas thumbnails and permits navigating through multiple image canvases."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0019",
+    "name": "HTML in Annotations",
+    "url": "https://iiif.io/api/cookbook/recipe/0019-html-in-annotations/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0019-html-in-annotations/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. HTML annotations targeting canvases are parsed and rendered correctly as interactive overlays."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0032",
+    "name": "Simple Collection",
+    "url": "https://iiif.io/api/cookbook/recipe/0032-collection/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0032-collection/collection.json",
+    "support": "No",
+    "notes": "Mango resolves single manifests; viewing collections hierarchically is not supported."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0045",
+    "name": "CSS in an Annotation",
+    "url": "https://iiif.io/api/cookbook/recipe/0045-css/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0045-css/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. CSS rules and classes embedded in stylesheets are respected when rendering HTML annotations."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0283",
+    "name": "Missing Images in a Sequence",
+    "url": "https://iiif.io/api/cookbook/recipe/0283-missing-image/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0283-missing-image/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Missing or corrupted images in the canvas strip are handled gracefully."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0299",
+    "name": "Addressing a Spatial Region",
+    "url": "https://iiif.io/api/cookbook/recipe/0299-region/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0299-region/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Displays region-specific image fragments via OpenSeadragon clipping coordinates."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0309",
+    "name": "Grouping Annotations into Collections",
+    "url": "https://iiif.io/api/cookbook/recipe/0309-annotation-collection/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0309-annotation-collection/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Handles nested AnnotationCollections referencing multiple pages."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0377",
+    "name": "Image in Annotations",
+    "url": "https://iiif.io/api/cookbook/recipe/0377-image-in-annotation/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0377-image-in-annotation/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Renders static or service-based images inside HTML annotations."
+  },
+  {
+    "category": "Basic Recipes",
+    "categoryId": "basic-recipes",
+    "id": "0434",
+    "name": "Multiple Choice of Audio Formats in a Single View (Canvas)",
+    "url": "https://iiif.io/api/cookbook/recipe/0434-choice-av/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0434-choice-av/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Resolves multiple audio formats in a single canvas and lists them as alternative choices or falls back gracefully to the primary supported source."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0007",
+    "name": "Embedding HTML in descriptive properties (label, summary, metadata, requiredStatement)",
+    "url": "https://iiif.io/api/cookbook/recipe/0007-string-formats/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0007-string-formats/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Sanitizes and renders basic HTML formatting inside labels, summaries, and metadata lists."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0008",
+    "name": "Rights statement (rights, requiredStatement)",
+    "url": "https://iiif.io/api/cookbook/recipe/0008-rights/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0008-rights/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Parses the rights field and displays the license details in the metadata panel."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0010",
+    "name": "Viewing direction and Its Effect on Navigation (viewingDirection)",
+    "url": "https://iiif.io/api/cookbook/recipe/0010-book-2-viewing-direction/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0010-book-2-viewing-direction/manifest.json",
+    "support": "Partial",
+    "notes": "Mango parses viewingDirection (e.g. right-to-left), but manual layout toggling is required; it does not automatically re-orient layouts dynamically."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0011",
+    "name": "Book 'behavior' Variations (continuous, individuals) (behaviorimage)",
+    "url": "https://iiif.io/api/cookbook/recipe/0011-book-3-behavior/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0011-book-3-behavior/manifest.json",
+    "support": "Partial",
+    "notes": "Supports individual page views, but continuous page layouts are basic."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0013",
+    "name": "Load a Preview Image Before the Main Content (placeholderCanvas)",
+    "url": "https://iiif.io/api/cookbook/recipe/0013-placeholderCanvas/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0013-placeholderCanvas/manifest.json",
+    "support": "Partial",
+    "notes": "Parses placeholderCanvas and displays it during loading, but does not implement advanced multi-stage loading or crossfades."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0014",
+    "name": "Audio Presentation with Accompanying Image (accompanyingCanvas)",
+    "url": "https://iiif.io/api/cookbook/recipe/0014-accompanyingcanvas/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0014-accompanyingcanvas/manifest.json",
+    "support": "Partial",
+    "notes": "Plays audio with the accompanying image displayed, but lacks tight synchronization for active sub-regions on the image."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0015",
+    "name": "Begin playback at a specific point - Time-based media (start)",
+    "url": "https://iiif.io/api/cookbook/recipe/0015-start/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0015-start/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Respects the start property and begins playback of time-based media at the specified timestamp."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0029",
+    "name": "Metadata on any Resource (metadata)",
+    "url": "https://iiif.io/api/cookbook/recipe/0029-metadata-anywhere/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0029-metadata-anywhere/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Correctly parses metadata fields attached directly to canvases or specific files."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0047",
+    "name": "Linking to Web Page of an Object (homepage)",
+    "url": "https://iiif.io/api/cookbook/recipe/0047-homepage/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0047-homepage/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Homepage links are parsed and displayed within the metadata panel."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0053",
+    "name": "Linking to Structured Metadata (seeAlso)",
+    "url": "https://iiif.io/api/cookbook/recipe/0053-seeAlso/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0053-seeAlso/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. seeAlso metadata endpoints are resolved and linked in the details panel."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0117",
+    "name": "Image Thumbnail for Manifest (thumbnail)",
+    "url": "https://iiif.io/api/cookbook/recipe/0117-add-image-thumbnail/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0117-add-image-thumbnail/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Resolves thumbnails for the manifest and displays them in search/header lists."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0118",
+    "name": "Displaying Multiple Values with Language Maps (label, summary, metadata, requiredStatement)",
+    "url": "https://iiif.io/api/cookbook/recipe/0118-multivalue/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0118-multivalue/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Handles multiple localized entries and lets the user toggle active language displays."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0202",
+    "name": "Load Manifest Beginning with a Specific Canvas (start)",
+    "url": "https://iiif.io/api/cookbook/recipe/0202-start-canvas/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0202-start-canvas/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Follows the start canvas index/id parameters."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0230",
+    "name": "Navigation by Chronology (navDate)",
+    "url": "https://iiif.io/api/cookbook/recipe/0230-navdate/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0230-navdate/manifest.json",
+    "support": "No",
+    "notes": "Mango does not have a timeline navigator UI for chronologically sorting/browsing canvases."
+  },
+  {
+    "category": "IIIF Properties",
+    "categoryId": "iiif-properties",
+    "id": "0234",
+    "name": "Acknowledge Content Contributors (provider)",
+    "url": "https://iiif.io/api/cookbook/recipe/0234-provider/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0234-provider/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Provider information is displayed under the metadata panel."
+  },
+  {
+    "category": "Structuring Resources",
+    "categoryId": "structuring-resources",
+    "id": "0024",
+    "name": "Table of Contents for Book Chapters (structures)",
+    "url": "https://iiif.io/api/cookbook/recipe/0024-book-4-toc/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0024-book-4-toc/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Displays book structures/chapters hierarchically in the Table of Contents navigation tree."
+  },
+  {
+    "category": "Structuring Resources",
+    "categoryId": "structuring-resources",
+    "id": "0026",
+    "name": "Table of Contents for A/V Content",
+    "url": "https://iiif.io/api/cookbook/recipe/0026-toc-opera/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0026-toc-opera/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Renders ranges as clickable video/audio chapters that seek to the specific start times during playback."
+  },
+  {
+    "category": "Structuring Resources",
+    "categoryId": "structuring-resources",
+    "id": "0027",
+    "name": "Alternative Page Sequences",
+    "url": "https://iiif.io/api/cookbook/recipe/0027-alternative-page-order/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0027-alternative-page-order/manifest.json",
+    "support": "Partial",
+    "notes": "Multiple sequences are parsed, but the sequence browser interface is simple."
+  },
+  {
+    "category": "Structuring Resources",
+    "categoryId": "structuring-resources",
+    "id": "0030",
+    "name": "Multi-volume Work with Individually-bound Volumes",
+    "url": "https://iiif.io/api/cookbook/recipe/0030-multi-volume/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0030-multi-volume/collection.json",
+    "support": "No",
+    "notes": "Collections are currently not supported; only individual manifests can be loaded."
+  },
+  {
+    "category": "Structuring Resources",
+    "categoryId": "structuring-resources",
+    "id": "0031",
+    "name": "Multiple Volumes in a Single Bound Volume",
+    "url": "https://iiif.io/api/cookbook/recipe/0031-bound-multivolume/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0031-bound-multivolume/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Handled via chapter/ranges pointing to canvases within the same manifest."
+  },
+  {
+    "category": "Structuring Resources",
+    "categoryId": "structuring-resources",
+    "id": "0033",
+    "name": "Multiple Choice of Images in a Single View (Canvas)",
+    "url": "https://iiif.io/api/cookbook/recipe/0033-choice/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json",
+    "support": "No",
+    "notes": "Toggling between alternative image layers (the choice property) is not natively supported inside OpenSeadragon."
+  },
+  {
+    "category": "Structuring Resources",
+    "categoryId": "structuring-resources",
+    "id": "0035",
+    "name": "Foldouts, Flaps, and Maps (behavior)",
+    "url": "https://iiif.io/api/cookbook/recipe/0035-foldouts/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0035-foldouts/manifest.json",
+    "support": "Partial",
+    "notes": "Renders these as separate canvases, but layout presets for overlapping foldouts or flaps are not automated."
+  },
+  {
+    "category": "Structuring Resources",
+    "categoryId": "structuring-resources",
+    "id": "0036",
+    "name": "Composition from Multiple Images",
+    "url": "https://iiif.io/api/cookbook/recipe/0036-composition-from-multiple-images/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0036-composition-from-multiple-images/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. OpenSeadragon supports tiling and composing multiple source images on a single canvas."
+  },
+  {
+    "category": "Structuring Resources",
+    "categoryId": "structuring-resources",
+    "id": "0229",
+    "name": "Adding Thumbnail Navigation and no-nav to a Video Resource",
+    "url": "https://iiif.io/api/cookbook/recipe/0229-behavior-ranges/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0229-behavior-ranges/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Video thumbnail tracks are fully displayed, and controls obey behaviors."
+  },
+  {
+    "category": "Image Recipes",
+    "categoryId": "image-recipes",
+    "id": "0001",
+    "name": "Simplest Manifest - Single Image File",
+    "url": "https://iiif.io/api/cookbook/recipe/0001-mvm-image/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0001-mvm-image/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Renders the image correctly using Mango's default ImageRenderer and OpenSeadragon."
+  },
+  {
+    "category": "Image Recipes",
+    "categoryId": "image-recipes",
+    "id": "0004",
+    "name": "Image and Canvas with Differing Dimensions",
+    "url": "https://iiif.io/api/cookbook/recipe/0004-canvas-size/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0004-canvas-size/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. OpenSeadragon automatically scales and fits image coordinates to differing canvas aspect ratios."
+  },
+  {
+    "category": "Image Recipes",
+    "categoryId": "image-recipes",
+    "id": "0005",
+    "name": "Support Deep Viewing with Basic Use of a IIIF Image Service",
+    "url": "https://iiif.io/api/cookbook/recipe/0005-image-service/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0005-image-service/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Integrates with standard IIIF Image API services (v2 and v3) via OpenSeadragon for multi-tile deep zoom."
+  },
+  {
+    "category": "Image Recipes",
+    "categoryId": "image-recipes",
+    "id": "0009",
+    "name": "Simple Manifest - Book",
+    "url": "https://iiif.io/api/cookbook/recipe/0009-book-1/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0009-book-1/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Displays sequential canvas thumbnails and permits navigating through multiple image canvases."
+  },
+  {
+    "category": "Image Recipes",
+    "categoryId": "image-recipes",
+    "id": "0010",
+    "name": "Viewing direction and Its Effect on Navigation (viewingDirection)",
+    "url": "https://iiif.io/api/cookbook/recipe/0010-book-2-viewing-direction/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0010-book-2-viewing-direction/manifest.json",
+    "support": "Partial",
+    "notes": "Mango parses viewingDirection (e.g. right-to-left), but manual layout toggling is required; it does not automatically re-orient layouts dynamically."
+  },
+  {
+    "category": "Image Recipes",
+    "categoryId": "image-recipes",
+    "id": "0040",
+    "name": "Image Rotation Two Ways",
+    "url": "https://iiif.io/api/cookbook/recipe/0040-image-rotation-service/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0040-image-rotation-service/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Supports 90/180/270 degree rotation services on canvas images."
+  },
+  {
+    "category": "Image Recipes",
+    "categoryId": "image-recipes",
+    "id": "0202",
+    "name": "Load Manifest Beginning with a Specific Canvas (start)",
+    "url": "https://iiif.io/api/cookbook/recipe/0202-start-canvas/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0202-start-canvas/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Follows the start canvas index/id parameters."
+  },
+  {
+    "category": "Image Recipes",
+    "categoryId": "image-recipes",
+    "id": "0283",
+    "name": "Missing Images in a Sequence",
+    "url": "https://iiif.io/api/cookbook/recipe/0283-missing-image/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0283-missing-image/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Missing or corrupted images in the canvas strip are handled gracefully."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0002",
+    "name": "Simplest Manifest - Audio",
+    "url": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Audio content is resolved and played using the custom AudioRenderer component."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0003",
+    "name": "Simplest Manifest - Video",
+    "url": "https://iiif.io/api/cookbook/recipe/0003-mvm-video/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0003-mvm-video/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Video files are played using the custom HTML5 VideoRenderer with full controls."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0013",
+    "name": "Load a Preview Image Before the Main Content (placeholderCanvas)",
+    "url": "https://iiif.io/api/cookbook/recipe/0013-placeholderCanvas/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0013-placeholderCanvas/manifest.json",
+    "support": "Partial",
+    "notes": "Parses placeholderCanvas and displays it during loading, but does not implement advanced multi-stage loading or crossfades."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0014",
+    "name": "Audio Presentation with Accompanying Image (accompanyingCanvas)",
+    "url": "https://iiif.io/api/cookbook/recipe/0014-accompanyingcanvas/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0014-accompanyingcanvas/manifest.json",
+    "support": "Partial",
+    "notes": "Plays audio with the accompanying image displayed, but lacks tight synchronization for active sub-regions on the image."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0015",
+    "name": "Begin playback at a specific point - Time-based media (start)",
+    "url": "https://iiif.io/api/cookbook/recipe/0015-start/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0015-start/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Respects the start property and begins playback of time-based media at the specified timestamp."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0017",
+    "name": "Providing Access to Transcript Files of A/V Content (rendering)",
+    "url": "https://iiif.io/api/cookbook/recipe/0017-transcription-av/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0017-transcription-av/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Lists external transcription files or resource rendering formats in the details panel."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0026",
+    "name": "Table of Contents for A/V Content",
+    "url": "https://iiif.io/api/cookbook/recipe/0026-toc-opera/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0026-toc-opera/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Renders ranges as clickable video/audio chapters that seek to the specific start times during playback."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0064",
+    "name": "Table of Contents for Multiple A/V Files on a Single Canvas (start)",
+    "url": "https://iiif.io/api/cookbook/recipe/0064-opera-one-canvas/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0064-opera-one-canvas/manifest.json",
+    "support": "Partial",
+    "notes": "Plays multiple files sequentially, but sub-chapter duration mapping has minor sync issues."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0065",
+    "name": "Table of Contents for Multiple A/V Files on Multiple Canvases",
+    "url": "https://iiif.io/api/cookbook/recipe/0065-opera-multiple-canvases/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0065-opera-multiple-canvases/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Connects structures to separate canvases and handles smooth transition during playback."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0074",
+    "name": "Using Caption and Subtitle Files in Multiple Languages with Video Content",
+    "url": "https://iiif.io/api/cookbook/recipe/0074-multiple-language-captions/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0074-multiple-language-captions/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Integrates standard WebVTT tracks in different languages directly into the VideoRenderer."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0103",
+    "name": "Scholarly Annotation of a Poetry Reading",
+    "url": "https://iiif.io/api/cookbook/recipe/0103-poetry-reading-annotations/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0103-poetry-reading-annotations/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Annotations with temporal targets are displayed in sync with audio playback."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0219",
+    "name": "Using Caption and Subtitle Files with Video Content",
+    "url": "https://iiif.io/api/cookbook/recipe/0219-using-caption-file/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0219-using-caption-file/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Captions/subtitles are supported using standard track elements."
+  },
+  {
+    "category": "Audio/Visual Recipes",
+    "categoryId": "audiovisual-recipes",
+    "id": "0434",
+    "name": "Multiple Choice of Audio Formats in a Single View (Canvas)",
+    "url": "https://iiif.io/api/cookbook/recipe/0434-choice-av/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0434-choice-av/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Resolves multiple audio formats in a single canvas and lists them as alternative choices or falls back gracefully to the primary supported source."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0135",
+    "name": "Annotating a specific point of an image",
+    "url": "https://iiif.io/api/cookbook/recipe/0135-annotating-point-in-canvas/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0135-annotating-point-in-canvas/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Renders HTML/SVG point markers precisely on the zoomable image canvas."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0021",
+    "name": "Simple Annotation — Tagging",
+    "url": "https://iiif.io/api/cookbook/recipe/0021-tagging/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0021-tagging/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Text annotation tags are resolved and listed inside the annotations sidebar panel."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0022",
+    "name": "Redirecting from one Canvas to another resource (Hotspot linking)",
+    "url": "https://iiif.io/api/cookbook/recipe/0022-linking-with-a-hotspot/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0022-linking-with-a-hotspot/manifest.json",
+    "support": "No",
+    "notes": "Hotspot annotation links targeting other canvases or external web resources do not automatically trigger redirection."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0258",
+    "name": "Tagging with an External Resource",
+    "url": "https://iiif.io/api/cookbook/recipe/0258-tagging-external-resource/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0258-tagging-external-resource/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Resolves and links annotation tags to external RDF or Web pages."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0261",
+    "name": "Annotation with a Non-Rectangular Polygon",
+    "url": "https://iiif.io/api/cookbook/recipe/0261-non-rectangular-commenting/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0261-non-rectangular-commenting/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Renders complex polygon paths over the OpenSeadragon viewport via SVG overlay."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0266",
+    "name": "Simplest Annotation",
+    "url": "https://iiif.io/api/cookbook/recipe/0266-full-canvas-annotation/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0266-full-canvas-annotation/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Full canvas comment annotations are listed in the side drawer."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0269",
+    "name": "Embedded or referenced Annotations",
+    "url": "https://iiif.io/api/cookbook/recipe/0269-embedded-or-referenced-annotations/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0269-embedded-or-referenced-annotations/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Resolves embedded items array or external AnnotationPage references."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0306",
+    "name": "Linking external Annotations targeting a Canvas to a Manifest",
+    "url": "https://iiif.io/api/cookbook/recipe/0306-linking-annotations-to-manifests/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0306-linking-annotations-to-manifests/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Parses external annotations defined on the canvas level."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0326",
+    "name": "Annotate specific images or layers",
+    "url": "https://iiif.io/api/cookbook/recipe/0326-annotating-image-layer/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0326-annotating-image-layer/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Allows target matching specific canvas media resources."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0346",
+    "name": "Annotating in Multiple Languages",
+    "url": "https://iiif.io/api/cookbook/recipe/0346-multilingual-annotation-body/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0346-multilingual-annotation-body/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Selects appropriate language variants for annotation bodies."
+  },
+  {
+    "category": "Annotation Recipes",
+    "categoryId": "annotation-recipes",
+    "id": "0489",
+    "name": "Rendering Multiple Media Types on a Time-Based Canvas",
+    "url": "https://iiif.io/api/cookbook/recipe/0489-multimedia-canvas/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0489-multimedia-canvas/manifest.json",
+    "support": "Partial",
+    "notes": "Audio and video play, but complex layout grids overlapping on a single timeline have minor presentation issues."
+  },
+  {
+    "category": "Recipes involving Content State",
+    "categoryId": "recipes-involving-content-state",
+    "id": "0466",
+    "name": "Sharing a link to open a Manifest in a specific viewer",
+    "url": "https://iiif.io/api/cookbook/recipe/0466-link-for-loading-manifest/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0466-link-for-loading-manifest/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Content state loader supports query parameters for quick manifest sharing."
+  },
+  {
+    "category": "Recipes involving Content State",
+    "categoryId": "recipes-involving-content-state",
+    "id": "0485",
+    "name": "Open a specific region of a Canvas in a viewer",
+    "url": "https://iiif.io/api/cookbook/recipe/0485-contentstate-canvas-region/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0485-contentstate-canvas-region/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Deep zoom viewport centers on the canvas region matching the target coordinate."
+  },
+  {
+    "category": "Recipes involving Content State",
+    "categoryId": "recipes-involving-content-state",
+    "id": "0540",
+    "name": "Sharing a link for opening two or more Canvases",
+    "url": "https://iiif.io/api/cookbook/recipe/0540-link-for-opening-multiple-canvases/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0540-link-for-opening-multiple-canvases/manifest.json",
+    "support": "Partial",
+    "notes": "Opens the target canvases, but custom dual-panel layout setups are basic."
+  },
+  {
+    "category": "Recipes involving Content State",
+    "categoryId": "recipes-involving-content-state",
+    "id": "0599",
+    "name": "Drag and Drop",
+    "url": "https://iiif.io/api/cookbook/recipe/0599-drag-and-drop/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0599-drag-and-drop/manifest.json",
+    "support": "Yes",
+    "notes": "Fully supported. Users can drag and drop IIIF manifest URLs/files directly to load them."
+  },
+  {
+    "category": "Geo Recipes",
+    "categoryId": "geo-recipes",
+    "id": "0139",
+    "name": "Represent Canvas Fragment as a Geographic Area in a Web Mapping Client",
+    "url": "https://iiif.io/api/cookbook/recipe/0139-geolocate-canvas-fragment/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0139-geolocate-canvas-fragment/manifest.json",
+    "support": "No",
+    "notes": "Geographic coordinate parsing and map layer integrations are not supported."
+  },
+  {
+    "category": "Geo Recipes",
+    "categoryId": "geo-recipes",
+    "id": "0154",
+    "name": "Locate a Manifest on a Web Map",
+    "url": "https://iiif.io/api/cookbook/recipe/0154-geo-extension/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0154-geo-extension/manifest.json",
+    "support": "No",
+    "notes": "Geographic location markers using navPlace are not displayed."
+  },
+  {
+    "category": "Geo Recipes",
+    "categoryId": "geo-recipes",
+    "id": "0240",
+    "name": "Locate Multiple Canvases on a Web Map",
+    "url": "https://iiif.io/api/cookbook/recipe/0240-navPlace-on-canvases/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0240-navPlace-on-canvases/manifest.json",
+    "support": "No",
+    "notes": "Geographic metadata (navPlace on canvases) is not integrated with a web map."
+  },
+  {
+    "category": "Geo Recipes",
+    "categoryId": "geo-recipes",
+    "id": "0318",
+    "name": "Locating an Item in Place and Time",
+    "url": "https://iiif.io/api/cookbook/recipe/0318-navPlace-navDate/",
+    "manifest": "https://iiif.io/api/cookbook/recipe/0318-navPlace-navDate/manifest.json",
+    "support": "No",
+    "notes": "Combined geographic (navPlace) and temporal (navDate) mapping views are not supported."
+  }
+]

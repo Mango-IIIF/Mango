@@ -5,11 +5,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Mango-Viewer/Mango.git"
+    "url": "git+https://github.com/Mango-IIIF/Mango.git"
   },
-  "homepage": "https://github.com/Mango-Viewer/Mango#readme",
+  "homepage": "https://github.com/Mango-IIIF/Mango#readme",
   "bugs": {
-    "url": "https://github.com/Mango-Viewer/Mango/issues"
+    "url": "https://github.com/Mango-IIIF/Mango/issues"
   },
   "keywords": [
     "iiif",
