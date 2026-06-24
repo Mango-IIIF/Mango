@@ -39,6 +39,8 @@
   import { setLocale } from '../../i18n';
   import GridContainer from '../workspace/GridContainer.svelte';
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
+  import { parseURLHash } from '../../viewer/osd/URLStateManager';
+  import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
 
   interface Props {
     manifestId?: string;
@@ -109,7 +111,12 @@
 
   const dispatch = createEventDispatcher<ViewerEventMap>();
   const initialViewerConfig = () => normaliseViewerConfig(config);
-  let normalisedConfig: ViewerConfig = $state(initialViewerConfig());
+  const initialNormalisedConfig = initialViewerConfig();
+  let normalisedConfig: ViewerConfig = $state(initialNormalisedConfig);
+  const initialViewState = resolveInitialViewerState(
+    initialNormalisedConfig,
+    typeof window !== 'undefined' ? parseURLHash(window.location.hash) : {},
+  );
   let StoryControlsStageComponent: any = $state(null);
   let StoryAnnotationOverlayComponent: any = $state(null);
   let AnnotationWorkspaceComponent: any = $state(null);
@@ -120,6 +127,7 @@
       manifestId,
       config: normalisedConfig,
       plugins: [...corePlugins],
+      ...initialViewState,
     });
   const viewerState = createInitialViewerState();
   const viewerDerived = createViewerDerived(viewerState);
@@ -201,6 +209,8 @@
     showLayers,
     layerOpacities,
     layoutMode,
+    viewBox,
+    rotation,
     annotationMode,
     searchQuery,
     selectedSearchResultId,
@@ -212,6 +222,8 @@
   const viewportState = new ViewportState();
   setContext(VIEWPORT_STATE_CONTEXT_KEY, viewportState);
   let isMobileLayout = $state(initialMobileLayout);
+  let sidebarEnabled = $derived(normalisedConfig.sidebar?.enabled !== false);
+  let sidebarPosition = $derived(normalisedConfig.sidebar?.position ?? 'left');
 
   let stageRef: ReturnType<typeof Stage> | null = $state(null);
   let canZoom = $state(false);
@@ -260,7 +272,7 @@
 
   let viewerSettingsTheme = $state<'dark' | 'light'>('dark');
   let viewerSettingsLocale = $state('en');
-  let showControlRail = $derived(isPlainViewerMode);
+  let showControlRail = $derived(isPlainViewerMode && sidebarEnabled);
   let stageDockVisible = $derived(!isStoryViewer && !showControlRail);
   let zoomBaseline = $state(0);
   let zoomBaselineCanvasIndex = $state(-1);
@@ -1246,7 +1258,7 @@
     }
   });
   let leftVisibleEffective = $derived(
-    isStoryViewer || isAnnotationEditor ? false : $leftVisible,
+    isStoryViewer || isAnnotationEditor || !sidebarEnabled ? false : $leftVisible,
   );
   let rightVisibleEffective = $derived(
     isStoryViewer ? false : enableRightPanel && $rightVisible,
@@ -1260,6 +1272,9 @@
   );
   let showToolsEffectiveStory = $derived(isStoryViewer ? false : showToolsEffective);
   let showSettingsEffectiveStory = $derived(isPlainViewerMode ? $showSettings : false);
+  let allowSettingsStory = $derived(
+    isPlainViewerMode && normalisedConfig.showSettings !== false,
+  );
   let showContentsEffectiveStory = $derived(isStoryViewer ? false : $showContents);
   let showLayersEffective = $derived($showLayers && $allowLayers);
   let showLayersEffectiveStory = $derived(isStoryViewer ? false : showLayersEffective);
@@ -1338,6 +1353,7 @@
     class:viewer__grid--controls={showControlRail}
     class:viewer__grid--left={leftVisibleEffective}
     class:viewer__grid--right={rightVisibleEffective}
+    class:viewer__grid--sidebar-right={sidebarPosition === 'right'}
   >
     {#if showControlRail}
       <aside class="viewer__control-rail" aria-label={$t('viewer.stage.controls.label')}>
@@ -1350,7 +1366,7 @@
           allowAnnotations={allowAnnotationsStory}
           allowTools={allowToolsStory}
           allowLayers={allowLayersStory}
-          allowSettings={isPlainViewerMode}
+          allowSettings={allowSettingsStory}
           showThumbnails={showThumbnailsEffectiveStory}
           showContents={showContentsEffectiveStory}
           showSearch={showSearchEffectiveStory}
@@ -1482,6 +1498,9 @@
                   error={$manifestEntry?.error ?? ''}
                   imageFilters={$imageFilters}
                   mediaType={$mediaType}
+                  viewerConfig={normalisedConfig}
+                  rotation={$rotation}
+                  initialViewBox={initialViewState.viewBox}
                   allowThumbnails={allowThumbnailsStory}
                   allowSearch={allowSearchStory}
                   allowMetadata={allowMetadataStory}
@@ -1507,6 +1526,7 @@
                     storyViewBoxStore.set(detail.viewBox);
                   }}
                   onzoomchange={(detail) => controller.handleZoomChange(detail)}
+                  onrotationchange={(detail) => controller.handleRotationChange(detail)}
                   onpaneltoggle={(detail) =>
                     controller.setPanelOpen(detail.panel, detail.open)}
                   onannotationcreate={handleAnnotationCreate}
@@ -1591,6 +1611,9 @@
                   error={$manifestEntry?.error ?? ''}
                   imageFilters={$imageFilters}
                   mediaType={$mediaType}
+                  viewerConfig={normalisedConfig}
+                  rotation={$rotation}
+                  initialViewBox={initialViewState.viewBox}
                   layers={$mediaSources}
                   layerOpacities={$layerOpacities}
                   allowThumbnails={false}
@@ -1613,6 +1636,7 @@
                   editableRectAnnotationId={editableSavedRectAnnotationId}
                   onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
                   onzoomchange={(detail) => controller.handleZoomChange(detail)}
+                  onrotationchange={(detail) => controller.handleRotationChange(detail)}
                   onannotationcreate={handleAnnotationCreate}
                   onannotationupdate={(payload) =>
                     handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
@@ -1727,6 +1751,9 @@
               error={$manifestEntry?.error ?? ''}
               imageFilters={$imageFilters}
               mediaType={$mediaType}
+              viewerConfig={normalisedConfig}
+              rotation={$rotation}
+              initialViewBox={initialViewState.viewBox}
               allowThumbnails={allowThumbnailsStory}
               allowSearch={allowSearchStory}
               allowMetadata={allowMetadataStory}
@@ -1749,6 +1776,7 @@
               canvasId={activeCanvasId}
               onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
               onzoomchange={(detail) => controller.handleZoomChange(detail)}
+              onrotationchange={(detail) => controller.handleRotationChange(detail)}
               onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
               onannotationcreate={handleAnnotationCreate}
               onannotationupdate={(payload) =>
@@ -2217,6 +2245,35 @@
     column-gap: 0;
   }
 
+  .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls {
+    grid-template-columns: 1fr 68px;
+  }
+
+  .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left {
+    grid-template-columns: 1fr minmax(240px, 300px) 68px;
+    column-gap: 0;
+  }
+
+  .viewer__grid--sidebar-right > .stage {
+    order: 1;
+    margin-right: 18px;
+    margin-left: 0 !important;
+  }
+
+  .viewer__grid--sidebar-right :global(.panel-stack--left) {
+    order: 2;
+    border-right: none;
+    border-left: 1px solid var(--viewer-panel-border) !important;
+    border-radius: 18px 0 0 18px !important;
+  }
+
+  .viewer__grid--sidebar-right > .viewer__control-rail {
+    order: 3;
+    border-right: 1px solid var(--viewer-panel-border);
+    border-left: none;
+    border-radius: 0 18px 18px 0;
+  }
+
   .viewer__grid.viewer__grid--controls.viewer__grid--right {
     grid-template-columns: 68px 1fr minmax(220px, 280px);
   }
@@ -2407,6 +2464,24 @@
       box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
     }
 
+    .viewer__grid--sidebar-right :global(.panel-stack--left) {
+      right: 0;
+      left: auto;
+      border: 1px solid var(--viewer-panel-border) !important;
+      border-radius: 18px !important;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
+      animation-name: viewer-slidein-right;
+    }
+
+    .viewer__grid--sidebar-right > .stage {
+      order: initial;
+      margin-right: 0;
+    }
+
+    .viewer__grid--sidebar-right > .viewer__control-rail {
+      order: initial;
+    }
+
     .viewer__control-rail {
       grid-row: 2;
       grid-column: 1;
@@ -2466,6 +2541,15 @@
   @keyframes viewer-slidein-left {
     from {
       transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes viewer-slidein-right {
+    from {
+      transform: translateX(100%);
     }
     to {
       transform: translateX(0);

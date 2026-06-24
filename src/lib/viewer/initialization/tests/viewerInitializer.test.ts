@@ -4,6 +4,7 @@ import {
   resolveMediaForCanvas,
   validateCanvasIndex,
   hasManifestChanged,
+  resolveInitialViewerState,
 } from '../viewerInitializer';
 import { DEFAULT_IMAGE_FILTERS } from '../../../core/types/filters';
 
@@ -92,6 +93,56 @@ describe('Viewer Initialization', () => {
     it('should return true when manifests are different', () => {
       expect(hasManifestChanged('manifest-2', 'manifest-1')).toBe(true);
       expect(hasManifestChanged('manifest-1', '')).toBe(true);
+    });
+  });
+
+  describe('resolveInitialViewerState', () => {
+    it('applies every configured initial state option', () => {
+      expect(
+        resolveInitialViewerState({
+          initialCanvasIndex: 3,
+          initialLayoutMode: 'two-page',
+          initialRotation: 90,
+          initialViewBox: { x: 10, y: 20, w: 300, h: 200 },
+        }),
+      ).toEqual({
+        selectedCanvasIndex: 3,
+        layoutMode: 'two-page',
+        rotation: 90,
+        viewBox: { x: 10, y: 20, w: 300, h: 200 },
+      });
+    });
+
+    it('uses URL canvas, rotation, and view box values before config defaults', () => {
+      expect(
+        resolveInitialViewerState(
+          {
+            initialCanvasIndex: 1,
+            initialRotation: 90,
+            initialViewBox: { x: 1, y: 2, w: 3, h: 4 },
+          },
+          { canvasIndex: 4, rotation: 180, xywh: '20,30,400,500' },
+        ),
+      ).toMatchObject({
+        selectedCanvasIndex: 4,
+        rotation: 180,
+        viewBox: { x: 20, y: 30, w: 400, h: 500 },
+      });
+    });
+
+    it('rejects invalid initial values', () => {
+      expect(
+        resolveInitialViewerState({
+          initialCanvasIndex: -2,
+          initialRotation: Number.NaN,
+          initialViewBox: { x: 0, y: 0, w: 0, h: 10 },
+        }),
+      ).toEqual({
+        selectedCanvasIndex: 0,
+        layoutMode: 'single',
+        rotation: 0,
+        viewBox: null,
+      });
     });
   });
 });

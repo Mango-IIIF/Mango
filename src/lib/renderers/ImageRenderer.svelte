@@ -23,6 +23,7 @@
   import type { MediaSource, TileSource } from '../iiif/mediaResolver';
   import type { ImageFilters } from '../core/types/filters';
   import type { ViewBox } from '../core/types/viewer';
+  import type { ViewerConfig } from '../core/types/config';
 
   interface Props {
     source?: MediaSource | null;
@@ -34,6 +35,10 @@
     hoverAnnotationId?: string | null;
     layoutMode?: 'single' | 'two-page' | 'continuous';
     activeLayoutImages?: any[];
+    osdConfig?: Record<string, unknown>;
+    legacyOsdConfig?: ViewerConfig['osd'];
+    rotation?: number;
+    initialViewBox?: ViewBox | null;
   }
 
   let {
@@ -45,7 +50,11 @@
     activeAnnotationId = null,
     hoverAnnotationId = null,
     layoutMode = 'single',
-    activeLayoutImages = []
+    activeLayoutImages = [],
+    osdConfig = {},
+    legacyOsdConfig = undefined,
+    rotation = 0,
+    initialViewBox = null,
   }: Props = $props();
 
   const dispatch = createEventDispatcher<{
@@ -54,6 +63,7 @@
     annotationHover: { id: string | null };
     annotationSelect: { id: string };
     annotationClear: void;
+    rotationChange: { rotation: number };
   }>();
 
   let osd: any = $state(null);
@@ -85,6 +95,10 @@
     osd?.rotateBy?.(delta);
   };
 
+  export const setRotation = (value: number): void => {
+    osd?.setRotation?.(value);
+  };
+
   export const setImageFilters = (filters: ImageFilters): void => {
     osd?.setFilters?.(filters);
   };
@@ -103,8 +117,13 @@
     {hoverAnnotationId}
     {layoutMode}
     {activeLayoutImages}
+    {osdConfig}
+    {legacyOsdConfig}
+    {rotation}
+    {initialViewBox}
     onviewboxchange={(detail) => dispatch('viewBoxChange', detail)}
     onzoomchange={(detail) => dispatch('zoomChange', detail)}
+    onrotationchange={(detail) => dispatch('rotationChange', detail)}
     onannotationhover={(detail) => dispatch('annotationHover', detail)}
     onannotationselect={(detail) => dispatch('annotationSelect', detail)}
     onannotationclear={() => dispatch('annotationClear')}

@@ -32,12 +32,14 @@
   type ModelRendererProps = {
     source?: MediaSource | null;
     interpolationDecay?: number;
+    modelConfig?: Record<string, unknown>;
     onmodelchange?: ((payload: ModelViewChange) => void) | undefined;
   };
 
   let {
     source = null,
     interpolationDecay = $bindable(200),
+    modelConfig = {},
     onmodelchange = undefined,
   }: ModelRendererProps = $props();
 
@@ -53,6 +55,10 @@
   };
 
   let modelViewerEl: ModelViewerLike | null = $state(null);
+  let effectiveModelConfig = $derived({
+    'camera-controls': true,
+    ...modelConfig,
+  });
   let listenerTarget: ModelViewerLike | null = null;
   let raf: number | null = null;
   let lastPayload = '';
@@ -300,10 +306,10 @@
 <div class="media media--model">
   {#if source}
     <model-viewer
+      {...effectiveModelConfig}
       class="media__viewer"
       bind:this={modelViewerEl}
       src={source.src}
-      camera-controls
       interpolation-decay={interpolationDecay}
       aria-label={$t('renderers.model.label')}
     ></model-viewer>

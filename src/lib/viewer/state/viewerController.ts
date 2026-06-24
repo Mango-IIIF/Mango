@@ -68,6 +68,7 @@ export type ViewerController = {
   setLayoutMode: (mode: 'single' | 'two-page' | 'continuous' | 'gallery') => void;
   handleViewBoxChange: (detail: { viewBox: ViewBox }) => void;
   handleZoomChange: (detail: { zoom: number; viewBox: ViewBox }) => void;
+  handleRotationChange: (detail: { rotation: number }) => void;
   handleMediaPlay: (detail: { time: number }) => void;
   handleMediaPause: (detail: { time: number }) => void;
   handleMediaTimeUpdate: (detail: { time: number; duration?: number }) => void;
@@ -187,6 +188,10 @@ export const createViewerController = ({
     derived: derivedStores,
     emitEvent,
     emitStateChange,
+    initialOpen:
+      get(state.config)?.sidebar?.enabled !== false &&
+      get(state.config)?.sidebar?.open !== false,
+    initialActivePanel: get(state.config)?.sidebar?.activePanel,
   });
 
   // Setup annotation interactions
@@ -228,11 +233,15 @@ export const createViewerController = ({
         fetchManifest(manifestId);
       }
       if (manifestId && manifestId !== lastManifestId) {
+        const isInitialManifest = !lastManifestId;
         lastManifestId = manifestId;
-        state.selectedCanvasIndex.set(0);
+        if (!isInitialManifest) {
+          state.selectedCanvasIndex.set(0);
+          state.viewBox.set(null);
+          state.zoom.set(0);
+          state.rotation.set(0);
+        }
         state.selectedMediaIndex.set(0);
-        state.viewBox.set(null);
-        state.zoom.set(0);
         state.searchQuery.set('');
         state.imageFilters.set({ ...DEFAULT_IMAGE_FILTERS });
         state.activeAnnotationId.set(null);
@@ -262,10 +271,21 @@ export const createViewerController = ({
       const allowAnnotations = config?.showAnnotations !== false;
       const allowTools = config?.showTools !== false;
 
-      state.showThumbnails.set(allowThumbnails);
-      state.showMetadata.set(allowMetadata);
-      state.showSearch.set(allowSearch);
-      state.showAnnotations.set(allowAnnotations);
+      if (config?.sidebar?.enabled === false) {
+        state.showContents.set(false);
+        state.showAnnotations.set(false);
+        state.showTools.set(false);
+        state.showSettings.set(false);
+        state.showSearch.set(false);
+        state.showMetadata.set(false);
+        state.showLayers.set(false);
+      }
+
+      if (!allowThumbnails) state.showThumbnails.set(false);
+      if (!allowMetadata) state.showMetadata.set(false);
+      if (!allowSearch) state.showSearch.set(false);
+      if (!allowAnnotations) state.showAnnotations.set(false);
+      if (config?.showSettings === false) state.showSettings.set(false);
       if (config && Object.prototype.hasOwnProperty.call(config, 'showTools')) {
         state.showTools.set(config.showTools !== false);
       } else if (!allowTools) {
@@ -294,7 +314,9 @@ export const createViewerController = ({
         } else if (viewingHint === 'continuous' || behaviorList.includes('continuous')) {
           defaultLayout = 'continuous';
         }
-        state.layoutMode.set(defaultLayout);
+        if (!get(state.config)?.initialLayoutMode) {
+          state.layoutMode.set(defaultLayout);
+        }
       }
     }),
   );
@@ -368,6 +390,7 @@ export const createViewerController = ({
     resetImageFilters: viewStateController.resetImageFilters,
     handleViewBoxChange: viewStateController.handleViewBoxChange,
     handleZoomChange: viewStateController.handleZoomChange,
+    handleRotationChange: viewStateController.handleRotationChange,
     
     // Panel controller methods
     setPanelOpen: panelController.setPanelOpen,

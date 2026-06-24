@@ -13,6 +13,9 @@ import { resolveMedia } from '../../iiif/mediaResolver';
 import type { MediaSource } from '../../iiif/mediaResolver';
 import { DEFAULT_IMAGE_FILTERS, type ImageFilters } from '../../core/types/filters';
 import type { ViewBox } from '../../core/types/viewer';
+import type { ViewerConfig } from '../../core/types/config';
+import type { URLStateParams } from '../osd/URLStateManager';
+import { XYWHFragment } from '../osd/XYWHFragment';
 
 /**
  * Configuration for viewer initialization
@@ -21,6 +24,60 @@ export type ViewerInitConfig = {
   manifestId: string;
   initialCanvasIndex?: number;
   initialMediaIndex?: number;
+};
+
+export type InitialViewerState = {
+  selectedCanvasIndex: number;
+  layoutMode: 'single' | 'two-page' | 'continuous' | 'gallery';
+  rotation: number;
+  viewBox: ViewBox | null;
+};
+
+const validViewBox = (value: ViewBox | null | undefined): value is ViewBox =>
+  Boolean(
+    value &&
+      Number.isFinite(value.x) &&
+      Number.isFinite(value.y) &&
+      Number.isFinite(value.w) &&
+      Number.isFinite(value.h) &&
+      value.w > 0 &&
+      value.h > 0,
+  );
+
+const viewBoxFromUrl = (xywh?: string): ViewBox | null => {
+  if (!xywh) return null;
+  const fragment = XYWHFragment.fromString(xywh);
+  const viewBox = { x: fragment.x, y: fragment.y, w: fragment.w, h: fragment.h };
+  return validViewBox(viewBox) ? viewBox : null;
+};
+
+/** Resolve startup defaults, with URL hash values taking precedence over config. */
+export const resolveInitialViewerState = (
+  config: ViewerConfig = {},
+  urlState: URLStateParams = {},
+): InitialViewerState => {
+  const configuredCanvasIndex = Number.isInteger(config.initialCanvasIndex)
+    ? Math.max(0, config.initialCanvasIndex ?? 0)
+    : 0;
+  const configuredRotation = Number.isFinite(config.initialRotation)
+    ? config.initialRotation ?? 0
+    : 0;
+  const urlViewBox = viewBoxFromUrl(urlState.xywh);
+  const configuredViewBox = validViewBox(config.initialViewBox)
+    ? { ...config.initialViewBox }
+    : null;
+
+  return {
+    selectedCanvasIndex:
+      Number.isInteger(urlState.canvasIndex) && (urlState.canvasIndex ?? -1) >= 0
+        ? urlState.canvasIndex ?? 0
+        : configuredCanvasIndex,
+    layoutMode: config.initialLayoutMode ?? 'single',
+    rotation: Number.isFinite(urlState.rotation)
+      ? urlState.rotation ?? 0
+      : configuredRotation,
+    viewBox: urlViewBox ?? configuredViewBox,
+  };
 };
 
 /**

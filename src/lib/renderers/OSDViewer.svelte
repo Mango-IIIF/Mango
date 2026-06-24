@@ -8,6 +8,7 @@
   import type { TileSource, MediaSource } from '../iiif/mediaResolver';
   import type { ImageFilters } from '../core/types/filters';
   import type { ViewBox } from '../core/types/viewer';
+  import type { ViewerConfig } from '../core/types/config';
 
   interface Props {
     tileSource?: TileSource | null;
@@ -19,11 +20,16 @@
     hoverAnnotationId?: string | null;
     layoutMode?: 'single' | 'two-page' | 'continuous';
     activeLayoutImages?: any[];
+    osdConfig?: Record<string, unknown>;
+    legacyOsdConfig?: ViewerConfig['osd'];
+    rotation?: number;
+    initialViewBox?: ViewBox | null;
     onzoomchange?: ((payload: { zoom: number; viewBox: ViewBox }) => void) | undefined;
     onviewboxchange?: ((payload: { viewBox: ViewBox }) => void) | undefined;
     onannotationhover?: ((payload: { id: string | null }) => void) | undefined;
     onannotationselect?: ((payload: { id: string }) => void) | undefined;
     onannotationclear?: (() => void) | undefined;
+    onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
   }
 
   let {
@@ -36,11 +42,16 @@
     hoverAnnotationId = null,
     layoutMode = 'single',
     activeLayoutImages = [],
+    osdConfig = {},
+    legacyOsdConfig = undefined,
+    rotation = 0,
+    initialViewBox = null,
     onzoomchange = undefined,
     onviewboxchange = undefined,
     onannotationhover = undefined,
     onannotationselect = undefined,
     onannotationclear = undefined,
+    onrotationchange = undefined,
   }: Props = $props();
 
   type Bounds = { x: number; y: number; width: number; height: number };
@@ -67,6 +78,7 @@
   let rendered: RenderedAnnotation[] = $state([]);
   let lastViewBox: ViewBox | null = null;
   let lastZoom = 0;
+  let initialViewBoxApplied = false;
   let filterCss = $state('none');
   let tooltip: {
     id: string;
@@ -468,7 +480,17 @@
         ? viewer.viewport.getRotation()
         : 0;
     if (typeof viewer.viewport.setRotation === 'function') {
-      viewer.viewport.setRotation(getRotation + delta);
+      const nextRotation = getRotation + delta;
+      viewer.viewport.setRotation(nextRotation);
+      viewer.viewport.applyConstraints?.();
+      onrotationchange?.({ rotation: nextRotation });
+    }
+  };
+
+  export const setRotation = (nextRotation: number): void => {
+    if (!viewer?.viewport || !Number.isFinite(nextRotation)) return;
+    if (typeof viewer.viewport.setRotation === 'function') {
+      viewer.viewport.setRotation(nextRotation);
       viewer.viewport.applyConstraints?.();
     }
   };
@@ -491,14 +513,11 @@
       OpenSeadragonClass = OSD;
 
       viewer = OSD({
-        element: container,
-        tileSources: null,
         prefixUrl: '',
         showNavigationControl: false,
         showHomeControl: false,
         showFullPageControl: false,
         showSequenceControl: false,
-        showRotationControl: false,
         showZoomControl: false,
         animationTime: 0.5,
         minZoomImageRatio: 0.1,
@@ -507,8 +526,15 @@
         visibilityRatio: 0.5,
         constrainDuringPan: false,
         gestureSettingsMouse: {
-          clickToZoom: false,
+          clickToZoom: legacyOsdConfig?.clickToZoomEnabled ?? false,
         },
+        preserveViewport: legacyOsdConfig?.preserveViewport ?? false,
+        showNavigator: legacyOsdConfig?.showNavigator ?? false,
+        showRotationControl: legacyOsdConfig?.showRotationControl ?? false,
+        ...osdConfig,
+        // These are managed by the renderer and cannot be overridden by pass-through config.
+        element: container,
+        tileSources: null,
       });
 
       (window as any).__osdViewer = viewer;
@@ -524,6 +550,11 @@
 
       viewer.addHandler('open', () => {
         baseImageLoaded = true;
+        setRotation(rotation);
+        if (initialViewBox && !initialViewBoxApplied) {
+          initialViewBoxApplied = true;
+          requestAnimationFrame(() => setViewBox(initialViewBox));
+        }
         handleViewportChange();
       });
       viewer.addHandler('zoom', handleViewportChange);

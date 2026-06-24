@@ -5,6 +5,7 @@
   import type { MediaTextTrack } from '../../iiif/avResolver';
   import type { ViewBox } from '../../core/types/viewer';
   import type { RendererEventHandlers } from '../types/rendererEvents';
+  import type { ViewerConfig } from '../../core/types/config';
 
   export let rendererComponent: any = null;
   export let source: MediaSource | null = null;
@@ -17,6 +18,7 @@
   export let hoverAnnotationId: string | null = null;
   export let imageFilters: ImageFilters;
   export let mediaType: MediaType | null = null;
+  export let viewerConfig: ViewerConfig = {};
   export let rendererHandlers: RendererEventHandlers | null = null;
   export let rotation: number = 0;
   export let initialViewBox: ViewBox | null = null;
@@ -97,6 +99,10 @@
     {layerOpacities}
     {layoutMode}
     {activeLayoutImages}
+    osdConfig={viewerConfig.osdConfig}
+    legacyOsdConfig={viewerConfig.osd}
+    modelConfig={viewerConfig.modelConfig}
+    initialPage={viewerConfig.pdf?.page}
     onviewboxchange={onviewboxchange}
     onzoomchange={onzoomchange}
     onrotationchange={onrotationchange}

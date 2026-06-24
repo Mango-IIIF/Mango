@@ -13,6 +13,11 @@
     supportsRotation: false,
     isInteractive: true,
   };
+
+  export const resolveInitialPdfPage = (requested: number | undefined, total: number): number => {
+    if (!Number.isInteger(requested) || (requested ?? 0) < 1) return 1;
+    return Math.min(requested ?? 1, Math.max(1, total));
+  };
 </script>
 
 <script lang="ts">
@@ -24,9 +29,10 @@
 
   interface Props {
     source?: MediaSource | null;
+    initialPage?: number;
   }
 
-  let { source = null }: Props = $props();
+  let { source = null, initialPage = 1 }: Props = $props();
   const dispatch = createEventDispatcher<{
     zoomChange: { zoom: number; viewBox: ViewBox };
     viewBoxChange: { viewBox: ViewBox };
@@ -77,7 +83,7 @@
     loadingTask = pdfjs.getDocument(source.src);
     pdfDoc = await loadingTask.promise;
     pageCount = pdfDoc.numPages;
-    pageNumber = 1;
+    pageNumber = resolveInitialPdfPage(initialPage, pageCount);
     await renderPage();
   };
 
