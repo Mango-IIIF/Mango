@@ -37,6 +37,7 @@
         <tr>
           <th>{$t('viewer.panels.annotations.editor.id')}</th>
           <th>{$t('viewer.panels.annotations.editor.label')}</th>
+          <th>{$t('viewer.panels.annotations.editor.text')}</th>
           <th>{$t('viewer.panels.annotations.editor.type')}</th>
         </tr>
       </thead>
@@ -47,7 +48,8 @@
             onclick={() => onselect?.({ id: item.id })}
           >
             <td>{item.id}</td>
-            <td>{item.label || item.text || '-'}</td>
+            <td>{item.label || '-'}</td>
+            <td>{item.text || '-'}</td>
             <td>{$t(`viewer.panels.annotations.editor.tools.${typeOf(item)}`) !== `viewer.panels.annotations.editor.tools.${typeOf(item)}` ? $t(`viewer.panels.annotations.editor.tools.${typeOf(item)}`) : typeOf(item)}</td>
           </tr>
         {/each}

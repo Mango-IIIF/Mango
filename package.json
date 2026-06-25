@@ -75,7 +75,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run build:demo && vite apps/demo",
+    "dev": "npm run build:demo && vite --config vite.config.demo.ts",
     "build:lib": "NODE_OPTIONS=--experimental-global-webcrypto vite build --config vite.config.lib.ts",
     "build:element": "NODE_OPTIONS=--experimental-global-webcrypto vite build --config vite.config.element.ts",
     "build:types": "tsc -p tsconfig.build.json",

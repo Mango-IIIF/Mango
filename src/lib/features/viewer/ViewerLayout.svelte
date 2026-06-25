@@ -147,6 +147,7 @@
     captionTracks,
     startTime,
     rendererComponent,
+    annotations,
     overlayAnnotations,
     searchHits,
     highlightIds,
@@ -629,8 +630,9 @@
     const layerId = normalizeLayerId(annotation.targetStyleClass);
     return visibleLayerIds.has(layerId);
   };
+  let editorAnnotations = $derived(isAnnotationEditor ? $annotations : $overlayAnnotations);
   let filteredOverlayAnnotations = $derived(
-    $overlayAnnotations.filter((annotation) => isAnnotationVisibleByLayer(annotation)),
+    editorAnnotations.filter((annotation) => isAnnotationVisibleByLayer(annotation)),
   );
   let visibleDraftAnno = $derived(
     draftAnno && isAnnotationVisibleByLayer(draftAnno) ? draftAnno : null,
@@ -689,7 +691,7 @@
       targetStyle: styleForLayerColor(detail.color),
     };
     const affectedAnnotationIds = new Set(
-      $overlayAnnotations
+      editorAnnotations
         .filter(
           (annotation) => normalizeLayerId(annotation.targetStyleClass) === detail.id,
         )
@@ -706,7 +708,7 @@
   $effect(() => {
     const knownLayerIds = new Set(annotationLayers.map((layer) => layer.id));
     const additions: LayerItem[] = [];
-    const source = draftAnno ? [...$overlayAnnotations, draftAnno] : $overlayAnnotations;
+    const source = draftAnno ? [...editorAnnotations, draftAnno] : editorAnnotations;
 
     for (const annotation of source) {
       const layerId = annotation.targetStyleClass?.trim();
