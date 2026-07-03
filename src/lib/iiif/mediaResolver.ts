@@ -131,6 +131,31 @@ const extractCanvasBodies = (canvas: unknown): unknown[] => {
     }
   }
 
+  const plainCanvas = canvas as {
+    items?: Array<{
+      items?: Array<{
+        body?: unknown | unknown[];
+        resource?: unknown;
+      }>;
+    }>;
+    images?: Array<{
+      body?: unknown | unknown[];
+      resource?: unknown;
+    }>;
+  };
+
+  for (const annotation of normaliseArray(plainCanvas.images)) {
+    if (annotation.body) bodies.push(...normaliseArray(annotation.body));
+    if (annotation.resource) bodies.push(annotation.resource);
+  }
+
+  for (const page of normaliseArray(plainCanvas.items)) {
+    for (const annotation of normaliseArray(page?.items)) {
+      if (annotation.body) bodies.push(...normaliseArray(annotation.body));
+      if (annotation.resource) bodies.push(annotation.resource);
+    }
+  }
+
   // Handle renderings using getProperty
   const canvasWithProp = canvasObj as { getProperty?: (prop: string) => unknown };
   if (typeof canvasWithProp.getProperty === 'function') {
