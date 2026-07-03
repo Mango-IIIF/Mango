@@ -35,20 +35,27 @@
   </div>
 
   <div class="panel__body settings-panel">
+
+    <!-- language -->
     <div class="settings-panel__section">
-      <div class="settings-panel__label">{$t('workspace.layout')}</div>
-      <div class="panel__tabs">
-        {#each layouts as option}
-          <button
-            type="button"
-            class="panel__tab"
-            class:panel__tab--active={layout === option}
-            onclick={() => onlayoutchange?.(option)}
-          >{option}</button>
+      <div class="settings-panel__label">{$t('workspace.language')}</div>
+      <select value={locale} onchange={(event) => onlocalechange?.((event.currentTarget as HTMLSelectElement).value)}>
+        {#each supportedLocales as option}
+          <option value={option}>{option.toUpperCase()}</option>
         {/each}
+      </select>
+    </div>
+
+    <!-- theme -->
+    <div class="settings-panel__section">
+      <div class="settings-panel__label">{$t('workspace.theme')}</div>
+      <div class="panel__tabs">
+        <button type="button" class="panel__tab" class:panel__tab--active={theme === 'dark'} onclick={() => onthemechange?.('dark')}>{$t('workspace.themeDark')}</button>
+        <button type="button" class="panel__tab" class:panel__tab--active={theme === 'light'} onclick={() => onthemechange?.('light')}>{$t('workspace.themeLight')}</button>
       </div>
     </div>
 
+    <!-- workspace -->
     <div class="settings-panel__section">
       <div class="settings-panel__label">{$t('workspace.viewMode') ?? 'Page Layout'}</div>
       <div class="panel__tabs">
@@ -79,22 +86,21 @@
       </div>
     </div>
 
+    <!-- layout -->
     <div class="settings-panel__section">
-      <div class="settings-panel__label">{$t('workspace.theme')}</div>
+      <div class="settings-panel__label">{$t('workspace.layout')}</div>
       <div class="panel__tabs">
-        <button type="button" class="panel__tab" class:panel__tab--active={theme === 'dark'} onclick={() => onthemechange?.('dark')}>{$t('workspace.themeDark')}</button>
-        <button type="button" class="panel__tab" class:panel__tab--active={theme === 'light'} onclick={() => onthemechange?.('light')}>{$t('workspace.themeLight')}</button>
+        {#each layouts as option}
+          <button
+            type="button"
+            class="panel__tab"
+            class:panel__tab--active={layout === option}
+            onclick={() => onlayoutchange?.(option)}
+          >{option}</button>
+        {/each}
       </div>
     </div>
 
-    <div class="settings-panel__section">
-      <div class="settings-panel__label">{$t('workspace.language')}</div>
-      <select value={locale} onchange={(event) => onlocalechange?.((event.currentTarget as HTMLSelectElement).value)}>
-        {#each supportedLocales as option}
-          <option value={option}>{option.toUpperCase()}</option>
-        {/each}
-      </select>
-    </div>
   </div>
 </section>
 
