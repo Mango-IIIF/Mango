@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Mango IIIF Cookbook Demo</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <div class="page page--cookbook">
+      <header class="cookbook-hero">
+        <div class="cookbook-hero__copy">
+          <span class="cookbook-eyebrow">IIIF Cookbook</span>
+          <h1>Cookbook support at a glance.</h1>
+          <p>Test Mango against the IIIF Cookbook recipes using the current demo build.</p>
+        </div>
+
+        <dl
+          class="cookbook-summary"
+          aria-label="Recipe support summary"
+        >
+          <div>
+            <dt>Pass</dt>
+            <dd data-total-yes>0</dd>
+          </div>
+          <div>
+            <dt>Partial</dt>
+            <dd data-total-partial>0</dd>
+          </div>
+          <div>
+            <dt>Fail</dt>
+            <dd data-total-no>0</dd>
+          </div>
+          <div>
+            <dt>Total</dt>
+            <dd data-total-recipes>0</dd>
+          </div>
+        </dl>
+      </header>
+
+      <main class="cookbook-layout">
+        <section
+          id="cookbook-viewer"
+          class="cookbook-viewer"
+          aria-labelledby="cookbook-viewer-heading"
+        >
+          <div class="cookbook-viewer__heading">
+            <div>
+              <span class="cookbook-eyebrow">Live test</span>
+              <h2
+                id="cookbook-viewer-heading"
+                tabindex="-1"
+                data-active-title
+              >
+                Loading cookbook recipes
+              </h2>
+            </div>
+            <span
+              class="cookbook-status"
+              data-active-status
+            ></span>
+          </div>
+
+          <p class="cookbook-viewer__manifest">
+            Cookbook:
+            <a
+              href="#"
+              target="_blank"
+              rel="noreferrer"
+              data-active-url
+            ></a>
+          </p>
+
+          <div class="cookbook-viewer__frame">
+            <mango-viewer mode="viewer"></mango-viewer>
+          </div>
+        </section>
+
+        <section
+          class="cookbook-recipes"
+          aria-labelledby="recipe-list-heading"
+        >
+          <div class="cookbook-recipes__heading">
+            <div>
+              <h2 id="recipe-list-heading">All recipes.</h2>
+              <p class="cookbook-pass-rate">
+                <span data-pass-rate>0% of cookbook recipes supported</span>
+                <a
+                  href="https://github.com/Mango-IIIF/Mango/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22cookbook%20recipe%22"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Help add support
+                </a>
+              </p>
+            </div>
+            <a
+              class="viewer-actions__link"
+              href="index.html"
+            >
+              Back to demos
+            </a>
+          </div>
+
+          <div
+            class="cookbook-filters"
+            aria-label="Filter recipes"
+          >
+            <div class="cookbook-filter cookbook-filter--search">
+              <label for="cookbook-search">Search recipes</label>
+              <input
+                id="cookbook-search"
+                type="search"
+                placeholder="Recipe number, name or notes"
+                data-search
+              />
+            </div>
+            <div class="cookbook-filter">
+              <label for="cookbook-category">Category</label>
+              <select
+                id="cookbook-category"
+                data-category-filter
+              ></select>
+            </div>
+            <div class="cookbook-filter">
+              <label for="cookbook-support">Support</label>
+              <select
+                id="cookbook-support"
+                data-support-filter
+              ></select>
+            </div>
+          </div>
+
+          <p
+            class="cookbook-result-count"
+            aria-live="polite"
+            data-result-count
+          >
+            Showing 0 recipes
+          </p>
+
+          <div
+            class="cookbook-list"
+            data-recipe-list
+          ></div>
+          <p
+            class="cookbook-empty"
+            hidden
+            data-empty-state
+          >
+            No recipes match these filters.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script src="dist/mango-viewer-element.iife.js"></script>
+    <script>
+      const supportDetails = {
+        Yes: { label: 'Pass', description: 'Supported' },
+        Partial: { label: 'Partial', description: 'Partially supported' },
+        No: { label: 'Fail', description: 'Not supported' },
+      };
+      const defaultIssueUrl = 'https://github.com/Mango-IIIF/Mango/issues';
+      const state = {
+        recipes: [],
+        categories: [],
+        activeRecipe: null,
+      };
+
+      const elements = {
+        viewer: document.querySelector('mango-viewer'),
+        activeTitle: document.querySelector('[data-active-title]'),
+        activeStatus: document.querySelector('[data-active-status]'),
+        activeUrl: document.querySelector('[data-active-url]'),
+        totals: {
+          Yes: document.querySelector('[data-total-yes]'),
+          Partial: document.querySelector('[data-total-partial]'),
+          No: document.querySelector('[data-total-no]'),
+          recipes: document.querySelector('[data-total-recipes]'),
+        },
+        passRate: document.querySelector('[data-pass-rate]'),
+        search: document.querySelector('[data-search]'),
+        categoryFilter: document.querySelector('[data-category-filter]'),
+        supportFilter: document.querySelector('[data-support-filter]'),
+        resultCount: document.querySelector('[data-result-count]'),
+        recipeList: document.querySelector('[data-recipe-list]'),
+        emptyState: document.querySelector('[data-empty-state]'),
+      };
+
+      function getRecipeCategories(recipe) {
+        const categoryById = new Map(state.categories.map((category) => [category.id, category.name]));
+        return recipe.categoryIds.map((categoryId) => categoryById.get(categoryId)).filter(Boolean);
+      }
+
+      function getFilteredRecipes() {
+        const query = elements.search.value.trim().toLocaleLowerCase('en-GB');
+        const supportFilter = elements.supportFilter.value;
+        const categoryFilter = elements.categoryFilter.value;
+
+        return state.recipes
+          .filter((recipe) => {
+            const matchesSupport = supportFilter === 'All' || recipe.support === supportFilter;
+            const matchesCategory = categoryFilter === 'All' || recipe.categoryIds.includes(categoryFilter);
+            const categoryNames = getRecipeCategories(recipe).join(' ');
+            const searchableText = `${recipe.id} ${recipe.name} ${recipe.notes || ''} ${categoryNames}`.toLocaleLowerCase('en-GB');
+            return matchesSupport && matchesCategory && (!query || searchableText.includes(query));
+          })
+          .sort((recipeA, recipeB) => recipeA.id.localeCompare(recipeB.id, 'en-GB', { numeric: true }));
+      }
+
+      function setStatusClass(element, support) {
+        element.className = `cookbook-status cookbook-status--${support.toLowerCase()}`;
+      }
+
+      function activateRecipe(recipe, shouldFocus = false) {
+        if (!recipe?.manifest) return;
+
+        state.activeRecipe = recipe;
+        elements.viewer.setAttribute('manifest-id', recipe.manifest);
+        elements.activeTitle.textContent = `Recipe ${recipe.id}: ${recipe.name}`;
+        elements.activeUrl.href = recipe.url;
+        elements.activeUrl.textContent = recipe.url;
+        elements.activeStatus.textContent = supportDetails[recipe.support].label;
+        setStatusClass(elements.activeStatus, recipe.support);
+        renderRecipes();
+
+        if (shouldFocus) {
+          elements.activeTitle.focus({ preventScroll: true });
+          elements.activeTitle.scrollIntoView({ block: 'start' });
+        }
+      }
+
+      function renderSummary() {
+        const totals = {
+          Yes: state.recipes.filter((recipe) => recipe.support === 'Yes').length,
+          Partial: state.recipes.filter((recipe) => recipe.support === 'Partial').length,
+          No: state.recipes.filter((recipe) => recipe.support === 'No').length,
+        };
+        elements.totals.Yes.textContent = totals.Yes;
+        elements.totals.Partial.textContent = totals.Partial;
+        elements.totals.No.textContent = totals.No;
+        elements.totals.recipes.textContent = state.recipes.length;
+
+        const passPercentage = Math.round((totals.Yes / state.recipes.length) * 100);
+        elements.passRate.textContent = `${passPercentage}% of cookbook recipes supported`;
+      }
+
+      function renderFilters() {
+        elements.categoryFilter.replaceChildren(new Option('All categories', 'All'));
+        state.categories.forEach((category) => {
+          elements.categoryFilter.add(new Option(category.name, category.id));
+        });
+
+        elements.supportFilter.replaceChildren();
+        ['All', 'Yes', 'Partial', 'No'].forEach((support) => {
+          const label = support === 'All' ? 'All results' : supportDetails[support].description;
+          elements.supportFilter.add(new Option(label, support));
+        });
+      }
+
+      function renderRecipes() {
+        const filteredRecipes = getFilteredRecipes();
+        elements.resultCount.textContent = `Showing ${filteredRecipes.length} recipes`;
+        elements.emptyState.hidden = filteredRecipes.length > 0;
+
+        elements.recipeList.replaceChildren(
+          ...filteredRecipes.map((recipe) => {
+            const article = document.createElement('article');
+            article.className = 'cookbook-recipe';
+
+            const identity = document.createElement('div');
+            identity.className = 'cookbook-recipe__identity';
+            identity.innerHTML = `
+              <span class="cookbook-recipe__number"></span>
+              <div>
+                <h3></h3>
+                <div class="cookbook-recipe__categories" aria-label="Recipe categories"></div>
+              </div>
+            `;
+            identity.querySelector('.cookbook-recipe__number').textContent = recipe.id;
+            identity.querySelector('h3').textContent = recipe.name;
+            const categories = identity.querySelector('.cookbook-recipe__categories');
+            getRecipeCategories(recipe).forEach((category) => {
+              const tag = document.createElement('span');
+              tag.textContent = category;
+              categories.append(tag);
+            });
+
+            const support = document.createElement('div');
+            support.className = 'cookbook-recipe__support';
+            const supportLabel = recipe.support === 'Yes' ? document.createElement('span') : document.createElement('a');
+            supportLabel.textContent = supportDetails[recipe.support].label;
+            setStatusClass(supportLabel, recipe.support);
+            if (supportLabel instanceof HTMLAnchorElement) {
+              supportLabel.href = recipe.github || defaultIssueUrl;
+              supportLabel.target = '_blank';
+              supportLabel.rel = 'noreferrer';
+              supportLabel.title = 'See GitHub issue';
+            }
+            const supportText = document.createElement('span');
+            supportText.textContent = supportDetails[recipe.support].description;
+            support.append(supportLabel, supportText);
+
+            const notes = document.createElement('p');
+            notes.className = 'cookbook-recipe__notes';
+            notes.textContent = recipe.notes || 'No additional notes.';
+
+            const actions = document.createElement('div');
+            actions.className = 'cookbook-recipe__actions';
+            const details = document.createElement('a');
+            details.href = recipe.url;
+            details.target = '_blank';
+            details.rel = 'noreferrer';
+            details.textContent = 'Recipe details';
+            const button = document.createElement('button');
+            button.className = 'manifest-form__button';
+            button.type = 'button';
+            button.disabled = !recipe.manifest || state.activeRecipe === recipe;
+            button.textContent = !recipe.manifest
+              ? 'No manifest'
+              : state.activeRecipe === recipe
+                ? 'Viewing now'
+                : 'Check manifest';
+            button.addEventListener('click', () => activateRecipe(recipe, true));
+            actions.append(details, button);
+
+            article.append(identity, support, notes, actions);
+            return article;
+          }),
+        );
+      }
+
+      async function loadCookbook() {
+        const response = await fetch('iiif_cookbook_support.json');
+        if (!response.ok) throw new Error(`Unable to load cookbook support: ${response.status}`);
+        const cookbookSupport = await response.json();
+        state.recipes = cookbookSupport.recipes;
+        state.categories = cookbookSupport.categories;
+
+        renderSummary();
+        renderFilters();
+        activateRecipe(state.recipes.find((recipe) => recipe.manifest));
+      }
+
+      [elements.search, elements.categoryFilter, elements.supportFilter].forEach((element) => {
+        element.addEventListener('input', renderRecipes);
+      });
+
+      loadCookbook().catch((error) => {
+        elements.activeTitle.textContent = error.message;
+        elements.recipeList.textContent = '';
+        elements.emptyState.hidden = false;
+      });
+    </script>
+  </body>
+</html>

@@ -25,6 +25,7 @@ import {
   resolveManifestLicence,
   resolveManifestTitle,
   resolveMetadataItems,
+  type ManifestAttribution,
   type ManifestMetadataItem,
 } from '../iiif/manifestMetadata';
 import { resolveCanvasThumbnail } from '../iiif/thumbnails';
@@ -73,7 +74,7 @@ export type ViewerDerivedStores = {
   rightVisible: Readable<boolean>;
   manifestTitle: Readable<string>;
   manifestDescription: Readable<string>;
-  manifestAttribution: Readable<string>;
+  manifestAttribution: Readable<ManifestAttribution>;
   manifestLicence: Readable<string>;
   manifestMetadata: Readable<ManifestMetadataItem[]>;
   uiLocale: Readable<string>;
