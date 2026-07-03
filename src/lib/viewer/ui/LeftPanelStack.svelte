@@ -6,7 +6,7 @@
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { ImageFilters } from '../../core/types/filters';
   import type { MediaType } from '../../iiif/mediaResolver';
-  import type { ManifestMetadataItem } from '../iiif/manifestMetadata';
+  import type { ManifestAttribution, ManifestMetadataItem } from '../iiif/manifestMetadata';
   import type { TocEntry, TranscriptEntry } from '../../iiif/avResolver';
   import type { MediaSource } from '../../iiif/mediaResolver';
   import AnnotationsPanel from './AnnotationsPanel.svelte';
@@ -37,7 +37,7 @@
   export let imageFilters: ImageFilters;
   export let manifestTitle = '';
   export let manifestDescription = '';
-  export let manifestAttribution = '';
+  export let manifestAttribution: ManifestAttribution = { label: '', value: '' };
   export let manifestLicence = '';
   export let manifestMetadata: ManifestMetadataItem[] = [];
   export let tocEntries: TocEntry[] = [];

@@ -273,6 +273,18 @@
 
   let viewerSettingsTheme = $state<'dark' | 'light'>('dark');
   let viewerSettingsLocale = $state('en');
+  const applyViewerSettingsLocale = (locale: string) => {
+    const nextLocale = locale.toLowerCase();
+    viewerSettingsLocale = nextLocale;
+    normalisedConfig = {
+      ...normalisedConfig,
+      language: nextLocale,
+    };
+    viewerState.config.update((current) => ({
+      ...(current ?? {}),
+      language: nextLocale,
+    }));
+  };
   let showControlRail = $derived(isPlainViewerMode && sidebarEnabled);
   let stageDockVisible = $derived(!isStoryViewer && !showControlRail);
   let zoomBaseline = $state(0);
@@ -1444,7 +1456,7 @@
           }
         }}
         on:settingsThemeChange={(event) => (viewerSettingsTheme = event.detail.theme)}
-        on:settingsLocaleChange={(event) => (viewerSettingsLocale = event.detail.locale)}
+        on:settingsLocaleChange={(event) => applyViewerSettingsLocale(event.detail.locale)}
         on:settingsLayoutModeChange={(event) => controller.setLayoutMode(event.detail.mode)}
       />
     {/if}

@@ -1,4 +1,5 @@
 export type ManifestMetadataItem = { label: string; value: string };
+export type ManifestAttribution = { label: string; value: string };
 
 export const normaliseLangValue = (value: unknown, locale: string): string => {
   if (value == null) return '';
@@ -45,12 +46,13 @@ export const resolveMetadataItems = (
   manifestJson: any,
   locale: string,
 ): ManifestMetadataItem[] => {
-  const rawMetadata = manifestoObject?.getMetadata?.() ?? manifestJson?.metadata;
+  const rawMetadata = manifestJson?.metadata ?? manifestoObject?.getMetadata?.();
   if (!Array.isArray(rawMetadata)) return [];
   return rawMetadata
-    .map((item: any) => {
-      const labelSource = item?.getLabel?.() ?? item?.label;
-      const valueSource = item?.getValue?.() ?? item?.value;
+    .map((item: any, index: number) => {
+      const manifestoItem = manifestoObject?.getMetadata?.()?.[index];
+      const labelSource = item?.label ?? item?.getLabel?.() ?? manifestoItem?.label ?? manifestoItem?.getLabel?.();
+      const valueSource = item?.value ?? item?.getValue?.() ?? manifestoItem?.value ?? manifestoItem?.getValue?.();
       const label = normaliseLangValue(labelSource, locale);
       const value = normaliseLangValue(valueSource, locale);
       if (!label && !value) return null;
@@ -64,7 +66,7 @@ export const resolveManifestTitle = (
   manifestJson: any,
   locale: string,
 ): string => {
-  const labelSource = manifestoObject?.getLabel?.() ?? manifestJson?.label;
+  const labelSource = manifestJson?.label ?? manifestoObject?.getLabel?.();
   return normaliseLangValue(labelSource, locale);
 };
 
@@ -74,7 +76,7 @@ export const resolveManifestDescription = (
   locale: string,
 ): string => {
   const descriptionSource =
-    manifestoObject?.getDescription?.() ?? manifestJson?.description;
+    manifestJson?.summary ?? manifestJson?.description ?? manifestoObject?.getDescription?.();
   return normaliseLangValue(descriptionSource, locale);
 };
 
@@ -82,15 +84,25 @@ export const resolveManifestAttribution = (
   manifestoObject: any,
   manifestJson: any,
   locale: string,
-): string => {
+): ManifestAttribution => {
   const requiredStatement = manifestoObject?.getRequiredStatement?.();
+  const rawRequiredStatement = manifestJson?.requiredStatement;
+  const requiredLabel =
+    rawRequiredStatement?.label ??
+    requiredStatement?.getLabel?.() ??
+    requiredStatement?.label;
   const requiredValue =
+    rawRequiredStatement?.value ??
     requiredStatement?.getValue?.() ??
     requiredStatement?.value ??
     requiredStatement;
   const attributionSource =
-    requiredValue ?? manifestJson?.requiredStatement?.value ?? manifestJson?.attribution;
-  return normaliseLangValue(attributionSource, locale);
+    requiredValue ?? manifestJson?.attribution;
+
+  return {
+    label: normaliseLangValue(requiredLabel, locale),
+    value: normaliseLangValue(attributionSource, locale),
+  };
 };
 
 export const resolveManifestLicence = (

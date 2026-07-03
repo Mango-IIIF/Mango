@@ -1,11 +1,11 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { t } from '../../i18n';
-  import type { ManifestMetadataItem } from '../iiif/manifestMetadata';
+  import type { ManifestAttribution, ManifestMetadataItem } from '../iiif/manifestMetadata';
 
   export let manifestTitle = '';
   export let manifestDescription = '';
-  export let manifestAttribution = '';
+  export let manifestAttribution: ManifestAttribution = { label: '', value: '' };
   export let manifestLicence = '';
   export let manifestMetadata: ManifestMetadataItem[] = [];
 
@@ -35,13 +35,13 @@
         {@html manifestDescription}
       </div>
     {/if}
-    {#if manifestAttribution}
+    {#if manifestAttribution.value}
       <div class="metadata__block">
         <div class="metadata__block-title">
-          {$t('viewer.panels.metadata.attribution')}
+          {manifestAttribution.label || $t('viewer.panels.metadata.attribution')}
         </div>
         <div class="metadata__block-value">
-          {@html manifestAttribution}
+          {@html manifestAttribution.value}
         </div>
       </div>
     {/if}
@@ -69,7 +69,7 @@
           <dd class="metadata__value">{@html item.value}</dd>
         {/each}
       </dl>
-    {:else if !manifestDescription && !manifestAttribution && !manifestLicence}
+    {:else if !manifestDescription && !manifestAttribution.value && !manifestLicence}
       <div class="panel__empty">
         {$t('viewer.panels.metadata.empty')}
       </div>
