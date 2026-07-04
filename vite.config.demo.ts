@@ -15,6 +15,16 @@ const contentTypes: Record<string, string> = {
 const serveDemoDistAsStatic = (): Plugin => ({
   name: 'serve-demo-dist-as-static',
   configureServer(server) {
+    server.watcher.add(demoDist);
+    server.watcher.on('change', (file) => {
+      if (file.startsWith(demoDist)) {
+        server.ws.send({
+          type: 'full-reload',
+          path: '*',
+        });
+      }
+    });
+
     server.middlewares.use((request, response, next) => {
       const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
       if (!pathname.startsWith('/dist/')) {

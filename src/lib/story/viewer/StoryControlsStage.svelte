@@ -1,30 +1,55 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import type { Snippet } from 'svelte';
 
-  export let currentChapterIndex = 0;
-  export let totalChapters = 0;
-  export let chapterThumbnails: Array<string | null> = [];
-  export let chapterDurationSec = 0;
-  export let chapterElapsedSec = 0;
-  export let chapterTitle = '';
-  export let chapterDescription = '';
-  export let disabled = false;
-  export let loading = false;
-  export let error: string | null = null;
-  export let playState: 'idle' | 'playing' | 'paused' = 'idle';
+  interface Props {
+    currentChapterIndex?: number;
+    totalChapters?: number;
+    chapterThumbnails?: Array<string | null>;
+    chapterDurationSec?: number;
+    chapterElapsedSec?: number;
+    chapterTitle?: string;
+    chapterDescription?: string;
+    disabled?: boolean;
+    loading?: boolean;
+    error?: string | null;
+    playState?: 'idle' | 'playing' | 'paused';
+    onplay?: () => void;
+    onpause?: () => void;
+    onstop?: () => void;
+    onselectChapter?: (payload: { index: number }) => void;
+    onzoomIn?: () => void;
+    onzoomOut?: () => void;
+    onfit?: () => void;
+    onrefresh?: () => void;
+    onpreviousChapter?: () => void;
+    onnextChapter?: () => void;
+    stage?: Snippet;
+  }
 
-  const dispatch = createEventDispatcher<{
-    play: void;
-    pause: void;
-    stop: void;
-    selectChapter: { index: number };
-    zoomIn: void;
-    zoomOut: void;
-    fit: void;
-    refresh: void;
-    previousChapter: void;
-    nextChapter: void;
-  }>();
+  let {
+    currentChapterIndex = 0,
+    totalChapters = 0,
+    chapterThumbnails = [],
+    chapterDurationSec = 0,
+    chapterElapsedSec = 0,
+    chapterTitle = '',
+    chapterDescription = '',
+    disabled = false,
+    loading = false,
+    error = null,
+    playState = 'idle',
+    onplay = undefined,
+    onpause = undefined,
+    onstop = undefined,
+    onselectChapter = undefined,
+    onzoomIn = undefined,
+    onzoomOut = undefined,
+    onfit = undefined,
+    onrefresh = undefined,
+    onpreviousChapter = undefined,
+    onnextChapter = undefined,
+    stage = undefined,
+  }: Props = $props();
 
   const chapterThumbnailPalette = [
     '#d4b487',
@@ -55,18 +80,19 @@
     return `${mins}:${secs}`;
   };
 
-  $: safeChapterDuration = Math.max(0, chapterDurationSec);
-  $: safeChapterElapsed = Math.min(Math.max(0, chapterElapsedSec), safeChapterDuration);
-  $: timelineProgressPercent =
-    safeChapterDuration > 0 ? (safeChapterElapsed / safeChapterDuration) * 100 : 0;
+  let safeChapterDuration = $derived(Math.max(0, chapterDurationSec));
+  let safeChapterElapsed = $derived(Math.min(Math.max(0, chapterElapsedSec), safeChapterDuration));
+  let timelineProgressPercent = $derived(
+    safeChapterDuration > 0 ? (safeChapterElapsed / safeChapterDuration) * 100 : 0,
+  );
 
   const handlePlayToggle = () => {
     if (disabled || loading) return;
     if (playState === 'playing') {
-      dispatch('pause');
+      onpause?.();
       return;
     }
-    dispatch('play');
+    onplay?.();
   };
 
   const selectChapter = (index: number) => {
@@ -74,15 +100,14 @@
     const count = chapterCount();
     if (count === 0) return;
     const clamped = Math.min(Math.max(index, 0), count - 1);
-    dispatch('selectChapter', { index: clamped });
+    onselectChapter?.({ index: clamped });
   };
 
   const chapterNumber = (index: number) => index + 1;
-  $: chapterIndices = Array.from(
-    { length: Math.max(0, totalChapters) },
-    (_, index) => index,
+  let chapterIndices = $derived(
+    Array.from({ length: Math.max(0, totalChapters) }, (_, index) => index),
   );
-  let brokenThumbnailUrls = new Set<string>();
+  let brokenThumbnailUrls = $state(new Set<string>());
 
   const markThumbnailBroken = (src: string | null | undefined) => {
     if (!src) return;
@@ -97,7 +122,9 @@
   <div class="story-shell__body">
     <section class="story-shell__stage-wrap">
       <div class="story-shell__stage-frame">
-        <slot name="stage"></slot>
+        {#if stage}
+          {@render stage()}
+        {/if}
       </div>
     </section>
 
@@ -127,7 +154,7 @@
             class="story-shell__transport-btn"
             disabled={disabled || loading}
             aria-label="Previous chapter"
-            on:click={() => dispatch('previousChapter')}
+            onclick={() => onpreviousChapter?.()}
           >
             &#9664;
           </button>
@@ -138,7 +165,7 @@
             data-testid="story-controls-play"
             disabled={disabled || loading}
             aria-label={playState === 'playing' ? 'Pause story' : 'Play story'}
-            on:click={handlePlayToggle}
+            onclick={handlePlayToggle}
           >
             {#if playState === 'playing'}
               &#10074;&#10074;
@@ -151,7 +178,7 @@
             class="story-shell__transport-btn"
             disabled={disabled || loading}
             aria-label="Next chapter"
-            on:click={() => dispatch('nextChapter')}
+            onclick={() => onnextChapter?.()}
           >
             &#9654;
           </button>
@@ -187,7 +214,7 @@
         aria-current={index === safeActiveIndex() ? 'page' : undefined}
         disabled={disabled || loading}
         data-testid={`story-controls-page-${index + 1}`}
-        on:click={() => selectChapter(index)}
+        onclick={() => selectChapter(index)}
       >
         <span class="story-shell__chapter-thumb">
           {#if canRenderThumbnail(chapterThumbnails[index])}
@@ -195,7 +222,7 @@
               src={chapterThumbnails[index] ?? ''}
               alt={`Chapter ${chapterNumber(index)} thumbnail`}
               loading="eager"
-              on:error={() => markThumbnailBroken(chapterThumbnails[index])}
+              onerror={() => markThumbnailBroken(chapterThumbnails[index])}
             />
           {:else}
             <span

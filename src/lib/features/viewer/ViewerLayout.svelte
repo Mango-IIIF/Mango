@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onDestroy, onMount, setContext } from 'svelte';
+  import { onDestroy, onMount, setContext } from 'svelte';
   import { get, writable } from 'svelte/store';
   import { t } from '../../i18n';
   import { normaliseViewerConfig } from '../../config/normalise';
@@ -49,6 +49,7 @@
     mode?: string | undefined;
     story?: string | Record<string, unknown> | undefined;
     storyUrl?: string | undefined;
+    onstoryViewerError?: (payload: { message: string; cause?: unknown }) => void;
   }
 
   const DEFAULT_LAYER_COLOR = '#a78bfa';
@@ -71,6 +72,7 @@
 
   const matchesInitialMobileLayout = (): boolean =>
     typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
     window.matchMedia(`(max-width: ${MOBILE_LAYOUT_WIDTH}px)`).matches;
 
   const styleForLayerColor = (color: string): string => {
@@ -104,12 +106,11 @@
     mode = undefined,
     story = undefined,
     storyUrl = undefined,
+    onstoryViewerError = undefined,
   }: Props = $props();
   const initialMobileLayout = matchesInitialMobileLayout();
 
   const corePlugins = [createAnnotationFocusPlugin()];
-
-  const dispatch = createEventDispatcher<ViewerEventMap>();
   const initialViewerConfig = () => normaliseViewerConfig(config);
   const initialNormalisedConfig = initialViewerConfig();
   let normalisedConfig: ViewerConfig = $state(initialNormalisedConfig);
@@ -134,7 +135,11 @@
   const controller = createViewerController({
     state: viewerState,
     derived: viewerDerived,
-    dispatch,
+    dispatch: (event: string, payload: any) => {
+      if (event === 'storyViewerError') {
+        onstoryViewerError?.(payload);
+      }
+    },
   });
 
   const {
@@ -222,6 +227,7 @@
   } = viewerState;
   const viewportState = new ViewportState();
   setContext(VIEWPORT_STATE_CONTEXT_KEY, viewportState);
+
   let isMobileLayout = $state(initialMobileLayout);
   let sidebarEnabled = $derived(normalisedConfig.sidebar?.enabled !== false);
   let sidebarPosition = $derived(normalisedConfig.sidebar?.position ?? 'left');
@@ -245,6 +251,22 @@
     }
     if (isAnnotationEditor) {
       void loadAnnotationWorkspaceComponent();
+    }
+  });
+
+  $effect(() => {
+    if (isAnnotationEditor) {
+      if (
+        annotationEditorTool === 'rectangle' ||
+        annotationEditorTool === 'point' ||
+        annotationEditorTool === 'polygon' ||
+        annotationEditorTool === 'freehand' ||
+        annotationEditorTool === 'line'
+      ) {
+        controller.setAnnotationMode('create');
+      } else {
+        controller.setAnnotationMode('edit');
+      }
     }
   });
   let canDrawAnnotations = $derived(
@@ -1122,7 +1144,7 @@
   const setStoryError = (message: string) => {
     storyError = message;
     storyControlsDisabled = true;
-    dispatch('storyViewerError', { message });
+    onstoryViewerError?.({ message });
   };
 
   const loadStoryInput = async () => {
@@ -1317,6 +1339,36 @@
       }
     }
   });
+  setContext('viewer-context', {
+    state: viewerState,
+    derived: viewerDerived,
+    controller,
+    settings: {
+      get layout() { return viewerSettingsLayout; },
+      set layout(val) {
+        viewerSettingsLayout = val;
+        if (val !== '1x1') {
+          if (!workspace) {
+            workspace = new WorkspaceStore(manifestId);
+          }
+          workspace.setLayoutPreset(val);
+        } else {
+          workspace = null;
+        }
+      },
+      get theme() { return viewerSettingsTheme; },
+      set theme(val) { viewerSettingsTheme = val; },
+      get locale() { return viewerSettingsLocale; },
+      set locale(val) { applyViewerSettingsLocale(val); },
+      get layoutMode() { return get(layoutMode); },
+      set layoutMode(val) { controller.setLayoutMode(val); }
+    },
+    actions: {
+      seek: handleSeek
+    },
+    get canDrawAnnotations() { return canDrawAnnotations; },
+    get annotationMode() { return effectiveAnnotationMode; }
+  });
 </script>
 
 <div
@@ -1388,8 +1440,8 @@
           showTools={showToolsEffectiveStory}
           showLayers={showLayersEffectiveStory}
           showSettings={showSettingsEffectiveStory}
-          on:panelToggle={(event) =>
-            controller.setPanelOpen(event.detail.panel, event.detail.open)}
+          onpanelToggle={(detail) =>
+            controller.setPanelOpen(detail.panel, detail.open)}
         />
       </aside>
     {/if}
@@ -1403,61 +1455,9 @@
         showSettings={showSettingsEffectiveStory}
         showContents={showContentsEffectiveStory}
         showLayers={showLayersEffectiveStory}
-        layers={$mediaSources}
-        layerOpacities={$layerOpacities}
-        annotationMode={effectiveAnnotationMode}
-        allowCreateMode={canDrawAnnotations}
-        overlayAnnotations={$overlayAnnotations}
-        activeAnnotationId={$activeAnnotationId}
-        searchQuery={$searchQuery}
-        searchHits={$searchHits}
-        selectedSearchResultId={$selectedSearchResultId}
-        mediaType={$mediaType}
-        imageFilters={$imageFilters}
-        manifestTitle={$manifestTitle}
-        manifestDescription={$manifestDescription}
-        manifestAttribution={$manifestAttribution}
-        manifestLicence={$manifestLicence}
-        manifestMetadata={$manifestMetadata}
-        tocEntries={$tocEntries}
-        transcriptEntries={$transcriptEntries}
-        activeTranscriptId={$activeTranscriptId}
         leftPlugins={$pluginSlots.left}
-        settingsLayout={viewerSettingsLayout}
-        settingsTheme={viewerSettingsTheme}
-        settingsLocale={viewerSettingsLocale}
-        layoutMode={$layoutMode}
         {pluginContext}
-        on:panelToggle={(event) =>
-          controller.setPanelOpen(event.detail.panel, event.detail.open)}
-        on:updateLayerOpacity={(event) =>
-          controller.updateLayerOpacity(event.detail.id, event.detail.opacity)}
-        on:annotationModeChange={(event) => {
-          if (!canDrawAnnotations) return;
-          controller.setAnnotationMode(event.detail.mode);
-        }}
-        on:annotationSelect={(event) => controller.handleAnnotationSelect(event.detail)}
-        on:searchQueryChange={(event) => controller.setSearchQuery(event.detail.value)}
-        on:searchResultClick={(event) => controller.handleSearchResultClick(event.detail)}
-        on:updateImageFilter={(event) =>
-          controller.updateImageFilter(event.detail.key, event.detail.value)}
-        on:resetImageFilters={() => controller.resetImageFilters()}
-        on:mediaSeek={(event) => handleSeek(event.detail)}
-        on:settingsLayoutChange={(event) => {
-          const nextLayout = event.detail.layout;
-          viewerSettingsLayout = nextLayout;
-          if (nextLayout !== '1x1') {
-            if (!workspace) {
-              workspace = new WorkspaceStore(manifestId);
-            }
-            workspace.setLayoutPreset(nextLayout);
-          } else {
-            workspace = null;
-          }
-        }}
-        on:settingsThemeChange={(event) => (viewerSettingsTheme = event.detail.theme)}
-        on:settingsLocaleChange={(event) => applyViewerSettingsLocale(event.detail.locale)}
-        on:settingsLayoutModeChange={(event) => controller.setLayoutMode(event.detail.mode)}
+        onpanelToggle={(panel, open) => controller.setPanelOpen(panel, open)}
       />
     {/if}
 
@@ -1476,16 +1476,16 @@
             loading={storyIsLoading}
             error={storyError}
             playState={storyPlayState}
-            on:selectChapter={(event) => handleStorySelectChapter(event.detail.index, true)}
-            on:play={handleStoryPlay}
-            on:pause={handleStoryPause}
-            on:stop={handleStoryStop}
-            on:zoomIn={handleZoomIn}
-            on:zoomOut={handleZoomOut}
-            on:fit={handleHome}
-            on:refresh={handleStoryRefresh}
-            on:previousChapter={handleStoryPreviousChapter}
-            on:nextChapter={handleStoryNextChapter}
+            onselectChapter={(detail) => handleStorySelectChapter(detail.index, true)}
+            onplay={handleStoryPlay}
+            onpause={handleStoryPause}
+            onstop={handleStoryStop}
+            onzoomIn={handleZoomIn}
+            onzoomOut={handleZoomOut}
+            onfit={handleHome}
+            onrefresh={handleStoryRefresh}
+            onpreviousChapter={handleStoryPreviousChapter}
+            onnextChapter={handleStoryNextChapter}
           >
             {#snippet stage()}
               <div class="stage__story-slot">
@@ -1665,14 +1665,14 @@
                   selectedCanvasIndex={$selectedCanvasIndex}
                   totalCanvases={$canvases.length}
                   {zoomPercent}
-                  on:home={handleHome}
-                  on:zoomIn={handleZoomIn}
-                  on:zoomOut={handleZoomOut}
-                  on:setZoomPercent={(event) => handleSetZoomPercent(event.detail)}
-                  on:rotate={handleRotate}
-                  on:setCanvasIndex={(event) => handleSetCanvasIndex(event.detail)}
-                  on:prevCanvas={handlePrevCanvas}
-                  on:nextCanvas={handleNextCanvas}
+                  onhome={handleHome}
+                  onzoomIn={handleZoomIn}
+                  onzoomOut={handleZoomOut}
+                  onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
+                  onrotate={handleRotate}
+                  onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
+                  onprevCanvas={handlePrevCanvas}
+                  onnextCanvas={handleNextCanvas}
                 />
               </div>
             {/snippet}
@@ -1696,14 +1696,14 @@
               selectedCanvasIndex={$selectedCanvasIndex}
               totalCanvases={$canvases.length}
               {zoomPercent}
-              on:home={handleHome}
-              on:zoomIn={handleZoomIn}
-              on:zoomOut={handleZoomOut}
-              on:setZoomPercent={(event) => handleSetZoomPercent(event.detail)}
-              on:rotate={handleRotate}
-              on:setCanvasIndex={(event) => handleSetCanvasIndex(event.detail)}
-              on:prevCanvas={handlePrevCanvas}
-              on:nextCanvas={handleNextCanvas}
+              onhome={handleHome}
+              onzoomIn={handleZoomIn}
+              onzoomOut={handleZoomOut}
+              onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
+              onrotate={handleRotate}
+              onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
+              onprevCanvas={handlePrevCanvas}
+              onnextCanvas={handleNextCanvas}
             />
           {/if}
 
@@ -1806,14 +1806,14 @@
               selectedCanvasIndex={$selectedCanvasIndex}
               totalCanvases={$canvases.length}
               {zoomPercent}
-              on:home={handleHome}
-              on:zoomIn={handleZoomIn}
-              on:zoomOut={handleZoomOut}
-              on:setZoomPercent={(event) => handleSetZoomPercent(event.detail)}
-              on:rotate={handleRotate}
-              on:setCanvasIndex={(event) => handleSetCanvasIndex(event.detail)}
-              on:prevCanvas={handlePrevCanvas}
-              on:nextCanvas={handleNextCanvas}
+              onhome={handleHome}
+              onzoomIn={handleZoomIn}
+              onzoomOut={handleZoomOut}
+              onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
+              onrotate={handleRotate}
+              onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
+              onprevCanvas={handlePrevCanvas}
+              onnextCanvas={handleNextCanvas}
             />
           {/if}
 
@@ -1822,9 +1822,9 @@
               canvases={$canvases}
               canvasThumbnails={$canvasThumbnails}
               selectedCanvasIndex={$selectedCanvasIndex}
-              on:panelToggle={(event) =>
-                controller.setPanelOpen(event.detail.panel, event.detail.open)}
-              on:canvasSelect={(event) => controller.setCanvasByIndex(event.detail.index)}
+              onpanelToggle={(detail) =>
+                controller.setPanelOpen(detail.panel, detail.open)}
+              oncanvasSelect={(detail) => controller.setCanvasByIndex(detail.index)}
             />
           {/if}
 

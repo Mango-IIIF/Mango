@@ -1,25 +1,22 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import { t } from '../../i18n';
-  import type { MediaSource } from '../../iiif/mediaResolver';
 
   interface Props {
-    layers?: MediaSource[];
-    layerOpacities?: Record<string, number>;
     onclose?: (() => void) | undefined;
-    onopacitychange?: ((payload: { id: string; opacity: number }) => void) | undefined;
   }
 
-  let {
-    layers = [],
-    layerOpacities = {},
-    onclose = undefined,
-    onopacitychange = undefined,
-  }: Props = $props();
+  let { onclose = undefined }: Props = $props();
+
+  const viewer = getContext<any>('viewer-context');
+  const { mediaSources } = viewer.derived;
+  const { layerOpacities } = viewer.state;
+  const controller = viewer.controller;
 
   const getOpacity = (id: string): number => {
-    if (layerOpacities[id] !== undefined) return layerOpacities[id];
+    if ($layerOpacities[id] !== undefined) return $layerOpacities[id];
     // Default: base layer (first in list) is 1.0 (100% visible), others are 0.0 (0% visible)
-    return layers[0]?.id === id ? 1.0 : 0.0;
+    return $mediaSources[0]?.id === id ? 1.0 : 0.0;
   };
 </script>
 
@@ -37,7 +34,7 @@
   </div>
   <div class="panel__body">
     <div class="layers__list">
-      {#each layers as layer, index (layer.id)}
+      {#each $mediaSources as layer, index (layer.id)}
         {@const opacity = getOpacity(layer.id)}
         <div class="layers__item">
           <div class="layers__info">
@@ -53,10 +50,10 @@
             max="100"
             value={Math.round(opacity * 100)}
             oninput={(event) =>
-              onopacitychange?.({
-                id: layer.id,
-                opacity: Number((event.currentTarget as HTMLInputElement).value) / 100,
-              })
+              controller.updateLayerOpacity(
+                layer.id,
+                Number((event.currentTarget as HTMLInputElement).value) / 100,
+              )
             }
           />
         </div>

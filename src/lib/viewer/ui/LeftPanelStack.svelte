@@ -1,14 +1,8 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { getContext } from 'svelte';
   import { t } from '../../i18n';
   import PluginSlot from '../../plugins/PluginSlot.svelte';
   import type { PluginContext, ViewerPlugin } from '../../core/types/plugin';
-  import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
-  import type { ImageFilters } from '../../core/types/filters';
-  import type { MediaType } from '../../iiif/mediaResolver';
-  import type { ManifestAttribution, ManifestMetadataItem } from '../iiif/manifestMetadata';
-  import type { TocEntry, TranscriptEntry } from '../../iiif/avResolver';
-  import type { MediaSource } from '../../iiif/mediaResolver';
   import AnnotationsPanel from './AnnotationsPanel.svelte';
   import ToolsPanel from './ToolsPanel.svelte';
   import SearchPanel from './SearchPanel.svelte';
@@ -17,136 +11,76 @@
   import SettingsPanel from './SettingsPanel.svelte';
   import LayersPanel from './LayersPanel.svelte';
 
-  export let showAnnotations = false;
-  export let showTools = false;
-  export let showContents = false;
-  export let showSearch = false;
-  export let showMetadata = false;
-  export let showSettings = false;
-  export let showLayers = false;
-  export let layers: MediaSource[] = [];
-  export let layerOpacities: Record<string, number> = {};
-  export let annotationMode: 'edit' | 'create' = 'edit';
-  export let allowCreateMode = false;
-  export let overlayAnnotations: ResolvedAnnotation[] = [];
-  export let activeAnnotationId: string | null = null;
-  export let searchQuery = '';
-  export let searchHits: ResolvedAnnotation[] = [];
-  export let selectedSearchResultId: string | null = null;
-  export let mediaType: MediaType | null = null;
-  export let imageFilters: ImageFilters;
-  export let manifestTitle = '';
-  export let manifestDescription = '';
-  export let manifestAttribution: ManifestAttribution = { label: '', value: '' };
-  export let manifestLicence = '';
-  export let manifestMetadata: ManifestMetadataItem[] = [];
-  export let tocEntries: TocEntry[] = [];
-  export let transcriptEntries: TranscriptEntry[] = [];
-  export let activeTranscriptId: string | null = null;
-  export let leftPlugins: ViewerPlugin[] = [];
-  export let pluginContext: Omit<PluginContext, 'mount'>;
-  export let layoutMode: 'single' | 'two-page' | 'continuous' | 'gallery' = 'single';
+  interface Props {
+    showAnnotations?: boolean;
+    showTools?: boolean;
+    showContents?: boolean;
+    showSearch?: boolean;
+    showMetadata?: boolean;
+    showSettings?: boolean;
+    showLayers?: boolean;
+    leftPlugins?: ViewerPlugin[];
+    pluginContext: Omit<PluginContext, 'mount'>;
+    onpanelToggle?: (panel: 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers', open: boolean) => void;
+  }
 
-  const dispatch = createEventDispatcher<{
-    panelToggle: { panel: 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers'; open: boolean };
-    updateLayerOpacity: { id: string; opacity: number };
-    annotationModeChange: { mode: 'edit' | 'create' };
-    annotationSelect: { id: string };
-    searchQueryChange: { value: string };
-    searchResultClick: { annotation: ResolvedAnnotation };
-    updateImageFilter: { key: keyof ImageFilters; value: ImageFilters[keyof ImageFilters] };
-    resetImageFilters: void;
-    mediaSeek: { canvasId?: string | null; time: number };
-    settingsLayoutChange: { layout: '1x1' | '1x2' | '2x1' | '2x2' };
-    settingsLayoutModeChange: { mode: 'single' | 'two-page' | 'continuous' | 'gallery' };
-    settingsThemeChange: { theme: 'dark' | 'light' };
-    settingsLocaleChange: { locale: string };
-  }>();
+  let {
+    showAnnotations = false,
+    showTools = false,
+    showContents = false,
+    showSearch = false,
+    showMetadata = false,
+    showSettings = false,
+    showLayers = false,
+    leftPlugins = [],
+    pluginContext,
+    onpanelToggle,
+  }: Props = $props();
 
-  export let settingsLayout: '1x1' | '1x2' | '2x1' | '2x2' = '1x1';
-  export let settingsTheme: 'dark' | 'light' = 'dark';
-  export let settingsLocale = 'en';
+  const viewer = getContext<any>('viewer-context');
+  const mediaType = viewer.derived.mediaType;
 </script>
 
 <aside class="panel-stack panel-stack--left" aria-label={$t('viewer.panels.leftLabel')}>
-  {#if showContents && (mediaType === 'audio' || mediaType === 'video') && (tocEntries.length > 0 || transcriptEntries.length > 0)}
+  {#if showContents && ($mediaType === 'audio' || $mediaType === 'video')}
     <ContentsPanel
-      {tocEntries}
-      {transcriptEntries}
-      {activeTranscriptId}
-      on:close={() => dispatch('panelToggle', { panel: 'contents', open: false })}
-      on:seek={(event) => dispatch('mediaSeek', event.detail)}
+      onclose={() => onpanelToggle?.('contents', false)}
     />
   {/if}
 
   {#if showSettings}
     <SettingsPanel
-      layout={settingsLayout}
-      theme={settingsTheme}
-      locale={settingsLocale}
-      {layoutMode}
-      onclose={() => dispatch('panelToggle', { panel: 'settings', open: false })}
-      onlayoutchange={(layout) => dispatch('settingsLayoutChange', { layout })}
-      onthemechange={(theme) => dispatch('settingsThemeChange', { theme })}
-      onlocalechange={(locale) => dispatch('settingsLocaleChange', { locale })}
-      onlayoutmodechange={(mode) => dispatch('settingsLayoutModeChange', { mode })}
+      onclose={() => onpanelToggle?.('settings', false)}
     />
   {/if}
 
   {#if showAnnotations}
     <AnnotationsPanel
-      {annotationMode}
-      {allowCreateMode}
-      {overlayAnnotations}
-      {activeAnnotationId}
-      onclose={() => dispatch('panelToggle', { panel: 'annotations', open: false })}
-      onmodechange={(detail) => dispatch('annotationModeChange', { mode: detail.mode })}
-      onannotationselect={(detail) => dispatch('annotationSelect', { id: detail.id })}
+      onclose={() => onpanelToggle?.('annotations', false)}
     />
   {/if}
 
   {#if showTools}
     <ToolsPanel
-      {mediaType}
-      {imageFilters}
-      on:close={() => dispatch('panelToggle', { panel: 'tools', open: false })}
-      on:updateFilter={(event) =>
-        dispatch('updateImageFilter', event.detail)}
-      on:reset={() => dispatch('resetImageFilters')}
+      onclose={() => onpanelToggle?.('tools', false)}
     />
   {/if}
 
   {#if showSearch}
     <SearchPanel
-      {searchQuery}
-      {searchHits}
-      {selectedSearchResultId}
-      on:close={() => dispatch('panelToggle', { panel: 'search', open: false })}
-      on:queryChange={(event) =>
-        dispatch('searchQueryChange', { value: event.detail.value })}
-      on:resultClick={(event) =>
-        dispatch('searchResultClick', { annotation: event.detail.annotation })}
+      onclose={() => onpanelToggle?.('search', false)}
     />
   {/if}
 
   {#if showMetadata}
     <MetadataPanel
-      {manifestTitle}
-      {manifestDescription}
-      {manifestAttribution}
-      {manifestLicence}
-      {manifestMetadata}
-      on:close={() =>
-        dispatch('panelToggle', { panel: 'metadata', open: false })}
+      onclose={() => onpanelToggle?.('metadata', false)}
     />
   {/if}
 
-  {#if showLayers && layers.length > 0}
+  {#if showLayers}
     <LayersPanel
-      {layers}
-      {layerOpacities}
-      onclose={() => dispatch('panelToggle', { panel: 'layers', open: false })}
-      onopacitychange={(detail) => dispatch('updateLayerOpacity', detail)}
+      onclose={() => onpanelToggle?.('layers', false)}
     />
   {/if}
 

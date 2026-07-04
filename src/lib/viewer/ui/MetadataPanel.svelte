@@ -1,17 +1,21 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { getContext } from 'svelte';
   import { t } from '../../i18n';
-  import type { ManifestAttribution, ManifestMetadataItem } from '../iiif/manifestMetadata';
 
-  export let manifestTitle = '';
-  export let manifestDescription = '';
-  export let manifestAttribution: ManifestAttribution = { label: '', value: '' };
-  export let manifestLicence = '';
-  export let manifestMetadata: ManifestMetadataItem[] = [];
+  interface Props {
+    onclose?: () => void;
+  }
 
-  const dispatch = createEventDispatcher<{
-    close: void;
-  }>();
+  let { onclose = undefined }: Props = $props();
+
+  const viewer = getContext<any>('viewer-context');
+  const {
+    manifestTitle,
+    manifestDescription,
+    manifestAttribution,
+    manifestLicence,
+    manifestMetadata,
+  } = viewer.derived;
 </script>
 
 <section class="panel panel--metadata" aria-label={$t('viewer.panels.metadata.label')}>
@@ -21,31 +25,31 @@
       class="panel__close"
       type="button"
       aria-label={$t('viewer.panels.metadata.close')}
-      on:click={() => dispatch('close')}
+      onclick={() => onclose?.()}
     >
       {$t('common.closeGlyph')}
     </button>
   </div>
   <div class="panel__body metadata">
-    {#if manifestTitle}
-      <div class="metadata__label">{manifestTitle}</div>
+    {#if $manifestTitle}
+      <div class="metadata__label">{$manifestTitle}</div>
     {/if}
-    {#if manifestDescription}
+    {#if $manifestDescription}
       <div class="metadata__description">
-        {@html manifestDescription}
+        {@html $manifestDescription}
       </div>
     {/if}
-    {#if manifestAttribution.value}
+    {#if $manifestAttribution.value}
       <div class="metadata__block">
         <div class="metadata__block-title">
-          {manifestAttribution.label || $t('viewer.panels.metadata.attribution')}
+          {$manifestAttribution.label || $t('viewer.panels.metadata.attribution')}
         </div>
         <div class="metadata__block-value">
-          {@html manifestAttribution.value}
+          {@html $manifestAttribution.value}
         </div>
       </div>
     {/if}
-    {#if manifestLicence}
+    {#if $manifestLicence}
       <div class="metadata__block">
         <div class="metadata__block-title">
           {$t('viewer.panels.metadata.license')}
@@ -53,23 +57,23 @@
         <div class="metadata__block-value">
           <a
             class="metadata__link"
-            href={manifestLicence}
+            href={$manifestLicence}
             target="_blank"
             rel="noreferrer"
           >
-            {manifestLicence}
+            {$manifestLicence}
           </a>
         </div>
       </div>
     {/if}
-    {#if manifestMetadata.length > 0}
+    {#if $manifestMetadata.length > 0}
       <dl class="metadata__list">
-        {#each manifestMetadata as item}
+        {#each $manifestMetadata as item}
           <dt class="metadata__term">{item.label}</dt>
           <dd class="metadata__value">{@html item.value}</dd>
         {/each}
       </dl>
-    {:else if !manifestDescription && !manifestAttribution.value && !manifestLicence}
+    {:else if !$manifestDescription && !$manifestAttribution.value && !$manifestLicence}
       <div class="panel__empty">
         {$t('viewer.panels.metadata.empty')}
       </div>
