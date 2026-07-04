@@ -27,6 +27,8 @@ function syncDemo() {
     mkdirSync(demoDist, { recursive: true });
     cpSync(srcDist, demoDist, { recursive: true });
     log(`synced demo assets from ${srcDist} to ${demoDist}`);
+  } catch (error) {
+    log(`failed to sync assets: ${error instanceof Error ? error.message : String(error)}`);
   } finally {
     syncInFlight = false;
   }

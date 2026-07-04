@@ -64,7 +64,7 @@ export default defineConfig({
     {
       name: 'mango-element-shadow-css',
       writeBundle() {
-        const jsPath = resolve(__dirname, 'src/dist/mango-viewer-element.iife.js');
+        const jsPath = resolve(__dirname, 'src/dist/mango-viewer-element.js');
         const cssPath = resolve(__dirname, 'src/dist/mango-viewer-element.css');
 
         if (!existsSync(jsPath) || !existsSync(cssPath)) return;
@@ -81,15 +81,10 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/lib/element.ts'),
       name: 'MangoViewerElement',
-      formats: ['iife'],
-      fileName: () => 'mango-viewer-element.iife.js',
+      formats: ['es'],
+      fileName: () => 'mango-viewer-element.js',
     },
     rolldownOptions: {
-      transform: {
-        define: {
-          'import.meta': '{}',
-        },
-      },
       output: {
         assetFileNames: 'mango-viewer-element.[ext]',
       },

@@ -30,8 +30,8 @@
   "main": "./src/dist/index.js",
   "module": "./src/dist/index.js",
   "types": "./src/dist/index.d.ts",
-  "unpkg": "./src/dist/mango-viewer-element.iife.js",
-  "jsdelivr": "./src/dist/mango-viewer-element.iife.js",
+  "unpkg": "./src/dist/mango-viewer-element.js",
+  "jsdelivr": "./src/dist/mango-viewer-element.js",
   "exports": {
     ".": {
       "import": "./src/dist/index.js",
