@@ -21,7 +21,7 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
   import { t } from '../i18n';
   import type { MediaSource } from '../iiif/mediaResolver';
@@ -30,13 +30,16 @@
   interface Props {
     source?: MediaSource | null;
     initialPage?: number;
+    onzoomChange?: (payload: { zoom: number; viewBox: ViewBox }) => void;
+    onviewBoxChange?: (payload: { viewBox: ViewBox }) => void;
   }
 
-  let { source = null, initialPage = 1 }: Props = $props();
-  const dispatch = createEventDispatcher<{
-    zoomChange: { zoom: number; viewBox: ViewBox };
-    viewBoxChange: { viewBox: ViewBox };
-  }>();
+  let {
+    source = null,
+    initialPage = 1,
+    onzoomChange = undefined,
+    onviewBoxChange = undefined,
+  }: Props = $props();
 
   let canvas: HTMLCanvasElement | null = $state(null);
   let canvasWrap: HTMLDivElement | null = $state(null);
@@ -57,8 +60,8 @@
       h: canvasWrap.clientHeight,
     };
     lastViewBox = viewBox;
-    dispatch('viewBoxChange', { viewBox }, { bubbles: true, composed: true });
-    dispatch('zoomChange', { zoom: scale, viewBox }, { bubbles: true, composed: true });
+    onviewBoxChange?.({ viewBox });
+    onzoomChange?.({ zoom: scale, viewBox });
   };
 
   const renderPage = async () => {

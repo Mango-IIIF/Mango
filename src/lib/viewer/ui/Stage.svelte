@@ -420,7 +420,7 @@
         {showAnnotations}
         {showTools}
         {showLayers}
-        on:panelToggle={(event) => onpaneltoggle?.(event.detail)}
+        onpanelToggle={(detail) => onpaneltoggle?.(detail)}
       />
     </div>
   {/if}
@@ -478,9 +478,9 @@
         height={stageHeight}
         {activeAnnotationId}
         {hoverAnnotationId}
-        on:annotationHover={(event) => rendererHandlers?.onAnnotationHover?.(event.detail)}
-        on:annotationSelect={(event) => rendererHandlers?.onAnnotationSelect?.(event.detail)}
-        on:annotationClear={() => rendererHandlers?.onAnnotationClear?.()}
+        onannotationHover={(detail) => rendererHandlers?.onAnnotationHover?.(detail)}
+        onannotationSelect={(detail) => rendererHandlers?.onAnnotationSelect?.(detail)}
+        onannotationClear={() => rendererHandlers?.onAnnotationClear?.()}
       />
     {/if}
 

@@ -7,30 +7,57 @@
   import type { RendererEventHandlers } from '../types/rendererEvents';
   import type { ViewerConfig } from '../../core/types/config';
 
-  export let rendererComponent: any = null;
-  export let source: MediaSource | null = null;
-  export let accompanyingSource: MediaSource | null = null;
-  export let captionTracks: MediaTextTrack[] = [];
-  export let startTime: number | null = null;
-  export let annotations: ResolvedAnnotation[] = [];
-  export let highlightIds: string[] = [];
-  export let activeAnnotationId: string | null = null;
-  export let hoverAnnotationId: string | null = null;
-  export let imageFilters: ImageFilters;
-  export let mediaType: MediaType | null = null;
-  export let viewerConfig: ViewerConfig = {};
-  export let rendererHandlers: RendererEventHandlers | null = null;
-  export let rotation: number = 0;
-  export let initialViewBox: ViewBox | null = null;
-  export let onviewboxchange: ((payload: { viewBox: ViewBox }) => void) | undefined = undefined;
-  export let onzoomchange: ((payload: { zoom: number; viewBox: ViewBox }) => void) | undefined = undefined;
-  export let onrotationchange: ((payload: { rotation: number }) => void) | undefined = undefined;
-  export let layers: MediaSource[] = [];
-  export let layerOpacities: Record<string, number> = {};
-  export let layoutMode: 'single' | 'two-page' | 'continuous' = 'single';
-  export let activeLayoutImages: any[] = [];
+  interface Props {
+    rendererComponent?: any;
+    source?: MediaSource | null;
+    accompanyingSource?: MediaSource | null;
+    captionTracks?: MediaTextTrack[];
+    startTime?: number | null;
+    annotations?: ResolvedAnnotation[];
+    highlightIds?: string[];
+    activeAnnotationId?: string | null;
+    hoverAnnotationId?: string | null;
+    imageFilters?: ImageFilters;
+    mediaType?: MediaType | null;
+    viewerConfig?: ViewerConfig;
+    rendererHandlers?: RendererEventHandlers | null;
+    rotation?: number;
+    initialViewBox?: ViewBox | null;
+    onviewboxchange?: ((payload: { viewBox: ViewBox }) => void) | undefined;
+    onzoomchange?: ((payload: { zoom: number; viewBox: ViewBox }) => void) | undefined;
+    onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
+    layers?: MediaSource[];
+    layerOpacities?: Record<string, number>;
+    layoutMode?: 'single' | 'two-page' | 'continuous';
+    activeLayoutImages?: any[];
+    rendererInstance?: any;
+  }
 
-  export let rendererInstance: any = null;
+  let {
+    rendererComponent = null,
+    source = null,
+    accompanyingSource = null,
+    captionTracks = [],
+    startTime = null,
+    annotations = [],
+    highlightIds = [],
+    activeAnnotationId = null,
+    hoverAnnotationId = null,
+    imageFilters = { ...DEFAULT_IMAGE_FILTERS },
+    mediaType = null,
+    viewerConfig = {},
+    rendererHandlers = null,
+    rotation = 0,
+    initialViewBox = null,
+    onviewboxchange = undefined,
+    onzoomchange = undefined,
+    onrotationchange = undefined,
+    layers = [],
+    layerOpacities = {},
+    layoutMode = 'single',
+    activeLayoutImages = [],
+    rendererInstance = $bindable(null),
+  }: Props = $props();
 
   const handleMediaPlay = (detail: { time: number }) => {
     rendererHandlers?.onMediaPlay?.(detail);
@@ -68,22 +95,26 @@
     rendererHandlers?.onModelChange?.(detail);
   };
 
-  $: if (rendererInstance?.setImageFilters) {
-    if (mediaType === 'image') {
-      rendererInstance.setImageFilters(imageFilters);
-    } else {
-      rendererInstance.setImageFilters(DEFAULT_IMAGE_FILTERS);
+  $effect(() => {
+    if (rendererInstance?.setImageFilters) {
+      if (mediaType === 'image') {
+        rendererInstance.setImageFilters(imageFilters);
+      } else {
+        rendererInstance.setImageFilters(DEFAULT_IMAGE_FILTERS);
+      }
     }
-  }
+  });
 
-  $: if (rendererInstance?.setRotation && mediaType === 'image') {
-    rendererInstance.setRotation(rotation);
-  }
+  $effect(() => {
+    if (rendererInstance?.setRotation && mediaType === 'image') {
+      rendererInstance.setRotation(rotation);
+    }
+  });
 </script>
 
 {#if rendererComponent && source}
-  <svelte:component
-    this={rendererComponent}
+  {@const Renderer = rendererComponent}
+  <Renderer
     bind:this={rendererInstance}
     source={source}
     {accompanyingSource}
@@ -104,27 +135,22 @@
     modelConfig={viewerConfig.modelConfig}
     initialPage={viewerConfig.pdf?.page}
     onviewboxchange={onviewboxchange}
+    onviewBoxChange={onviewboxchange}
     onzoomchange={onzoomchange}
+    onzoomChange={onzoomchange}
     onrotationchange={onrotationchange}
+    onrotationChange={onrotationchange}
     onmediaplay={handleMediaPlay}
     onmediapause={handleMediaPause}
     onmediatimeupdate={handleMediaTimeUpdate}
     onmediaseek={handleMediaSeek}
+    onmediasegmentend={handleMediaSegmentEnd}
     onmodelchange={handleModelChange}
     onannotationhover={handleAnnotationHover}
+    onannotationHover={handleAnnotationHover}
     onannotationselect={handleAnnotationSelect}
+    onannotationSelect={handleAnnotationSelect}
     onannotationclear={handleAnnotationClear}
-    on:viewBoxChange={(event) => onviewboxchange?.(event.detail)}
-    on:zoomChange={(event) => onzoomchange?.(event.detail)}
-    on:rotationChange={(event) => onrotationchange?.(event.detail)}
-    on:mediaPlay={(event) => handleMediaPlay(event.detail)}
-    on:mediaPause={(event) => handleMediaPause(event.detail)}
-    on:mediaTimeUpdate={(event) => handleMediaTimeUpdate(event.detail)}
-    on:mediaSeek={(event) => handleMediaSeek(event.detail)}
-    on:mediaSegmentEnd={handleMediaSegmentEnd}
-    on:annotationHover={(event) => handleAnnotationHover(event.detail)}
-    on:annotationSelect={(event) => handleAnnotationSelect(event.detail)}
-    on:annotationClear={handleAnnotationClear}
-    on:modelChange={(event) => handleModelChange(event.detail)}
+    onannotationClear={handleAnnotationClear}
   />
 {/if}

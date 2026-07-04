@@ -1,27 +1,30 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { getContext } from 'svelte';
   import { t } from '../../i18n';
-  import type { TocEntry, TranscriptEntry } from '../../iiif/avResolver';
 
-  export let tocEntries: TocEntry[] = [];
-  export let transcriptEntries: TranscriptEntry[] = [];
-  export let activeTranscriptId: string | null = null;
-
-  const dispatch = createEventDispatcher<{
-    close: void;
-    seek: { canvasId?: string | null; time: number };
-  }>();
-
-  let activeTab: 'toc' | 'transcript' = 'toc';
-
-  $: hasToc = tocEntries.length > 0;
-  $: hasTranscript = transcriptEntries.length > 0;
-  $: if (!hasToc && hasTranscript) {
-    activeTab = 'transcript';
+  interface Props {
+    onclose?: () => void;
   }
-  $: if (hasToc && !hasTranscript) {
-    activeTab = 'toc';
-  }
+
+  let { onclose = undefined }: Props = $props();
+
+  const viewer = getContext<any>('viewer-context');
+  const { tocEntries, transcriptEntries, activeTranscriptId } = viewer.derived;
+  const actions = viewer.actions;
+
+  let activeTab = $state<'toc' | 'transcript'>('toc');
+
+  let hasToc = $derived($tocEntries.length > 0);
+  let hasTranscript = $derived($transcriptEntries.length > 0);
+
+  $effect(() => {
+    if (!hasToc && hasTranscript) {
+      activeTab = 'transcript';
+    }
+    if (hasToc && !hasTranscript) {
+      activeTab = 'toc';
+    }
+  });
 
   const formatTime = (value?: number): string => {
     if (value == null || Number.isNaN(value)) return '--:--';
@@ -43,7 +46,7 @@
       class="panel__close"
       type="button"
       aria-label={$t('viewer.panels.contents.close')}
-      on:click={() => dispatch('close')}
+      onclick={() => onclose?.()}
     >
       {$t('common.closeGlyph')}
     </button>
@@ -61,7 +64,7 @@
         type="button"
         role="tab"
         aria-selected={activeTab === 'toc'}
-        on:click={() => (activeTab = 'toc')}
+        onclick={() => (activeTab = 'toc')}
       >
         {$t('viewer.panels.contents.tocTab')}
       </button>
@@ -71,7 +74,7 @@
         type="button"
         role="tab"
         aria-selected={activeTab === 'transcript'}
-        on:click={() => (activeTab = 'transcript')}
+        onclick={() => (activeTab = 'transcript')}
       >
         {$t('viewer.panels.contents.transcriptTab')}
       </button>
@@ -80,17 +83,17 @@
 
   <div class="panel__body">
     {#if activeTab === 'toc'}
-      {#if tocEntries.length === 0}
+      {#if $tocEntries.length === 0}
         <div class="panel__empty">{$t('viewer.panels.contents.emptyToc')}</div>
       {:else}
         <ul class="contents-list" aria-label={$t('viewer.panels.contents.tocLabel')}>
-          {#each tocEntries as entry}
+          {#each $tocEntries as entry}
             <li style={`--toc-depth: ${entry.depth}`}> 
               <button
                 class="contents-list__item"
                 type="button"
-                on:click={() =>
-                  dispatch('seek', { canvasId: entry.canvasId, time: entry.start })}
+                onclick={() =>
+                  actions.seek({ canvasId: entry.canvasId, time: entry.start })}
               >
                 <span class="contents-list__time">{formatTime(entry.start)}</span>
                 <span class="contents-list__label">
@@ -102,20 +105,20 @@
         </ul>
       {/if}
     {:else}
-      {#if transcriptEntries.length === 0}
+      {#if $transcriptEntries.length === 0}
         <div class="panel__empty">{$t('viewer.panels.contents.emptyTranscript')}</div>
       {:else}
         <ul
           class="transcript-list"
           aria-label={$t('viewer.panels.contents.transcriptLabel')}
         >
-          {#each transcriptEntries as entry}
+          {#each $transcriptEntries as entry}
             <li>
               <button
-                class:transcript-list__item--active={entry.id === activeTranscriptId}
+                class:transcript-list__item--active={entry.id === $activeTranscriptId}
                 class="transcript-list__item"
                 type="button"
-                on:click={() => dispatch('seek', { time: entry.start })}
+                onclick={() => actions.seek({ time: entry.start })}
               >
                 <span class="transcript-list__time">{formatTime(entry.start)}</span>
                 <span class="transcript-list__label">{entry.text}</span>

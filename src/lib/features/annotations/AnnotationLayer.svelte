@@ -1,20 +1,30 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { ViewBox } from '../../core/types/viewer';
 
-  export let annotations: ResolvedAnnotation[] = [];
-  export let viewBox: ViewBox | null = null;
-  export let width = 0;
-  export let height = 0;
-  export let activeAnnotationId: string | null = null;
-  export let hoverAnnotationId: string | null = null;
+  interface Props {
+    annotations?: ResolvedAnnotation[];
+    viewBox?: ViewBox | null;
+    width?: number;
+    height?: number;
+    activeAnnotationId?: string | null;
+    hoverAnnotationId?: string | null;
+    onannotationHover?: (payload: { id: string | null }) => void;
+    onannotationSelect?: (payload: { id: string }) => void;
+    onannotationClear?: () => void;
+  }
 
-  const dispatch = createEventDispatcher<{
-    annotationHover: { id: string | null };
-    annotationSelect: { id: string };
-    annotationClear: void;
-  }>();
+  let {
+    annotations = [],
+    viewBox = null,
+    width = 0,
+    height = 0,
+    activeAnnotationId = null,
+    hoverAnnotationId = null,
+    onannotationHover = undefined,
+    onannotationSelect = undefined,
+    onannotationClear = undefined,
+  }: Props = $props();
 
   const projectX = (canvasX: number) =>
     ((canvasX - (viewBox?.x ?? 0)) / (viewBox?.w ?? 1)) * width;
@@ -55,7 +65,7 @@
     annotationLabel(annotation) || 'Annotation';
 
   const selectAnnotation = (id: string) => {
-    dispatch('annotationSelect', { id });
+    onannotationSelect?.({ id });
   };
 
   const handleAnnotationKeydown = (event: KeyboardEvent, id: string) => {
@@ -96,10 +106,10 @@
           tabindex="0"
           aria-label={annotationAccessibleName(annotation)}
           aria-pressed={annotation.id === activeAnnotationId}
-          on:mouseenter={() => dispatch('annotationHover', { id: annotation.id })}
-          on:mouseleave={() => dispatch('annotationHover', { id: null })}
-          on:click|stopPropagation={() => selectAnnotation(annotation.id)}
-          on:keydown={(event) => handleAnnotationKeydown(event, annotation.id)}
+          onmouseenter={() => onannotationHover?.({ id: annotation.id })}
+          onmouseleave={() => onannotationHover?.({ id: null })}
+          onclick={(event) => { event.stopPropagation(); selectAnnotation(annotation.id); }}
+          onkeydown={(event) => handleAnnotationKeydown(event, annotation.id)}
         />
         {#if annotationLabel(annotation)}
           <text
@@ -122,10 +132,10 @@
             tabindex="0"
             aria-label={annotationAccessibleName(annotation)}
             aria-pressed={annotation.id === activeAnnotationId}
-            on:mouseenter={() => dispatch('annotationHover', { id: annotation.id })}
-            on:mouseleave={() => dispatch('annotationHover', { id: null })}
-            on:click|stopPropagation={() => selectAnnotation(annotation.id)}
-            on:keydown={(event) => handleAnnotationKeydown(event, annotation.id)}
+            onmouseenter={() => onannotationHover?.({ id: annotation.id })}
+            onmouseleave={() => onannotationHover?.({ id: null })}
+            onclick={(event) => { event.stopPropagation(); selectAnnotation(annotation.id); }}
+            onkeydown={(event) => handleAnnotationKeydown(event, annotation.id)}
           />
           {#if annotationLabel(annotation)}
             {@const labelPos = polygonLabelPosition(annotation.polygon.points)}
@@ -144,10 +154,10 @@
             tabindex="0"
             aria-label={annotationAccessibleName(annotation)}
             aria-pressed={annotation.id === activeAnnotationId}
-            on:mouseenter={() => dispatch('annotationHover', { id: annotation.id })}
-            on:mouseleave={() => dispatch('annotationHover', { id: null })}
-            on:click|stopPropagation={() => selectAnnotation(annotation.id)}
-            on:keydown={(event) => handleAnnotationKeydown(event, annotation.id)}
+            onmouseenter={() => onannotationHover?.({ id: annotation.id })}
+            onmouseleave={() => onannotationHover?.({ id: null })}
+            onclick={(event) => { event.stopPropagation(); selectAnnotation(annotation.id); }}
+            onkeydown={(event) => handleAnnotationKeydown(event, annotation.id)}
           />
           {#if annotationLabel(annotation)}
             {@const labelPos = polygonLabelPosition(annotation.polygon.points)}
@@ -169,10 +179,10 @@
           tabindex="0"
           aria-label={annotationAccessibleName(annotation)}
           aria-pressed={annotation.id === activeAnnotationId}
-          on:mouseenter={() => dispatch('annotationHover', { id: annotation.id })}
-          on:mouseleave={() => dispatch('annotationHover', { id: null })}
-          on:click|stopPropagation={() => selectAnnotation(annotation.id)}
-          on:keydown={(event) => handleAnnotationKeydown(event, annotation.id)}
+          onmouseenter={() => onannotationHover?.({ id: annotation.id })}
+          onmouseleave={() => onannotationHover?.({ id: null })}
+          onclick={(event) => { event.stopPropagation(); selectAnnotation(annotation.id); }}
+          onkeydown={(event) => handleAnnotationKeydown(event, annotation.id)}
         />
         {#if annotationLabel(annotation)}
           <text

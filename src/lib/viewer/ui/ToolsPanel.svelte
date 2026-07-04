@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { getContext } from 'svelte';
   import { t } from '../../i18n';
-  import type { ImageFilters } from '../../core/types/filters';
-  import type { MediaType } from '../../iiif/mediaResolver';
 
-  export let mediaType: MediaType | null = null;
-  export let imageFilters: ImageFilters;
+  interface Props {
+    onclose?: () => void;
+  }
 
-  const dispatch = createEventDispatcher<{
-    close: void;
-    updateFilter: { key: keyof ImageFilters; value: ImageFilters[keyof ImageFilters] };
-    reset: void;
-  }>();
+  let { onclose = undefined }: Props = $props();
+
+  const viewer = getContext<any>('viewer-context');
+  const { mediaType } = viewer.derived;
+  const { imageFilters } = viewer.state;
+  const controller = viewer.controller;
 </script>
 
 <section class="panel panel--tools" aria-label={$t('viewer.panels.tools.label')}>
@@ -21,13 +21,13 @@
       class="panel__close"
       type="button"
       aria-label={$t('viewer.panels.tools.close')}
-      on:click={() => dispatch('close')}
+      onclick={() => onclose?.()}
     >
       {$t('common.closeGlyph')}
     </button>
   </div>
   <div class="panel__body">
-    {#if mediaType !== 'image'}
+    {#if $mediaType !== 'image'}
       <div class="tools__note">
         {$t('viewer.panels.tools.note')}
       </div>
@@ -35,7 +35,7 @@
     <div class="tools__group">
       <label class="tools__label" for="brightness-slider">
         <span>{$t('viewer.panels.tools.brightness')}</span>
-        <span class="tools__value">{imageFilters.brightness}%</span>
+        <span class="tools__value">{$imageFilters.brightness}%</span>
       </label>
       <input
         id="brightness-slider"
@@ -43,13 +43,13 @@
         type="range"
         min="0"
         max="200"
-        value={imageFilters.brightness}
-        disabled={mediaType !== 'image'}
-        on:input={(event) =>
-          dispatch('updateFilter', {
-            key: 'brightness',
-            value: Number((event.currentTarget as HTMLInputElement).value),
-          })
+        value={$imageFilters.brightness}
+        disabled={$mediaType !== 'image'}
+        oninput={(event) =>
+          controller.updateImageFilter(
+            'brightness',
+            Number((event.currentTarget as HTMLInputElement).value),
+          )
         }
       />
     </div>
@@ -57,7 +57,7 @@
     <div class="tools__group">
       <label class="tools__label" for="contrast-slider">
         <span>{$t('viewer.panels.tools.contrast')}</span>
-        <span class="tools__value">{imageFilters.contrast}%</span>
+        <span class="tools__value">{$imageFilters.contrast}%</span>
       </label>
       <input
         id="contrast-slider"
@@ -65,13 +65,13 @@
         type="range"
         min="0"
         max="200"
-        value={imageFilters.contrast}
-        disabled={mediaType !== 'image'}
-        on:input={(event) =>
-          dispatch('updateFilter', {
-            key: 'contrast',
-            value: Number((event.currentTarget as HTMLInputElement).value),
-          })
+        value={$imageFilters.contrast}
+        disabled={$mediaType !== 'image'}
+        oninput={(event) =>
+          controller.updateImageFilter(
+            'contrast',
+            Number((event.currentTarget as HTMLInputElement).value),
+          )
         }
       />
     </div>
@@ -79,7 +79,7 @@
     <div class="tools__group">
       <label class="tools__label" for="saturation-slider">
         <span>{$t('viewer.panels.tools.saturation')}</span>
-        <span class="tools__value">{imageFilters.saturation}%</span>
+        <span class="tools__value">{$imageFilters.saturation}%</span>
       </label>
       <input
         id="saturation-slider"
@@ -87,13 +87,13 @@
         type="range"
         min="0"
         max="200"
-        value={imageFilters.saturation}
-        disabled={mediaType !== 'image'}
-        on:input={(event) =>
-          dispatch('updateFilter', {
-            key: 'saturation',
-            value: Number((event.currentTarget as HTMLInputElement).value),
-          })
+        value={$imageFilters.saturation}
+        disabled={$mediaType !== 'image'}
+        oninput={(event) =>
+          controller.updateImageFilter(
+            'saturation',
+            Number((event.currentTarget as HTMLInputElement).value),
+          )
         }
       />
     </div>
@@ -104,13 +104,13 @@
       <span>{$t('viewer.panels.tools.invert')}</span>
       <input
         type="checkbox"
-        checked={imageFilters.invert}
-        disabled={mediaType !== 'image'}
-        on:change={(event) =>
-          dispatch('updateFilter', {
-            key: 'invert',
-            value: (event.currentTarget as HTMLInputElement).checked,
-          })
+        checked={$imageFilters.invert}
+        disabled={$mediaType !== 'image'}
+        onchange={(event) =>
+          controller.updateImageFilter(
+            'invert',
+            (event.currentTarget as HTMLInputElement).checked,
+          )
         }
       />
     </label>
@@ -119,13 +119,13 @@
       <span>{$t('viewer.panels.tools.grayscale')}</span>
       <input
         type="checkbox"
-        checked={imageFilters.grayscale}
-        disabled={mediaType !== 'image'}
-        on:change={(event) =>
-          dispatch('updateFilter', {
-            key: 'grayscale',
-            value: (event.currentTarget as HTMLInputElement).checked,
-          })
+        checked={$imageFilters.grayscale}
+        disabled={$mediaType !== 'image'}
+        onchange={(event) =>
+          controller.updateImageFilter(
+            'grayscale',
+            (event.currentTarget as HTMLInputElement).checked,
+          )
         }
       />
     </label>
@@ -133,8 +133,8 @@
     <button
       class="tools__reset"
       type="button"
-      disabled={mediaType !== 'image'}
-      on:click={() => dispatch('reset')}
+      disabled={$mediaType !== 'image'}
+      onclick={() => controller.resetImageFilters()}
     >
       {$t('viewer.panels.tools.reset')}
     </button>

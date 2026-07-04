@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, getContext } from 'svelte';
+  import { getContext } from 'svelte';
   import { t } from '../../i18n';
   import type { MediaType } from '../../iiif/mediaResolver';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
@@ -13,6 +13,14 @@
     selectedCanvasIndex?: number;
     totalCanvases?: number;
     zoomPercent?: number;
+    onhome?: () => void;
+    onzoomIn?: () => void;
+    onzoomOut?: () => void;
+    onrotate?: () => void;
+    onprevCanvas?: () => void;
+    onnextCanvas?: () => void;
+    onsetCanvasIndex?: (payload: { index: number }) => void;
+    onsetZoomPercent?: (payload: { percent: number }) => void;
   }
 
   let {
@@ -23,6 +31,14 @@
     selectedCanvasIndex = 0,
     totalCanvases = 0,
     zoomPercent = 100,
+    onhome = undefined,
+    onzoomIn = undefined,
+    onzoomOut = undefined,
+    onrotate = undefined,
+    onprevCanvas = undefined,
+    onnextCanvas = undefined,
+    onsetCanvasIndex = undefined,
+    onsetZoomPercent = undefined,
   }: Props = $props();
   const viewportState = getContext<ViewportState | undefined>(VIEWPORT_STATE_CONTEXT_KEY);
   let effectiveSelectedCanvasIndex = $derived(
@@ -97,7 +113,7 @@
     const clamped = Math.min(Math.max(parsed, 1), totalCanvases);
     canvasNumberInput = String(clamped);
     if (clamped !== currentCanvasNumber) {
-      dispatch('setCanvasIndex', { index: clamped - 1 });
+      onsetCanvasIndex?.({ index: clamped - 1 });
     }
   };
 
@@ -111,7 +127,7 @@
     const clamped = Math.min(Math.max(parsed, MIN_ZOOM_PERCENT), MAX_ZOOM_PERCENT);
     zoomPercentInput = String(clamped);
     if (clamped !== currentZoomPercent) {
-      dispatch('setZoomPercent', { percent: clamped });
+      onsetZoomPercent?.({ percent: clamped });
     }
   };
 
@@ -155,16 +171,7 @@
     }
   });
 
-  const dispatch = createEventDispatcher<{
-    home: void;
-    zoomIn: void;
-    zoomOut: void;
-    rotate: void;
-    prevCanvas: void;
-    nextCanvas: void;
-    setCanvasIndex: { index: number };
-    setZoomPercent: { percent: number };
-  }>();
+
 </script>
 
 {#if isVisible}
@@ -181,7 +188,7 @@
         aria-label={$t('viewer.toolbar.rotateRight')}
         title={$t('viewer.toolbar.rotateRight')}
         disabled={!canRotate}
-        onclick={() => dispatch('rotate')}
+        onclick={() => onrotate?.()}
       >
         <svg
           class="stage__toolbar-icon stage__toolbar-icon--rotate"
@@ -216,7 +223,7 @@
         type="button"
         aria-label={$t('viewer.stage.nav.prev')}
         disabled={!canPrevCanvas}
-        onclick={() => dispatch('prevCanvas')}
+        onclick={() => onprevCanvas?.()}
       >
         <svg class="stage__toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -252,7 +259,7 @@
         type="button"
         aria-label={$t('viewer.stage.nav.next')}
         disabled={!canNextCanvas}
-        onclick={() => dispatch('nextCanvas')}
+        onclick={() => onnextCanvas?.()}
       >
         <svg class="stage__toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -276,7 +283,7 @@
         aria-label={$t('viewer.toolbar.zoomOut')}
         title={$t('viewer.toolbar.zoomOut')}
         disabled={!hasSource || !canZoom}
-        onclick={() => dispatch('zoomOut')}
+        onclick={() => onzoomOut?.()}
       >
         <svg class="stage__toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -310,7 +317,7 @@
         aria-label={$t('viewer.toolbar.zoomIn')}
         title={$t('viewer.toolbar.zoomIn')}
         disabled={!hasSource || !canZoom}
-        onclick={() => dispatch('zoomIn')}
+        onclick={() => onzoomIn?.()}
       >
         <svg class="stage__toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -333,7 +340,7 @@
         aria-label={$t('viewer.toolbar.home')}
         title={$t('viewer.toolbar.home')}
         disabled={!canHome}
-        onclick={() => dispatch('home')}
+        onclick={() => onhome?.()}
       >
         <svg class="stage__toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path

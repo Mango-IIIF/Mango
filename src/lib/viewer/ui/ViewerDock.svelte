@@ -1,6 +1,15 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { t } from '../../i18n';
+
+  type PanelName =
+    | 'thumbnails'
+    | 'contents'
+    | 'search'
+    | 'metadata'
+    | 'annotations'
+    | 'tools'
+    | 'settings'
+    | 'layers';
 
   interface Props {
     allowThumbnails?: boolean;
@@ -20,6 +29,7 @@
     allowLayers?: boolean;
     showLayers?: boolean;
     compact?: boolean;
+    onpanelToggle?: (payload: { panel: PanelName; open: boolean }) => void;
   }
 
   let {
@@ -40,22 +50,8 @@
     showLayers = false,
     showSettings = false,
     compact = false,
+    onpanelToggle = undefined,
   }: Props = $props();
-
-  const dispatch = createEventDispatcher<{
-    panelToggle: {
-      panel:
-        | 'thumbnails'
-        | 'contents'
-        | 'search'
-        | 'metadata'
-        | 'annotations'
-        | 'tools'
-        | 'settings'
-        | 'layers';
-      open: boolean;
-    };
-  }>();
 </script>
 
 <div
@@ -75,7 +71,7 @@
       aria-pressed={showThumbnails}
       aria-label={$t('viewer.stage.controls.toggleGallery')}
       onclick={() =>
-        dispatch('panelToggle', { panel: 'thumbnails', open: !showThumbnails })}
+        onpanelToggle?.( { panel: 'thumbnails', open: !showThumbnails })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -98,7 +94,7 @@
       type="button"
       aria-pressed={showContents}
       aria-label={$t('viewer.stage.controls.toggleContents')}
-      onclick={() => dispatch('panelToggle', { panel: 'contents', open: !showContents })}
+      onclick={() => onpanelToggle?.( { panel: 'contents', open: !showContents })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -124,7 +120,7 @@
       type="button"
       aria-pressed={showMetadata}
       aria-label={$t('viewer.stage.controls.toggleMetadata')}
-      onclick={() => dispatch('panelToggle', { panel: 'metadata', open: !showMetadata })}
+      onclick={() => onpanelToggle?.( { panel: 'metadata', open: !showMetadata })}
     >
       <span class="viewer__dock-icon viewer__dock-icon--info" aria-hidden="true">
         <span class="viewer__dock-info-chip">i</span>
@@ -143,7 +139,7 @@
       type="button"
       aria-pressed={showSearch}
       aria-label={$t('viewer.stage.controls.toggleSearch')}
-      onclick={() => dispatch('panelToggle', { panel: 'search', open: !showSearch })}
+      onclick={() => onpanelToggle?.( { panel: 'search', open: !showSearch })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -166,7 +162,7 @@
       aria-pressed={showAnnotations}
       aria-label={$t('viewer.stage.controls.toggleAnnotations')}
       onclick={() =>
-        dispatch('panelToggle', { panel: 'annotations', open: !showAnnotations })}
+        onpanelToggle?.( { panel: 'annotations', open: !showAnnotations })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -188,7 +184,7 @@
       type="button"
       aria-pressed={showTools}
       aria-label={$t('viewer.stage.controls.toggleTools')}
-      onclick={() => dispatch('panelToggle', { panel: 'tools', open: !showTools })}
+      onclick={() => onpanelToggle?.( { panel: 'tools', open: !showTools })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -212,7 +208,7 @@
       type="button"
       aria-pressed={showLayers}
       aria-label={$t('viewer.stage.controls.toggleLayers')}
-      onclick={() => dispatch('panelToggle', { panel: 'layers', open: !showLayers })}
+      onclick={() => onpanelToggle?.( { panel: 'layers', open: !showLayers })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -232,7 +228,7 @@
       type="button"
       aria-pressed={showSettings}
       aria-label="Toggle settings"
-      onclick={() => dispatch('panelToggle', { panel: 'settings', open: !showSettings })}
+      onclick={() => onpanelToggle?.( { panel: 'settings', open: !showSettings })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
