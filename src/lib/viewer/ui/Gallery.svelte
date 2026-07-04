@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, getContext } from 'svelte';
+  import { getContext } from 'svelte';
   import { t } from '../../i18n';
   import type { CanvasSummary } from '../../state/manifests';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
@@ -9,9 +9,17 @@
     canvases?: CanvasSummary[];
     canvasThumbnails?: Array<string | null>;
     selectedCanvasIndex?: number;
+    onpanelToggle?: (payload: { panel: 'thumbnails'; open: boolean }) => void;
+    oncanvasSelect?: (payload: { index: number }) => void;
   }
 
-  let { canvases = [], canvasThumbnails = [], selectedCanvasIndex = 0 }: Props = $props();
+  let {
+    canvases = [],
+    canvasThumbnails = [],
+    selectedCanvasIndex = 0,
+    onpanelToggle = undefined,
+    oncanvasSelect = undefined,
+  }: Props = $props();
   const viewportState = getContext<ViewportState | undefined>(VIEWPORT_STATE_CONTEXT_KEY);
   let effectiveSelectedCanvasIndex = $derived(
     viewportState?.selectedCanvasIndex ?? selectedCanvasIndex,
@@ -19,10 +27,7 @@
 
   let canvasButtons: HTMLButtonElement[] = [];
 
-  const dispatch = createEventDispatcher<{
-    panelToggle: { panel: 'thumbnails'; open: boolean };
-    canvasSelect: { index: number };
-  }>();
+
 
   const focusCanvasButton = (index: number) => {
     canvasButtons[index]?.focus();
@@ -32,24 +37,24 @@
     if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
       event.preventDefault();
       const next = Math.min(canvases.length - 1, index + 1);
-      dispatch('canvasSelect', { index: next });
+      oncanvasSelect?.({ index: next });
       focusCanvasButton(next);
     }
     if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
       event.preventDefault();
       const next = Math.max(0, index - 1);
-      dispatch('canvasSelect', { index: next });
+      oncanvasSelect?.({ index: next });
       focusCanvasButton(next);
     }
     if (event.key === 'Home') {
       event.preventDefault();
-      dispatch('canvasSelect', { index: 0 });
+      oncanvasSelect?.({ index: 0 });
       focusCanvasButton(0);
     }
     if (event.key === 'End') {
       event.preventDefault();
       const next = Math.max(0, canvases.length - 1);
-      dispatch('canvasSelect', { index: next });
+      oncanvasSelect?.({ index: next });
       focusCanvasButton(next);
     }
   };
@@ -62,7 +67,7 @@
       class="gallery__close"
       type="button"
       aria-label={$t('viewer.gallery.hide')}
-      onclick={() => dispatch('panelToggle', { panel: 'thumbnails', open: false })}
+      onclick={() => onpanelToggle?.({ panel: 'thumbnails', open: false })}
     >
       {$t('common.closeGlyph')}
     </button>
@@ -80,7 +85,7 @@
             type="button"
             aria-selected={canvas.index === effectiveSelectedCanvasIndex}
             role="option"
-            onclick={() => dispatch('canvasSelect', { index: canvas.index })}
+            onclick={() => oncanvasSelect?.({ index: canvas.index })}
             onkeydown={(event) => handleCanvasKeydown(event, canvas.index)}
           >
             <span class="gallery__thumb">

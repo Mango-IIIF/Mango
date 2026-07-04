@@ -1,29 +1,16 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import { supportedLocales, t } from '../../i18n';
 
   interface Props {
-    layout?: '1x1' | '1x2' | '2x1' | '2x2';
-    theme?: 'dark' | 'light';
-    locale?: string;
-    onlayoutchange?: ((layout: '1x1' | '1x2' | '2x1' | '2x2') => void) | undefined;
-    onthemechange?: ((theme: 'dark' | 'light') => void) | undefined;
-    onlocalechange?: ((locale: string) => void) | undefined;
-    layoutMode?: 'single' | 'two-page' | 'continuous' | 'gallery';
-    onlayoutmodechange?: ((mode: 'single' | 'two-page' | 'continuous' | 'gallery') => void) | undefined;
     onclose?: (() => void) | undefined;
   }
 
-  let {
-    layout = '1x1',
-    theme = 'dark',
-    locale = 'en',
-    layoutMode = 'single',
-    onlayoutchange = undefined,
-    onthemechange = undefined,
-    onlocalechange = undefined,
-    onlayoutmodechange = undefined,
-    onclose = undefined,
-  }: Props = $props();
+  let { onclose = undefined }: Props = $props();
+
+  const viewer = getContext<any>('viewer-context');
+  const settings = viewer.settings;
+  const { layoutMode } = viewer.derived;
 
   const layouts: Array<'1x1' | '1x2' | '2x1' | '2x2'> = ['1x1', '1x2', '2x1', '2x2'];
 </script>
@@ -39,7 +26,7 @@
     <!-- language -->
     <div class="settings-panel__section">
       <div class="settings-panel__label">{$t('workspace.language')}</div>
-      <select value={locale} onchange={(event) => onlocalechange?.((event.currentTarget as HTMLSelectElement).value)}>
+      <select value={settings.locale} onchange={(event) => settings.locale = (event.currentTarget as HTMLSelectElement).value}>
         {#each supportedLocales as option}
           <option value={option}>{option.toUpperCase()}</option>
         {/each}
@@ -50,8 +37,8 @@
     <div class="settings-panel__section">
       <div class="settings-panel__label">{$t('workspace.theme')}</div>
       <div class="panel__tabs">
-        <button type="button" class="panel__tab" class:panel__tab--active={theme === 'dark'} onclick={() => onthemechange?.('dark')}>{$t('workspace.themeDark')}</button>
-        <button type="button" class="panel__tab" class:panel__tab--active={theme === 'light'} onclick={() => onthemechange?.('light')}>{$t('workspace.themeLight')}</button>
+        <button type="button" class="panel__tab" class:panel__tab--active={settings.theme === 'dark'} onclick={() => settings.theme = 'dark'}>{$t('workspace.themeDark')}</button>
+        <button type="button" class="panel__tab" class:panel__tab--active={settings.theme === 'light'} onclick={() => settings.theme = 'light'}>{$t('workspace.themeLight')}</button>
       </div>
     </div>
 
@@ -62,26 +49,26 @@
         <button
           type="button"
           class="panel__tab"
-          class:panel__tab--active={layoutMode === 'single'}
-          onclick={() => onlayoutmodechange?.('single')}
+          class:panel__tab--active={$layoutMode === 'single'}
+          onclick={() => settings.layoutMode = 'single'}
         >{$t('workspace.viewModeSingle') ?? 'Single'}</button>
         <button
           type="button"
           class="panel__tab"
-          class:panel__tab--active={layoutMode === 'two-page'}
-          onclick={() => onlayoutmodechange?.('two-page')}
+          class:panel__tab--active={$layoutMode === 'two-page'}
+          onclick={() => settings.layoutMode = 'two-page'}
         >{$t('workspace.viewModePaged') ?? 'Side by Side'}</button>
         <button
           type="button"
           class="panel__tab"
-          class:panel__tab--active={layoutMode === 'continuous'}
-          onclick={() => onlayoutmodechange?.('continuous')}
+          class:panel__tab--active={$layoutMode === 'continuous'}
+          onclick={() => settings.layoutMode = 'continuous'}
         >{$t('workspace.viewModeContinuous') ?? 'Continuous'}</button>
         <button
           type="button"
           class="panel__tab"
-          class:panel__tab--active={layoutMode === 'gallery'}
-          onclick={() => onlayoutmodechange?.('gallery')}
+          class:panel__tab--active={$layoutMode === 'gallery'}
+          onclick={() => settings.layoutMode = 'gallery'}
         >{$t('workspace.viewModeGallery') ?? 'Gallery'}</button>
       </div>
     </div>
@@ -94,8 +81,8 @@
           <button
             type="button"
             class="panel__tab"
-            class:panel__tab--active={layout === option}
-            onclick={() => onlayoutchange?.(option)}
+            class:panel__tab--active={settings.layout === option}
+            onclick={() => settings.layout = option}
           >{option}</button>
         {/each}
       </div>

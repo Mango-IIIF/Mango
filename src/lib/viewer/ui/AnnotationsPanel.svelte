@@ -1,29 +1,30 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import { t } from '../../i18n';
-  import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import { sanitizeHtml } from '../util/sanitiseHtml';
 
   interface Props {
-    annotationMode?: 'edit' | 'create';
-    allowCreateMode?: boolean;
-    overlayAnnotations?: ResolvedAnnotation[];
-    activeAnnotationId?: string | null;
-    onmodechange?: ((detail: { mode: 'edit' | 'create' }) => void) | undefined;
-    onannotationselect?: ((detail: { id: string }) => void) | undefined;
     onclose?: (() => void) | undefined;
   }
 
-  let {
-    annotationMode = 'edit',
-    allowCreateMode = false,
-    overlayAnnotations = [],
-    activeAnnotationId = null,
-    onmodechange = undefined,
-    onannotationselect = undefined,
-    onclose = undefined,
-  }: Props = $props();
-  let effectiveMode = $derived(allowCreateMode ? annotationMode : 'edit');
+  let { onclose = undefined }: Props = $props();
 
+  const viewer = getContext<any>('viewer-context');
+  const { overlayAnnotations } = viewer.derived;
+  const { activeAnnotationId } = viewer.state;
+  const controller = viewer.controller;
+
+  let allowCreateMode = $derived(viewer.canDrawAnnotations);
+  let effectiveMode = $derived(viewer.annotationMode);
+
+  const setMode = (mode: 'edit' | 'create') => {
+    if (!allowCreateMode) return;
+    controller.setAnnotationMode(mode);
+  };
+
+  const selectAnnotation = (id: string) => {
+    controller.handleAnnotationSelect({ id });
+  };
 </script>
 
 <section
@@ -48,7 +49,7 @@
         type="button"
         class="panel__tab"
         class:panel__tab--active={effectiveMode === 'edit'}
-        onclick={() => onmodechange?.({ mode: 'edit' })}
+        onclick={() => setMode('edit')}
       >
         View List
       </button>
@@ -56,14 +57,14 @@
         type="button"
         class="panel__tab"
         class:panel__tab--active={effectiveMode === 'create'}
-        onclick={() => onmodechange?.({ mode: 'create' })}
+        onclick={() => setMode('create')}
       >
         Draw Shape
       </button>
     </div>
   {/if}
   <div class="panel__body">
-    {#if overlayAnnotations.length === 0}
+    {#if $overlayAnnotations.length === 0}
       <div class="panel__empty">
         {#if effectiveMode === 'create'}
           Draw on the image to create a new annotation.
@@ -73,13 +74,13 @@
       </div>
     {:else}
       <ul class="annotation-list">
-        {#each overlayAnnotations as annotation}
+        {#each $overlayAnnotations as annotation}
           <li>
             <button
               class="annotation-list__item {annotation.motivation?.includes('tagging') ? 'annotation-list__item--tag' : ''}"
-              class:annotation-list__item--active={annotation.id === activeAnnotationId}
+              class:annotation-list__item--active={annotation.id === $activeAnnotationId}
               type="button"
-              onclick={() => onannotationselect?.({ id: annotation.id })}
+              onclick={() => selectAnnotation(annotation.id)}
             >
               {#if annotation.motivation?.includes('tagging') || annotation.time}
                 <div class="annotation-list__header">

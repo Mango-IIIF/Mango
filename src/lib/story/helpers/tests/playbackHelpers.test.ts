@@ -22,7 +22,7 @@ describe('playbackHelpers', () => {
       const chapter: Chapter = {
         manifest: 'test',
         canvasIndex: 0,
-        narration: {
+        narrationSegment: {
           en: { start: 0, end: 10 },
         },
       } as any;
@@ -45,7 +45,7 @@ describe('playbackHelpers', () => {
       const chapter: Chapter = {
         manifest: 'test',
         canvasIndex: 0,
-        narration: {
+        narrationSegment: {
           en: { start: 10, end: 5 }, // invalid: end before start
         },
       } as any;
@@ -59,7 +59,7 @@ describe('playbackHelpers', () => {
       const chapter: Chapter = {
         manifest: 'test',
         canvasIndex: 0,
-        narration: {
+        narrationSegment: {
           en: { start: 0, end: 10 },
         },
       } as any;

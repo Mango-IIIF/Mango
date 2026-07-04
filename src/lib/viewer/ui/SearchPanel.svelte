@@ -1,30 +1,29 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { getContext } from 'svelte';
   import { t } from '../../i18n';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
 
-  export let searchQuery = '';
-  export let searchHits: ResolvedAnnotation[] = [];
-  export let selectedSearchResultId: string | null = null;
+  interface Props {
+    onclose?: () => void;
+  }
 
-  const dispatch = createEventDispatcher<{
-    close: void;
-    queryChange: { value: string };
-    resultClick: { annotation: ResolvedAnnotation };
-  }>();
+  let { onclose = undefined }: Props = $props();
+
+  const viewer = getContext<any>('viewer-context');
+  const { searchHits } = viewer.derived;
+  const { searchQuery, selectedSearchResultId } = viewer.state;
+  const controller = viewer.controller;
 
   const handleInput = (event: Event) => {
-    dispatch('queryChange', {
-      value: (event.currentTarget as HTMLInputElement).value,
-    });
+    controller.setSearchQuery((event.currentTarget as HTMLInputElement).value);
   };
 
   const clearSearch = () => {
-    dispatch('queryChange', { value: '' });
+    controller.setSearchQuery('');
   };
 
   const handleResultClick = (annotation: ResolvedAnnotation) => {
-    dispatch('resultClick', { annotation });
+    controller.handleSearchResultClick(annotation);
   };
 </script>
 
@@ -35,7 +34,7 @@
       class="panel__close"
       type="button"
       aria-label={$t('viewer.panels.search.close')}
-      on:click={() => dispatch('close')}
+      onclick={() => onclose?.()}
     >
       {$t('common.closeGlyph')}
     </button>
@@ -50,40 +49,40 @@
           id="search-input"
           class="search__input"
           type="search"
-          value={searchQuery}
+          value={$searchQuery}
           placeholder={$t('viewer.panels.search.placeholder')}
-          on:input={handleInput}
+          oninput={handleInput}
         />
-        <button class="search__clear" type="button" on:click={clearSearch}>
+        <button class="search__clear" type="button" onclick={clearSearch}>
           {$t('viewer.panels.search.clear')}
         </button>
       </div>
     </div>
     <div class="panel__hint">{$t('viewer.panels.search.hint')}</div>
-    {#if searchQuery}
+    {#if $searchQuery}
       <div class="search__count">
         {$t(
-          searchHits.length === 1
+          $searchHits.length === 1
             ? 'viewer.panels.search.matchCount_one'
             : 'viewer.panels.search.matchCount_other',
-          { count: searchHits.length },
+          { count: $searchHits.length },
         )}
       </div>
-      {#if searchHits.length === 0}
+      {#if $searchHits.length === 0}
         <div class="panel__empty">
           {$t('viewer.panels.search.noMatches')}
         </div>
       {:else}
         <ul class="search-list">
-          {#each searchHits as hit}
+          {#each $searchHits as hit}
             <li
               class="search-list__item"
-              class:search-list__item--selected={selectedSearchResultId === hit.id}
+              class:search-list__item--selected={$selectedSearchResultId === hit.id}
             >
               <button
                 class="search-list__button"
                 type="button"
-                on:click={() => handleResultClick(hit)}
+                onclick={() => handleResultClick(hit)}
               >
                 {hit.text || $t('viewer.panels.search.hitFallback')}
               </button>

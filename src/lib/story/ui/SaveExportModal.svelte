@@ -1,12 +1,15 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { t } from '../../i18n';
-  export let open = false;
-  export let payload: unknown = null;
 
-  const dispatch = createEventDispatcher<{ close: void }>();
+  interface Props {
+    open?: boolean;
+    payload?: unknown;
+    onclose?: () => void;
+  }
 
-  const close = () => dispatch('close');
+  let { open = false, payload = null, onclose = undefined }: Props = $props();
+
+  const close = () => onclose?.();
 
   const pretty = () =>
     payload ? JSON.stringify(payload, null, 2) : '// No export payload available';
@@ -33,11 +36,11 @@
 
 <div class="save-modal" hidden={!open} aria-hidden={!open}>
   {#if open}
-    <div class="save-modal__scrim" role="presentation" on:click={close}></div>
+    <div class="save-modal__scrim" role="presentation" onclick={close}></div>
     <div class="save-modal__panel" role="dialog" aria-modal="true">
       <div class="save-modal__header">
         <div class="save-modal__title">{$t('storyBuilder.export.title')}</div>
-        <button class="save-modal__close" type="button" aria-label="Close" on:click={close}>
+        <button class="save-modal__close" type="button" aria-label="Close" onclick={close}>
           {$t('common.closeGlyph')}
         </button>
       </div>
@@ -50,13 +53,13 @@
       ></textarea>
 
       <div class="save-modal__actions">
-        <button class="save-modal__button save-modal__button--primary" type="button" on:click={copyJson}>
+        <button class="save-modal__button save-modal__button--primary" type="button" onclick={copyJson}>
           {$t('storyBuilder.export.copy')}
         </button>
-        <!-- <button class="save-modal__button" type="button" on:click={downloadJson}>
+        <!-- <button class="save-modal__button" type="button" onclick={downloadJson}>
           {$t('storyBuilder.export.download')}
         </button> -->
-        <button class="save-modal__button" type="button" on:click={close}>
+        <button class="save-modal__button" type="button" onclick={close}>
           {$t('common.closeGlyph')}
         </button>
       </div>

@@ -127,7 +127,7 @@
 <SaveExportModal
   open={exportModalOpen}
   payload={exportPayload}
-  on:close={onCloseSaveModal}
+  onclose={onCloseSaveModal}
 />
 
 <!-- Show Mark In/Out buttons when audio/video is loaded and chapter editor is NOT open -->

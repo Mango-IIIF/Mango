@@ -16,7 +16,6 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { t } from '../i18n';
   import OSDViewer from './OSDViewer.svelte';
   import type { ResolvedAnnotation } from '../iiif/annotationResolver';
@@ -39,6 +38,12 @@
     legacyOsdConfig?: ViewerConfig['osd'];
     rotation?: number;
     initialViewBox?: ViewBox | null;
+    onzoomChange?: (payload: { zoom: number; viewBox: ViewBox }) => void;
+    onviewBoxChange?: (payload: { viewBox: ViewBox }) => void;
+    onannotationHover?: (payload: { id: string | null }) => void;
+    onannotationSelect?: (payload: { id: string }) => void;
+    onannotationClear?: () => void;
+    onrotationChange?: (payload: { rotation: number }) => void;
   }
 
   let {
@@ -55,16 +60,13 @@
     legacyOsdConfig = undefined,
     rotation = 0,
     initialViewBox = null,
+    onzoomChange = undefined,
+    onviewBoxChange = undefined,
+    onannotationHover = undefined,
+    onannotationSelect = undefined,
+    onannotationClear = undefined,
+    onrotationChange = undefined,
   }: Props = $props();
-
-  const dispatch = createEventDispatcher<{
-    zoomChange: { zoom: number; viewBox: ViewBox };
-    viewBoxChange: { viewBox: ViewBox };
-    annotationHover: { id: string | null };
-    annotationSelect: { id: string };
-    annotationClear: void;
-    rotationChange: { rotation: number };
-  }>();
 
   let osd: any = $state(null);
   let tileSource: TileSource | null = $derived(toTileSource(source));
@@ -121,12 +123,12 @@
     {legacyOsdConfig}
     {rotation}
     {initialViewBox}
-    onviewboxchange={(detail) => dispatch('viewBoxChange', detail)}
-    onzoomchange={(detail) => dispatch('zoomChange', detail)}
-    onrotationchange={(detail) => dispatch('rotationChange', detail)}
-    onannotationhover={(detail) => dispatch('annotationHover', detail)}
-    onannotationselect={(detail) => dispatch('annotationSelect', detail)}
-    onannotationclear={() => dispatch('annotationClear')}
+    onviewboxchange={(detail) => onviewBoxChange?.(detail)}
+    onzoomchange={(detail) => onzoomChange?.(detail)}
+    onrotationchange={(detail) => onrotationChange?.(detail)}
+    onannotationhover={(detail) => onannotationHover?.(detail)}
+    onannotationselect={(detail) => onannotationSelect?.(detail)}
+    onannotationclear={() => onannotationClear?.()}
   />
 {:else}
   <div class="image-placeholder">{$t('renderers.image.noSource')}</div>

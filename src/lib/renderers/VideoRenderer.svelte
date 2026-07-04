@@ -16,7 +16,7 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import { t } from '../i18n';
   import type { ResolvedAnnotation } from '../iiif/annotationResolver';
   import type { MediaSource } from '../iiif/mediaResolver';
@@ -29,6 +29,11 @@
     captionTracks?: MediaTextTrack[];
     startTime?: number | null;
     endTime?: number | null;
+    onmediaplay?: (payload: { time: number }) => void;
+    onmediapause?: (payload: { time: number }) => void;
+    onmediatimeupdate?: (payload: { time: number; duration?: number }) => void;
+    onmediaseek?: (payload: { from: number; to: number }) => void;
+    onmediasegmentend?: () => void;
   }
 
   let {
@@ -37,16 +42,13 @@
     highlightIds = [],
     captionTracks = [],
     startTime = $bindable(null),
-    endTime = $bindable(null)
+    endTime = $bindable(null),
+    onmediaplay = undefined,
+    onmediapause = undefined,
+    onmediatimeupdate = undefined,
+    onmediaseek = undefined,
+    onmediasegmentend = undefined,
   }: Props = $props();
-
-  const dispatch = createEventDispatcher<{
-    mediaPlay: { time: number };
-    mediaPause: { time: number };
-    mediaTimeUpdate: { time: number; duration?: number };
-    mediaSeek: { from: number; to: number };
-    mediaSegmentEnd: void;
-  }>();
 
   let player: HTMLVideoElement | null = $state(null);
   let lastTime = $state(0);
@@ -64,7 +66,7 @@
     const next = clampTime(time);
     const from = player.currentTime;
     player.currentTime = next;
-    dispatch('mediaSeek', { from, to: next });
+    onmediaseek?.({ from, to: next });
   };
 
   const clampTime = (time: number) => {
@@ -125,20 +127,20 @@
     if (segmentMonitoring && endTime != null && time >= endTime) {
       segmentMonitoring = false;
       player.pause();
-      dispatch('mediaSegmentEnd');
+      onmediasegmentend?.();
       return; // Don't continue ticking after segment end
     }
     
     if (Math.abs(time - lastTime) > 0.2) {
       lastTime = time;
-      dispatch('mediaTimeUpdate', { time, duration: player.duration });
+      onmediatimeupdate?.({ time, duration: player.duration });
     }
     raf = requestAnimationFrame(tick);
   };
 
   const handlePlay = () => {
     if (!player) return;
-    dispatch('mediaPlay', { time: player.currentTime });
+    onmediaplay?.({ time: player.currentTime });
     // Enable segment monitoring when playback starts if endTime is set
     if (endTime != null) {
       segmentMonitoring = true;
@@ -150,7 +152,7 @@
 
   const handlePause = () => {
     if (!player) return;
-    dispatch('mediaPause', { time: player.currentTime });
+    onmediapause?.({ time: player.currentTime });
     segmentMonitoring = false;
     if (raf) {
       cancelAnimationFrame(raf);
@@ -205,7 +207,7 @@
         if (player) {
           const from = lastTime;
           lastTime = player.currentTime;
-          dispatch('mediaSeek', { from, to: player.currentTime });
+          onmediaseek?.({ from, to: player.currentTime });
         }
       }}
     >
