@@ -1,3 +1,4 @@
+import './hmr-patch';
 import './components/ViewerElement.svelte';
 import { registerPlugin } from './plugins/registry';
 import type { ViewerPlugin } from './core/types/plugin';
