@@ -10,10 +10,11 @@ if (typeof window !== 'undefined' && window.customElements) {
 
     if (name === 'mango-viewer') {
       const originalConnected = constructor.prototype.connectedCallback;
-      constructor.prototype.connectedCallback = function (...args) {
+      constructor.prototype.connectedCallback = function (this: HTMLElement, ...args: any[]) {
         const result = originalConnected ? originalConnected.apply(this, args) : undefined;
-        if (window.__injectMangoViewerCss) {
-          window.__injectMangoViewerCss(this);
+        const win = window as any;
+        if (win.__injectMangoViewerCss) {
+          win.__injectMangoViewerCss(this);
         }
         return result;
       };
