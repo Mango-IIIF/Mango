@@ -96,6 +96,7 @@
   "dependencies": {
     "@google/model-viewer": "^4.1.0",
     "manifesto.js": "^4.3.0",
+    "ol": "^10.9.0",
     "openseadragon": "^5.0.1",
     "pdfjs-dist": "^4.9.155"
   },

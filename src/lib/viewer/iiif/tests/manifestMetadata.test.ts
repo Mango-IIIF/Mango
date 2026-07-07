@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveManifestAttribution,
   resolveManifestDescription,
+  resolveManifestGeoLocation,
   resolveManifestTitle,
   resolveMetadataItems,
 } from '../manifestMetadata';
@@ -76,5 +77,42 @@ describe('manifest metadata language maps', () => {
       label: 'Détenu par',
       value: "Musée d'Orsay, Paris, France",
     });
+  });
+
+  it('resolves a manifest-level navPlace point', () => {
+    const location = resolveManifestGeoLocation(
+      null,
+      {
+        navPlace: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              properties: {
+                label: {
+                  en: ['The Laocoön Bronze'],
+                  it: ['Bronzo Laocoonte e i suoi figli'],
+                },
+              },
+              geometry: {
+                type: 'Point',
+                coordinates: [-118.4745559, 34.0776376],
+              },
+            },
+          ],
+        },
+      },
+      'it',
+    );
+
+    expect(location).toEqual({
+      label: 'Bronzo Laocoonte e i suoi figli',
+      lat: 34.0776376,
+      lng: -118.4745559,
+    });
+  });
+
+  it('returns null when the manifest has no navPlace point', () => {
+    expect(resolveManifestGeoLocation(null, {}, 'en')).toBeNull();
   });
 });

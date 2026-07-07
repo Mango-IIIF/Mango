@@ -20,6 +20,11 @@ export type ManifestProvider = {
     profile?: string;
   };
 };
+export type ManifestGeoLocation = {
+  label: string;
+  lat: number;
+  lng: number;
+};
 
 const normaliseArray = <T>(value: T | T[] | undefined | null): T[] => {
   if (!value) return [];
@@ -146,7 +151,7 @@ export const resolveManifestLicence = (
 export const resolveManifestProviders = (
   manifestoObject: any,
   manifestJson: any,
-  locale: string
+  locale: string,
 ): ManifestProvider[] => {
   const rawProviders = manifestJson?.provider ?? manifestoObject?.getProviders?.();
 
@@ -193,4 +198,29 @@ export const resolveManifestProviders = (
       return resolvedProvider;
     })
     .filter((provider): provider is ManifestProvider => provider !== null);
+};
+
+export const resolveManifestGeoLocation = (
+  manifestoObject: any,
+  manifestJson: any,
+  locale: string,
+): ManifestGeoLocation | null => {
+  const navPlace = manifestJson?.navPlace ?? manifestoObject?.navPlace;
+  const feature = normaliseArray(navPlace?.features)[0];
+  const coordinates = feature?.geometry?.coordinates;
+  const [lng, lat] = Array.isArray(coordinates) ? coordinates : [];
+
+  if (
+    feature?.geometry?.type !== 'Point' ||
+    typeof lat !== 'number' ||
+    typeof lng !== 'number'
+  ) {
+    return null;
+  }
+
+  return {
+    label: normaliseLangValue(feature.properties?.label, locale),
+    lat,
+    lng,
+  };
 };
