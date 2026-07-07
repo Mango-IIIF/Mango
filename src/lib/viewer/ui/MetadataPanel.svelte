@@ -1,6 +1,18 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
+  import { getContext, onMount } from 'svelte';
   import { t } from '../../i18n';
+
+  import 'ol/ol.css';
+  import OlMap from 'ol/Map.js';
+  import View from 'ol/View.js';
+  import TileLayer from 'ol/layer/Tile.js';
+  import OSM from 'ol/source/OSM.js';
+  import Feature from 'ol/Feature.js';
+  import Point from 'ol/geom/Point.js';
+  import { Vector as VectorLayer } from 'ol/layer.js';
+  import { Vector as VectorSource } from 'ol/source.js';
+  import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
+  import { fromLonLat } from 'ol/proj.js';
 
   interface Props {
     onclose?: () => void;
@@ -16,10 +28,67 @@
     manifestLicence,
     manifestMetadata,
     manifestProviders,
+    manifestGeoLocation,
   } = viewer.derived;
+
+  let mapElement: HTMLDivElement;
+  let map: OlMap | undefined;
+
+  const markerFeature = new Feature();
+  markerFeature.setStyle(
+    new Style({
+      image: new CircleStyle({
+        radius: 7,
+        fill: new Fill({ color: '#2563eb' }),
+        stroke: new Stroke({ color: '#ffffff', width: 2 }),
+      }),
+    }),
+  );
+
+  onMount(() => {
+    const vectorLayer = new VectorLayer({
+      source: new VectorSource({ features: [markerFeature] }),
+    });
+
+    map = new OlMap({
+      target: mapElement,
+      layers: [
+        new TileLayer({ source: new OSM() }),
+        vectorLayer,
+      ],
+      view: new View({
+        center: fromLonLat([0, 0]),
+        zoom: 2,
+      }),
+    });
+
+    return () => {
+      map?.setTarget(undefined);
+      map = undefined;
+    };
+  });
+
+  $effect(() => {
+    const location = $manifestGeoLocation;
+
+    if (!location) {
+      markerFeature.setGeometry(undefined);
+      return;
+    }
+
+    const markerCoords = fromLonLat([location.lng, location.lat]);
+    markerFeature.setGeometry(new Point(markerCoords));
+    map?.getView().setCenter(markerCoords);
+    map?.getView().setZoom(12);
+
+    requestAnimationFrame(() => map?.updateSize());
+  });
 </script>
 
-<section class="panel panel--metadata" aria-label={$t('viewer.panels.metadata.label')}>
+<section
+  class="panel panel--metadata"
+  aria-label={$t('viewer.panels.metadata.label')}
+>
   <div class="panel__header">
     <div class="panel__title">{$t('viewer.panels.metadata.title')}</div>
     <button
@@ -32,6 +101,10 @@
     </button>
   </div>
   <div class="panel__body metadata">
+    <div class="metadata__map" hidden={!$manifestGeoLocation}>
+      <div class="metadata__map-target" bind:this={mapElement}></div>
+    </div>
+
     {#if $manifestTitle}
       <div class="metadata__label">{$manifestTitle}</div>
     {/if}
@@ -49,20 +122,34 @@
         {#each $manifestProviders as provider}
           <div class="metadata__provider">
             {#if provider.logo?.id}
-              <img src={provider.logo.id} alt="" class="metadata__provider-logo" />
+              <img
+                src={provider.logo.id}
+                alt=""
+                class="metadata__provider-logo"
+              />
             {/if}
 
             <div class="metadata__provider-body">
               <div class="metadata__provider-name">{provider.label}</div>
 
               {#if provider.homepage?.id}
-                <a class="metadata__link" href={provider.homepage.id} target="_blank" rel="noreferrer">
+                <a
+                  class="metadata__link"
+                  href={provider.homepage.id}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   {provider.homepage.label || provider.homepage.id}
                 </a>
               {/if}
 
               {#if provider.seeAlso?.id}
-                <a class="metadata__link" href={provider.seeAlso.id} target="_blank" rel="noreferrer">
+                <a
+                  class="metadata__link"
+                  href={provider.seeAlso.id}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   {provider.seeAlso.label || provider.seeAlso.id}
                 </a>
               {/if}
@@ -74,7 +161,8 @@
     {#if $manifestAttribution.value}
       <div class="metadata__block">
         <div class="metadata__block-title">
-          {$manifestAttribution.label || $t('viewer.panels.metadata.attribution')}
+          {$manifestAttribution.label ||
+            $t('viewer.panels.metadata.attribution')}
         </div>
         <div class="metadata__block-value">
           {@html $manifestAttribution.value}
@@ -123,6 +211,11 @@
     font-size: 14px;
     font-weight: 600;
     color: var(--viewer-text);
+  }
+
+  .metadata__map-target {
+    width: 100%;
+    height: 220px;
   }
 
   .metadata__description {
@@ -188,7 +281,8 @@
     object-fit: contain;
   }
 
-  .metadata__provider-body, .metadata__provider-name{
+  .metadata__provider-body,
+  .metadata__provider-name {
     line-height: 1.8em;
     font-weight: bold;
   }
