@@ -25,8 +25,10 @@ import {
   resolveManifestLicence,
   resolveManifestTitle,
   resolveMetadataItems,
+  resolveManifestProviders,
   type ManifestAttribution,
   type ManifestMetadataItem,
+  type ManifestProvider,
 } from '../iiif/manifestMetadata';
 import { resolveCanvasThumbnail } from '../iiif/thumbnails';
 import type { ViewerStateStores } from './viewerState';
@@ -77,6 +79,7 @@ export type ViewerDerivedStores = {
   manifestAttribution: Readable<ManifestAttribution>;
   manifestLicence: Readable<string>;
   manifestMetadata: Readable<ManifestMetadataItem[]>;
+  manifestProviders: Readable<ManifestProvider[]>;
   uiLocale: Readable<string>;
   metadataLocale: Readable<string>;
   allowThumbnails: Readable<boolean>;
@@ -503,6 +506,15 @@ export const createViewerDerived = (
       resolveMetadataItems(entry?.manifesto, entry?.json, locale),
   );
 
+  const manifestProviders = derived(
+    [manifestEntry, metadataLocale],
+    ([entry, locale]) => {
+      const providers = resolveManifestProviders(entry?.manifesto, entry?.json, locale);
+      console.log('manifestProviders', providers);
+      return providers;
+    },
+  );
+
   const viewBox = derived(state.viewBox, (value) => value);
 
   return {
@@ -536,6 +548,7 @@ export const createViewerDerived = (
     manifestAttribution,
     manifestLicence,
     manifestMetadata,
+    manifestProviders,
     uiLocale,
     metadataLocale,
     allowThumbnails,

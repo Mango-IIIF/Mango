@@ -1,5 +1,33 @@
 export type ManifestMetadataItem = { label: string; value: string };
 export type ManifestAttribution = { label: string; value: string };
+export type ManifestProvider = {
+  id: string;
+  label: string;
+  homepage?: {
+    id: string;
+    label: string;
+    format?: string;
+  };
+  logo?: {
+    id: string;
+    width?: number;
+    height?: number;
+  };
+  seeAlso?: {
+    id: string;
+    label: string;
+    format?: string;
+    profile?: string;
+  };
+};
+
+const normaliseArray = <T>(value: T | T[] | undefined | null): T[] => {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+};
+
+const resolveResourceId = (value: any): string =>
+  normaliseLangValue(value?.id ?? value?.['@id'], 'en');
 
 export const normaliseLangValue = (value: unknown, locale: string): string => {
   if (value == null) return '';
@@ -113,4 +141,56 @@ export const resolveManifestLicence = (
   const licenceSource =
     manifestoObject?.getLicense?.() ?? manifestJson?.license ?? manifestJson?.rights;
   return normaliseLangValue(licenceSource, locale);
+};
+
+export const resolveManifestProviders = (
+  manifestoObject: any,
+  manifestJson: any,
+  locale: string
+): ManifestProvider[] => {
+  const rawProviders = manifestJson?.provider ?? manifestoObject?.getProviders?.();
+
+  return normaliseArray(rawProviders)
+    .map((provider: any) => {
+      const id = resolveResourceId(provider);
+      const label = normaliseLangValue(provider?.label ?? provider?.getLabel?.(), locale);
+      if (!id && !label) return null;
+
+      const homepage = normaliseArray(provider?.homepage)[0];
+      const logo = normaliseArray(provider?.logo)[0];
+      const seeAlso = normaliseArray(provider?.seeAlso)[0];
+
+      const resolvedProvider: ManifestProvider = { id, label };
+
+      if (homepage) {
+        const format = normaliseLangValue(homepage.format, locale);
+        resolvedProvider.homepage = {
+          id: resolveResourceId(homepage),
+          label: normaliseLangValue(homepage.label, locale),
+          ...(format ? { format } : {}),
+        };
+      }
+
+      if (logo) {
+        resolvedProvider.logo = {
+          id: resolveResourceId(logo),
+          width: logo.width,
+          height: logo.height,
+        };
+      }
+
+      if (seeAlso) {
+        const format = normaliseLangValue(seeAlso.format, locale);
+        const profile = normaliseLangValue(seeAlso.profile, locale);
+        resolvedProvider.seeAlso = {
+          id: resolveResourceId(seeAlso),
+          label: normaliseLangValue(seeAlso.label, locale),
+          ...(format ? { format } : {}),
+          ...(profile ? { profile } : {}),
+        };
+      }
+
+      return resolvedProvider;
+    })
+    .filter((provider): provider is ManifestProvider => provider !== null);
 };

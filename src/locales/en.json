@@ -181,7 +181,8 @@
         "close": "Close metadata",
         "attribution": "Attribution",
         "license": "License",
-        "empty": "No manifest metadata available."
+        "empty": "No manifest metadata available.",
+        "provider": "Resource provided by"
       },
       "layers": {
         "label": "Layers panel",

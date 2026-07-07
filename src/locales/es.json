@@ -181,7 +181,8 @@
         "close": "Cerrar metadatos",
         "attribution": "Atribución",
         "license": "Licencia",
-        "empty": "No hay metadatos del manifiesto."
+        "empty": "No hay metadatos del manifiesto.",
+        "provider": "Recurso proporcionado por"
       },
       "layers": {
         "label": "Panel de capas",
