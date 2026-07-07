@@ -1,3 +1,5 @@
+import { injectViewerCss } from './shadow-css';
+
 // Monkey-patch customElements.define to prevent crashes during Hot Module Replacement (HMR)
 // and patch lifecycle callbacks before the browser registers and caches them.
 if (typeof window !== 'undefined' && window.customElements) {
@@ -12,10 +14,7 @@ if (typeof window !== 'undefined' && window.customElements) {
       const originalConnected = constructor.prototype.connectedCallback;
       constructor.prototype.connectedCallback = function (this: HTMLElement, ...args: any[]) {
         const result = originalConnected ? originalConnected.apply(this, args) : undefined;
-        const win = window as any;
-        if (win.__injectMangoViewerCss) {
-          win.__injectMangoViewerCss(this);
-        }
+        injectViewerCss(this);
         return result;
       };
     }
