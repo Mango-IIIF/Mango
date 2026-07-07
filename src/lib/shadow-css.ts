@@ -1,7 +1,17 @@
 let cssText = '';
+let adoptedSheet: CSSStyleSheet | null = null;
+const roots = new Set<ShadowRoot>();
 
 export function setCssText(text: string): void {
   cssText = text;
+  if (adoptedSheet) {
+    try {
+      adoptedSheet.replaceSync(cssText);
+    } catch {
+      adoptedSheet = null;
+    }
+  }
+  roots.forEach((root) => applyCss(root));
 }
 
 if (typeof window !== 'undefined') {
@@ -17,14 +27,23 @@ export function injectViewerCss(host: HTMLElement, attempts = 12): void {
     return;
   }
 
+  roots.add(root);
+  applyCss(root);
+}
+
+function applyCss(root: ShadowRoot): void {
+  if (!cssText) return;
+
   // Use Adopted Stylesheets if supported (immune to VDOM updates)
   if ('adoptedStyleSheets' in root && typeof CSSStyleSheet !== 'undefined') {
     const r = root as any;
-    if (r.__mangoCssAdopted) return;
     try {
-      const sheet = new CSSStyleSheet();
-      sheet.replaceSync(cssText);
-      r.adoptedStyleSheets = [...r.adoptedStyleSheets, sheet];
+      if (!adoptedSheet) {
+        adoptedSheet = new CSSStyleSheet();
+        adoptedSheet.replaceSync(cssText);
+      }
+      if (r.adoptedStyleSheets.includes(adoptedSheet)) return;
+      r.adoptedStyleSheets = [...r.adoptedStyleSheets, adoptedSheet];
       r.__mangoCssAdopted = true;
       return;
     } catch (e) {

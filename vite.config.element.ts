@@ -29,21 +29,27 @@ export default defineConfig({
     }),
     {
       name: 'mango-element-shadow-css',
-      writeBundle() {
+      closeBundle() {
         const jsPath = resolve(__dirname, 'src/dist/mango-viewer-element.js');
         const cssPath = resolve(__dirname, 'src/dist/mango-viewer-element.css');
 
         console.log('[CSS Inject] Checking files:', jsPath, cssPath);
-        if (!existsSync(jsPath) || !existsSync(cssPath)) return;
+        const jsExists = existsSync(jsPath);
+        const cssExists = existsSync(cssPath);
+        console.log('[CSS Inject] JS Exists:', jsExists, 'CSS Exists:', cssExists);
+
+        if (!jsExists || !cssExists) return;
 
         const js = readFileSync(jsPath, 'utf8');
-        if (js.includes('__setMangoViewerCss')) return;
+        const alreadyPatched = js.includes('/* mango-css-injected */');
+        console.log('[CSS Inject] Already Patched?', alreadyPatched);
+        if (alreadyPatched) return;
 
         const css = readFileSync(cssPath, 'utf8');
         console.log('[CSS Inject] Injecting CSS of length:', css.length);
         writeFileSync(
           jsPath,
-          `${js}\n;if (typeof window !== 'undefined' && (window as any).__setMangoViewerCss) { (window as any).__setMangoViewerCss(${JSON.stringify(css)}); }`
+          `${js}\n/* mango-css-injected */\n;if (typeof window !== 'undefined' && window.__setMangoViewerCss) { window.__setMangoViewerCss(${JSON.stringify(css)}); }`
         );
         console.log('[CSS Inject] Successfully injected CSS!');
       },
