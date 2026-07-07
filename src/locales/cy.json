@@ -181,7 +181,8 @@
         "close": "Cau metadata",
         "attribution": "Priodoliad",
         "license": "Trwydded",
-        "empty": "Dim metadata maniffest ar gael."
+        "empty": "Dim metadata maniffest ar gael.",
+        "provider": "Adnodd wedi'i ddarparu gan"
       },
       "layers": {
         "label": "Panel haenau",

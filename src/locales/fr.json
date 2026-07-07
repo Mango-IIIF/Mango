@@ -181,7 +181,8 @@
         "close": "Fermer les métadonnées",
         "attribution": "Attribution",
         "license": "Licence",
-        "empty": "Aucune métadonnée de manifeste disponible."
+        "empty": "Aucune métadonnée de manifeste disponible.",
+        "provider": "Ressource fournie par"
       },
       "layers": {
         "label": "Panneau des calques",

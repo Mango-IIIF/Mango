@@ -15,6 +15,7 @@
     manifestAttribution,
     manifestLicence,
     manifestMetadata,
+    manifestProviders,
   } = viewer.derived;
 </script>
 
@@ -37,6 +38,37 @@
     {#if $manifestDescription}
       <div class="metadata__description">
         {@html $manifestDescription}
+      </div>
+    {/if}
+    {#if $manifestProviders.length > 0}
+      <div class="metadata__block">
+        <div class="metadata__block-title">
+          {$t('viewer.panels.metadata.provider')}
+        </div>
+
+        {#each $manifestProviders as provider}
+          <div class="metadata__provider">
+            {#if provider.logo?.id}
+              <img src={provider.logo.id} alt="" class="metadata__provider-logo" />
+            {/if}
+
+            <div class="metadata__provider-body">
+              <div class="metadata__provider-name">{provider.label}</div>
+
+              {#if provider.homepage?.id}
+                <a class="metadata__link" href={provider.homepage.id} target="_blank" rel="noreferrer">
+                  {provider.homepage.label || provider.homepage.id}
+                </a>
+              {/if}
+
+              {#if provider.seeAlso?.id}
+                <a class="metadata__link" href={provider.seeAlso.id} target="_blank" rel="noreferrer">
+                  {provider.seeAlso.label || provider.seeAlso.id}
+                </a>
+              {/if}
+            </div>
+          </div>
+        {/each}
       </div>
     {/if}
     {#if $manifestAttribution.value}
@@ -146,5 +178,22 @@
 
   .metadata__value:last-child {
     margin-bottom: 0;
+  }
+
+  .metadata__provider-logo {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .metadata__provider-body, .metadata__provider-name{
+    line-height: 1.8em;
+    font-weight: bold;
+  }
+
+  .metadata__provider-body a {
+    display: block;
   }
 </style>
