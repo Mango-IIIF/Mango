@@ -1,7 +1,4 @@
 <script lang="ts">
-  import RectanglePlacementEditor from '../../features/annotations/RectanglePlacementEditor.svelte';
-  import type { AnnotationPlacement } from '../../core/types/story';
-
   export let activeLanguage = 'en';
   export let languages: string[] = ['en'];
   export let metadataSectionCollapsed = false;
@@ -9,17 +6,15 @@
   export let chapterTitleDraft = '';
   export let chapterDescriptionDraft = '';
   export let annotationDraft = '';
-  export let placementValue: AnnotationPlacement | null = null;
   export let hasChapter = false;
 
-  export let onLanguageChange: ((lang: string) => void) | undefined;
-  export let onToggleMetadata: (() => void) | undefined;
-  export let onToggleAnnotation: (() => void) | undefined;
-  export let onChapterTitleInput: ((event: Event) => void) | undefined;
-  export let onChapterDescriptionInput: ((event: Event) => void) | undefined;
-  export let onAnnotationInput: ((event: Event) => void) | undefined;
-  export let onPlacementChange: ((value: AnnotationPlacement) => void) | undefined;
-  export let onPlacementCommit: ((value: AnnotationPlacement) => void) | undefined;
+  export let onLanguageChange: ((lang: string) => void) | undefined = undefined;
+  export let onToggleMetadata: (() => void) | undefined = undefined;
+  export let onToggleAnnotation: (() => void) | undefined = undefined;
+  export let onChapterTitleInput: ((event: Event) => void) | undefined = undefined;
+  export let onChapterDescriptionInput: ((event: Event) => void) | undefined = undefined;
+  export let onAnnotationInput: ((event: Event) => void) | undefined = undefined;
+  export let onSetPositionClick: (() => void) | undefined = undefined;
 </script>
 
 <section class="chapter-overlay__section chapter-overlay__section--card">
@@ -112,25 +107,17 @@
       placeholder="Add annotation text"
     ></textarea>
 
-    <div class="chapter-overlay__placement-editor" data-testid="chapter-placement-editor">
-      <RectanglePlacementEditor
-        enabled={hasChapter}
-        value={placementValue}
-        onrectchange={({ rect }) => {
-          if (rect) {
-            onPlacementChange?.(rect);
-          }
-        }}
-        onrectcommit={({ rect }) => {
-          onPlacementCommit?.(rect);
-        }}
-      />
-    </div>
-    <div class="chapter-overlay__hint chapter-overlay__hint--placement">
-      Drag to place. Move inside to reposition. Drag corner points to resize.
-    </div>
-
-    {#if !hasChapter}
+    {#if hasChapter}
+      <button
+        class="chapter-overlay__button chapter-overlay__button--accent"
+        style="margin-top: 12px; width: 100%;"
+        type="button"
+        data-testid="set-annotation-position"
+        on:click={onSetPositionClick}
+      >
+        Set Annotation Position on Screen
+      </button>
+    {:else}
       <div class="chapter-overlay__hint">Capture a chapter to edit annotation text and placement.</div>
     {/if}
   </div>

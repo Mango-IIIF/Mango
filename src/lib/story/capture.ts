@@ -33,6 +33,7 @@ export const captureImagePdf = (
   }
 
   const canvasIndex = viewer.getCanvasIndex();
+  const canvasId = viewer.getCanvasId() ?? undefined;
   const layerOpacities = viewer.getLayerOpacities?.() ?? {};
 
   return {
@@ -40,6 +41,7 @@ export const captureImagePdf = (
     capture: {
       manifest,
       canvasIndex: canvasIndex < 0 ? 0 : canvasIndex,
+      canvasId,
       viewBox,
       layerOpacities: Object.keys(layerOpacities).length > 0 ? layerOpacities : undefined,
     },
@@ -69,6 +71,7 @@ export const captureAudioVideo = (
   }
 
   const canvasIndex = viewer.getCanvasIndex();
+  const canvasId = viewer.getCanvasId() ?? undefined;
   const layerOpacities = viewer.getLayerOpacities?.() ?? {};
 
   return {
@@ -76,6 +79,7 @@ export const captureAudioVideo = (
     capture: {
       manifest,
       canvasIndex: canvasIndex < 0 ? 0 : canvasIndex,
+      canvasId,
       media: {
         start: segment.start,
         end: segment.end,
@@ -113,6 +117,7 @@ export const captureModel = (
   }
 
   const canvasIndex = viewer.getCanvasIndex();
+  const canvasId = viewer.getCanvasId() ?? undefined;
   const layerOpacities = viewer.getLayerOpacities?.() ?? {};
 
   return {
@@ -120,6 +125,7 @@ export const captureModel = (
     capture: {
       manifest,
       canvasIndex: canvasIndex < 0 ? 0 : canvasIndex,
+      canvasId,
       model: {
         cameraOrbit,
         cameraTarget,

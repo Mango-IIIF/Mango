@@ -1,0 +1,246 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "https://404mike.github.io/uv4-manifest/annotationList.json",
+  "type": "AnnotationPage",
+  "label": {
+    "en": [
+      "Story Annotation Track"
+    ]
+  },
+  "items": [
+    {
+      "id": "https://example.org/stories/story-2/annotation/chapter_1",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 1"
+        ],
+        "cy": [
+          "Pennod 1"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 1."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 1."
+        ]
+      },
+      "transitionTimeMs": 2000,
+      "body": {
+        "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=0,16",
+        "type": "Sound",
+        "format": "audio/mp3",
+        "language": "en"
+      },
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,19513,9741"
+        }
+      }
+    },
+    {
+      "id": "https://example.org/stories/story-2/annotation/chapter_2",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 2"
+        ],
+        "cy": [
+          "Pennod 2"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 2."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 2."
+        ]
+      },
+      "transitionTimeMs": 2000,
+      "body": {
+        "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=16,23",
+        "type": "Sound",
+        "format": "audio/mp3",
+        "language": "en"
+      },
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1166,4508,7842,3915"
+        }
+      }
+    },
+    {
+      "id": "https://example.org/stories/story-2/annotation/chapter_3",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 3"
+        ],
+        "cy": [
+          "Pennod 3"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 3."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 3."
+        ]
+      },
+      "transitionTimeMs": 2000,
+      "body": {
+        "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=23,30",
+        "type": "Sound",
+        "format": "audio/mp3",
+        "language": "en"
+      },
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1166,4508,7842,3915"
+        }
+      }
+    },
+    {
+      "id": "https://example.org/stories/story-2/annotation/chapter_4",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 4"
+        ],
+        "cy": [
+          "Pennod 4"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 4."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 4."
+        ]
+      },
+      "transitionTimeMs": 2000,
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=4100,6709,1144,571"
+        }
+      }
+    },
+    {
+      "id": "https://example.org/stories/story-2/annotation/chapter_5",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 5"
+        ],
+        "cy": [
+          "Pennod 5"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 5."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 5."
+        ]
+      },
+      "transitionTimeMs": 2000,
+      "body": {
+        "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=30,36",
+        "type": "Sound",
+        "format": "audio/mp3",
+        "language": "en"
+      },
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=3452,6483,2494,1245"
+        }
+      }
+    },
+    {
+      "id": "https://example.org/stories/story-2/annotation/chapter_6",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 6"
+        ],
+        "cy": [
+          "Pennod 6"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 6."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 6."
+        ]
+      },
+      "transitionTimeMs": 2000,
+      "body": [
+        {
+          "type": "TextualBody",
+          "purpose": "describing",
+          "language": "en",
+          "format": "text/plain",
+          "value": "Annotations appear in context, helping explain objects, people, and moments without interrupting the story.",
+          "target": {
+            "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+            "type": "SpecificResource",
+            "selector": {
+              "type": "FragmentSelector",
+              "conformsTo": "http://www.w3.org/TR/media-frags/",
+              "value": "xywh=4500,6500,800,300"
+            }
+          }
+        },
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=36,49",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en",
+          "target": {
+            "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+            "type": "SpecificResource",
+            "selector": {
+              "type": "FragmentSelector",
+              "conformsTo": "http://www.w3.org/TR/media-frags/",
+              "value": "xywh=4333,6393,2494,1245"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

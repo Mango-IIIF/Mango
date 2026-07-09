@@ -85,6 +85,7 @@ describe('ChapterOverlay', () => {
       ],
     });
     const target = createTarget();
+    let positioningTriggered = '';
 
     const instance = mount(ChapterOverlay, {
       target,
@@ -95,11 +96,9 @@ describe('ChapterOverlay', () => {
         language: 'en',
         onUpdateAnnotationText: (chapterId: string, lang: string, text: string) =>
           store.setAnnotationText({ chapterId, language: lang, text }),
-        onUpdateAnnotationPlacement: (
-          chapterId: string,
-          lang: string,
-          placement: AnnotationPlacement,
-        ) => store.setAnnotationPlacement({ chapterId, language: lang, placement }),
+        onSetAnnotationPositioning: (lang: string) => {
+          positioningTriggered = lang;
+        },
       },
     });
 
@@ -108,46 +107,14 @@ describe('ChapterOverlay', () => {
     ) as HTMLTextAreaElement;
     textarea.value = 'Note';
     textarea.dispatchEvent(new Event('input'));
-    const placementEditor = target.querySelector(
-      '.rect-placement-editor',
-    ) as HTMLElement;
-    Object.defineProperty(placementEditor, 'getBoundingClientRect', {
-      configurable: true,
-      value: () => ({
-        left: 0,
-        top: 0,
-        width: 200,
-        height: 100,
-        right: 200,
-        bottom: 100,
-        x: 0,
-        y: 0,
-        toJSON: () => ({}),
-      }),
-    });
 
-    placementEditor.dispatchEvent(
-      new MouseEvent('pointerdown', {
-        bubbles: true,
-        clientX: 20,
-        clientY: 20,
-      }),
-    );
-    placementEditor.dispatchEvent(
-      new MouseEvent('pointermove', {
-        bubbles: true,
-        clientX: 140,
-        clientY: 70,
-      }),
-    );
-    placementEditor.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
-    placementEditor.dispatchEvent(
-      new MouseEvent('dblclick', {
-        bubbles: true,
-        clientX: 80,
-        clientY: 45,
-      }),
-    );
+    const setPositionButton = target.querySelector(
+      '[data-testid="set-annotation-position"]',
+    ) as HTMLButtonElement;
+    expect(setPositionButton).toBeTruthy();
+    setPositionButton.click();
+    expect(positioningTriggered).toBe('en');
+
     const saveButton = target.querySelector('[data-testid="chapter-save"]') as HTMLButtonElement;
     saveButton.click();
 
@@ -156,14 +123,6 @@ describe('ChapterOverlay', () => {
       store.story.subscribe((value) => resolve(value))();
     });
     expect((storyValue as any).chapters[0].annotations.en.text).toBe('Note');
-    const placement = (storyValue as any).chapters[0].annotationPlacement;
-    expect(placement).toBeTruthy();
-    expect(Number.isFinite(placement.x)).toBe(true);
-    expect(Number.isFinite(placement.y)).toBe(true);
-    expect(Number.isFinite(placement.w)).toBe(true);
-    expect(Number.isFinite(placement.h)).toBe(true);
-    expect(placement.w).toBeGreaterThan(0);
-    expect(placement.h).toBeGreaterThan(0);
 
     unmount(instance);
     target.remove();

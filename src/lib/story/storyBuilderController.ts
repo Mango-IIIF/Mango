@@ -96,9 +96,13 @@ export type StoryBuilderController = {
   isPreviewing: Readable<boolean>;
   startPreview: () => void;
   stopPreview: () => void;
+  positioningLanguage: Readable<string | null>;
+  startAnnotationPositioning: (lang: string) => void;
+  confirmAnnotationPositioning: () => void;
+  cancelAnnotationPositioning: () => void;
 };
 
-export type UIMode = 'idle' | 'chapterEdit' | 'narrationPanel';
+export type UIMode = 'idle' | 'chapterEdit' | 'narrationPanel' | 'annotationPositioning';
 
 export type StoryBuilderOptions = {
   language?: string;
@@ -188,7 +192,8 @@ export const createStoryBuilderController = (
 
   const selectedChapterId = writable<string | null>(null);
   const uiMode = writable<UIMode>('idle');
-  const drawerOpen = derived(uiMode, (mode) => mode !== 'idle');
+  const positioningLanguage = writable<string | null>(null);
+  const drawerOpen = derived(uiMode, (mode) => mode !== 'idle' && mode !== 'annotationPositioning');
   const viewBox = writable<ViewBox | null>(null);
   const mediaType = writable<MediaType | null>(null);
   const avMarksValid = writable(true);
@@ -1125,6 +1130,21 @@ export const createStoryBuilderController = (
     chapterActions.updateDelay(delayMs);
   };
 
+  const startAnnotationPositioning = (lang: string) => {
+    uiMode.set('annotationPositioning');
+    positioningLanguage.set(lang);
+  };
+
+  const confirmAnnotationPositioning = () => {
+    uiMode.set('chapterEdit');
+    positioningLanguage.set(null);
+  };
+
+  const cancelAnnotationPositioning = () => {
+    uiMode.set('chapterEdit');
+    positioningLanguage.set(null);
+  };
+
   const updateManifest = (manifest: string) => {
     pushHistorySnapshot();
     chapterActions.updateManifest(manifest);
@@ -1256,5 +1276,9 @@ export const createStoryBuilderController = (
     isPreviewing,
     startPreview,
     stopPreview,
+    positioningLanguage: { subscribe: positioningLanguage.subscribe },
+    startAnnotationPositioning,
+    confirmAnnotationPositioning,
+    cancelAnnotationPositioning,
   };
 };

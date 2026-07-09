@@ -428,11 +428,60 @@
 </aside>
 
 <style>
+  :global(.panel-stack--left:has(.story-sidebar)) {
+    overflow: hidden !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  :global(.panel-stack--left:has(.story-sidebar) > .plugin-slot) {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  :global(.panel-stack--left:has(.story-sidebar) .plugin-panel) {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  :global(.panel-stack--left:has(.story-sidebar) .plugin-panel__panel) {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  :global(.panel-stack--left:has(.story-sidebar) .plugin-panel__title) {
+    display: none !important;
+  }
+
+  :global(.panel-stack--left:has(.story-sidebar) .plugin-panel__body) {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
   .story-sidebar {
-    display: grid;
-    align-content: start;
-    gap: 18px;
-    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 16px 24px;
     background: var(--story-sidebar-bg, var(--viewer-panel, #121922));
     color: var(--story-sidebar-text, var(--viewer-text, #e8edf4));
     border-right: 1px solid
@@ -440,11 +489,13 @@
     box-sizing: border-box;
     transition: opacity 0.2s ease;
     position: relative;
+    overflow: hidden;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0 18px 18px 0;
   }
 
   .story-sidebar--embedded {
-    padding: 0;
-    background: transparent;
     border-right: none;
   }
 
@@ -512,10 +563,23 @@
     color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
   }
 
+  .story-sidebar__chapters {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .story-sidebar__list {
-    display: grid;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     margin-top: 6px;
+    padding-right: 4px;
   }
 
   .story-sidebar__row {

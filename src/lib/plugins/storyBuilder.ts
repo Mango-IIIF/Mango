@@ -121,6 +121,10 @@ export const createStoryBuilderPlugins = (
           layers: controller.mediaSources,
           layerOpacities: controller.layerOpacities,
           onUpdateLayerOpacity: controller.updateLayerOpacity,
+          positioningLanguage: controller.positioningLanguage,
+          onStartAnnotationPositioning: controller.startAnnotationPositioning,
+          onConfirmAnnotationPositioning: controller.confirmAnnotationPositioning,
+          onCancelAnnotationPositioning: controller.cancelAnnotationPositioning,
         },
       });
       return { destroy: () => unmount(instance) };

@@ -73,11 +73,16 @@
   export let onUpdateDelay: ((chapterId: string, delayMs?: number) => void) | undefined;
   export let onUpdateChapterPosition: ((chapterId: string) => void) | undefined;
   export let onSave: (() => void) | undefined;
+  export let onSetAnnotationPositioning: ((lang: string) => void) | undefined = undefined;
 
   let activeLanguage = language;
   let lastLanguageProp = language;
   let chapter: Story['chapters'][number] | null = null;
   let chapterTitleDraft = '';
+
+  const handleSetPositionClick = () => {
+    onSetAnnotationPositioning?.(activeLanguage);
+  };
   let chapterDescriptionDraft = '';
   let chapterTitleDrafts: Record<string, string> = {};
   let chapterDescriptionDrafts: Record<string, string> = {};
@@ -710,11 +715,13 @@
 
     annotationDraft = annotationDrafts[activeLanguage] ?? '';
 
+    const activePlacement = coerceAnnotationPlacement(chapter?.annotations?.[activeLanguage]?.placement);
     const chapterPlacementFallback = Object.values(chapter?.annotations ?? {})
       .map((entry) => coerceAnnotationPlacement(entry?.placement))
       .find((entry): entry is AnnotationPlacement => Boolean(entry));
 
     placementDraft =
+      activePlacement ??
       coerceAnnotationPlacement(chapter?.annotationPlacement) ??
       chapterPlacementFallback ??
       cloneAnnotationPlacement(DEFAULT_ANNOTATION_PLACEMENT);
@@ -759,7 +766,9 @@
     }
     annotationDrafts[activeLanguage] = nextText;
 
+    const activePlacement = coerceAnnotationPlacement(chapter.annotations?.[activeLanguage]?.placement);
     const nextPlacement =
+      activePlacement ??
       coerceAnnotationPlacement(chapter.annotationPlacement) ??
       fallbackPlacement ??
       cloneAnnotationPlacement(DEFAULT_ANNOTATION_PLACEMENT);
@@ -1140,7 +1149,6 @@
           {chapterTitleDraft}
           {chapterDescriptionDraft}
           {annotationDraft}
-          {placementValue}
           hasChapter={Boolean(chapter)}
           onLanguageChange={handleLanguageChange}
           onToggleMetadata={() => {
@@ -1152,8 +1160,7 @@
           onChapterTitleInput={handleChapterTitleInput}
           onChapterDescriptionInput={handleChapterDescriptionInput}
           onAnnotationInput={handleAnnotationInput}
-          onPlacementChange={handlePlacementChange}
-          onPlacementCommit={handlePlacementCommit}
+          onSetPositionClick={handleSetPositionClick}
         />
 
         <ChapterTimelineSection

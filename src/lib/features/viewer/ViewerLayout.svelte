@@ -456,6 +456,10 @@
   });
   const unsubscribeStoryLoading = storyRuntime.isLoading.subscribe((value) => {
     storyIsLoading = value;
+    if (value) {
+      storyChapterElapsedSec = 0;
+      storyChapterDurationSec = 0;
+    }
   });
   const unsubscribeStoryPlayState = storyRuntime.playState.subscribe((value) => {
     storyPlayState = value;
@@ -2095,7 +2099,7 @@
     box-sizing: border-box;
     height: 100%;
     max-height: 100vh;
-    min-height: clamp(820px, 92vh, 980px);
+    min-height: 0;
     overflow: hidden;
     padding: 20px;
     border-radius: 24px;

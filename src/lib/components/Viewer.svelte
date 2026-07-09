@@ -25,10 +25,24 @@
     plugins = [],
     mode = undefined,
     story = undefined,
-    storyUrl = undefined,
+    storyUrl = $bindable(undefined),
   }: Props = $props();
 
   let layoutRef: any = $state(null);
+
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const iiifContent = urlParams.get('iiif-content');
+      if (iiifContent) {
+        if (mode === 'story-viewer' || mode === 'story-builder') {
+          storyUrl = iiifContent;
+        } else {
+          manifestId = iiifContent;
+        }
+      }
+    }
+  });
 
   export function on<K extends keyof ViewerEventMap>(
     event: K,

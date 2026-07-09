@@ -47,4 +47,16 @@ describe('storyLoader.validateStoryViewer', () => {
       : { ok: false, errors: [] };
     expect(validation.ok).toBe(false);
   });
+
+  it('validates the actual demo.json', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const raw = fs.readFileSync(path.resolve(__dirname, '../../../../../apps/demo/test-story/demo.json'), 'utf8');
+    const parsed = JSON.parse(raw);
+    const normalised = normaliseStoryInput(parsed);
+    expect(normalised.ok).toBe(true);
+    const validation = validateStoryViewer(normalised.story!);
+    expect(validation.errors).toEqual([]);
+    expect(validation.ok).toBe(true);
+  });
 });

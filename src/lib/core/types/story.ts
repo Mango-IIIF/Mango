@@ -42,6 +42,7 @@ export type Chapter = {
   description?: LanguageMap;
   manifest: string;
   canvasIndex: number;
+  canvasId?: string;
   transitionTimeMs?: number;
   viewBox?: ViewBox;
   media?: ChapterMedia;
