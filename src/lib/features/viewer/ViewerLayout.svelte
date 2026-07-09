@@ -2099,7 +2099,7 @@
     box-sizing: border-box;
     height: 100%;
     max-height: 100vh;
-    min-height: 0;
+    min-height: clamp(820px, 92vh, 980px);
     overflow: hidden;
     padding: 20px;
     border-radius: 24px;

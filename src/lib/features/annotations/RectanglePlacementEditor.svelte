@@ -329,7 +329,7 @@
   .rect-placement-editor__rect {
     position: absolute;
     border: 2px dashed rgba(255, 194, 96, 0.96);
-    background: rgba(255, 255, 255, 0.94);
+    background: transparent;
     color: #2b2520;
     font-size: 13px;
     line-height: 1.4;
