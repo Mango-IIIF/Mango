@@ -456,6 +456,10 @@
   });
   const unsubscribeStoryLoading = storyRuntime.isLoading.subscribe((value) => {
     storyIsLoading = value;
+    if (value) {
+      storyChapterElapsedSec = 0;
+      storyChapterDurationSec = 0;
+    }
   });
   const unsubscribeStoryPlayState = storyRuntime.playState.subscribe((value) => {
     storyPlayState = value;

@@ -31,49 +31,143 @@ export type SaveState =
   | { status: 'success'; message?: string }
   | { status: 'error'; message?: string; code?: string };
 
+export const serializeStoryToIiif = (raw: Story): any => {
+  const label: Record<string, string[]> = {};
+  if (raw.title) {
+    for (const [lang, val] of Object.entries(raw.title)) {
+      label[lang] = [val];
+    }
+  }
+
+  const items = raw.chapters.map((chapter, index) => {
+    const chapterId = chapter.id || `chapter_${index + 1}`;
+    const annotationId = `https://example.org/stories/story-2/annotation/${chapterId}`;
+
+    const labelMap: Record<string, string[]> = {};
+    if (chapter.title) {
+      for (const [lang, val] of Object.entries(chapter.title)) {
+        labelMap[lang] = [val];
+      }
+    }
+
+    const summaryMap: Record<string, string[]> = {};
+    if (chapter.description) {
+      for (const [lang, val] of Object.entries(chapter.description)) {
+        summaryMap[lang] = [val];
+      }
+    }
+
+    // Build target
+    const canvasId = chapter.canvasId || `${chapter.manifest}/canvas/${chapter.canvasIndex}`;
+    
+    let viewBoxValue = 'xywh=0,0,0,0';
+    if (chapter.viewBox) {
+      const vx = Math.round(Math.max(0, chapter.viewBox.x));
+      const vy = Math.round(Math.max(0, chapter.viewBox.y));
+      const vw = Math.round(chapter.viewBox.w);
+      const vh = Math.round(chapter.viewBox.h);
+      viewBoxValue = `xywh=${vx},${vy},${vw},${vh}`;
+    }
+
+    let sourceUrl = canvasId;
+    let selectorValue = viewBoxValue;
+    if (chapter.media) {
+      const mediaFragment = `t=${chapter.media.start},${chapter.media.end}`;
+      sourceUrl = `${canvasId}#${mediaFragment}`;
+      if (chapter.viewBox) {
+        selectorValue = `${viewBoxValue}&${mediaFragment}`;
+      } else {
+        selectorValue = mediaFragment;
+      }
+    }
+
+    const target: any = {
+      source: sourceUrl,
+      type: 'SpecificResource',
+      partOf: {
+        id: chapter.manifest,
+        type: 'Manifest'
+      },
+      selector: {
+        type: 'FragmentSelector',
+        conformsTo: 'http://www.w3.org/TR/media-frags/',
+        value: selectorValue
+      }
+    };
+
+    // Build body list
+    const bodyItems: any[] = [];
+
+    // Add narration segment
+    if (chapter.narrationSegment) {
+      for (const [lang, segment] of Object.entries(chapter.narrationSegment)) {
+        const track = raw.narration?.tracks?.[lang];
+        if (track && track.src) {
+          bodyItems.push({
+            id: `${track.src}#t=${segment.start},${segment.end}`,
+            type: 'Sound',
+            format: 'audio/mp3',
+            language: lang
+          });
+        }
+      }
+    }
+
+    // Add annotations
+    if (chapter.annotations) {
+      for (const [lang, annotation] of Object.entries(chapter.annotations)) {
+        if (annotation.text) {
+          const placement = annotation.placement || { x: 4500, y: 6500, w: 800, h: 300 };
+          const px = Number.isFinite(placement.x) ? Math.round(placement.x) : 4500;
+          const py = Number.isFinite(placement.y) ? Math.round(placement.y) : 6500;
+          const pw = Number.isFinite(placement.w) && placement.w > 0 ? Math.round(placement.w) : 800;
+          const ph = Number.isFinite(placement.h) && placement.h > 0 ? Math.round(placement.h) : 300;
+          bodyItems.push({
+            type: 'TextualBody',
+            purpose: 'describing',
+            language: lang,
+            format: 'text/plain',
+            value: annotation.text,
+            target: {
+              source: canvasId,
+              type: 'SpecificResource',
+              selector: {
+                type: 'FragmentSelector',
+                conformsTo: 'http://www.w3.org/TR/media-frags/',
+                value: `xywh=${px},${py},${pw},${ph}`
+              }
+            }
+          });
+        }
+      }
+    }
+
+    return {
+      id: annotationId,
+      type: 'Annotation',
+      motivation: 'supplementing',
+      label: Object.keys(labelMap).length > 0 ? labelMap : undefined,
+      summary: Object.keys(summaryMap).length > 0 ? summaryMap : undefined,
+      transitionTimeMs: chapter.transitionTimeMs ?? 2000,
+      body: bodyItems.length === 1 ? bodyItems[0] : (bodyItems.length > 1 ? bodyItems : undefined),
+      target
+    };
+  });
+
+  return {
+    '@context': 'http://iiif.io/api/presentation/3/context.json',
+    id: 'https://404mike.github.io/uv4-manifest/annotationList.json',
+    type: 'AnnotationPage',
+    label: Object.keys(label).length > 0 ? label : { en: ['Story Annotation Track'] },
+    items
+  };
+};
+
 export const buildExportEnvelope = (
   raw: Story,
   appVersion?: string,
-): ExportEnvelope => {
-  const mapped = {
-    ...raw,
-    chapters: raw.chapters.map((chapter, index) => {
-      const { advance, annotationPlacement, annotations, ...rest } = chapter as any;
-      const transitionTimeMs = advance?.delayMs;
-      const next: any = { ...rest, id: `chapter_${index + 1}` };
-      const mergedAnnotations = { ...(annotations ?? {}) };
-
-      if (annotationPlacement) {
-        for (const lang of Object.keys(mergedAnnotations)) {
-          mergedAnnotations[lang] = {
-            ...(mergedAnnotations[lang] ?? {}),
-            placement: mergedAnnotations[lang]?.placement ?? annotationPlacement,
-          };
-        }
-        if (Object.keys(mergedAnnotations).length === 0) {
-          mergedAnnotations._default = { placement: annotationPlacement };
-        }
-      }
-
-      if (Object.keys(mergedAnnotations).length > 0) {
-        next.annotations = mergedAnnotations;
-      }
-      if (transitionTimeMs !== undefined) {
-        next.transitionTimeMs = transitionTimeMs;
-      }
-      return next;
-    }),
-  };
-
-  return {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    meta: {
-      source: 'storybuilder',
-      ...(appVersion ? { appVersion } : {}),
-    },
-    data: mapped as Story,
-  };
+): any => {
+  return serializeStoryToIiif(raw);
 };
 
 export const performFetchWithTimeout = async (
@@ -171,6 +265,7 @@ export const loadStoryIntoStore = (
     const capture: CapturePayload = {
       manifest: chapter.manifest || '',
       canvasIndex: chapter.canvasIndex || 0,
+      canvasId: chapter.canvasId,
       viewBox: chapter.viewBox,
       model: chapter.model,
       media: chapter.media,

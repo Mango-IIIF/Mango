@@ -26,6 +26,19 @@ body {
   grid-template-rows: auto 1fr;
   gap: 16px;
   padding: clamp(20px, 4vw, 56px);
+  box-sizing: border-box;
+}
+
+.page--editor {
+  height: 100vh;
+  max-height: 100vh;
+  gap: 12px;
+  padding: 12px 20px;
+  overflow: hidden;
+}
+
+.page--editor :global(.viewer) {
+  min-height: 0 !important;
 }
 
 .page--story-viewer {
@@ -48,6 +61,18 @@ body {
   margin: 0;
   font-size: 16px;
   color: var(--ink-muted);
+}
+
+.page--editor .hero {
+  gap: 4px;
+}
+
+.page--editor .hero__title {
+  font-size: clamp(24px, 4vw, 36px);
+}
+
+.page--editor .hero__subtitle {
+  font-size: 14px;
 }
 
 .manifest-form {
@@ -140,6 +165,10 @@ body {
   flex-direction: column;
   width: 100%;
   min-height: 0;
+}
+
+.page--editor .viewer-shell {
+  height: 100%;
 }
 
 .viewer-shell mango-viewer {

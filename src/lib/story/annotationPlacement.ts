@@ -67,7 +67,7 @@ export const isAnnotationPlacement = (value: unknown): value is AnnotationPlacem
   const y = entry.y as number;
   const w = entry.w as number;
   const h = entry.h as number;
-  return x >= 0 && y >= 0 && w > 0 && h > 0 && x + w <= 1 && y + h <= 1;
+  return x >= 0 && y >= 0 && w > 0 && h > 0;
 };
 
 export const cloneAnnotationPlacement = (
@@ -101,12 +101,27 @@ export const coerceAnnotationPlacement = (
       Number.isFinite(rect.w) &&
       Number.isFinite(rect.h)
     ) {
-      return normalizeRect({
-        x: rect.x as number,
-        y: rect.y as number,
-        w: rect.w as number,
-        h: rect.h as number,
-      });
+      const rx = rect.x as number;
+      const ry = rect.y as number;
+      const rw = rect.w as number;
+      const rh = rect.h as number;
+
+      const isAbs = rx > 1 || ry > 1 || rw > 1 || rh > 1;
+      if (isAbs) {
+        return {
+          x: Math.max(0, rx),
+          y: Math.max(0, ry),
+          w: Math.max(0.0001, rw),
+          h: Math.max(0.0001, rh)
+        };
+      } else {
+        return normalizeRect({
+          x: rx,
+          y: ry,
+          w: rw,
+          h: rh,
+        });
+      }
     }
   }
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
+
   type PlacementRect = {
     x: number;
     y: number;
@@ -19,6 +21,7 @@
     allowResize?: boolean;
     commitOnPointerUp?: boolean;
     passthrough?: boolean;
+    text?: string;
     onrectchange?:
       | ((payload: { rect: PlacementRect | null; source: InteractionSource }) => void)
       | undefined;
@@ -45,6 +48,7 @@
     allowResize = true,
     commitOnPointerUp = false,
     passthrough = false,
+    text = '',
     onrectchange = undefined,
     onrectcommit = undefined,
   }: Props = $props();
@@ -250,11 +254,14 @@
   const toPercent = (value: number): string => `${(value * 100).toFixed(4)}%`;
 
   $effect(() => {
-    if (interaction) return;
-    const next = value ? normalizeRect(cloneRect(value)) : null;
-    if (!rectEquals(draftRect, next)) {
-      draftRect = next;
-    }
+    const currentVal = value;
+    untrack(() => {
+      if (interaction) return;
+      const next = currentVal ? normalizeRect(cloneRect(currentVal)) : null;
+      if (!rectEquals(draftRect, next)) {
+        draftRect = next;
+      }
+    });
   });
 </script>
 
@@ -276,6 +283,7 @@
       class="rect-placement-editor__rect"
       style={`left:${toPercent(draftRect.x)};top:${toPercent(draftRect.y)};width:${toPercent(draftRect.w)};height:${toPercent(draftRect.h)};`}
     >
+      <span class="rect-placement-editor__text">{text}</span>
       {#if showHandles && allowResize}
         <span
           class="rect-placement-editor__handle rect-placement-editor__handle--nw"
@@ -321,10 +329,29 @@
   .rect-placement-editor__rect {
     position: absolute;
     border: 2px dashed rgba(255, 194, 96, 0.96);
-    background: rgba(255, 194, 96, 0.16);
+    background: transparent;
+    color: #2b2520;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 10px 12px;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(43, 37, 32, 0.2);
     cursor: move;
     box-sizing: border-box;
     pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .rect-placement-editor__text {
+    pointer-events: none;
+    max-width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
   }
 
   .rect-placement-editor__handle {

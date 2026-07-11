@@ -9,29 +9,33 @@
 
   let { open = false, payload = null, onclose = undefined }: Props = $props();
 
+  let textareaRef = $state<HTMLTextAreaElement | null>(null);
+
   const close = () => onclose?.();
 
   const pretty = () =>
     payload ? JSON.stringify(payload, null, 2) : '// No export payload available';
 
   const copyJson = async () => {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
     try {
-      await navigator.clipboard.writeText(pretty());
+      if (textareaRef) {
+        textareaRef.select();
+      }
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(pretty());
+        return;
+      }
+    } catch (e) {
+      // fallback
+    }
+
+    try {
+      document.execCommand('copy');
     } catch {
       // swallow
     }
   };
 
-  const downloadJson = () => {
-    const blob = new Blob([pretty()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'story-export.json';
-    link.click();
-    URL.revokeObjectURL(url);
-  };
 </script>
 
 <div class="save-modal" hidden={!open} aria-hidden={!open}>
@@ -46,6 +50,7 @@
       </div>
 
       <textarea
+        bind:this={textareaRef}
         class="save-modal__code"
         aria-label="Exported story JSON"
         readonly
@@ -55,12 +60,6 @@
       <div class="save-modal__actions">
         <button class="save-modal__button save-modal__button--primary" type="button" onclick={copyJson}>
           {$t('storyBuilder.export.copy')}
-        </button>
-        <!-- <button class="save-modal__button" type="button" onclick={downloadJson}>
-          {$t('storyBuilder.export.download')}
-        </button> -->
-        <button class="save-modal__button" type="button" onclick={close}>
-          {$t('common.closeGlyph')}
         </button>
       </div>
     </div>
@@ -73,6 +72,7 @@
     inset: 0;
     z-index: 40;
     display: block;
+    pointer-events: auto;
   }
 
   .save-modal[hidden] {
@@ -91,15 +91,18 @@
     left: 50%;
     transform: translate(-50%, -50%);
     width: min(720px, 90vw);
-    max-height: 80vh;
+    height: min(640px, 85vh);
+    max-height: 90vh;
     background: #0f1722;
     color: #e8edf4;
     border-radius: 14px;
     padding: 16px;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
     display: grid;
+    grid-template-rows: auto 1fr auto;
     gap: 12px;
     box-sizing: border-box;
+    overflow: hidden;
   }
 
   .save-modal__header {
@@ -149,18 +152,18 @@
   .save-modal__code {
     display: block;
     width: 100%;
+    height: 100%;
     background: #0b111a;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     padding: 12px;
     margin: 0;
-    min-height: 220px;
-    max-height: 50vh;
-    overflow: auto;
-    resize: vertical;
+    overflow-y: auto;
+    resize: none;
     font-family: Monaco, 'Courier New', monospace;
     font-size: 12px;
     color: #d5e2f5;
+    box-sizing: border-box;
   }
 
   .save-modal__actions {

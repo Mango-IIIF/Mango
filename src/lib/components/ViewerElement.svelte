@@ -49,6 +49,7 @@
   import type { MediaType, MediaSource } from '../iiif/mediaResolver';
   import type { ViewerPlugin } from '../core/types/plugin';
   import type { Story } from '../core/types/story';
+  import { normaliseStoryInput } from '../story/viewer/storyLoader';
 
   export let manifestId = '';
   export let config: string | ViewerConfig | undefined = undefined;
@@ -72,6 +73,18 @@
     console.warn(translate('warnings.invalidConfig'), error);
   });
   $: normalisedConfig = normaliseViewerConfig(parsedConfig);
+
+  $: if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const iiifContent = urlParams.get('iiif-content');
+    if (iiifContent) {
+      if (mode === 'story-viewer' || mode === 'story-builder') {
+        storyUrl = iiifContent;
+      } else {
+        manifestId = iiifContent;
+      }
+    }
+  }
   $: if (mode !== lastMode || (mode === 'story-builder' && (story !== lastStoryForBuilder || storyUrl !== lastStoryForBuilder))) {
     lastMode = mode;
     if (mode === 'story-builder') {
@@ -121,6 +134,12 @@
         console.error('Invalid story JSON:', error);
         return null;
       }
+    }
+
+    // Parse and normalise the story input to support standard IIIF Presentation API v3 AnnotationPages
+    const normalised = normaliseStoryInput(parsed);
+    if (normalised.ok && normalised.story) {
+      return normalised.story as any;
     }
 
     // Extract story data from envelope if needed
@@ -279,9 +298,12 @@
   :host {
     display: block;
     width: 100%;
+    height: 100%;
   }
 
   .element-root {
     width: 100%;
+    height: 100%;
+    box-sizing: border-box;
   }
 </style>

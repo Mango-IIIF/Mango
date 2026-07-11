@@ -12,6 +12,7 @@ import type {
 export type CapturePayload = {
   manifest: string;
   canvasIndex: number;
+  canvasId?: string;
   viewBox?: ViewBox;
   media?: ChapterMedia;
   model?: ChapterModel;
@@ -71,6 +72,11 @@ export type ChapterMarginPayload = {
   margin?: number;
 };
 
+export type ChapterMarginUndoPayload = {
+  chapterId: string;
+  margin?: number;
+};
+
 export type ChapterManifestPayload = {
   chapterId: string;
   manifest: string;
@@ -108,6 +114,7 @@ const applyCapture = (chapter: Chapter, capture: CapturePayload): Chapter => {
     canvasIndex: capture.canvasIndex,
   };
 
+  if (capture.canvasId) next.canvasId = capture.canvasId;
   if (capture.viewBox) next.viewBox = capture.viewBox;
   if (capture.media) next.media = capture.media;
   if (capture.model) next.model = capture.model;
@@ -247,9 +254,19 @@ export const setAnnotationPlacement = (
   if (index === -1) return story;
 
   const current = story.chapters[index];
+  const currentAnnotations = current.annotations ?? {};
+  const previous = currentAnnotations[payload.language] ?? {};
+  const nextAnnotations = {
+    ...currentAnnotations,
+    [payload.language]: {
+      ...previous,
+      placement: payload.placement,
+    },
+  };
+
   const updated: Chapter = {
     ...current,
-    annotationPlacement: payload.placement,
+    annotations: nextAnnotations,
   };
 
   const nextChapters = [...story.chapters];

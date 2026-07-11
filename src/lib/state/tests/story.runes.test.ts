@@ -150,7 +150,7 @@ describe('story store (runes)', () => {
       placement: placement(0.55, 0.35, 0.3, 0.3),
     });
 
-    expect(store.story.chapters[0].annotationPlacement).toEqual(
+    expect(store.story.chapters[0].annotations?.en?.placement).toEqual(
       placement(0.55, 0.35, 0.3, 0.3),
     );
   });

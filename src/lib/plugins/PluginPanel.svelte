@@ -93,7 +93,7 @@
   });
 </script>
 
-<div class:plugin-panel--overlay={slot === 'overlay'}>
+<div class="plugin-panel" class:plugin-panel--overlay={slot === 'overlay'}>
   {#if slot === 'overlay'}
     <div class="plugin-panel__body" bind:this={container}></div>
   {:else}

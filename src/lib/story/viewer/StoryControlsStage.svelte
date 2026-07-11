@@ -116,6 +116,23 @@
 
   const canRenderThumbnail = (src: string | null | undefined) =>
     Boolean(src) && !brokenThumbnailUrls.has(src ?? '');
+
+  let footerRef = $state<HTMLElement | null>(null);
+
+  $effect(() => {
+    const activeIndex = safeActiveIndex();
+    if (!footerRef) return;
+    
+    // Select the active chapter element (the buttons are children of the footer)
+    const activeBtn = footerRef.children[activeIndex] as HTMLElement | undefined;
+    if (activeBtn) {
+      activeBtn.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
+  });
 </script>
 
 <div class="story-shell" data-testid="story-controls-stage">
@@ -205,7 +222,7 @@
     </aside>
   </div>
 
-  <footer class="story-shell__footer" data-testid="story-controls-pagination">
+  <footer bind:this={footerRef} class="story-shell__footer" data-testid="story-controls-pagination">
     {#each chapterIndices as index}
       <button
         type="button"

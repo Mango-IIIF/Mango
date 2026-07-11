@@ -1,14 +1,203 @@
-import type { Chapter, Story } from '../../core/types/story';
+import type { LanguageMap, AnnotationPlacement, Story, Chapter } from '../../core/types/story';
+import type { ViewBox } from '../../core/types/viewer';
 
 export type StoryWithDefaults = Story & {
   chapters: Array<Chapter & { transitionTimeMs: number }>;
 };
 
+const parseIiifStory = (input: any): Story => {
+  const titleMap: LanguageMap = {};
+  if (input.label) {
+    for (const [lang, arr] of Object.entries(input.label)) {
+      if (Array.isArray(arr) && arr.length > 0) {
+        titleMap[lang] = arr[0];
+      }
+    }
+  }
+
+  const narrationTracks: Record<string, { src: string }> = {};
+
+  const chapters = (input.items || []).map((item: any, index: number) => {
+    const chapterId = item.id.split('/').pop() || `chapter_${index + 1}`;
+    const title: LanguageMap = {};
+    if (item.label) {
+      for (const [lang, arr] of Object.entries(item.label)) {
+        if (Array.isArray(arr) && arr.length > 0) {
+          title[lang] = arr[0];
+        }
+      }
+    }
+
+    const description: LanguageMap = {};
+    if (item.summary) {
+      for (const [lang, arr] of Object.entries(item.summary)) {
+        if (Array.isArray(arr) && arr.length > 0) {
+          description[lang] = arr[0];
+        }
+      }
+    }
+
+    const transitionTimeMs = item.transitionTimeMs ?? 2000;
+
+    // Parse target (canvas and viewBox)
+    let canvasId = '';
+    let manifest = '';
+    let canvasIndex = 0;
+    let viewBox: ViewBox | undefined;
+
+    let targetSource = item.target;
+    if (!targetSource && item.body) {
+      const bodies = Array.isArray(item.body) ? item.body : [item.body];
+      const bodyWithTarget = bodies.find((b: any) => b && typeof b === 'object' && b.target);
+      if (bodyWithTarget) {
+        targetSource = bodyWithTarget.target;
+      }
+    }
+
+    let media: { start: number; end: number } | undefined;
+
+    if (targetSource) {
+      const source = typeof targetSource === 'string' ? targetSource : targetSource.source;
+      canvasId = source || '';
+      
+      if (canvasId.includes('#')) {
+        const parts = canvasId.split('#');
+        canvasId = parts[0];
+        const fragment = parts[1];
+        const tMatch = fragment.match(/t=(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/);
+        if (tMatch) {
+          const start = parseFloat(tMatch[1]);
+          const end = parseFloat(tMatch[2]);
+          if (!Number.isNaN(start) && !Number.isNaN(end)) {
+            media = { start, end };
+          }
+        }
+      }
+
+      const targetObj = typeof targetSource === 'object' ? targetSource : null;
+
+      // Resolve manifest ID and canvasIndex
+      if (targetObj && targetObj.partOf && targetObj.partOf.id) {
+        manifest = targetObj.partOf.id;
+      } else if (canvasId && canvasId.includes('/canvas/')) {
+        const parts = canvasId.split('/canvas/');
+        manifest = parts[0];
+        const idxVal = parseInt(parts[1], 10);
+        canvasIndex = Number.isNaN(idxVal) ? 0 : idxVal;
+      }
+
+      const selector = targetObj?.selector;
+      if (selector && selector.value) {
+        const val = selector.value;
+        const match = val.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
+        if (match) {
+          viewBox = {
+            x: parseInt(match[1], 10),
+            y: parseInt(match[2], 10),
+            w: parseInt(match[3], 10),
+            h: parseInt(match[4], 10)
+          };
+        }
+
+        const tMatch = val.match(/t=(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/);
+        if (tMatch) {
+          const start = parseFloat(tMatch[1]);
+          const end = parseFloat(tMatch[2]);
+          if (!Number.isNaN(start) && !Number.isNaN(end)) {
+            media = { start, end };
+          }
+        }
+      }
+    }
+
+    // Parse body for narration segment and annotations
+    const narrationSegment: Record<string, { start: number; end: number }> = {};
+    const annotations: Record<string, { text: string; placement: AnnotationPlacement }> = {};
+
+    const processBodyItem = (bodyItem: any) => {
+      if (!bodyItem || typeof bodyItem !== 'object') return;
+
+      if (bodyItem.type === 'Sound') {
+        const urlWithFragment = bodyItem.id || '';
+        const lang = bodyItem.language || 'en';
+        const urlParts = urlWithFragment.split('#t=');
+        const audioUrl = urlParts[0];
+        
+        narrationTracks[lang] = { src: audioUrl };
+
+        if (urlParts[1]) {
+          const times = urlParts[1].split(',');
+          const start = parseFloat(times[0]);
+          const end = parseFloat(times[1]);
+          if (!Number.isNaN(start) && !Number.isNaN(end)) {
+            narrationSegment[lang] = { start, end };
+          }
+        }
+      } else if (bodyItem.type === 'TextualBody') {
+        const text = bodyItem.value || '';
+        const lang = bodyItem.language || 'en';
+        let placement: AnnotationPlacement = { x: 0.33, y: 0.33, w: 0.34, h: 0.34 };
+
+        if (bodyItem.target && bodyItem.target.selector && bodyItem.target.selector.value) {
+          const val = bodyItem.target.selector.value;
+          const match = val.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
+          if (match) {
+            placement = {
+              x: parseInt(match[1], 10),
+              y: parseInt(match[2], 10),
+              w: parseInt(match[3], 10),
+              h: parseInt(match[4], 10)
+            };
+          }
+        }
+
+        annotations[lang] = { text, placement };
+      }
+    };
+
+    if (item.body) {
+      if (Array.isArray(item.body)) {
+        item.body.forEach(processBodyItem);
+      } else {
+        processBodyItem(item.body);
+      }
+    }
+
+    return {
+      id: chapterId,
+      title,
+      description,
+      manifest,
+      canvasIndex,
+      canvasId,
+      transitionTimeMs,
+      viewBox,
+      media,
+      narrationSegment: Object.keys(narrationSegment).length > 0 ? narrationSegment : undefined,
+      annotations: Object.keys(annotations).length > 0 ? annotations : undefined
+    };
+  });
+
+  return {
+    version: '1.0',
+    type: 'story',
+    title: titleMap,
+    narration: Object.keys(narrationTracks).length > 0 ? { tracks: narrationTracks } : undefined,
+    chapters
+  };
+};
+
 const extractStoryObject = (input: unknown): Story | null => {
   if (!input || typeof input !== 'object') return null;
+  if ((input as any).type === 'AnnotationPage') {
+    return parseIiifStory(input);
+  }
   const maybeWrapped = (input as any).data;
   if (maybeWrapped && typeof maybeWrapped === 'object' && maybeWrapped.type === 'story') {
     return maybeWrapped as Story;
+  }
+  if (maybeWrapped && typeof maybeWrapped === 'object' && maybeWrapped.type === 'AnnotationPage') {
+    return parseIiifStory(maybeWrapped);
   }
   if ((input as any).type === 'story') {
     return input as Story;

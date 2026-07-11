@@ -166,7 +166,7 @@ describe('story reducers', () => {
     expect(next.chapters[0]).not.toBe(story.chapters[0]);
     expect(next.chapters[0].annotations).not.toBe(story.chapters[0].annotations);
     expect(next.chapters[0].annotations?.en?.text).toBe('Updated');
-    expect(next.chapters[0].annotationPlacement).toEqual(placement(0.1, 0.1, 0.3, 0.3));
+    expect(next.chapters[0].annotations?.en?.placement).toEqual(placement(0.1, 0.1, 0.3, 0.3));
     expect(next.chapters[0].annotations?.cy).toEqual(story.chapters[0].annotations?.cy);
     expect(next.chapters[1]).toBe(story.chapters[1]);
   });
@@ -245,7 +245,7 @@ describe('story reducers', () => {
 
     expect(next.chapters[0].manifest).toBe(story.chapters[0].manifest);
     expect(next.chapters[1].manifest).toBe(story.chapters[1].manifest);
-    expect(next.chapters[0].annotationPlacement).toEqual(placement(0.55, 0.35, 0.3, 0.3));
+    expect(next.chapters[0].annotations?.en?.placement).toEqual(placement(0.55, 0.35, 0.3, 0.3));
   });
 
   it('updates narration tracks immutably', () => {

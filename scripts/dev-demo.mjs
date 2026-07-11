@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync, watch } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, watch, readdirSync, statSync, copyFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,6 +17,20 @@ function log(message) {
   console.log(`[dev-demo] ${message}`);
 }
 
+function copyDirRecursive(src, dest) {
+  const stats = statSync(src);
+  if (stats.isDirectory()) {
+    if (!existsSync(dest)) {
+      mkdirSync(dest, { recursive: true });
+    }
+    for (const file of readdirSync(src)) {
+      copyDirRecursive(join(src, file), join(dest, file));
+    }
+  } else {
+    copyFileSync(src, dest);
+  }
+}
+
 function syncDemo() {
   if (syncInFlight) return;
   if (!existsSync(srcDist)) return;
@@ -25,7 +39,7 @@ function syncDemo() {
   try {
     rmSync(demoDist, { force: true, recursive: true });
     mkdirSync(demoDist, { recursive: true });
-    cpSync(srcDist, demoDist, { recursive: true });
+    copyDirRecursive(srcDist, demoDist);
     log(`synced demo assets from ${srcDist} to ${demoDist}`);
   } catch (error) {
     log(`failed to sync assets: ${error instanceof Error ? error.message : String(error)}`);

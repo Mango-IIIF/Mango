@@ -30,12 +30,18 @@
   };
   $: captureViewBox = chapter?.viewBox ?? null;
   $: currentViewBox = $viewBox;
-  $: anchorPoint = captureViewBox
+  $: isAbsolute = Boolean(placement && (placement.x > 1 || placement.y > 1 || placement.w > 1 || placement.h > 1));
+  $: anchorPoint = isAbsolute
     ? {
-        x: captureViewBox.x + captureViewBox.w * placementCenter.x,
-        y: captureViewBox.y + captureViewBox.h * placementCenter.y,
+        x: placement.x + placement.w / 2,
+        y: placement.y + placement.h / 2,
       }
-    : null;
+    : (captureViewBox
+      ? {
+          x: captureViewBox.x + captureViewBox.w * placementCenter.x,
+          y: captureViewBox.y + captureViewBox.h * placementCenter.y,
+        }
+      : null);
   $: relativePoint =
     anchorPoint && currentViewBox
       ? {
@@ -53,9 +59,11 @@
     relativePoint.x <= 1 &&
     relativePoint.y >= 0 &&
     relativePoint.y <= 1;
+  $: relativeW = isAbsolute && currentViewBox ? (currentViewBox.w > 0 ? placement.w / currentViewBox.w : 0) : placement.w;
+  $: relativeH = isAbsolute && currentViewBox ? (currentViewBox.h > 0 ? placement.h / currentViewBox.h : 0) : placement.h;
   $: noteStyle = anchored
-    ? `left: ${(relativePoint.x * 100).toFixed(3)}%; top: ${(relativePoint.y * 100).toFixed(3)}%;`
-    : `left: ${(placementCenter.x * 100).toFixed(3)}%; top: ${(placementCenter.y * 100).toFixed(3)}%;`;
+    ? `left: ${(relativePoint.x * 100).toFixed(3)}%; top: ${(relativePoint.y * 100).toFixed(3)}%; width: ${(relativeW * 100).toFixed(3)}%; height: ${(relativeH * 100).toFixed(3)}%;`
+    : `left: ${(placementCenter.x * 100).toFixed(3)}%; top: ${(placementCenter.y * 100).toFixed(3)}%; width: ${(relativeW * 100).toFixed(3)}%; height: ${(relativeH * 100).toFixed(3)}%;`;
   $: show = Boolean(visible && text && chapterId && (!anchored || inView));
 </script>
 
@@ -82,7 +90,9 @@
   .story-annotation-overlay__note {
     position: absolute;
     transform: translate(-50%, -50%);
-    max-width: min(280px, 80%);
+    box-sizing: border-box;
+    max-width: 100%;
+    max-height: 100%;
     padding: 10px 12px;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.92);
@@ -90,5 +100,10 @@
     font-size: 13px;
     line-height: 1.4;
     box-shadow: 0 12px 28px rgba(43, 37, 32, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
   }
 </style>
