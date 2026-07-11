@@ -114,7 +114,7 @@
     "svelte": "^5.43.8",
     "svelte-eslint-parser": "^0.43.0",
     "tsx": "^4.22.3",
-    "typescript": "^7.0.2",
+    "typescript": "~5.9.3",
     "typescript-eslint": "^8.19.1",
     "vite": "^8.0.16",
     "vitest": "^3.0.0"
