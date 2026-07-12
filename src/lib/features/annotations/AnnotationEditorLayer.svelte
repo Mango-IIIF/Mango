@@ -1,372 +1,182 @@
 <script lang="ts">
-  import RectanglePlacementEditor from './RectanglePlacementEditor.svelte';
-  import type { ViewBox } from '../../core/types/viewer';
+  import { untrack } from 'svelte';
+  import {
+    OSDAnnotationEditor,
+    type AnnotationTheme,
+    type EditorMode,
+    type OSDLikeViewer,
+    type ShapeData,
+  } from '@mango-iiif/annotation';
+  import { W3CParser } from '@mango-iiif/w3c-parser';
+  import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
+  import type { LayerItem } from './workspace/LeftSidebar.svelte';
+
+  type Tool = 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
 
   interface Props {
     enabled?: boolean;
-    viewBox?: ViewBox | null;
-    width?: number;
-    height?: number;
+    viewer?: OSDLikeViewer | null;
     canvasId?: string | null;
-    activeTool?: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
-    ontoolchange?:
-      | ((payload: {
-          tool: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
-        }) => void)
-      | undefined;
+    canvasWidth?: number;
+    canvasHeight?: number;
+    annotations?: ResolvedAnnotation[];
+    activeAnnotationId?: string | null;
+    activeTool?: Tool;
+    layers?: LayerItem[];
+    ontoolchange?: ((payload: { tool: Tool }) => void) | undefined;
     onannotationcreate?: ((payload: { annotation: unknown }) => void) | undefined;
+    onannotationupdate?:
+      | ((payload: { id: string; patch: Partial<ResolvedAnnotation> }) => void)
+      | undefined;
+    onannotationdelete?: ((payload: { id: string }) => void) | undefined;
+    onannotationselect?: ((payload: { id: string }) => void) | undefined;
   }
 
   let {
     enabled = false,
-    viewBox = null,
-    width = 0,
-    height = 0,
+    viewer = null,
     canvasId = null,
+    canvasWidth = 0,
+    canvasHeight = 0,
+    annotations = [],
+    activeAnnotationId = null,
     activeTool = 'rectangle',
+    layers = [],
     ontoolchange = undefined,
     onannotationcreate = undefined,
+    onannotationupdate = undefined,
+    onannotationdelete = undefined,
+    onannotationselect = undefined,
   }: Props = $props();
 
-  let drawing = $state(false);
-  let startX = $state(0);
-  let startY = $state(0);
-  let endX = $state(0);
-  let endY = $state(0);
-  let rectangleDraft = $state<{ x: number; y: number; w: number; h: number } | null>(null);
-  let polygonPoints = $state<Array<{ x: number; y: number }>>([]);
-  let freehandPoints = $state<Array<{ x: number; y: number }>>([]);
+  let editor: OSDAnnotationEditor | null = $state(null);
 
-  const toCanvasX = (screenX: number) =>
-    viewBox ? viewBox.x + (screenX / width) * viewBox.w : 0;
-  const toCanvasY = (screenY: number) =>
-    viewBox ? viewBox.y + (screenY / height) * viewBox.h : 0;
-  const toScreenX = (canvasX: number) =>
-    viewBox ? ((canvasX - viewBox.x) / viewBox.w) * width : 0;
-  const toScreenY = (canvasY: number) =>
-    viewBox ? ((canvasY - viewBox.y) / viewBox.h) * height : 0;
-  const pointsToSvg = (points: Array<{ x: number; y: number }>) =>
-    `<svg><polygon points="${points.map((p) => `${Math.round(p.x)},${Math.round(p.y)}`).join(' ')}" /></svg>`;
-  const lineToSvg = (start: { x: number; y: number }, end: { x: number; y: number }) =>
-    `<svg><polyline points="${Math.round(start.x)},${Math.round(start.y)} ${Math.round(end.x)},${Math.round(end.y)}" /></svg>`;
-  const polylineToSvg = (points: Array<{ x: number; y: number }>) =>
-    `<svg><polyline points="${points.map((p) => `${Math.round(p.x)},${Math.round(p.y)}`).join(' ')}" /></svg>`;
+  const toShape = (annotation: ResolvedAnnotation): ShapeData | null => {
+    const shared = {
+      id: annotation.id,
+      layer: annotation.targetStyleClass,
+      label: annotation.label,
+      text: annotation.text,
+      data: annotation,
+    };
+    if (annotation.rect) return { ...shared, type: 'rect', geometry: annotation.rect };
+    if (annotation.point) return { ...shared, type: 'point', geometry: annotation.point };
+    if (annotation.polygon?.points?.length) {
+      return { ...shared, type: 'polygon', geometry: { points: annotation.polygon.points } };
+    }
+    return null;
+  };
 
-  const emitAnnotation = (
-    targetSelector: {
-      type: 'FragmentSelector' | 'SvgSelector';
-      value: string;
-      conformsTo?: string;
-    },
-  ) => {
-    if (!canvasId) return;
-    onannotationcreate?.({
-      annotation: {
-        id: `anno-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        type: 'Annotation',
-        motivation: 'oa:commenting',
-        body: [{ type: 'TextualBody', value: '', format: 'text/plain' }],
-        target: {
-          type: 'SpecificResource',
-          source: canvasId,
-          selector: targetSelector,
+  const toPatch = (shape: ShapeData): Partial<ResolvedAnnotation> => {
+    if (shape.type === 'rect') {
+      return { rect: shape.geometry, point: undefined, polygon: undefined };
+    }
+    if (shape.type === 'point') {
+      return { rect: undefined, point: shape.geometry, polygon: undefined };
+    }
+    if (shape.type === 'line') {
+      return {
+        rect: undefined,
+        point: undefined,
+        polygon: { points: [shape.geometry.start, shape.geometry.end] },
+      };
+    }
+    return {
+      rect: undefined,
+      point: undefined,
+      polygon: { points: shape.geometry.points },
+    };
+  };
+
+  const modeForTool = (tool: Tool): EditorMode => (tool === 'select' ? 'select' : tool);
+
+  const translucentFill = (color: string, opacity = 0.18): string => {
+    const value = color.trim();
+    const shortHex = value.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
+    const longHex = value.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    const channels = shortHex
+      ? shortHex.slice(1).map((channel) => parseInt(`${channel}${channel}`, 16))
+      : longHex
+        ? longHex.slice(1).map((channel) => parseInt(channel, 16))
+        : null;
+    return channels
+      ? `rgba(${channels[0]}, ${channels[1]}, ${channels[2]}, ${opacity})`
+      : value;
+  };
+
+  const themeForLayers = (items: LayerItem[]): AnnotationTheme => ({
+    layers: Object.fromEntries(
+      items.map((layer) => [
+        layer.id,
+        {
+          strokeColor: layer.color,
+          fillColor: translucentFill(layer.color),
         },
-      },
-    });
-  };
-
-  const canvasRectFromNormalized = (rect: {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  }): { x: number; y: number; w: number; h: number } | null => {
-    if (!viewBox || width <= 0 || height <= 0) return null;
-
-    const x1 = rect.x * width;
-    const y1 = rect.y * height;
-    const x2 = (rect.x + rect.w) * width;
-    const y2 = (rect.y + rect.h) * height;
-
-    const cx1 = toCanvasX(Math.min(x1, x2));
-    const cy1 = toCanvasY(Math.min(y1, y2));
-    const cx2 = toCanvasX(Math.max(x1, x2));
-    const cy2 = toCanvasY(Math.max(y1, y2));
-    const cw = cx2 - cx1;
-    const ch = cy2 - cy1;
-    if (cw < 1 || ch < 1) return null;
-
-    return { x: cx1, y: cy1, w: cw, h: ch };
-  };
-
-  const commitRectangleDraft = (
-    rect: { x: number; y: number; w: number; h: number } | null,
-  ) => {
-    if (!rect) return;
-    const canvasRect = canvasRectFromNormalized(rect);
-    if (!canvasRect) return;
-    emitAnnotation({
-      type: 'FragmentSelector',
-      conformsTo: 'http://www.w3.org/TR/media-frags/',
-      value: `xywh=pixel:${Math.round(canvasRect.x)},${Math.round(canvasRect.y)},${Math.round(canvasRect.w)},${Math.round(canvasRect.h)}`,
-    });
-  };
-
-  const handleKeydown = (event: KeyboardEvent) => {
-    const target = event.target as HTMLElement;
-    if (
-      target &&
-      (target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable)
-    ) {
-      return;
-    }
-
-    const key = event.key.toLowerCase();
-    const next =
-      key === 'r'
-        ? 'rectangle'
-        : key === 'o'
-          ? 'point'
-          : key === 'p'
-            ? 'polygon'
-            : key === 'f'
-              ? 'freehand'
-              : key === 'l'
-                ? 'line'
-                : key === 'v'
-                  ? 'select'
-                  : null;
-
-    if (next) {
-      ontoolchange?.({ tool: next });
-      return;
-    }
-
-    if (event.key === 'Escape') {
-      if (
-        drawing ||
-        polygonPoints.length > 0 ||
-        freehandPoints.length > 0 ||
-        rectangleDraft
-      ) {
-        drawing = false;
-        polygonPoints = [];
-        freehandPoints = [];
-        rectangleDraft = null;
-      } else {
-        ontoolchange?.({ tool: 'select' });
-      }
-      return;
-    }
-
-    if (!enabled) return;
-
-    if (event.key === 'Enter' && activeTool === 'polygon' && polygonPoints.length >= 3) {
-      emitAnnotation({ type: 'SvgSelector', value: pointsToSvg(polygonPoints) });
-      polygonPoints = [];
-      drawing = false;
-      return;
-    }
-  };
-
-  const onPointerDown = (event: PointerEvent) => {
-    if (!enabled || !viewBox) return;
-    if (activeTool === 'rectangle') return;
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    startX = event.clientX - rect.left;
-    startY = event.clientY - rect.top;
-    endX = startX;
-    endY = startY;
-    if (activeTool === 'point') {
-      const cx = toCanvasX(startX);
-      const cy = toCanvasY(startY);
-      emitAnnotation({
-        type: 'FragmentSelector',
-        conformsTo: 'http://www.w3.org/TR/media-frags/',
-        value: `xywh=pixel:${Math.round(cx)},${Math.round(cy)},1,1`,
-      });
-      return;
-    }
-    if (activeTool === 'polygon') {
-      polygonPoints = [...polygonPoints, { x: toCanvasX(startX), y: toCanvasY(startY) }];
-      drawing = polygonPoints.length > 0;
-      return;
-    }
-    drawing = true;
-    if (activeTool === 'freehand') {
-      freehandPoints = [{ x: toCanvasX(startX), y: toCanvasY(startY) }];
-    }
-  };
-
-  const onPointerMove = (event: PointerEvent) => {
-    if (!drawing) return;
-    if (activeTool === 'rectangle') return;
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const nextX = event.clientX - rect.left;
-    const nextY = event.clientY - rect.top;
-    endX = nextX;
-    endY = nextY;
-    if (activeTool === 'freehand') {
-      freehandPoints = [...freehandPoints, { x: toCanvasX(nextX), y: toCanvasY(nextY) }];
-    }
-  };
-
-  const onPointerUp = () => {
-    if (!drawing || !viewBox || !canvasId) return;
-    if (activeTool === 'rectangle') return;
-    if (activeTool === 'polygon') return;
-    drawing = false;
-
-    const x1 = Math.min(startX, endX);
-    const y1 = Math.min(startY, endY);
-    const x2 = Math.max(startX, endX);
-    const y2 = Math.max(startY, endY);
-
-    const cx1 = toCanvasX(x1);
-    const cy1 = toCanvasY(y1);
-    const cx2 = toCanvasX(x2);
-    const cy2 = toCanvasY(y2);
-
-    if (activeTool === 'line') {
-      emitAnnotation({
-        type: 'SvgSelector',
-        value: lineToSvg({ x: cx1, y: cy1 }, { x: cx2, y: cy2 }),
-      });
-      return;
-    }
-    if (activeTool === 'freehand') {
-      if (freehandPoints.length < 2) return;
-      emitAnnotation({
-        type: 'SvgSelector',
-        value: polylineToSvg(freehandPoints),
-      });
-      freehandPoints = [];
-      return;
-    }
-    if (Math.abs(cx2 - cx1) < 1 || Math.abs(cy2 - cy1) < 1) return;
-    emitAnnotation({
-      type: 'FragmentSelector',
-      conformsTo: 'http://www.w3.org/TR/media-frags/',
-      value: `xywh=pixel:${Math.round(cx1)},${Math.round(cy1)},${Math.round(cx2 - cx1)},${Math.round(cy2 - cy1)}`,
-    });
-  };
-
-  const onDblClick = (event: MouseEvent) => {
-    if (!enabled) return;
-    if (activeTool === 'polygon') {
-      let points = [...polygonPoints];
-      if (points.length >= 3) {
-        points.pop();
-      }
-      if (points.length >= 3) {
-        emitAnnotation({ type: 'SvgSelector', value: pointsToSvg(points) });
-      }
-      polygonPoints = [];
-      drawing = false;
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  };
+      ]),
+    ),
+  });
 
   $effect(() => {
-    if (!enabled || activeTool !== 'rectangle') {
-      rectangleDraft = null;
-    }
+    if (!enabled || !viewer || canvasWidth <= 0 || canvasHeight <= 0) return;
+    const instance = new OSDAnnotationEditor({
+      viewer,
+      canvasSize: { width: canvasWidth, height: canvasHeight },
+      annotations: untrack(() =>
+        annotations.map(toShape).filter((shape): shape is ShapeData => Boolean(shape)),
+      ),
+      selectedId: untrack(() => activeAnnotationId),
+      mode: untrack(() => modeForTool(activeTool)),
+      currentLayer: 'mine',
+      theme: untrack(() => themeForLayers(layers)),
+      onSelectionChanged: (id) => {
+        if (id && annotations.some((annotation) => annotation.id === id)) {
+          onannotationselect?.({ id });
+        }
+      },
+      onAnnotationCreated: (shape) => {
+        if (!canvasId) return;
+        const annotation = W3CParser.serialize({
+          id: shape.id,
+          canvasId,
+          text: shape.text ?? '',
+          label: shape.label,
+          layer: shape.layer,
+          shape,
+        });
+        onannotationcreate?.({ annotation });
+      },
+      onAnnotationUpdated: (shape) => {
+        onannotationupdate?.({ id: shape.id, patch: toPatch(shape) });
+      },
+      onAnnotationDeleted: (id) => onannotationdelete?.({ id }),
+      onModeChanged: (mode) => {
+        if (mode === 'select') ontoolchange?.({ tool: 'select' });
+      },
+    });
+    editor = instance;
+    return () => {
+      instance.destroy();
+      if (editor === instance) editor = null;
+    };
+  });
+
+  $effect(() => {
+    if (!editor) return;
+    editor.setAnnotations(
+      annotations.map(toShape).filter((shape): shape is ShapeData => Boolean(shape)),
+    );
+    editor.select(activeAnnotationId);
+  });
+
+  $effect(() => {
+    editor?.setMode(modeForTool(activeTool));
+  });
+
+  $effect(() => {
+    editor?.updateCanvasSize({ width: canvasWidth, height: canvasHeight });
+  });
+
+  $effect(() => {
+    editor?.updateTheme(themeForLayers(layers));
   });
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
-
-{#if enabled}
-  <div
-    class="annotation-editor"
-    class:annotation-editor--crosshair={activeTool !== 'rectangle'}
-    role="application"
-    aria-label="Annotation drawing surface"
-    onpointerdown={onPointerDown}
-    onpointermove={onPointerMove}
-    onpointerup={onPointerUp}
-    onpointerleave={onPointerUp}
-    ondblclick={onDblClick}
-  >
-    {#if activeTool === 'rectangle'}
-      <RectanglePlacementEditor
-        enabled={true}
-        value={rectangleDraft}
-        minSize={0.0001}
-        showHandles={false}
-        allowCreate={true}
-        allowMove={false}
-        allowResize={false}
-        commitOnPointerUp={true}
-        onrectchange={({ rect }) => {
-          rectangleDraft = rect;
-        }}
-        onrectcommit={({ rect }) => {
-          commitRectangleDraft(rect);
-          rectangleDraft = null;
-        }}
-      />
-    {/if}
-    {#if drawing && activeTool === 'line'}
-      <svg class="annotation-editor__svg" aria-hidden="true">
-        <line
-          x1={startX}
-          y1={startY}
-          x2={endX}
-          y2={endY}
-          class="annotation-editor__line"
-        />
-      </svg>
-    {/if}
-    {#if activeTool === 'polygon' && polygonPoints.length > 0}
-      <svg class="annotation-editor__svg" aria-hidden="true">
-        <polyline
-          points={`${polygonPoints.map((p) => `${toScreenX(p.x)},${toScreenY(p.y)}`).join(' ')} ${endX},${endY}`}
-          class="annotation-editor__polyline"
-        />
-      </svg>
-    {/if}
-    {#if drawing && activeTool === 'freehand' && freehandPoints.length > 1}
-      <svg class="annotation-editor__svg" aria-hidden="true">
-        <polyline
-          points={freehandPoints
-            .map((p) => `${toScreenX(p.x)},${toScreenY(p.y)}`)
-            .join(' ')}
-          class="annotation-editor__polyline"
-        />
-      </svg>
-    {/if}
-  </div>
-{/if}
-
-<style>
-  .annotation-editor {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-  }
-
-  .annotation-editor--crosshair {
-    cursor: crosshair;
-  }
-
-  .annotation-editor__svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  .annotation-editor__line,
-  .annotation-editor__polyline {
-    fill: none;
-    stroke: rgba(106, 229, 161, 0.95);
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-</style>

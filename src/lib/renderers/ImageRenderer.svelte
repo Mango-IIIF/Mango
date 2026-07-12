@@ -17,6 +17,7 @@
 
 <script lang="ts">
   import { t } from '../i18n';
+  import type OpenSeadragon from 'openseadragon';
   import OSDViewer from './OSDViewer.svelte';
   import type { ResolvedAnnotation } from '../iiif/annotationResolver';
   import type { MediaSource, TileSource } from '../iiif/mediaResolver';
@@ -44,6 +45,7 @@
     onannotationSelect?: (payload: { id: string }) => void;
     onannotationClear?: () => void;
     onrotationChange?: (payload: { rotation: number }) => void;
+    onviewerready?: (payload: { viewer: OpenSeadragon.Viewer }) => void;
   }
 
   let {
@@ -66,6 +68,7 @@
     onannotationSelect = undefined,
     onannotationClear = undefined,
     onrotationChange = undefined,
+    onviewerready = undefined,
   }: Props = $props();
 
   let osd: any = $state(null);
@@ -129,6 +132,7 @@
     onannotationhover={(detail) => onannotationHover?.(detail)}
     onannotationselect={(detail) => onannotationSelect?.(detail)}
     onannotationclear={() => onannotationClear?.()}
+    {onviewerready}
   />
 {:else}
   <div class="image-placeholder">{$t('renderers.image.noSource')}</div>

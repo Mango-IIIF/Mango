@@ -15,8 +15,8 @@
   import type { ViewerConfig } from '../../core/types/config';
   import AnnotationLayer from '../../features/annotations/AnnotationLayer.svelte';
   import AnnotationEditorLayer from '../../features/annotations/AnnotationEditorLayer.svelte';
-  import RectanglePlacementEditor from '../../features/annotations/RectanglePlacementEditor.svelte';
-  import { resolvedToW3C, w3cToResolved } from '../../features/annotations/W3CParser';
+  import { resolvedToW3C, w3cToResolved } from '../../features/annotations/w3c';
+  import type { LayerItem } from '../../features/annotations/workspace/LeftSidebar.svelte';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
   import { VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
 
@@ -75,14 +75,16 @@
     onzoomchange?: ((payload: { zoom: number; viewBox: ViewBox }) => void) | undefined;
     onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
     onpaneltoggle?: ((payload: { panel: DockPanel; open: boolean }) => void) | undefined;
-    annotationMode?: 'edit' | 'create';
     annotationTool?: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
+    annotationEditorEnabled?: boolean;
+    annotationLayers?: LayerItem[];
     canvasId?: string | null;
-    editableRectAnnotationId?: string | null;
     onannotationcreate?: ((payload: { annotation: unknown }) => void) | undefined;
     onannotationupdate?:
       | ((payload: { id: string; patch: Record<string, unknown> }) => void)
       | undefined;
+    onannotationdelete?: ((payload: { id: string }) => void) | undefined;
+    onannotationselect?: ((payload: { id: string }) => void) | undefined;
     onannotationtoolchange?:
       | ((payload: { tool: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line' }) => void)
       | undefined;
@@ -135,12 +137,14 @@
     onzoomchange = undefined,
     onrotationchange = undefined,
     onpaneltoggle = undefined,
-    annotationMode = 'edit',
     annotationTool = 'select',
+    annotationEditorEnabled = false,
+    annotationLayers = [],
     canvasId = null,
-    editableRectAnnotationId = null,
     onannotationcreate = undefined,
     onannotationupdate = undefined,
+    onannotationdelete = undefined,
+    onannotationselect = undefined,
     onannotationtoolchange = undefined,
     layoutMode = 'single',
     activeLayoutImages = []
@@ -157,15 +161,14 @@
   let useRendererNativeAnnotationLayer = $derived(mediaType === 'image' || mediaType === 'audio');
 
   let rendererInstance: any = $state(null);
+  let annotationViewer: any = $state(null);
+  let annotationCanvasSize = $state({ width: 0, height: 0 });
   let mediaBounds: HTMLDivElement | null = $state(null);
   let stageWidth = $state(0);
   let stageHeight = $state(0);
   let stageViewBox = $state<ViewBox | null>(null);
   let pendingModelPose: ModelPose | null = $state(null);
   let pendingModelPoseOptions: ModelPoseOptions = $state({});
-  const clamp = (value: number, min: number, max: number): number =>
-    Math.min(max, Math.max(min, value));
-
   export const getViewBox = (): ViewBox | null =>
     rendererInstance?.getViewBox?.() ?? null;
 
@@ -273,73 +276,16 @@
     onzoomchange?.(payload);
   };
 
-  const toCanvasX = (screenX: number): number =>
-    stageViewBox ? stageViewBox.x + (screenX / stageWidth) * stageViewBox.w : 0;
-  const toCanvasY = (screenY: number): number =>
-    stageViewBox ? stageViewBox.y + (screenY / stageHeight) * stageViewBox.h : 0;
-  const toScreenX = (canvasX: number): number =>
-    stageViewBox ? ((canvasX - stageViewBox.x) / stageViewBox.w) * stageWidth : 0;
-  const toScreenY = (canvasY: number): number =>
-    stageViewBox ? ((canvasY - stageViewBox.y) / stageViewBox.h) * stageHeight : 0;
-
-  const normalizedRectFromCanvas = (rect: {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  }): { x: number; y: number; w: number; h: number } | null => {
-    if (
-      !stageViewBox ||
-      stageWidth <= 0 ||
-      stageHeight <= 0 ||
-      stageViewBox.w <= 0 ||
-      stageViewBox.h <= 0
-    ) {
-      return null;
+  const syncAnnotationCanvasSize = (viewer: any) => {
+    const size = viewer?.world?.getItemAt(0)?.getContentSize?.();
+    if (size?.x > 0 && size?.y > 0) {
+      annotationCanvasSize = { width: size.x, height: size.y };
     }
-    const x = toScreenX(rect.x) / stageWidth;
-    const y = toScreenY(rect.y) / stageHeight;
-    const w = rect.w / stageViewBox.w;
-    const h = rect.h / stageViewBox.h;
-    const clampedW = clamp(w, 0, 1);
-    const clampedH = clamp(h, 0, 1);
-    return {
-      x: clamp(x, 0, 1 - clampedW),
-      y: clamp(y, 0, 1 - clampedH),
-      w: clampedW,
-      h: clampedH,
-    };
   };
 
-  const canvasRectFromNormalized = (rect: {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  }): { x: number; y: number; w: number; h: number } | null => {
-    if (
-      !stageViewBox ||
-      stageWidth <= 0 ||
-      stageHeight <= 0 ||
-      stageViewBox.w <= 0 ||
-      stageViewBox.h <= 0
-    ) {
-      return null;
-    }
-    const x1 = rect.x * stageWidth;
-    const y1 = rect.y * stageHeight;
-    const x2 = (rect.x + rect.w) * stageWidth;
-    const y2 = (rect.y + rect.h) * stageHeight;
-    const cx1 = toCanvasX(Math.min(x1, x2));
-    const cy1 = toCanvasY(Math.min(y1, y2));
-    const cx2 = toCanvasX(Math.max(x1, x2));
-    const cy2 = toCanvasY(Math.max(y1, y2));
-    return {
-      x: cx1,
-      y: cy1,
-      w: Math.max(1, cx2 - cx1),
-      h: Math.max(1, cy2 - cy1),
-    };
+  const handleRendererViewerReady = (payload: { viewer: any }) => {
+    annotationViewer = payload.viewer;
+    syncAnnotationCanvasSize(payload.viewer);
   };
 
   $effect(() => {
@@ -369,35 +315,6 @@
       .map((item) => w3cToResolved(item))
       .filter((item): item is ResolvedAnnotation => Boolean(item))
   );
-  const editableRectAnnotation = $derived.by(() => {
-    if (annotationMode !== 'edit' || !editableRectAnnotationId) return null;
-    const target = annotations.find((annotation) => annotation.id === editableRectAnnotationId);
-    if (!target?.rect) return null;
-    return {
-      id: target.id,
-      rect: target.rect,
-    };
-  });
-  const editableRectValue = $derived(
-    editableRectAnnotation ? normalizedRectFromCanvas(editableRectAnnotation.rect) : null,
-  );
-
-  const handleEditableRectChange = (rect: {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  } | null) => {
-    if (!editableRectAnnotation || !rect) return;
-    const canvasRect = canvasRectFromNormalized(rect);
-    if (!canvasRect) return;
-    onannotationupdate?.({
-      id: editableRectAnnotation.id,
-      patch: {
-        rect: canvasRect,
-      },
-    });
-  };
 </script>
 
 <svelte:window onkeydown={handleStageKeydown} />
@@ -413,6 +330,7 @@
         {allowAnnotations}
         {allowTools}
         {allowLayers}
+        {allowSettings}
         {showThumbnails}
         {showContents}
         {showSearch}
@@ -446,7 +364,7 @@
         {accompanyingSource}
         {captionTracks}
         {startTime}
-        {annotations}
+        annotations={annotationEditorEnabled ? [] : annotations}
         {highlightIds}
         {activeAnnotationId}
         {hoverAnnotationId}
@@ -463,6 +381,7 @@
         onviewboxchange={handleRendererViewBoxChange}
         onzoomchange={handleRendererZoomChange}
         onrotationchange={(payload) => onrotationchange?.(payload)}
+        onviewerready={handleRendererViewerReady}
       />
     {:else}
       <div class="stage__placeholder">
@@ -485,35 +404,21 @@
     {/if}
 
     <AnnotationEditorLayer
-      enabled={annotationMode === 'create'}
+      enabled={annotationEditorEnabled}
+      viewer={annotationViewer}
       activeTool={annotationTool}
-      viewBox={stageViewBox}
-      width={stageWidth}
-      height={stageHeight}
+      canvasWidth={annotationCanvasSize.width || mediaSource?.width || 0}
+      canvasHeight={annotationCanvasSize.height || mediaSource?.height || 0}
       canvasId={effectiveCanvasId}
+      {annotations}
+      {activeAnnotationId}
+      layers={annotationLayers}
       onannotationcreate={(payload) => onannotationcreate?.(payload)}
+      onannotationupdate={(payload) => onannotationupdate?.(payload)}
+      onannotationdelete={(payload) => onannotationdelete?.(payload)}
+      onannotationselect={(payload) => onannotationselect?.(payload)}
       ontoolchange={(payload) => onannotationtoolchange?.(payload)}
     />
-
-    {#if editableRectAnnotation && editableRectValue}
-      <div class="stage__rect-edit-layer">
-        <RectanglePlacementEditor
-          enabled={annotationMode === 'edit'}
-          value={editableRectValue}
-          minSize={0.0001}
-          allowCreate={false}
-          allowMove={true}
-          allowResize={true}
-          showHandles={true}
-          passthrough={true}
-          onrectchange={({ rect, source }) => {
-            if (source === 'move' || source === 'resize') {
-              handleEditableRectChange(rect);
-            }
-          }}
-        />
-      </div>
-    {/if}
 
     {#if overlayPlugins.length > 0}
       <div class:stage__overlay--flush={fillHeight} class="stage__overlay">
@@ -615,12 +520,6 @@
 
   .stage__overlay :global(.plugin-panel--overlay) {
     pointer-events: auto;
-  }
-
-  .stage__rect-edit-layer {
-    position: absolute;
-    inset: 0;
-    z-index: 6;
   }
 
   @container mango-viewer (max-width: 768px) {

@@ -4,7 +4,8 @@ import { DEFAULT_IMAGE_FILTERS, type ImageFilters } from '../../core/types/filte
 import type { ViewBox } from '../../core/types/viewer';
 import type { ViewerConfig } from '../../core/types/config';
 import type { ViewerPlugin } from '../../core/types/plugin';
-import type { SearchResult } from '../iiif/iiifSearch';
+
+export type IIIFSearchAnnotation = ResolvedAnnotation & { canvasId?: string };
 
 export type ViewerStateStores = {
   manifestId: ReturnType<typeof writable<string>>;
@@ -39,7 +40,7 @@ export type ViewerStateStores = {
   externalAnnotations: ReturnType<
     typeof writable<Record<string, ResolvedAnnotation[]>>
   >;
-  iiifSearchResults: ReturnType<typeof writable<SearchResult[]>>;
+  iiifSearchResults: ReturnType<typeof writable<IIIFSearchAnnotation[]>>;
 };
 
 export const createViewerState = (

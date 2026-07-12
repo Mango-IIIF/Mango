@@ -18,7 +18,7 @@ import { resolveAnnotationViewBox, padViewBox } from '../../annotations/focus';
 import {
   w3cToResolved,
   type W3CAnnotation,
-} from '../../../features/annotations/W3CParser';
+} from '../../../features/annotations/w3c';
 
 export type AnnotationControllerConfig = {
   state: ViewerStateStores;
@@ -29,6 +29,7 @@ export type AnnotationControllerConfig = {
   getCanvasIndex: () => number;
   setCanvasById: (canvasId: string) => void;
   setPendingViewBox: (viewBox: ViewBox | null) => void;
+  applyViewBox: (viewBox: ViewBox) => void;
 };
 
 export type AnnotationController = {
@@ -40,7 +41,7 @@ export type AnnotationController = {
   removeAnnotation: (annotationId: string) => Promise<void>;
   setAnnotationMode: (mode: 'edit' | 'create') => void;
   setSearchQuery: (value: string) => void;
-  handleSearchResultClick: (detail: { annotation: ResolvedAnnotation }) => void;
+  handleSearchResultClick: (annotation: ResolvedAnnotation) => void;
 };
 
 const resolveCanvasKey = (canvasId: string | null, index: number): string =>
@@ -70,24 +71,8 @@ export const createAnnotationController = ({
   getCanvasIndex,
   setCanvasById,
   setPendingViewBox,
+  applyViewBox,
 }: AnnotationControllerConfig): AnnotationController => {
-  const addAnnotationRect = (rect: AnnotationRect, text?: string) => {
-    const canvasId = getCanvasId();
-    const key = resolveCanvasKey(canvasId, getCanvasIndex());
-    const next: ResolvedAnnotation = {
-      id: `user-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-      rect,
-      text,
-    };
-    state.userAnnotations.update((current) => {
-      const items = current[key] ?? [];
-      return updateRecord(current, key, [...items, next]);
-    });
-    emitEvent('addAnnotation', { annotation: next });
-    emitEvent('annotationCreate', { annotation: next });
-    emitStateChange();
-  };
-
   const addAnnotationValue = (annotation: ResolvedAnnotation) => {
     const canvasId = getCanvasId();
     const key = resolveCanvasKey(canvasId, getCanvasIndex());
@@ -232,13 +217,12 @@ export const createAnnotationController = ({
   };
 
   const setSearchQuery = (value: string) => {
+    state.selectedSearchResultId.set(null);
     state.searchQuery.set(value);
   };
 
-  const handleSearchResultClick = (detail: { annotation: ResolvedAnnotation }) => {
-    // Cast to SearchResult to access canvasId metadata
-    // SearchResult extends ResolvedAnnotation with optional canvasId
-    const searchResult = detail.annotation as ResolvedAnnotation & { canvasId?: string };
+  const handleSearchResultClick = (annotation: ResolvedAnnotation) => {
+    const searchResult = annotation as ResolvedAnnotation & { canvasId?: string };
 
     // Set the selected search result ID for highlighting in the sidebar
     state.selectedSearchResultId.set(searchResult.id);
@@ -266,11 +250,13 @@ export const createAnnotationController = ({
       } else if (targetViewBox) {
         // Same canvas, apply zoom immediately
         state.viewBox.set(targetViewBox);
+        applyViewBox(targetViewBox);
         emitEvent('viewBoxChange', { viewBox: targetViewBox });
       }
     } else if (targetViewBox) {
       // No canvas change needed, apply zoom immediately
       state.viewBox.set(targetViewBox);
+      applyViewBox(targetViewBox);
       emitEvent('viewBoxChange', { viewBox: targetViewBox });
     }
 

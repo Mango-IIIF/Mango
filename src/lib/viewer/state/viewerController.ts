@@ -5,7 +5,7 @@
  * Delegates specific responsibilities to focused controllers while coordinating overall state.
  */
 
-import { derived, get } from 'svelte/store';
+import { get } from 'svelte/store';
 import { createEventBus } from '../../events/eventBus';
 import type { ViewerEventBus, ViewerEventMap } from '../../core/types/events';
 import { fetchManifest } from '../../state/manifests';
@@ -62,7 +62,7 @@ export type ViewerController = {
   resetImageFilters: () => void;
   setAnnotationMode: (mode: 'edit' | 'create') => void;
   setSearchQuery: (value: string) => void;
-  handleSearchResultClick: (detail: { annotation: ResolvedAnnotation }) => void;
+  handleSearchResultClick: (annotation: ResolvedAnnotation) => void;
   setPanelOpen: (panel: ViewerPanel, open: boolean) => void;
   updateLayerOpacity: (id: string, opacity: number) => void;
   setLayoutMode: (mode: 'single' | 'two-page' | 'continuous' | 'gallery') => void;
@@ -95,10 +95,12 @@ export const createViewerController = ({
   state,
   derived: derivedStores,
   dispatch,
+  applyViewBox = () => undefined,
 }: {
   state: ViewerStateStores;
   derived: ViewerDerivedStores;
   dispatch: Dispatch;
+  applyViewBox?: (viewBox: ViewBox) => void;
 }): ViewerController => {
   const eventBus: ViewerEventBus = createEventBus();
   let eventTarget: EventTarget | null = null;
@@ -154,6 +156,7 @@ export const createViewerController = ({
   const viewStateController: ViewStateController = createViewStateController({
     state,
     emitEvent,
+    applyViewBox,
   });
 
   const canvasController: CanvasController = createCanvasController({
@@ -181,6 +184,7 @@ export const createViewerController = ({
     getCanvasIndex: canvasController.getCanvasIndex,
     setCanvasById: canvasController.setCanvasById,
     setPendingViewBox: viewStateController.setPendingViewBox,
+    applyViewBox,
   });
 
   const panelController: PanelController = createPanelController({
@@ -217,7 +221,7 @@ export const createViewerController = ({
   };
 
   const getManifestId = () => get(state.manifestId) || null;
-  const loadPersistedAnnotations = (manifestId: string) => {
+  const clearPersistedAnnotations = () => {
     state.userAnnotations.set({});
   };
 
@@ -249,7 +253,7 @@ export const createViewerController = ({
         state.mediaTime.set(0);
         state.mediaDuration.set(undefined);
         state.externalAnnotations.set({});
-        loadPersistedAnnotations(manifestId);
+        clearPersistedAnnotations();
         annotationEffects.reset();
         emitEvent('manifestChange', { manifestId });
         emitStateChange();

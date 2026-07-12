@@ -14,6 +14,7 @@ import type { ViewerStateStores } from '../viewerState';
 export type ViewStateControllerConfig = {
   state: ViewerStateStores;
   emitEvent: <K extends string>(event: K, payload: any) => void;
+  applyViewBox: (viewBox: ViewBox) => void;
 };
 
 export type ViewStateController = {
@@ -31,6 +32,7 @@ export type ViewStateController = {
 export const createViewStateController = ({
   state,
   emitEvent,
+  applyViewBox,
 }: ViewStateControllerConfig): ViewStateController => {
   let pendingViewBox: ViewBox | null = null;
 
@@ -44,6 +46,7 @@ export const createViewStateController = ({
       // Use a small delay to ensure the renderer is fully ready
       setTimeout(() => {
         state.viewBox.set(targetViewBox);
+        applyViewBox(targetViewBox);
         emitEvent('viewBoxChange', { viewBox: targetViewBox });
       }, 100);
       return;

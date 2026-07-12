@@ -1,6 +1,7 @@
 import { validateStory } from './validation';
 import type { Story } from '../core/types/story';
 import type { CapturePayload } from '../core/state/story.svelte';
+import { W3CParser, type RectGeometry, type TemporalFragment } from '@mango-iiif/w3c-parser';
 
 export type SaveConfig = {
   endpoint?: string;
@@ -30,6 +31,46 @@ export type SaveState =
   | { status: 'saving'; message?: string; code?: string }
   | { status: 'success'; message?: string }
   | { status: 'error'; message?: string; code?: string };
+
+const normaliseStoryFragment = (value: string): string =>
+  value.replace('xywh=pixel:', 'xywh=');
+
+const serializeFragment = (
+  id: string,
+  canvasId: string,
+  rect?: RectGeometry,
+  temporal?: TemporalFragment,
+): string => {
+  const annotation = W3CParser.serialize({
+    id,
+    canvasId,
+    text: '',
+    shape: rect ? { type: 'rect', geometry: rect } : { type: 'none' },
+    temporal,
+  });
+  if (typeof annotation.target === 'string') return '';
+  const selectors = Array.isArray(annotation.target.selector)
+    ? annotation.target.selector
+    : annotation.target.selector
+      ? [annotation.target.selector]
+      : [];
+  return normaliseStoryFragment(
+    selectors.map((selector) => selector.value).filter(Boolean).join('&'),
+  );
+};
+
+const normaliseStoryTarget = (target: any): any => {
+  if (!target || typeof target === 'string') return target;
+  const selectors = Array.isArray(target.selector) ? target.selector : [target.selector];
+  const normalized = selectors.filter(Boolean).map((selector: any) => ({
+    ...selector,
+    value: normaliseStoryFragment(selector.value),
+  }));
+  return {
+    ...target,
+    selector: Array.isArray(target.selector) ? normalized : normalized[0],
+  };
+};
 
 export const serializeStoryToIiif = (raw: Story): any => {
   const label: Record<string, string[]> = {};
@@ -66,7 +107,12 @@ export const serializeStoryToIiif = (raw: Story): any => {
       const vy = Math.round(Math.max(0, chapter.viewBox.y));
       const vw = Math.round(chapter.viewBox.w);
       const vh = Math.round(chapter.viewBox.h);
-      viewBoxValue = `xywh=${vx},${vy},${vw},${vh}`;
+      viewBoxValue = serializeFragment(annotationId, canvasId, {
+        x: vx,
+        y: vy,
+        w: vw,
+        h: vh,
+      });
     }
 
     let sourceUrl = canvasId;
@@ -122,21 +168,20 @@ export const serializeStoryToIiif = (raw: Story): any => {
           const py = Number.isFinite(placement.y) ? Math.round(placement.y) : 6500;
           const pw = Number.isFinite(placement.w) && placement.w > 0 ? Math.round(placement.w) : 800;
           const ph = Number.isFinite(placement.h) && placement.h > 0 ? Math.round(placement.h) : 300;
+          const serializedText = W3CParser.serialize({
+            id: `${annotationId}-${lang}`,
+            canvasId,
+            text: annotation.text,
+            shape: {
+              type: 'rect',
+              geometry: { x: px, y: py, w: pw, h: ph },
+            },
+          });
           bodyItems.push({
-            type: 'TextualBody',
+            ...serializedText.body[0],
             purpose: 'describing',
             language: lang,
-            format: 'text/plain',
-            value: annotation.text,
-            target: {
-              source: canvasId,
-              type: 'SpecificResource',
-              selector: {
-                type: 'FragmentSelector',
-                conformsTo: 'http://www.w3.org/TR/media-frags/',
-                value: `xywh=${px},${py},${pw},${ph}`
-              }
-            }
+            target: normaliseStoryTarget(serializedText.target),
           });
         }
       }
@@ -163,10 +208,7 @@ export const serializeStoryToIiif = (raw: Story): any => {
   };
 };
 
-export const buildExportEnvelope = (
-  raw: Story,
-  appVersion?: string,
-): any => {
+export const buildExportEnvelope = (raw: Story): any => {
   return serializeStoryToIiif(raw);
 };
 

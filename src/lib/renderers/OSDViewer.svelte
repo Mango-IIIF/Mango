@@ -30,6 +30,7 @@
     onannotationselect?: ((payload: { id: string }) => void) | undefined;
     onannotationclear?: (() => void) | undefined;
     onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
+    onviewerready?: ((payload: { viewer: OpenSeadragon.Viewer }) => void) | undefined;
   }
 
   let {
@@ -52,6 +53,7 @@
     onannotationselect = undefined,
     onannotationclear = undefined,
     onrotationchange = undefined,
+    onviewerready = undefined,
   }: Props = $props();
 
   type Bounds = { x: number; y: number; width: number; height: number };
@@ -73,7 +75,6 @@
   let container: HTMLDivElement | null = $state(null);
   let viewer: OpenSeadragon.Viewer | null = $state(null);
   let OpenSeadragonClass: any = null;
-  let lastSourceKey = $state('');
   let baseImageLoaded = $state(false);
   let rendered: RenderedAnnotation[] = $state([]);
   let lastViewBox: ViewBox | null = null;
@@ -537,8 +538,6 @@
         tileSources: null,
       });
 
-      (window as any).__osdViewer = viewer;
-
       const handleViewportChange = () => {
         emitViewBox();
         scheduleRenderedUpdate();
@@ -550,6 +549,7 @@
 
       viewer.addHandler('open', () => {
         baseImageLoaded = true;
+        onviewerready?.({ viewer: viewer as OpenSeadragon.Viewer });
         setRotation(rotation);
         if (initialViewBox && !initialViewBoxApplied) {
           initialViewBoxApplied = true;
@@ -562,6 +562,10 @@
       viewer.addHandler('animation', handleAnimation);
       viewer.addHandler('animation-finish', handleViewportChange);
       viewer.addHandler('resize', handleViewportChange);
+
+      // The editor needs the viewer instance before the first image-open event.
+      // The open handler calls this again once intrinsic canvas dimensions exist.
+      onviewerready?.({ viewer });
 
       if (tileSource) {
         baseImageLoaded = false;
@@ -577,9 +581,6 @@
         renderFrameId = null;
       }
       cancelled = true;
-      if ((window as any).__osdViewer === viewer) {
-        (window as any).__osdViewer = null;
-      }
       viewer?.destroy();
     };
   });
@@ -739,8 +740,6 @@
     if (!OpenSeadragonClass) return;
 
     const items = targetItems;
-    const opacities = layerOpacities || {};
-
     // Get all items currently in the world
     const itemCount = viewer.world.getItemCount();
     const loadedItems: OpenSeadragon.TiledImage[] = [];
@@ -834,18 +833,18 @@
 
   $effect(() => {
     if (viewer) {
-      tileSource;
-      annotations;
-      highlightIds;
+      void tileSource;
+      void annotations;
+      void highlightIds;
       scheduleRenderedUpdate();
     }
   });
 
   $effect(() => {
     if (viewer) {
-      activeAnnotationId;
-      fallbackText;
-      rendered;
+      void activeAnnotationId;
+      void fallbackText;
+      void rendered;
       updateTooltip();
     }
   });
@@ -853,7 +852,6 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   class="osd"
   style="--osd-canvas-filter: {filterCss};"
