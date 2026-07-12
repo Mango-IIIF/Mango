@@ -107,7 +107,6 @@ export type UIMode = 'idle' | 'chapterEdit' | 'narrationPanel' | 'annotationPosi
 export type StoryBuilderOptions = {
   language?: string;
   languages?: string[];
-  appVersion?: string;
   initialStory?: Story;
 };
 
@@ -207,7 +206,6 @@ export const createStoryBuilderController = (
   const mediaSourcesStore = writable<MediaSource[]>([]);
   const layerOpacitiesStore = writable<Record<string, number>>({});
   let saveConfig: SaveConfig | null = null;
-  const appVersion = options.appVersion;
 
   const mediaMarks = createMediaMarks();
   const mediaMarksState = writable<MediaMarksState>(mediaMarks.getState());
@@ -228,7 +226,6 @@ export const createStoryBuilderController = (
   const maxPendingApplyRetries = 8;
   let pendingAddChapter = false;
   let pendingUpdateChapter = false;
-  let pendingPlaybackChapter: Chapter | null = null;
   let activePlaybackToken = 0;
   let activePlaybackChapterId: string | null = null;
   let activeMediaEnd: number | null = null;
@@ -244,7 +241,7 @@ export const createStoryBuilderController = (
   };
 
   const saveStory = async (): Promise<SaveResult> => {
-    const payload = buildExportEnvelope(storyStoreWrapper.exportStory(), appVersion);
+    const payload = buildExportEnvelope(storyStoreWrapper.exportStory());
     const hasEndpoint =
       saveConfig?.endpoint && (saveConfig.enabled ?? true) ? true : false;
     if (!hasEndpoint) {
@@ -304,7 +301,6 @@ export const createStoryBuilderController = (
     activePlaybackToken += 1;
     activePlaybackChapterId = null;
     activeMediaEnd = null;
-    pendingPlaybackChapter = null;
     narrationPlayer.stop();
     viewer?.pause?.();
   };
@@ -324,7 +320,6 @@ export const createStoryBuilderController = (
     activePlaybackChapterId = chapter.id;
     // Update selected chapter so UI shows which chapter is playing and annotations appear
     selectedChapterId.set(chapter.id);
-    pendingPlaybackChapter = null;
     const token = ++activePlaybackToken;
     const narration = getNarrationSegment(chapter);
     const run = async () => {
@@ -337,14 +332,6 @@ export const createStoryBuilderController = (
       }
     };
     void run();
-  };
-
-  const schedulePlaybackForChapter = (chapter: Chapter) => {
-    if (!chapter.media && !getNarrationSegment(chapter)) {
-      pendingPlaybackChapter = null;
-      return;
-    }
-    pendingPlaybackChapter = chapter;
   };
 
   const maybeStartPlayback = (chapter: Chapter) => {
@@ -563,7 +550,6 @@ export const createStoryBuilderController = (
       viewer.getManifestId?.() ?? viewer.getState?.()?.manifestId ?? null;
     if (chapter.manifest && chapter.manifest !== viewerManifest) {
       pendingChapterApply = chapter;
-      pendingPlaybackChapter = chapter;
       viewer.setManifest(chapter.manifest);
       currentManifest.set(chapter.manifest);
       return;
@@ -571,7 +557,6 @@ export const createStoryBuilderController = (
     const currentIndex = viewer.getCanvasIndex?.() ?? -1;
     if (typeof chapter.canvasIndex === 'number' && chapter.canvasIndex !== currentIndex) {
       pendingChapterApply = chapter;
-      pendingPlaybackChapter = chapter;
       viewer.setCanvasByIndex(chapter.canvasIndex);
       return;
     }

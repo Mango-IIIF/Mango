@@ -18,7 +18,7 @@
   import StageToolbar from '../../viewer/ui/StageToolbar.svelte';
   import Gallery from '../../viewer/ui/Gallery.svelte';
   import type { LayerItem } from '../annotations/workspace/LeftSidebar.svelte';
-  import { w3cToResolved } from '../annotations/W3CParser';
+  import { w3cToResolved } from '../annotations/w3c';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import { createViewerState } from '../../viewer/state/viewerState';
   import { createViewerDerived } from '../../viewer/state/viewerDerived';
@@ -132,6 +132,7 @@
     });
   const viewerState = createInitialViewerState();
   const viewerDerived = createViewerDerived(viewerState);
+  let stageRef: ReturnType<typeof Stage> | null = $state(null);
   const controller = createViewerController({
     state: viewerState,
     derived: viewerDerived,
@@ -140,6 +141,7 @@
         onstoryViewerError?.(payload);
       }
     },
+    applyViewBox: (box) => stageRef?.setViewBox?.(box),
   });
 
   const {
@@ -154,16 +156,10 @@
     rendererComponent,
     annotations,
     overlayAnnotations,
-    searchHits,
     highlightIds,
     pluginSlots,
     leftVisible,
     rightVisible,
-    manifestTitle,
-    manifestDescription,
-    manifestAttribution,
-    manifestLicence,
-    manifestMetadata,
     allowThumbnails,
     allowMetadata,
     allowSearch,
@@ -171,9 +167,6 @@
     allowTools,
     allowLayers,
     mediaSources,
-    tocEntries,
-    transcriptEntries,
-    activeTranscriptId,
     contentsAvailable,
     activeLayoutImages,
   } = viewerDerived;
@@ -215,11 +208,8 @@
     showLayers,
     layerOpacities,
     layoutMode,
-    viewBox,
     rotation,
     annotationMode,
-    searchQuery,
-    selectedSearchResultId,
     activeAnnotationId,
     hoverAnnotationId,
     imageFilters,
@@ -232,7 +222,6 @@
   let sidebarEnabled = $derived(normalisedConfig.sidebar?.enabled !== false);
   let sidebarPosition = $derived(normalisedConfig.sidebar?.position ?? 'left');
 
-  let stageRef: ReturnType<typeof Stage> | null = $state(null);
   let canZoom = $state(false);
   let hasSource = $derived(Boolean($mediaSource));
   let pendingSeek: { canvasId?: string | null; time: number } | null = $state(null);
@@ -276,7 +265,6 @@
     'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line'
   >('rectangle');
   let effectiveAnnotationMode = $derived(canDrawAnnotations ? $annotationMode : 'edit');
-  let isMainViewerMode = $derived(!isStoryViewer && !isStoryBuilder);
   let viewerSettingsLayout = $state<'1x1' | '1x2' | '2x1' | '2x2'>('1x1');
   let workspace = $state<WorkspaceStore | null>(null);
   const closeLeftPanelStores = () => {
@@ -680,16 +668,6 @@
       ? [...filteredOverlayAnnotations, visibleDraftAnno]
       : filteredOverlayAnnotations,
   );
-  let editableSavedRectAnnotationId = $derived.by(() => {
-    if (!isAnnotationEditor) return null;
-    if ($annotationMode !== 'edit') return null;
-    const selectedId = $activeAnnotationId;
-    if (!selectedId) return null;
-    if (draftAnno?.id === selectedId) return null;
-    const selected = filteredOverlayAnnotations.find((annotation) => annotation.id === selectedId);
-    return selected?.rect ? selectedId : null;
-  });
-
   const findLayerById = (layerId: string): LayerItem | undefined =>
     annotationLayers.find((layer) => layer.id === layerId);
 
@@ -1167,7 +1145,7 @@
         const response = await fetch(storyUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         source = await response.json();
-      } catch (error) {
+      } catch {
         if (token !== storyLoadToken) return;
         setStoryError('Failed to load story');
         storyLoading = false;
@@ -1185,7 +1163,7 @@
     if (typeof source === 'string') {
       try {
         parsed = JSON.parse(source);
-      } catch (error) {
+      } catch {
         setStoryError('Invalid story JSON');
         storyLoading = false;
         return;
@@ -1536,7 +1514,6 @@
                   showLayers={showLayersEffectiveStory}
                   layers={$mediaSources}
                   layerOpacities={$layerOpacities}
-                  annotationMode={effectiveAnnotationMode}
                   canvasId={activeCanvasId}
                   onviewboxchange={(detail) => {
                     controller.handleViewBoxChange(detail);
@@ -1647,16 +1624,22 @@
                   showAnnotations={false}
                   showTools={false}
                   showContents={false}
-                  annotationMode={effectiveAnnotationMode}
                   annotationTool={annotationEditorTool}
+                  annotationEditorEnabled={true}
+                  annotationLayers={annotationLayers}
                   canvasId={activeCanvasId}
-                  editableRectAnnotationId={editableSavedRectAnnotationId}
                   onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
                   onzoomchange={(detail) => controller.handleZoomChange(detail)}
                   onrotationchange={(detail) => controller.handleRotationChange(detail)}
                   onannotationcreate={handleAnnotationCreate}
                   onannotationupdate={(payload) =>
                     handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
+                  onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
+                  onannotationselect={(payload) => {
+                    controller.handleAnnotationSelect(payload);
+                    annotationEditorTool = 'select';
+                    controller.setAnnotationMode('edit');
+                  }}
                   onannotationtoolchange={(detail) => {
                     annotationEditorTool = detail.tool;
                   }}
@@ -1789,7 +1772,6 @@
               showLayers={showLayersEffectiveStory}
               layers={$mediaSources}
               layerOpacities={$layerOpacities}
-              annotationMode={effectiveAnnotationMode}
               canvasId={activeCanvasId}
               onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
               onzoomchange={(detail) => controller.handleZoomChange(detail)}
@@ -1834,9 +1816,7 @@
 
           {#if $pluginSlots.bottom.length > 0}
             <div class="stage__bottom">
-              {#snippet bottom()}
-                <PluginSlot plugins={$pluginSlots.bottom} {pluginContext} />
-              {/snippet}
+              <PluginSlot plugins={$pluginSlots.bottom} {pluginContext} />
             </div>
           {/if}
         {:else if workspace}
@@ -1866,9 +1846,7 @@
         aria-label={$t('viewer.panels.rightLabel')}
       >
         {#if $pluginSlots.right.length > 0}
-          {#snippet right()}
-            <PluginSlot plugins={$pluginSlots.right} {pluginContext} />
-          {/snippet}
+          <PluginSlot plugins={$pluginSlots.right} {pluginContext} />
         {/if}
       </aside>
     {/if}

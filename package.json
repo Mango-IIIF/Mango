@@ -95,6 +95,9 @@
   },
   "dependencies": {
     "@google/model-viewer": "^4.1.0",
+    "@mango-iiif/annotation": "^0.0.3",
+    "@mango-iiif/iiif-search-client": "^0.0.2",
+    "@mango-iiif/w3c-parser": "^0.0.2",
     "manifesto.js": "^4.3.0",
     "ol": "^10.9.0",
     "openseadragon": "^5.0.1",

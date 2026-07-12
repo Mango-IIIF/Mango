@@ -1,4 +1,4 @@
-import * as manifesto from 'manifesto.js';
+import { W3CParser } from '@mango-iiif/w3c-parser';
 import type {
   IIIFIdentifiable,
   IIIFSelector,
@@ -503,8 +503,32 @@ const resolveAnnotation = (
 
   const annotationObj = annotation as Record<string, unknown>;
   const target = annotationObj?.target ?? annotationObj?.on;
-  const { rect, time, point, polygon, targetId, targetStyleClass, targetStyle } =
-    extractTargetData(target as IIIFTarget);
+  const targetData = extractTargetData(target as IIIFTarget);
+  let { rect, time, point, polygon, targetId, targetStyleClass } = targetData;
+  const { targetStyle } = targetData;
+
+  // Presentation v3 annotations use the package parser as the canonical geometry decoder.
+  // The legacy resolver remains below for v2 resources and non-W3C target forms.
+  if (annotationObj.type === 'Annotation' && target && typeof target === 'object') {
+    try {
+      const parsed = W3CParser.parseAnnotation(annotationObj);
+      targetId = parsed.canvasId || targetId;
+      time = parsed.temporal
+        ? { start: parsed.temporal.start, end: parsed.temporal.end }
+        : time;
+      if (parsed.shape.type === 'rect') rect = parsed.shape.geometry;
+      if (parsed.shape.type === 'point') point = parsed.shape.geometry;
+      if (parsed.shape.type === 'polygon' || parsed.shape.type === 'freehand') {
+        polygon = { points: parsed.shape.geometry.points };
+      }
+      if (parsed.shape.type === 'line') {
+        polygon = { points: [parsed.shape.geometry.start, parsed.shape.geometry.end] };
+      }
+      targetStyleClass = parsed.layer || targetStyleClass;
+    } catch {
+      // Older IIIF annotations are intentionally handled by the compatibility path below.
+    }
+  }
   const motivations = normaliseMotivation(annotationObj as IIIFAnnotation);
 
   // Extract bodies first to check if it's an image or text annotation
