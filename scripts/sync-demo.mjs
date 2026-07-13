@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -24,7 +24,6 @@ function copyDirRecursive(src, dest) {
   }
 }
 
-rmSync(demoDist, { force: true, recursive: true });
 mkdirSync(demoDist, { recursive: true });
 copyDirRecursive(srcDist, demoDist);
 

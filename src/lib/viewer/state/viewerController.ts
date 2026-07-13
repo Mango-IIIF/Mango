@@ -300,6 +300,7 @@ export const createViewerController = ({
 
   // Setup error and manifest layout mode initialization subscription
   let loadedManifestId = '';
+  let loadedAVManifestId = '';
   unsubscribers.push(
     derivedStores.manifestEntry.subscribe((entry) => {
       if (entry?.error && entry.error !== lastErrorMessage) {
@@ -321,6 +322,10 @@ export const createViewerController = ({
         if (!get(state.config)?.initialLayoutMode) {
           state.layoutMode.set(defaultLayout);
         }
+      }
+      if (entry?.json && entry.id !== loadedAVManifestId) {
+        loadedAVManifestId = entry.id;
+        void derivedStores.av.load(entry.json as Record<string, unknown>);
       }
     }),
   );
@@ -358,6 +363,7 @@ export const createViewerController = ({
     for (const unsubscribe of unsubscribers) {
       unsubscribe();
     }
+    derivedStores.av.destroy();
   };
 
   // Return public API - delegate to sub-controllers

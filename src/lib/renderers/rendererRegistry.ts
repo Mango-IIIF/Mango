@@ -1,7 +1,6 @@
 import type { MediaType } from '../iiif/mediaResolver';
 import ImageRenderer from './ImageRenderer.svelte';
-import VideoRenderer from './VideoRenderer.svelte';
-import AudioRenderer from './AudioRenderer.svelte';
+import AVRenderer from './AVRenderer.svelte';
 import PdfRenderer from './PdfRenderer.svelte';
 import ModelRenderer from './ModelRenderer.svelte';
 import type { RendererCapabilities } from '../core/types/renderer';
@@ -46,9 +45,9 @@ const modelCapabilities: RendererCapabilities = {
 export const getRendererComponent = (type: MediaType) => {
   switch (type) {
     case 'video':
-      return VideoRenderer;
+      return AVRenderer;
     case 'audio':
-      return AudioRenderer;
+      return AVRenderer;
     case 'pdf':
       return PdfRenderer;
     case 'model':

@@ -1,16 +1,6 @@
 import { derived, type Readable } from 'svelte/store';
 import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
 import { resolveMedia, type MediaSource, type MediaType } from '../../iiif/mediaResolver';
-import {
-  resolveAccompanyingCanvasMedia,
-  resolveCaptionTracks,
-  resolveStartTime,
-  resolveTocEntries,
-  resolveTranscriptEntries,
-  type MediaTextTrack,
-  type TocEntry,
-  type TranscriptEntry,
-} from '../../iiif/avResolver';
 import { pluginsStore } from '../../plugins/registry';
 import type { ViewerPlugin } from '../../core/types/plugin';
 import type { CanvasSummary, ManifestEntry } from '../../state/manifests';
@@ -34,11 +24,12 @@ import {
 } from '../iiif/manifestMetadata';
 import { resolveCanvasThumbnail } from '../iiif/thumbnails';
 import type { ViewerStateStores } from './viewerState';
+import { createViewerAV, toViewerMediaSource, type ViewerAV } from '../av/viewerAV';
 
 const rendererLoaders: Record<MediaType, () => Promise<{ default: any }>> = {
   image: () => import('../../renderers/ImageRenderer.svelte'),
-  video: () => import('../../renderers/VideoRenderer.svelte'),
-  audio: () => import('../../renderers/AudioRenderer.svelte'),
+  video: () => import('../../renderers/AVRenderer.svelte'),
+  audio: () => import('../../renderers/AVRenderer.svelte'),
   pdf: () => import('../../renderers/PdfRenderer.svelte'),
   model: () => import('../../renderers/ModelRenderer.svelte'),
 };
@@ -51,23 +42,20 @@ export type PluginSlots = {
 };
 
 export type ViewerDerivedStores = {
+  av: ViewerAV;
   manifestEntry: Readable<ManifestEntry | undefined>;
   canvases: Readable<CanvasSummary[]>;
   canvasThumbnails: Readable<Array<string | null>>;
   mediaSources: Readable<MediaSource[]>;
   mediaSource: Readable<MediaSource | null>;
   mediaType: Readable<MediaType | null>;
-  accompanyingSource: Readable<MediaSource | null>;
-  captionTracks: Readable<MediaTextTrack[]>;
-  startTime: Readable<number | null>;
   rendererComponent: Readable<any>;
   annotations: Readable<ResolvedAnnotation[]>;
   overlayAnnotations: Readable<ResolvedAnnotation[]>;
   searchHits: Readable<ResolvedAnnotation[]>;
   highlightIds: Readable<string[]>;
-  tocEntries: Readable<TocEntry[]>;
-  transcriptEntries: Readable<TranscriptEntry[]>;
-  activeTranscriptId: Readable<string | null>;
+  avChaptersAvailable: Readable<boolean>;
+  avTranscriptAvailable: Readable<boolean>;
   contentsAvailable: Readable<boolean>;
   contentsVisible: Readable<boolean>;
   searchAvailable: Readable<boolean>;
@@ -184,6 +172,7 @@ const countImageCanvases = (
 export const createViewerDerived = (
   state: ViewerStateStores,
 ): ViewerDerivedStores => {
+  const av = createViewerAV(state);
   const manifestEntry = derived(
     [manifestsStore, state.manifestId],
     ([$manifestsStore, manifestId]) =>
@@ -206,11 +195,18 @@ export const createViewerDerived = (
   );
 
   const mediaSources = derived(
-    [manifestEntry, canvases, state.selectedCanvasIndex],
-    ([entry, list, index]) => {
+    [manifestEntry, canvases, state.selectedCanvasIndex, av.manifest],
+    ([entry, list, index, avManifest]) => {
       if (!entry?.manifesto || list.length === 0) return [];
       const canvas = list[index];
+      const avCanvas = avManifest?.canvases.find((item) => item.id === canvas?.id);
+      if (avCanvas?.sources.length) {
+        return avCanvas.sources.map((source) => toViewerMediaSource(source, avCanvas));
+      }
       const resolved = resolveMedia(entry.manifesto, canvas?.id, index);
+      if (resolved.primary?.type === 'audio' || resolved.primary?.type === 'video') {
+        return [];
+      }
       return resolved.primary
         ? [resolved.primary, ...resolved.alternates]
         : [];
@@ -278,33 +274,6 @@ export const createViewerDerived = (
 
   const mediaType = derived(mediaSource, (source) => source?.type ?? null);
 
-  const accompanyingSource = derived(
-    [manifestEntry, canvases, state.selectedCanvasIndex],
-    ([entry, list, index]) => {
-      if (!entry?.manifesto || list.length === 0) return null;
-      const canvas = list[index];
-      return resolveAccompanyingCanvasMedia(entry.manifesto, canvas?.id, index);
-    },
-  );
-
-  const captionTracks = derived(
-    [manifestEntry, canvases, state.selectedCanvasIndex, uiLocale],
-    ([entry, list, index, locale]) => {
-      if (!entry?.manifesto || list.length === 0) return [];
-      const canvas = list[index];
-      return resolveCaptionTracks(entry.manifesto, canvas?.id, index, locale);
-    },
-  );
-
-  const startTime = derived(
-    [manifestEntry, canvases, state.selectedCanvasIndex],
-    ([entry, list, index]) => {
-      if (!entry?.manifesto || list.length === 0) return null;
-      const canvas = list[index];
-      return resolveStartTime(entry.manifesto, canvas?.id);
-    },
-  );
-
   const rendererComponent = derived(
     mediaType,
     (type, set) => {
@@ -326,40 +295,27 @@ export const createViewerDerived = (
   const { annotations, searchHits, overlayAnnotations, highlightIds } =
     createAnnotationDerivedStores({ manifestEntry, canvases, state });
 
-  const tocEntries = derived([manifestEntry, uiLocale], ([entry, locale]) => {
-    if (!entry?.manifesto) return [];
-    return resolveTocEntries(entry.manifesto, locale);
-  });
-
-  const transcriptEntries = derived(
-    [manifestEntry, canvases, state.selectedCanvasIndex],
-    ([entry, list, index]) => {
-      if (!entry?.manifesto || list.length === 0) return [];
-      const canvas = list[index];
-      return resolveTranscriptEntries(entry.manifesto, canvas?.id, index);
-    },
+  const avChaptersAvailable = derived(
+    av.manifest,
+    (manifest) => (manifest?.chapters.length ?? 0) > 0,
   );
 
-  const activeTranscriptId = derived(
-    [transcriptEntries, state.mediaTime],
-    ([entries, time]) => {
-      if (!Number.isFinite(time) || entries.length === 0) return null;
-      const active = entries.find(
-        (entry) =>
-          time >= entry.start &&
-          (entry.end == null || time < entry.end),
+  const avTranscriptAvailable = derived(
+    [av.manifest, canvases, state.selectedCanvasIndex],
+    ([manifest, list, index]) => {
+      const canvasId = list[index]?.id;
+      if (!manifest || !canvasId) return false;
+      return Boolean(
+        manifest.canvases.find((canvas) => canvas.id === canvasId)?.transcripts.length,
       );
-      if (active) return active.id;
-      const fallback = entries.filter((entry) => time >= entry.start).pop();
-      return fallback?.id ?? null;
     },
   );
 
   const contentsAvailable = derived(
-    [tocEntries, transcriptEntries, mediaType],
-    ([toc, transcript, type]) =>
+    [avChaptersAvailable, avTranscriptAvailable, mediaType],
+    ([chapters, transcript, type]) =>
       (type === 'audio' || type === 'video') &&
-      (toc.length > 0 || transcript.length > 0),
+      (chapters || transcript),
   );
 
   const contentsVisible = derived(
@@ -526,23 +482,20 @@ export const createViewerDerived = (
   const viewBox = derived(state.viewBox, (value) => value);
 
   return {
+    av,
     manifestEntry,
     canvases,
     canvasThumbnails,
     mediaSources,
     mediaSource,
     mediaType,
-    accompanyingSource,
-    captionTracks,
-    startTime,
     rendererComponent,
     annotations,
     overlayAnnotations,
     searchHits,
     highlightIds,
-    tocEntries,
-    transcriptEntries,
-    activeTranscriptId,
+    avChaptersAvailable,
+    avTranscriptAvailable,
     contentsAvailable,
     contentsVisible,
     searchAvailable,

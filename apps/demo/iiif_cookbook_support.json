@@ -56,7 +56,7 @@
       "url": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json",
       "support": "Yes",
-      "notes": "Fully supported. Audio content is resolved and played using the custom AudioRenderer component."
+      "notes": "Fully supported through @mango-iiif/av and its Media Chrome audio player."
     },
     {
       "categoryIds": [
@@ -68,7 +68,7 @@
       "url": "https://iiif.io/api/cookbook/recipe/0003-mvm-video/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0003-mvm-video/manifest.json",
       "support": "Yes",
-      "notes": "Fully supported. Video files are played using the custom HTML5 VideoRenderer with full controls."
+      "notes": "Fully supported through @mango-iiif/av and its Media Chrome video player."
     },
     {
       "categoryIds": [
@@ -197,9 +197,8 @@
       "name": "Multiple Choice of Audio Formats in a Single View (Canvas)",
       "url": "https://iiif.io/api/cookbook/recipe/0434-choice-av/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0434-choice-av/manifest.json",
-      "support": "No",
-      "github": "https://github.com/Mango-IIIF/Mango/issues/16",
-      "notes": "Not yet supported."
+      "support": "Yes",
+      "notes": "Fully supported. @mango-iiif/av normalizes Choice bodies and provides synchronized source selection."
     },
     {
       "categoryIds": [
@@ -517,9 +516,8 @@
       "name": "Providing Access to Transcript Files of A/V Content (rendering)",
       "url": "https://iiif.io/api/cookbook/recipe/0017-transcription-av/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0017-transcription-av/manifest.json",
-      "support": "No",
-      "github": "https://github.com/Mango-IIIF/Mango/issues/21",
-      "notes": "Not yet supported."
+      "support": "Yes",
+      "notes": "Fully supported. Text renderings are loaded by the @mango-iiif/av transcript component."
     },
     {
       "categoryIds": [
@@ -529,9 +527,8 @@
       "name": "Table of Contents for Multiple A/V Files on a Single Canvas (start)",
       "url": "https://iiif.io/api/cookbook/recipe/0064-opera-one-canvas/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0064-opera-one-canvas/manifest.json",
-      "support": "Partial",
-      "github": "https://github.com/Mango-IIIF/Mango/issues/32",
-      "notes": "Plays multiple files sequentially, but sub-chapter duration mapping has minor sync issues."
+      "support": "Yes",
+      "notes": "Fully supported through @mango-iiif/av source sequencing and temporal chapter navigation."
     },
     {
       "categoryIds": [
@@ -541,9 +538,8 @@
       "name": "Table of Contents for Multiple A/V Files on Multiple Canvases",
       "url": "https://iiif.io/api/cookbook/recipe/0065-opera-multiple-canvases/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0065-opera-multiple-canvases/manifest.json",
-      "support": "No",
-      "github": "https://github.com/Mango-IIIF/Mango/issues/33",
-      "notes": "Not yet supported."
+      "support": "Yes",
+      "notes": "Fully supported through the shared @mango-iiif/av controller for multi-Canvas playback and chapters."
     },
     {
       "categoryIds": [
@@ -553,9 +549,8 @@
       "name": "Using Caption and Subtitle Files in Multiple Languages with Video Content",
       "url": "https://iiif.io/api/cookbook/recipe/0074-multiple-language-captions/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0074-multiple-language-captions/manifest.json",
-      "support": "No",
-      "github": "https://github.com/Mango-IIIF/Mango/issues/34",
-      "notes": "Not yet supported."
+      "support": "Yes",
+      "notes": "Fully supported. @mango-iiif/av exposes language-aware caption and subtitle tracks in Media Chrome."
     },
     {
       "categoryIds": [
@@ -577,8 +572,8 @@
       "name": "Using Caption and Subtitle Files with Video Content",
       "url": "https://iiif.io/api/cookbook/recipe/0219-using-caption-file/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0219-using-caption-file/manifest.json",
-      "support": "No",
-      "notes": "Not yet supported."
+      "support": "Yes",
+      "notes": "Fully supported. @mango-iiif/av loads caption and subtitle tracks into the video player."
     },
     {
       "categoryIds": [
