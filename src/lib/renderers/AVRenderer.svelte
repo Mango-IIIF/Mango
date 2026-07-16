@@ -40,8 +40,34 @@
   let segment: { start: number; end: number } | null = null;
   let segmentEnded = false;
 
+  const HIDDEN_NAVIGATION_STYLE_ID = 'mango-av-hidden-navigation';
+
+  const hidePackageNavigation = (element: MangoAVPlayerElement): void => {
+    const root = element.shadowRoot;
+    if (!root || root.getElementById(HIDDEN_NAVIGATION_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = HIDDEN_NAVIGATION_STYLE_ID;
+    style.textContent = `
+      button[data-action='previous'],
+      button[data-action='next'],
+      label:has(input[data-action='auto-advance']) {
+        display: none !important;
+      }
+    `;
+    root.append(style);
+  };
+
   $effect(() => {
-    if (playerElement) playerElement.controller = controller;
+    const element = playerElement;
+    if (!element) return;
+    element.controller = controller;
+    hidePackageNavigation(element);
+
+    const observer = new MutationObserver(() => hidePackageNavigation(element));
+    if (element.shadowRoot) {
+      observer.observe(element.shadowRoot, { childList: true, subtree: true });
+    }
+    return () => observer.disconnect();
   });
 
   $effect(() => {
