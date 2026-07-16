@@ -14,10 +14,17 @@ export type ManifestEntry = {
   id: string;
   json?: unknown;
   manifesto?: any;
+  resourceType?: 'collection' | 'manifest';
   label?: string;
   canvases: CanvasSummary[];
   isFetching: boolean;
   error?: string;
+};
+
+export const isIIIFCollection = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false;
+  const resource = value as { type?: unknown; '@type'?: unknown };
+  return resource.type === 'Collection' || resource['@type'] === 'sc:Collection';
 };
 
 export type ManifestCache = Record<string, ManifestEntry>;
@@ -77,17 +84,20 @@ export const fetchManifest = async (manifestId: string): Promise<void> => {
       throw new Error(`HTTP error ${response.status}`);
     }
     const json = await response.json();
+    const resourceType = isIIIFCollection(json) ? 'collection' : 'manifest';
     let manifestoObject: any | undefined;
     let canvases: CanvasSummary[] = [];
     let label: string | undefined;
 
-    try {
-      manifestoObject = manifesto.parseManifest(json);
-      canvases = parseCanvases(manifestoObject);
-      label = manifestoObject.getLabel()?.getValue();
-    } catch (error) {
-      console.error('[Mango] Failed to parse manifest with manifesto.js:', error);
-      manifestoObject = undefined;
+    if (resourceType === 'manifest') {
+      try {
+        manifestoObject = manifesto.parseManifest(json);
+        canvases = parseCanvases(manifestoObject);
+        label = manifestoObject.getLabel()?.getValue();
+      } catch (error) {
+        console.error('[Mango] Failed to parse manifest with manifesto.js:', error);
+        manifestoObject = undefined;
+      }
     }
 
     manifestsStore.update((current) => ({
@@ -96,6 +106,7 @@ export const fetchManifest = async (manifestId: string): Promise<void> => {
         id: manifestId,
         json,
         manifesto: manifestoObject,
+        resourceType,
         label,
         canvases,
         isFetching: false,

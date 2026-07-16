@@ -5,6 +5,7 @@ import { createViewerState, type ViewerStateStores } from '../viewerState';
 import { createPanelController } from '../controllers/PanelController';
 
 const leftPanelState = (state: ViewerStateStores) => ({
+  collection: get(state.showCollection),
   contents: get(state.showContents),
   annotations: get(state.showAnnotations),
   tools: get(state.showTools),
@@ -27,6 +28,7 @@ describe('PanelController', () => {
     });
 
     expect(leftPanelState(state)).toEqual({
+      collection: false,
       contents: false,
       annotations: false,
       tools: false,
@@ -73,6 +75,7 @@ describe('PanelController', () => {
 
       controller.setPanelOpen('metadata', false);
       expect(leftPanelState(state)).toEqual({
+        collection: false,
         contents: false,
         annotations: false,
         tools: false,
@@ -86,6 +89,7 @@ describe('PanelController', () => {
       state.config.set({});
 
       expect(leftPanelState(state)).toEqual({
+        collection: false,
         contents: false,
         annotations: false,
         tools: false,
@@ -97,5 +101,25 @@ describe('PanelController', () => {
     } finally {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     }
+  });
+
+  it('opens collection navigation when collection data is available', () => {
+    const state = createViewerState({ config: {} });
+    state.collectionId.set('collection');
+    const derived = {
+      ...createViewerDerived(state),
+      allowCollection: writable(true),
+    };
+    const controller = createPanelController({
+      state,
+      derived,
+      emitEvent: vi.fn(),
+      emitStateChange: vi.fn(),
+    });
+
+    controller.setPanelOpen('collection', true);
+
+    expect(get(state.showCollection)).toBe(true);
+    expect(get(state.showMetadata)).toBe(false);
   });
 });

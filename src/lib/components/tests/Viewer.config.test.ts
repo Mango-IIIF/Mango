@@ -1,4 +1,4 @@
-import { mount, unmount } from 'svelte';
+import { mount, tick, unmount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Viewer from '../Viewer.svelte';
 
@@ -62,5 +62,33 @@ describe('Viewer config', () => {
     expect(target.querySelector('.viewer__control-rail')).toBeNull();
     expect(target.querySelector('.panel-stack--left')).toBeNull();
     expect(target.querySelector('.viewer__grid--left')).toBeNull();
+  });
+
+  it('keeps an invoked panel mounted when it is closed and reopened', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    targets.push(target);
+    mounted.push(mount(Viewer, { target }));
+    await tick();
+
+    const toggle = target.querySelector<HTMLButtonElement>('[aria-label="Toggle metadata"]');
+    expect(toggle).toBeTruthy();
+    if (toggle?.getAttribute('aria-pressed') !== 'true') {
+      toggle!.click();
+      await tick();
+    }
+
+    const panel = target.querySelector('[aria-label="Metadata panel"]');
+    expect(panel).toBeTruthy();
+    expect(toggle?.getAttribute('aria-pressed')).toBe('true');
+
+    toggle!.click();
+    await tick();
+    expect(toggle?.getAttribute('aria-pressed')).toBe('false');
+    expect(panel?.isConnected).toBe(true);
+
+    toggle!.click();
+    await tick();
+    expect(target.querySelector('[aria-label="Metadata panel"]')).toBe(panel);
   });
 });

@@ -125,9 +125,9 @@
       "name": "Simple Collection",
       "url": "https://iiif.io/api/cookbook/recipe/0032-collection/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0032-collection/collection.json",
-      "support": "No",
+      "support": "Yes",
       "github": "https://github.com/Mango-IIIF/Mango/issues/12",
-      "notes": "Mango resolves single manifests; viewing collections hierarchically is not supported."
+      "notes": "Collections open in the collection navigator sidebar, and selecting a Manifest renders it while preserving the Collection tree."
     },
     {
       "categoryIds": [

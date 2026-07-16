@@ -10,9 +10,14 @@
   import ContentsPanel from './ContentsPanel.svelte';
   import SettingsPanel from './SettingsPanel.svelte';
   import LayersPanel from './LayersPanel.svelte';
+  import CollectionPanel from './CollectionPanel.svelte';
+  import type { CollectionSelection } from '@mango-iiif/collection-navigator';
+  import type { ViewerDerivedStores } from '../state/viewerDerived';
 
   interface Props {
+    visible?: boolean;
     showAnnotations?: boolean;
+    showCollection?: boolean;
     showTools?: boolean;
     showContents?: boolean;
     showSearch?: boolean;
@@ -21,11 +26,25 @@
     showLayers?: boolean;
     leftPlugins?: ViewerPlugin[];
     pluginContext: Omit<PluginContext, 'mount'>;
-    onpanelToggle?: (panel: 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers', open: boolean) => void;
+    onpanelToggle?: (
+      panel:
+        | 'collection'
+        | 'annotations'
+        | 'tools'
+        | 'search'
+        | 'metadata'
+        | 'contents'
+        | 'settings'
+        | 'layers',
+      open: boolean,
+    ) => void;
+    oncollectionSelect?: (selection: CollectionSelection) => void;
   }
 
   let {
+    visible = false,
     showAnnotations = false,
+    showCollection = false,
     showTools = false,
     showContents = false,
     showSearch = false,
@@ -35,53 +54,88 @@
     leftPlugins = [],
     pluginContext,
     onpanelToggle,
+    oncollectionSelect,
   }: Props = $props();
 
-  const viewer = getContext<any>('viewer-context');
+  const viewer = getContext<{
+    derived: Pick<ViewerDerivedStores, 'mediaType'>;
+  }>('viewer-context');
   const mediaType = viewer.derived.mediaType;
+  let loadedCollection = $state(false);
+  let loadedContents = $state(false);
+  let loadedSettings = $state(false);
+  let loadedAnnotations = $state(false);
+  let loadedTools = $state(false);
+  let loadedSearch = $state(false);
+  let loadedMetadata = $state(false);
+  let loadedLayers = $state(false);
+
+  $effect(() => {
+    if (showCollection) loadedCollection = true;
+    if (showContents) loadedContents = true;
+    if (showSettings) loadedSettings = true;
+    if (showAnnotations) loadedAnnotations = true;
+    if (showTools) loadedTools = true;
+    if (showSearch) loadedSearch = true;
+    if (showMetadata) loadedMetadata = true;
+    if (showLayers) loadedLayers = true;
+  });
 </script>
 
-<aside class="panel-stack panel-stack--left" aria-label={$t('viewer.panels.leftLabel')}>
-  {#if showContents && ($mediaType === 'audio' || $mediaType === 'video')}
-    <ContentsPanel
-      onclose={() => onpanelToggle?.('contents', false)}
-    />
+<aside
+  class="panel-stack panel-stack--left"
+  aria-label={$t('viewer.panels.leftLabel')}
+  hidden={!visible}
+>
+  {#if loadedCollection}
+    <div class="panel-slot" hidden={!showCollection}>
+      <CollectionPanel
+        onclose={() => onpanelToggle?.('collection', false)}
+        onselect={oncollectionSelect}
+      />
+    </div>
   {/if}
 
-  {#if showSettings}
-    <SettingsPanel
-      onclose={() => onpanelToggle?.('settings', false)}
-    />
+  {#if loadedContents}
+    <div class="panel-slot" hidden={!showContents || !($mediaType === 'audio' || $mediaType === 'video')}>
+      <ContentsPanel onclose={() => onpanelToggle?.('contents', false)} />
+    </div>
   {/if}
 
-  {#if showAnnotations}
-    <AnnotationsPanel
-      onclose={() => onpanelToggle?.('annotations', false)}
-    />
+  {#if loadedSettings}
+    <div class="panel-slot" hidden={!showSettings}>
+      <SettingsPanel onclose={() => onpanelToggle?.('settings', false)} />
+    </div>
   {/if}
 
-  {#if showTools}
-    <ToolsPanel
-      onclose={() => onpanelToggle?.('tools', false)}
-    />
+  {#if loadedAnnotations}
+    <div class="panel-slot" hidden={!showAnnotations}>
+      <AnnotationsPanel onclose={() => onpanelToggle?.('annotations', false)} />
+    </div>
   {/if}
 
-  {#if showSearch}
-    <SearchPanel
-      onclose={() => onpanelToggle?.('search', false)}
-    />
+  {#if loadedTools}
+    <div class="panel-slot" hidden={!showTools}>
+      <ToolsPanel onclose={() => onpanelToggle?.('tools', false)} />
+    </div>
   {/if}
 
-  {#if showMetadata}
-    <MetadataPanel
-      onclose={() => onpanelToggle?.('metadata', false)}
-    />
+  {#if loadedSearch}
+    <div class="panel-slot" hidden={!showSearch}>
+      <SearchPanel onclose={() => onpanelToggle?.('search', false)} />
+    </div>
   {/if}
 
-  {#if showLayers}
-    <LayersPanel
-      onclose={() => onpanelToggle?.('layers', false)}
-    />
+  {#if loadedMetadata}
+    <div class="panel-slot" hidden={!showMetadata}>
+      <MetadataPanel onclose={() => onpanelToggle?.('metadata', false)} />
+    </div>
+  {/if}
+
+  {#if loadedLayers}
+    <div class="panel-slot" hidden={!showLayers}>
+      <LayersPanel onclose={() => onpanelToggle?.('layers', false)} />
+    </div>
   {/if}
 
   {#if leftPlugins.length > 0}
@@ -95,6 +149,11 @@
     gap: 16px;
     align-content: start;
     min-height: 0;
+  }
+
+  .panel-stack[hidden],
+  .panel-slot[hidden] {
+    display: none;
   }
 
   .panel-stack--left {

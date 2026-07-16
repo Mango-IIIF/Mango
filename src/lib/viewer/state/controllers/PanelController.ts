@@ -1,6 +1,6 @@
 /**
  * PanelController
- * 
+ *
  * Manages panel visibility and state, including enforcement of single left panel rule.
  * Handles panel permissions and panel toggle events.
  */
@@ -11,6 +11,7 @@ import type { ViewerDerivedStores } from '../viewerDerived';
 
 export type ViewerPanel =
   | 'thumbnails'
+  | 'collection'
   | 'contents'
   | 'search'
   | 'metadata'
@@ -41,8 +42,8 @@ export const createPanelController = ({
   initialOpen = true,
   initialActivePanel = 'metadata',
 }: PanelControllerConfig): PanelController => {
-  
   const leftPanelOrder: ViewerPanel[] = [
+    'collection',
     'contents',
     'annotations',
     'tools',
@@ -52,15 +53,14 @@ export const createPanelController = ({
     'layers',
   ];
 
-  const configuredInitialPanel = leftPanelOrder.includes(
-    initialActivePanel as ViewerPanel,
-  )
+  const configuredInitialPanel = leftPanelOrder.includes(initialActivePanel as ViewerPanel)
     ? (initialActivePanel as ViewerPanel)
     : 'metadata';
   let lastOpenedLeftPanel: ViewerPanel | null = configuredInitialPanel;
   let awaitingInitialPanel = initialOpen;
 
   const leftPanelStores: Partial<Record<ViewerPanel, typeof state.showContents>> = {
+    collection: state.showCollection,
     contents: state.showContents,
     annotations: state.showAnnotations,
     tools: state.showTools,
@@ -76,6 +76,8 @@ export const createPanelController = ({
   const leftPanelAllowed = (panel: ViewerPanel): boolean => {
     if (get(state.config)?.sidebar?.enabled === false) return false;
     switch (panel) {
+      case 'collection':
+        return get(derivedStores.allowCollection);
       case 'contents':
         return get(derivedStores.contentsAvailable);
       case 'annotations':
@@ -122,10 +124,7 @@ export const createPanelController = ({
     return firstAllowed ?? null;
   };
 
-  const enforceSingleLeftPanel = (
-    preferred?: ViewerPanel | null,
-    useFallback = true,
-  ) => {
+  const enforceSingleLeftPanel = (preferred?: ViewerPanel | null, useFallback = true) => {
     const target = resolveActiveLeftPanel(preferred, useFallback);
 
     leftPanelOrder.forEach((panel) => {
@@ -194,6 +193,7 @@ export const createPanelController = ({
         derivedStores.allowMetadata,
         derivedStores.allowTools,
         derivedStores.contentsAvailable,
+        derivedStores.allowCollection,
       ],
       () => {
         if (awaitingInitialPanel && leftPanelAllowed(configuredInitialPanel)) {

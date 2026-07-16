@@ -1,6 +1,6 @@
 /**
  * ViewerController
- * 
+ *
  * Main controller that orchestrates sub-controllers and manages the viewer lifecycle.
  * Delegates specific responsibilities to focused controllers while coordinating overall state.
  */
@@ -22,24 +22,28 @@ import type { ViewerStateStores } from './viewerState';
 // Import sub-controllers
 import { createCanvasController, type CanvasController } from './controllers/CanvasController';
 import { createMediaController, type MediaController } from './controllers/MediaController';
-import { createAnnotationController, type AnnotationController } from './controllers/AnnotationController';
-import { createPanelController, type PanelController, type ViewerPanel } from './controllers/PanelController';
-import { createViewStateController, type ViewStateController } from './controllers/ViewStateController';
+import {
+  createAnnotationController,
+  type AnnotationController,
+} from './controllers/AnnotationController';
+import {
+  createPanelController,
+  type PanelController,
+  type ViewerPanel,
+} from './controllers/PanelController';
+import {
+  createViewStateController,
+  type ViewStateController,
+} from './controllers/ViewStateController';
 
-type Dispatch = <K extends keyof ViewerEventMap>(
-  event: K,
-  payload: ViewerEventMap[K],
-) => void;
+type Dispatch = <K extends keyof ViewerEventMap>(event: K, payload: ViewerEventMap[K]) => void;
 
 export type ViewerController = {
   events: ViewerEventBus;
   on: ViewerEventBus['on'];
   off: ViewerEventBus['off'];
   emitStateChange: () => void;
-  emitEvent: <K extends keyof ViewerEventMap>(
-    event: K,
-    payload: ViewerEventMap[K],
-  ) => void;
+  emitEvent: <K extends keyof ViewerEventMap>(event: K, payload: ViewerEventMap[K]) => void;
   setEventTarget: (target: EventTarget) => void;
   getStateSnapshot: () => ViewerStateSnapshot;
   getCanvasIndex: () => number;
@@ -50,15 +54,9 @@ export type ViewerController = {
   setManifest: (manifestId: string) => void;
   getManifestId: () => string | null;
   addAnnotation: (annotation: unknown) => Promise<void>;
-  updateAnnotation: (
-    annotationId: string,
-    patch: Partial<ResolvedAnnotation>,
-  ) => Promise<void>;
+  updateAnnotation: (annotationId: string, patch: Partial<ResolvedAnnotation>) => Promise<void>;
   removeAnnotation: (annotationId: string) => Promise<void>;
-  updateImageFilter: <K extends keyof ImageFilters>(
-    key: K,
-    value: ImageFilters[K],
-  ) => void;
+  updateImageFilter: <K extends keyof ImageFilters>(key: K, value: ImageFilters[K]) => void;
   resetImageFilters: () => void;
   setAnnotationMode: (mode: 'edit' | 'create') => void;
   setSearchQuery: (value: string) => void;
@@ -193,8 +191,7 @@ export const createViewerController = ({
     emitEvent,
     emitStateChange,
     initialOpen:
-      get(state.config)?.sidebar?.enabled !== false &&
-      get(state.config)?.sidebar?.open !== false,
+      get(state.config)?.sidebar?.enabled !== false && get(state.config)?.sidebar?.open !== false,
     initialActivePanel: get(state.config)?.sidebar?.activePanel,
   });
 
@@ -217,6 +214,8 @@ export const createViewerController = ({
   };
 
   const setManifest = (manifestId: string) => {
+    state.collectionId.set('');
+    state.showCollection.set(false);
     state.manifestId.set(manifestId);
   };
 
@@ -234,7 +233,17 @@ export const createViewerController = ({
   unsubscribers.push(
     state.manifestId.subscribe((manifestId) => {
       if (manifestId) {
-        fetchManifest(manifestId);
+        void fetchManifest(manifestId).then(() => {
+          const entry = get(derivedStores.manifestEntry);
+          if (
+            entry?.id === manifestId &&
+            entry.resourceType === 'collection' &&
+            get(state.manifestId) === manifestId
+          ) {
+            state.collectionId.set(manifestId);
+            panelController.setPanelOpen('collection', true);
+          }
+        });
       }
       if (manifestId && manifestId !== lastManifestId) {
         const isInitialManifest = !lastManifestId;
@@ -261,8 +270,6 @@ export const createViewerController = ({
     }),
   );
 
-
-
   // Setup config subscription
   unsubscribers.push(
     state.config.subscribe((config) => {
@@ -270,12 +277,14 @@ export const createViewerController = ({
       if (next === lastConfigStr) return;
       lastConfigStr = next;
       const allowThumbnails = config?.showThumbnails !== false;
+      const allowCollection = config?.showCollection !== false;
       const allowMetadata = config?.showMetadata !== false;
       const allowSearch = config?.showSearch !== false;
       const allowAnnotations = config?.showAnnotations !== false;
       const allowTools = config?.showTools !== false;
 
       if (config?.sidebar?.enabled === false) {
+        state.showCollection.set(false);
         state.showContents.set(false);
         state.showAnnotations.set(false);
         state.showTools.set(false);
@@ -286,6 +295,7 @@ export const createViewerController = ({
       }
 
       if (!allowThumbnails) state.showThumbnails.set(false);
+      if (!allowCollection) state.showCollection.set(false);
       if (!allowMetadata) state.showMetadata.set(false);
       if (!allowSearch) state.showSearch.set(false);
       if (!allowAnnotations) state.showAnnotations.set(false);
@@ -323,7 +333,7 @@ export const createViewerController = ({
           state.layoutMode.set(defaultLayout);
         }
       }
-      if (entry?.json && entry.id !== loadedAVManifestId) {
+      if (entry?.json && entry.resourceType !== 'collection' && entry.id !== loadedAVManifestId) {
         loadedAVManifestId = entry.id;
         void derivedStores.av.load(entry.json as Record<string, unknown>);
       }
@@ -341,9 +351,7 @@ export const createViewerController = ({
   );
 
   // Setup locale subscription
-  unsubscribers.push(
-    derivedStores.uiLocale.subscribe((locale) => setLocale(locale)),
-  );
+  unsubscribers.push(derivedStores.uiLocale.subscribe((locale) => setLocale(locale)));
 
   const updateLayerOpacity = (id: string, opacity: number) => {
     state.layerOpacities.update((map) => ({
@@ -375,18 +383,18 @@ export const createViewerController = ({
     emitStateChange,
     setEventTarget,
     getStateSnapshot,
-    
+
     // Canvas controller methods
     getCanvasIndex: canvasController.getCanvasIndex,
     getCanvasId: canvasController.getCanvasId,
     getCanvasCount: canvasController.getCanvasCount,
     setCanvasByIndex: canvasController.setCanvasByIndex,
     setCanvasById: canvasController.setCanvasById,
-    
+
     // Manifest methods
     setManifest,
     getManifestId,
-    
+
     // Annotation controller methods
     addAnnotation: annotationController.addAnnotation,
     updateAnnotation: annotationController.updateAnnotation,
@@ -394,19 +402,19 @@ export const createViewerController = ({
     setAnnotationMode: annotationController.setAnnotationMode,
     setSearchQuery: annotationController.setSearchQuery,
     handleSearchResultClick: annotationController.handleSearchResultClick,
-    
+
     // View state controller methods
     updateImageFilter: viewStateController.updateImageFilter,
     resetImageFilters: viewStateController.resetImageFilters,
     handleViewBoxChange: viewStateController.handleViewBoxChange,
     handleZoomChange: viewStateController.handleZoomChange,
     handleRotationChange: viewStateController.handleRotationChange,
-    
+
     // Panel controller methods
     setPanelOpen: panelController.setPanelOpen,
     updateLayerOpacity,
     setLayoutMode,
-    
+
     // Media controller methods
     handleMediaPlay: mediaController.handleMediaPlay,
     handleMediaPause: mediaController.handleMediaPause,
@@ -416,12 +424,12 @@ export const createViewerController = ({
     handleModelChange: mediaController.handleModelChange,
     getMediaLabel: mediaController.getMediaLabel,
     getMediaTypeLabel: mediaController.getMediaTypeLabel,
-    
+
     // Annotation interaction methods
     handleAnnotationHover: annotationInteractions.handleAnnotationHover,
     handleAnnotationSelect: annotationInteractions.handleAnnotationSelect,
     handleAnnotationClear: annotationInteractions.handleAnnotationClear,
-    
+
     destroy,
   };
 };

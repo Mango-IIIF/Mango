@@ -69,6 +69,32 @@
     "panels": {
       "leftLabel": "Left panels",
       "rightLabel": "Right panels",
+      "collection": {
+        "label": "Collection navigation panel",
+        "title": "Collection",
+        "close": "Close collection navigation",
+        "error": "Unable to load collection navigation",
+        "messages": {
+          "viewBy": "View by:",
+          "hierarchy": "Hierarchy",
+          "date": "Date",
+          "loadingDateMetadata": "Loading date metadata…",
+          "loadNextDates": "Load next {count} dates",
+          "loadMissingDate": "Load {count} missing date",
+          "loadMissingDates": "Load {count} missing dates",
+          "dateNotLoaded": "Date not loaded",
+          "oneDateNotLoaded": "{count} date not loaded",
+          "datesNotLoaded": "{count} dates not loaded",
+          "undated": "Undated",
+          "expand": "Expand {label}",
+          "collapse": "Collapse {label}",
+          "retry": "{error} — select + to retry",
+          "loadingStructure": "Loading IIIF structure…",
+          "noResource": "No IIIF collection or manifest loaded.",
+          "noNavigableItems": "No navigable items.",
+          "navigationLabel": "IIIF navigation"
+        }
+      },
       "annotations": {
         "label": "Annotations panel",
         "title": "Annotations",
@@ -203,14 +229,17 @@
       "controls": {
         "label": "Viewer controls",
         "toggleGallery": "Toggle gallery",
+        "toggleCollection": "Toggle collection navigation",
         "toggleContents": "Toggle contents",
         "toggleSearch": "Toggle search",
         "toggleMetadata": "Toggle metadata",
         "toggleAnnotations": "Toggle annotations",
         "toggleTools": "Toggle tools",
         "showGallery": "Show gallery",
+        "showCollection": "Show collection navigation",
         "showContents": "Show contents",
         "hideGallery": "Hide gallery",
+        "hideCollection": "Hide collection navigation",
         "hideContents": "Hide contents",
         "showSearch": "Show search",
         "hideSearch": "Hide search",
@@ -252,6 +281,7 @@
     },
     "dock": {
       "gallery": "G",
+      "collection": "C",
       "contents": "C",
       "search": "S",
       "info": "I",

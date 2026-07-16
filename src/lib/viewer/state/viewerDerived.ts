@@ -44,6 +44,7 @@ export type PluginSlots = {
 export type ViewerDerivedStores = {
   av: ViewerAV;
   manifestEntry: Readable<ManifestEntry | undefined>;
+  collectionEntry: Readable<ManifestEntry | undefined>;
   canvases: Readable<CanvasSummary[]>;
   canvasThumbnails: Readable<Array<string | null>>;
   mediaSources: Readable<MediaSource[]>;
@@ -74,6 +75,7 @@ export type ViewerDerivedStores = {
   uiLocale: Readable<string>;
   metadataLocale: Readable<string>;
   allowThumbnails: Readable<boolean>;
+  allowCollection: Readable<boolean>;
   allowMetadata: Readable<boolean>;
   allowSearch: Readable<boolean>;
   allowAnnotations: Readable<boolean>;
@@ -106,7 +108,8 @@ const hasSearchProfile = (profile: unknown): boolean => {
     return profile.some((entry) => hasSearchProfile(entry));
   }
   if (typeof profile === 'object') {
-    const value = (profile as { id?: string; '@id'?: string }).id ?? (profile as { '@id'?: string })['@id'];
+    const value =
+      (profile as { id?: string; '@id'?: string }).id ?? (profile as { '@id'?: string })['@id'];
     return value === target;
   }
   return false;
@@ -121,9 +124,7 @@ const hasSearchService = (manifestJson: any): boolean => {
       manifestJson.getProperty('service') ?? manifestJson.getProperty('services'),
     );
   } else {
-    services = normaliseArray(
-      manifestJson.service ?? manifestJson.services,
-    );
+    services = normaliseArray(manifestJson.service ?? manifestJson.services);
   }
   return services.some((service) => {
     if (!service || typeof service !== 'object') return false;
@@ -132,36 +133,30 @@ const hasSearchService = (manifestJson: any): boolean => {
   });
 };
 
-const hasManifestAnnotations = (
-  manifestoObject: any,
-  canvases: CanvasSummary[],
-): boolean => {
+const hasManifestAnnotations = (manifestoObject: any, canvases: CanvasSummary[]): boolean => {
   if (!manifestoObject || canvases.length === 0) return false;
-  
+
   // Get the actual canvas objects from manifesto once (optimization)
   const sequences = manifestoObject.getSequences?.();
   const manifestoCanvases = sequences?.[0]?.getCanvases?.() || [];
-  
+
   return canvases.some((canvas, index) => {
     // First check for inline annotations that are immediately available
     const items = getCanvasAnnotations(manifestoObject, canvas.id, canvas.index);
     if (items.length > 0) return true;
-    
+
     // Also check if this canvas has external annotation references
     // This is important for v2 manifests where annotations are often external
     const manifestoCanvas = manifestoCanvases[index];
     if (manifestoCanvas && hasExternalAnnotationRefs(manifestoCanvas)) {
       return true;
     }
-    
+
     return false;
   });
 };
 
-const countImageCanvases = (
-  manifestoObject: any,
-  canvases: CanvasSummary[],
-): number => {
+const countImageCanvases = (manifestoObject: any, canvases: CanvasSummary[]): number => {
   if (!manifestoObject || canvases.length === 0) return 0;
   return canvases.filter((canvas) => {
     const resolved = resolveMedia(manifestoObject, canvas.id, canvas.index);
@@ -169,14 +164,16 @@ const countImageCanvases = (
   }).length;
 };
 
-export const createViewerDerived = (
-  state: ViewerStateStores,
-): ViewerDerivedStores => {
+export const createViewerDerived = (state: ViewerStateStores): ViewerDerivedStores => {
   const av = createViewerAV(state);
   const manifestEntry = derived(
     [manifestsStore, state.manifestId],
-    ([$manifestsStore, manifestId]) =>
-      manifestId ? $manifestsStore[manifestId] : undefined,
+    ([$manifestsStore, manifestId]) => (manifestId ? $manifestsStore[manifestId] : undefined),
+  );
+
+  const collectionEntry = derived(
+    [manifestsStore, state.collectionId],
+    ([$manifestsStore, collectionId]) => (collectionId ? $manifestsStore[collectionId] : undefined),
   );
 
   const canvases = derived(manifestEntry, (entry) => entry?.canvases ?? []);
@@ -184,15 +181,10 @@ export const createViewerDerived = (
   const uiLocale = derived(state.config, (config) => resolveUiLocale(config));
   const metadataLocale = derived(uiLocale, (locale) => toMetadataLocale(locale));
 
-  const canvasThumbnails = derived(
-    [manifestEntry, canvases],
-    ([entry, list]) => {
-      if (!entry?.manifesto || list.length === 0) return [];
-      return list.map((canvas) =>
-        resolveCanvasThumbnail(entry.manifesto, canvas.id, canvas.index),
-      );
-    },
-  );
+  const canvasThumbnails = derived([manifestEntry, canvases], ([entry, list]) => {
+    if (!entry?.manifesto || list.length === 0) return [];
+    return list.map((canvas) => resolveCanvasThumbnail(entry.manifesto, canvas.id, canvas.index));
+  });
 
   const mediaSources = derived(
     [manifestEntry, canvases, state.selectedCanvasIndex, av.manifest],
@@ -207,9 +199,7 @@ export const createViewerDerived = (
       if (resolved.primary?.type === 'audio' || resolved.primary?.type === 'video') {
         return [];
       }
-      return resolved.primary
-        ? [resolved.primary, ...resolved.alternates]
-        : [];
+      return resolved.primary ? [resolved.primary, ...resolved.alternates] : [];
     },
   );
 
@@ -279,9 +269,10 @@ export const createViewerDerived = (
     (type, set) => {
       let cancelled = false;
       set(null);
-      if (!type) return () => {
-        cancelled = true;
-      };
+      if (!type)
+        return () => {
+          cancelled = true;
+        };
       void rendererLoaders[type]().then((module) => {
         if (!cancelled) set(module.default);
       });
@@ -314,8 +305,7 @@ export const createViewerDerived = (
   const contentsAvailable = derived(
     [avChaptersAvailable, avTranscriptAvailable, mediaType],
     ([chapters, transcript, type]) =>
-      (type === 'audio' || type === 'video') &&
-      (chapters || transcript),
+      (type === 'audio' || type === 'video') && (chapters || transcript),
   );
 
   const contentsVisible = derived(
@@ -327,14 +317,12 @@ export const createViewerDerived = (
     hasSearchService(entry?.manifesto ?? entry?.json),
   );
 
-  const annotationsAvailable = derived(
-    [manifestEntry, canvases],
-    ([entry, list]) => hasManifestAnnotations(entry?.manifesto, list),
+  const annotationsAvailable = derived([manifestEntry, canvases], ([entry, list]) =>
+    hasManifestAnnotations(entry?.manifesto, list),
   );
 
-  const imageCanvasCount = derived(
-    [manifestEntry, canvases],
-    ([entry, list]) => countImageCanvases(entry?.manifesto, list),
+  const imageCanvasCount = derived([manifestEntry, canvases], ([entry, list]) =>
+    countImageCanvases(entry?.manifesto, list),
   );
 
   const galleryAvailable = derived(
@@ -346,10 +334,14 @@ export const createViewerDerived = (
     [state.config, galleryAvailable],
     ([config, available]) => config?.showThumbnails !== false && available,
   );
-  const allowMetadata = derived(
-    state.config,
-    (config) => config?.showMetadata !== false,
+  const allowCollection = derived(
+    [state.config, collectionEntry],
+    ([config, entry]) =>
+      config?.showCollection !== false &&
+      entry?.resourceType === 'collection' &&
+      Boolean(entry.json),
   );
+  const allowMetadata = derived(state.config, (config) => config?.showMetadata !== false);
   const allowSearch = derived(
     [state.config, searchAvailable],
     ([config, available]) => config?.showSearch !== false && available,
@@ -364,32 +356,28 @@ export const createViewerDerived = (
     ([config, type]) => config?.showTools !== false && type === 'image',
   );
 
-  const allowLayers = derived(
-    [state.config, mediaSources],
-    ([config, sources]) => {
-      return config?.showLayers !== false &&
-        sources.length > 1 &&
-        sources.every((src) => src.type === 'image');
-    },
-  );
+  const allowLayers = derived([state.config, mediaSources], ([config, sources]) => {
+    return (
+      config?.showLayers !== false &&
+      sources.length > 1 &&
+      sources.every((src) => src.type === 'image')
+    );
+  });
 
-  const pluginSlots = derived(
-    [pluginsStore, state.plugins],
-    ([$pluginsStore, plugins]) => {
-      const deduped = new Map<string, ViewerPlugin>();
-      for (const plugin of [...$pluginsStore, ...plugins]) {
-        if (!plugin?.id) continue;
-        deduped.set(plugin.id, plugin);
-      }
-      const allPlugins = Array.from(deduped.values());
-      return {
-        left: allPlugins.filter((plugin) => plugin.slot === 'left'),
-        right: allPlugins.filter((plugin) => plugin.slot === 'right'),
-        bottom: allPlugins.filter((plugin) => plugin.slot === 'bottom'),
-        overlay: allPlugins.filter((plugin) => plugin.slot === 'overlay'),
-      };
-    },
-  );
+  const pluginSlots = derived([pluginsStore, state.plugins], ([$pluginsStore, plugins]) => {
+    const deduped = new Map<string, ViewerPlugin>();
+    for (const plugin of [...$pluginsStore, ...plugins]) {
+      if (!plugin?.id) continue;
+      deduped.set(plugin.id, plugin);
+    }
+    const allPlugins = Array.from(deduped.values());
+    return {
+      left: allPlugins.filter((plugin) => plugin.slot === 'left'),
+      right: allPlugins.filter((plugin) => plugin.slot === 'right'),
+      bottom: allPlugins.filter((plugin) => plugin.slot === 'bottom'),
+      overlay: allPlugins.filter((plugin) => plugin.slot === 'overlay'),
+    };
+  });
 
   const leftVisible = derived(
     [
@@ -404,6 +392,8 @@ export const createViewerDerived = (
       allowTools,
       state.showLayers,
       allowLayers,
+      state.showCollection,
+      allowCollection,
       pluginSlots,
     ],
     ([
@@ -418,6 +408,8 @@ export const createViewerDerived = (
       allowToolsValue,
       showLayersValue,
       allowLayersValue,
+      showCollection,
+      allowCollectionValue,
       slots,
     ]) =>
       (showSearch && allowSearchValue) ||
@@ -427,56 +419,39 @@ export const createViewerDerived = (
       showSettings ||
       (showTools && allowToolsValue) ||
       (showLayersValue && allowLayersValue) ||
+      (showCollection && allowCollectionValue) ||
       slots.left.length > 0,
   );
 
-  const rightVisible = derived(
-    pluginSlots,
-    (slots) => slots.right.length > 0,
+  const rightVisible = derived(pluginSlots, (slots) => slots.right.length > 0);
+
+  const manifestTitle = derived([manifestEntry, metadataLocale], ([entry, locale]) =>
+    resolveManifestTitle(entry?.manifesto, entry?.json, locale),
   );
 
-  const manifestTitle = derived(
-    [manifestEntry, metadataLocale],
-    ([entry, locale]) =>
-      resolveManifestTitle(entry?.manifesto, entry?.json, locale),
+  const manifestDescription = derived([manifestEntry, metadataLocale], ([entry, locale]) =>
+    resolveManifestDescription(entry?.manifesto, entry?.json, locale),
   );
 
-  const manifestDescription = derived(
-    [manifestEntry, metadataLocale],
-    ([entry, locale]) =>
-      resolveManifestDescription(entry?.manifesto, entry?.json, locale),
+  const manifestAttribution = derived([manifestEntry, metadataLocale], ([entry, locale]) =>
+    resolveManifestAttribution(entry?.manifesto, entry?.json, locale),
   );
 
-  const manifestAttribution = derived(
-    [manifestEntry, metadataLocale],
-    ([entry, locale]) =>
-      resolveManifestAttribution(entry?.manifesto, entry?.json, locale),
+  const manifestLicence = derived([manifestEntry, metadataLocale], ([entry, locale]) =>
+    resolveManifestLicence(entry?.manifesto, entry?.json, locale),
   );
 
-  const manifestLicence = derived(
-    [manifestEntry, metadataLocale],
-    ([entry, locale]) =>
-      resolveManifestLicence(entry?.manifesto, entry?.json, locale),
+  const manifestMetadata = derived([manifestEntry, metadataLocale], ([entry, locale]) =>
+    resolveMetadataItems(entry?.manifesto, entry?.json, locale),
   );
 
-  const manifestMetadata = derived(
-    [manifestEntry, metadataLocale],
-    ([entry, locale]) =>
-      resolveMetadataItems(entry?.manifesto, entry?.json, locale),
-  );
+  const manifestProviders = derived([manifestEntry, metadataLocale], ([entry, locale]) => {
+    const providers = resolveManifestProviders(entry?.manifesto, entry?.json, locale);
+    return providers;
+  });
 
-  const manifestProviders = derived(
-    [manifestEntry, metadataLocale],
-    ([entry, locale]) => {
-      const providers = resolveManifestProviders(entry?.manifesto, entry?.json, locale);
-      return providers;
-    },
-  );
-
-  const manifestGeoLocation = derived(
-    [manifestEntry, metadataLocale],
-    ([entry, locale]) =>
-      resolveManifestGeoLocation(entry?.manifesto, entry?.json, locale),
+  const manifestGeoLocation = derived([manifestEntry, metadataLocale], ([entry, locale]) =>
+    resolveManifestGeoLocation(entry?.manifesto, entry?.json, locale),
   );
 
   const viewBox = derived(state.viewBox, (value) => value);
@@ -484,6 +459,7 @@ export const createViewerDerived = (
   return {
     av,
     manifestEntry,
+    collectionEntry,
     canvases,
     canvasThumbnails,
     mediaSources,
@@ -514,6 +490,7 @@ export const createViewerDerived = (
     uiLocale,
     metadataLocale,
     allowThumbnails,
+    allowCollection,
     allowMetadata,
     allowSearch,
     allowAnnotations,

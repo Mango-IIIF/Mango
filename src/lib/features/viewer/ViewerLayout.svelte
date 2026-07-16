@@ -32,15 +32,15 @@
     type StoryWithDefaults,
   } from '../../story/viewer/storyLoader';
   import { createStoryViewerRuntime } from '../../story/viewer/storyViewerController';
-  import {
-    ViewportState,
-    VIEWPORT_STATE_CONTEXT_KEY,
-  } from '../../core/state/viewportState.svelte';
+  import { ViewportState, VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
   import { setLocale } from '../../i18n';
   import GridContainer from '../workspace/GridContainer.svelte';
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
+  import { findFirstManifestId } from '../../viewer/iiif/collectionNavigation';
+  import { navigateMango } from '@mango-iiif/collection-navigator/mango';
+  import type { CollectionSelection } from '@mango-iiif/collection-navigator';
 
   interface Props {
     manifestId?: string;
@@ -54,17 +54,15 @@
 
   const DEFAULT_LAYER_COLOR = '#a78bfa';
   const LAYER_FILL_OPACITY = 0.18;
-  const NEW_LAYER_COLORS = [
-    '#fb7185',
-    '#f59e0b',
-    '#22c55e',
-    '#06b6d4',
-    '#818cf8',
-    '#ec4899',
-  ];
+  const NEW_LAYER_COLORS = ['#fb7185', '#f59e0b', '#22c55e', '#06b6d4', '#818cf8', '#ec4899'];
   const DEFAULT_ANNOTATION_LAYERS: LayerItem[] = [
     { id: 'research', name: 'Research Notes', color: '#facc15', visible: true },
-    { id: 'transcription', name: 'Transcription', color: '#60a5fa', visible: true },
+    {
+      id: 'transcription',
+      name: 'Transcription',
+      color: '#60a5fa',
+      visible: true,
+    },
     { id: 'highlights', name: 'Highlights', color: '#34d399', visible: true },
     { id: 'mine', name: 'My Annotations', color: '#a78bfa', visible: true },
   ];
@@ -146,6 +144,7 @@
 
   const {
     manifestEntry,
+    collectionEntry,
     canvases,
     canvasThumbnails,
     mediaSource,
@@ -158,6 +157,7 @@
     leftVisible,
     rightVisible,
     allowThumbnails,
+    allowCollection,
     allowMetadata,
     allowSearch,
     allowAnnotations,
@@ -197,6 +197,7 @@
     selectedCanvasIndex,
     zoom,
     showThumbnails,
+    showCollection,
     showMetadata,
     showSearch,
     showAnnotations,
@@ -265,6 +266,7 @@
   let viewerSettingsLayout = $state<'1x1' | '1x2' | '2x1' | '2x2'>('1x1');
   let workspace = $state<WorkspaceStore | null>(null);
   const closeLeftPanelStores = () => {
+    viewerState.showCollection.set(false);
     viewerState.showContents.set(false);
     viewerState.showAnnotations.set(false);
     viewerState.showTools.set(false);
@@ -297,9 +299,7 @@
   let zoomBaseline = $state(0);
   let zoomBaselineCanvasIndex = $state(-1);
   let zoomPercent = $derived(
-    $zoom > 0 && zoomBaseline > 0
-      ? Math.max(10, Math.round(($zoom / zoomBaseline) * 100))
-      : 100,
+    $zoom > 0 && zoomBaseline > 0 ? Math.max(10, Math.round(($zoom / zoomBaseline) * 100)) : 100,
   );
   let pendingZoomDirection: 'in' | 'out' | null = $state(null);
   let storyData: StoryWithDefaults | null = $state(null);
@@ -324,10 +324,7 @@
   let chapterTitle = $derived.by(() => {
     const activeChapter = storyData?.chapters?.[storyCurrentChapterIndex];
     const resolvedTitle = resolveLanguageValue(activeChapter?.title, storyLanguage);
-    return (
-      resolvedTitle ||
-      (storyChapters > 0 ? `Chapter ${storyCurrentChapterIndex + 1}` : '')
-    );
+    return resolvedTitle || (storyChapters > 0 ? `Chapter ${storyCurrentChapterIndex + 1}` : '');
   });
   let chapterDescription = $derived(
     resolveLanguageValue(
@@ -389,7 +386,11 @@
     return null;
   }
 
-  function callViewerMethod<T extends (...args: any[]) => any>(name: string, fallback: T, ...args: Parameters<T>): ReturnType<T> {
+  function callViewerMethod<T extends (...args: any[]) => any>(
+    name: string,
+    fallback: T,
+    ...args: Parameters<T>
+  ): ReturnType<T> {
     const host = getShadowHost();
     if (host && Object.prototype.hasOwnProperty.call(host, name)) {
       return (host as any)[name](...args);
@@ -418,8 +419,10 @@
       seekTo: (time) => callViewerMethod('seekTo', seekTo, time),
       setModelOrbit: (orbit) => callViewerMethod('setModelOrbit', setModelOrbit, orbit),
       setModelTarget: (target) => callViewerMethod('setModelTarget', setModelTarget, target),
-      setModelOrientation: (orientation) => callViewerMethod('setModelOrientation', setModelOrientation, orientation),
-      setModelPose: (pose, options) => callViewerMethod('setModelPose', setModelPose, pose, options),
+      setModelOrientation: (orientation) =>
+        callViewerMethod('setModelOrientation', setModelOrientation, orientation),
+      setModelPose: (pose, options) =>
+        callViewerMethod('setModelPose', setModelPose, pose, options),
       getModelOrbit: () => callViewerMethod('getModelOrbit', getModelOrbit),
       getModelTarget: () => callViewerMethod('getModelTarget', getModelTarget),
       getModelOrientation: () => callViewerMethod('getModelOrientation', getModelOrientation),
@@ -428,7 +431,13 @@
       removeAnnotation: (id) => callViewerMethod('removeAnnotation', removeAnnotation, id),
       on: (event, handler) => callViewerMethod('on', on, event, handler),
       off: (event, handler) => callViewerMethod('off', off, event, handler),
-      updateLayerOpacity: (id, opacity) => callViewerMethod('updateLayerOpacity', (id, opacity) => controller.updateLayerOpacity(id, opacity), id, opacity),
+      updateLayerOpacity: (id, opacity) =>
+        callViewerMethod(
+          'updateLayerOpacity',
+          (id, opacity) => controller.updateLayerOpacity(id, opacity),
+          id,
+          opacity,
+        ),
       getLayerOpacities: () => callViewerMethod('getLayerOpacities', () => get(layerOpacities)),
       getMediaSources: () => callViewerMethod('getMediaSources', () => get(mediaSources)),
     },
@@ -481,7 +490,9 @@
   };
   const handleStoryRefresh = () => {
     if (storyControlsDisabled || storyLoading) return;
-    void storyRuntime.loadChapter(storyCurrentChapterIndex, { autoPlay: false });
+    void storyRuntime.loadChapter(storyCurrentChapterIndex, {
+      autoPlay: false,
+    });
   };
   const handleStoryFullscreen = async () => {
     if (typeof document === 'undefined') return;
@@ -611,7 +622,9 @@
     syncMobileLayout();
     syncFullscreenState();
     document.addEventListener('fullscreenchange', syncFullscreenState);
-    document.addEventListener('keydown', handleFullscreenKeydown, { capture: true });
+    document.addEventListener('keydown', handleFullscreenKeydown, {
+      capture: true,
+    });
     root?.addEventListener('touchmove', guardFullscreenDrag, {
       capture: true,
       passive: false,
@@ -647,8 +660,7 @@
   let visibleLayerIds = $derived(
     new Set(annotationLayers.filter((layer) => layer.visible).map((layer) => layer.id)),
   );
-  const normalizeLayerId = (layerId?: string): string =>
-    (layerId?.trim() || 'mine').trim();
+  const normalizeLayerId = (layerId?: string): string => (layerId?.trim() || 'mine').trim();
   const isAnnotationVisibleByLayer = (annotation: ResolvedAnnotation): boolean => {
     const layerId = normalizeLayerId(annotation.targetStyleClass);
     return visibleLayerIds.has(layerId);
@@ -705,9 +717,7 @@
     };
     const affectedAnnotationIds = new Set(
       editorAnnotations
-        .filter(
-          (annotation) => normalizeLayerId(annotation.targetStyleClass) === detail.id,
-        )
+        .filter((annotation) => normalizeLayerId(annotation.targetStyleClass) === detail.id)
         .map((annotation) => annotation.id),
     );
     if (draftAnno && normalizeLayerId(draftAnno.targetStyleClass) === detail.id) {
@@ -756,9 +766,7 @@
 
     // Set default properties
     resolved.targetStyleClass = 'mine';
-    resolved.targetStyle = styleForLayerColor(
-      findLayerById('mine')?.color ?? DEFAULT_LAYER_COLOR,
-    );
+    resolved.targetStyle = styleForLayerColor(findLayerById('mine')?.color ?? DEFAULT_LAYER_COLOR);
     resolved.motivation =
       resolved.motivation && resolved.motivation.length > 0
         ? resolved.motivation
@@ -817,8 +825,7 @@
         (value.chapters ?? [])
           .map((chapter) => chapter.manifest)
           .filter(
-            (manifest): manifest is string =>
-              typeof manifest === 'string' && manifest.length > 0,
+            (manifest): manifest is string => typeof manifest === 'string' && manifest.length > 0,
           ),
       ),
     );
@@ -1060,8 +1067,33 @@
   }
 
   export function setManifest(id: string): void {
+    viewerState.collectionId.set('');
+    viewerState.showCollection.set(false);
     manifestId = id;
   }
+
+  const handleCollectionSelect = async (selection: CollectionSelection): Promise<void> => {
+    try {
+      await navigateMango(
+        {
+          getManifestId,
+          getCanvasCount,
+          setManifest: (id: string) => {
+            manifestId = id;
+          },
+          setCanvasById,
+          on,
+        },
+        selection,
+      );
+    } catch (cause) {
+      controller.emitEvent('error', {
+        scope: 'manifest',
+        message: 'Unable to open the selected collection item.',
+        cause,
+      });
+    }
+  };
 
   export function getManifestId(): string | null {
     return manifestId || null;
@@ -1182,11 +1214,17 @@
   $effect.pre(() => {
     viewerState.manifestId.set(manifestId);
   });
+  $effect(() => {
+    const collection = $collectionEntry;
+    if (!collection?.json || manifestId !== collection.id) return;
+
+    const firstManifestId = findFirstManifestId(collection.json);
+    if (firstManifestId) manifestId = firstManifestId;
+  });
   $effect.pre(() => {
     const configWithModeDefaults = {
       ...normalisedConfig,
-      allowCreateMode:
-        normalisedConfig.allowCreateMode || isStoryBuilder || isAnnotationEditor,
+      allowCreateMode: normalisedConfig.allowCreateMode || isStoryBuilder || isAnnotationEditor,
     };
     viewerState.config.set(configWithModeDefaults);
     if (isMobileLayout) {
@@ -1257,44 +1295,40 @@
   let leftVisibleEffective = $derived(
     isStoryViewer || isAnnotationEditor || !sidebarEnabled ? false : $leftVisible,
   );
-  let rightVisibleEffective = $derived(
-    isStoryViewer ? false : enableRightPanel && $rightVisible,
-  );
-  let showThumbnailsEffectiveStory = $derived(
-    isStoryViewer ? false : showThumbnailsEffective,
-  );
+  let rightVisibleEffective = $derived(isStoryViewer ? false : enableRightPanel && $rightVisible);
+  let showThumbnailsEffectiveStory = $derived(isStoryViewer ? false : showThumbnailsEffective);
   let showSearchEffectiveStory = $derived(isStoryViewer ? false : showSearchEffective);
-  let showAnnotationsEffectiveStory = $derived(
-    isStoryViewer ? false : showAnnotationsEffective,
-  );
+  let showAnnotationsEffectiveStory = $derived(isStoryViewer ? false : showAnnotationsEffective);
   let showToolsEffectiveStory = $derived(isStoryViewer ? false : showToolsEffective);
   let showSettingsEffectiveStory = $derived(isPlainViewerMode ? $showSettings : false);
-  let allowSettingsStory = $derived(
-    isPlainViewerMode && normalisedConfig.showSettings !== false,
-  );
+  let allowSettingsStory = $derived(isPlainViewerMode && normalisedConfig.showSettings !== false);
   let showContentsEffectiveStory = $derived(isStoryViewer ? false : $showContents);
+  let showCollectionEffectiveStory = $derived(
+    isPlainViewerMode ? $showCollection && $allowCollection : false,
+  );
   let showLayersEffective = $derived($showLayers && $allowLayers);
   let showLayersEffectiveStory = $derived(isStoryViewer ? false : showLayersEffective);
   let allowThumbnailsStory = $derived(isStoryViewer ? false : $allowThumbnails);
+  let allowCollectionStory = $derived(isPlainViewerMode ? $allowCollection : false);
   let allowMetadataStory = $derived(isStoryViewer ? false : $allowMetadata);
   let allowSearchStory = $derived(isStoryViewer ? false : $allowSearch);
   let allowAnnotationsStory = $derived(isStoryViewer ? false : $allowAnnotations);
   let allowToolsStory = $derived(isStoryViewer ? false : $allowTools);
-  let allowLayersStory = $derived((isStoryViewer || isStoryBuilder) ? false : $allowLayers);
+  let allowLayersStory = $derived(isStoryViewer || isStoryBuilder ? false : $allowLayers);
   let allowContentsStory = $derived(isStoryViewer ? false : $contentsAvailable);
   // Story annotation overlay reactive variables
   $effect(() => {
     storyDataStore.set(storyData ?? EMPTY_STORY);
   });
-  let storyCurrentChapterId = $derived(
-    storyData?.chapters[storyCurrentChapterIndex]?.id ?? null,
-  );
+  let storyCurrentChapterId = $derived(storyData?.chapters[storyCurrentChapterIndex]?.id ?? null);
   setContext('viewer-context', {
     state: viewerState,
     derived: viewerDerived,
     controller,
     settings: {
-      get layout() { return viewerSettingsLayout; },
+      get layout() {
+        return viewerSettingsLayout;
+      },
       set layout(val) {
         viewerSettingsLayout = val;
         if (val !== '1x1') {
@@ -1306,15 +1340,31 @@
           workspace = null;
         }
       },
-      get theme() { return viewerSettingsTheme; },
-      set theme(val) { viewerSettingsTheme = val; },
-      get locale() { return viewerSettingsLocale; },
-      set locale(val) { applyViewerSettingsLocale(val); },
-      get layoutMode() { return get(layoutMode); },
-      set layoutMode(val) { controller.setLayoutMode(val); }
+      get theme() {
+        return viewerSettingsTheme;
+      },
+      set theme(val) {
+        viewerSettingsTheme = val;
+      },
+      get locale() {
+        return viewerSettingsLocale;
+      },
+      set locale(val) {
+        applyViewerSettingsLocale(val);
+      },
+      get layoutMode() {
+        return get(layoutMode);
+      },
+      set layoutMode(val) {
+        controller.setLayoutMode(val);
+      },
     },
-    get canDrawAnnotations() { return canDrawAnnotations; },
-    get annotationMode() { return effectiveAnnotationMode; }
+    get canDrawAnnotations() {
+      return canDrawAnnotations;
+    },
+    get annotationMode() {
+      return effectiveAnnotationMode;
+    },
   });
 </script>
 
@@ -1372,6 +1422,7 @@
         <ViewerDock
           compact={true}
           allowThumbnails={allowThumbnailsStory}
+          allowCollection={allowCollectionStory}
           allowContents={allowContentsStory}
           allowSearch={allowSearchStory}
           allowMetadata={allowMetadataStory}
@@ -1380,6 +1431,7 @@
           allowLayers={allowLayersStory}
           allowSettings={allowSettingsStory}
           showThumbnails={showThumbnailsEffectiveStory}
+          showCollection={showCollectionEffectiveStory}
           showContents={showContentsEffectiveStory}
           showSearch={showSearchEffectiveStory}
           showMetadata={$showMetadata}
@@ -1387,15 +1439,16 @@
           showTools={showToolsEffectiveStory}
           showLayers={showLayersEffectiveStory}
           showSettings={showSettingsEffectiveStory}
-          onpanelToggle={(detail) =>
-            controller.setPanelOpen(detail.panel, detail.open)}
+          onpanelToggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
         />
       </aside>
     {/if}
 
-    {#if leftVisibleEffective && !isAnnotationEditor}
+    {#if !isStoryViewer && !isAnnotationEditor && sidebarEnabled}
       <LeftPanelStack
+        visible={leftVisibleEffective}
         showAnnotations={showAnnotationsEffectiveStory}
+        showCollection={showCollectionEffectiveStory}
         showTools={showToolsEffectiveStory}
         showSearch={showSearchEffectiveStory}
         showMetadata={$showMetadata}
@@ -1404,6 +1457,7 @@
         showLayers={showLayersEffectiveStory}
         leftPlugins={$pluginSlots.left}
         {pluginContext}
+        oncollectionSelect={handleCollectionSelect}
         onpanelToggle={(panel, open) => controller.setPanelOpen(panel, open)}
       />
     {/if}
@@ -1484,11 +1538,13 @@
                   }}
                   onzoomchange={(detail) => controller.handleZoomChange(detail)}
                   onrotationchange={(detail) => controller.handleRotationChange(detail)}
-                  onpaneltoggle={(detail) =>
-                    controller.setPanelOpen(detail.panel, detail.open)}
+                  onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
                   onannotationcreate={handleAnnotationCreate}
                   onannotationupdate={(payload) =>
-                    handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
+                    handleAnnotationUpdate(
+                      payload.id,
+                      payload.patch as Partial<ResolvedAnnotation>,
+                    )}
                 />
                 <StoryAnnotationOverlayComponent
                   story={storyDataStore}
@@ -1587,14 +1643,17 @@
                   showContents={false}
                   annotationTool={annotationEditorTool}
                   annotationEditorEnabled={true}
-                  annotationLayers={annotationLayers}
+                  {annotationLayers}
                   canvasId={activeCanvasId}
                   onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
                   onzoomchange={(detail) => controller.handleZoomChange(detail)}
                   onrotationchange={(detail) => controller.handleRotationChange(detail)}
                   onannotationcreate={handleAnnotationCreate}
                   onannotationupdate={(payload) =>
-                    handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
+                    handleAnnotationUpdate(
+                      payload.id,
+                      payload.patch as Partial<ResolvedAnnotation>,
+                    )}
                   onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
                   onannotationselect={(payload) => {
                     controller.handleAnnotationSelect(payload);
@@ -1767,8 +1826,7 @@
               canvases={$canvases}
               canvasThumbnails={$canvasThumbnails}
               selectedCanvasIndex={$selectedCanvasIndex}
-              onpanelToggle={(detail) =>
-                controller.setPanelOpen(detail.panel, detail.open)}
+              onpanelToggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
               oncanvasSelect={(detail) => controller.setCanvasByIndex(detail.index)}
             />
           {/if}
@@ -1800,10 +1858,7 @@
     {/if}
 
     {#if !isStoryViewer && rightVisibleEffective}
-      <aside
-        class="panel-stack panel-stack--right"
-        aria-label={$t('viewer.panels.rightLabel')}
-      >
+      <aside class="panel-stack panel-stack--right" aria-label={$t('viewer.panels.rightLabel')}>
         {#if $pluginSlots.right.length > 0}
           <PluginSlot plugins={$pluginSlots.right} {pluginContext} />
         {/if}
@@ -2040,12 +2095,7 @@
     overflow: hidden;
     padding: 20px;
     border-radius: 24px;
-    background: radial-gradient(
-      120% 120% at 10% 0%,
-      #1d2632 0%,
-      #111720 55%,
-      #0b0f14 100%
-    );
+    background: radial-gradient(120% 120% at 10% 0%, #1d2632 0%, #111720 55%, #0b0f14 100%);
     color: var(--viewer-text);
     font-family: sans-serif;
     border: 1px solid #1c2530;
@@ -2163,12 +2213,7 @@
     );
     border-color: #dbe2eb;
     box-shadow: var(--viewer-frame-shadow, 0 24px 52px rgba(25, 40, 60, 0.12));
-    background: radial-gradient(
-      135% 135% at 10% 0%,
-      #e6f1ff 0%,
-      #f5faff 45%,
-      #ffffff 100%
-    );
+    background: radial-gradient(135% 135% at 10% 0%, #e6f1ff 0%, #f5faff 45%, #ffffff 100%);
   }
 
   .viewer__grid {
