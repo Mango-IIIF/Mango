@@ -150,9 +150,6 @@
     canvasThumbnails,
     mediaSource,
     mediaType,
-    accompanyingSource,
-    captionTracks,
-    startTime,
     rendererComponent,
     annotations,
     overlayAnnotations,
@@ -170,6 +167,7 @@
     contentsAvailable,
     activeLayoutImages,
   } = viewerDerived;
+  const avController = viewerDerived.av.controller;
 
   const loadStoryViewerComponents = async () => {
     if (StoryControlsStageComponent && StoryAnnotationOverlayComponent) return;
@@ -224,7 +222,6 @@
 
   let canZoom = $state(false);
   let hasSource = $derived(Boolean($mediaSource));
-  let pendingSeek: { canvasId?: string | null; time: number } | null = $state(null);
   let showThumbnailsEffective = $derived($showThumbnails && $allowThumbnails);
   let showSearchEffective = $derived($showSearch && $allowSearch);
   let showAnnotationsEffective = $derived($showAnnotations && $allowAnnotations);
@@ -976,23 +973,6 @@
   };
   const handleHome = () => stageRef?.goHome?.();
   const handleRotate = () => stageRef?.rotateBy?.(90);
-  const handleSeek = (detail: { canvasId?: string | null; time: number }) => {
-    if (!Number.isFinite(detail.time)) return;
-    const canvasList = get(canvases);
-    const currentCanvasId = canvasList[get(selectedCanvasIndex)]?.id;
-    if (detail.canvasId && detail.canvasId !== currentCanvasId) {
-      const targetIndex = canvasList.findIndex((canvas) => canvas.id === detail.canvasId);
-      if (targetIndex === -1) {
-        stageRef?.seekTo?.(detail.time);
-        return;
-      }
-      pendingSeek = detail;
-      controller.setCanvasById(detail.canvasId);
-      return;
-    }
-    stageRef?.seekTo?.(detail.time);
-  };
-
   export function on<K extends keyof ViewerEventMap>(
     event: K,
     handler: (payload: ViewerEventMap[K]) => void,
@@ -1309,18 +1289,6 @@
   let storyCurrentChapterId = $derived(
     storyData?.chapters[storyCurrentChapterIndex]?.id ?? null,
   );
-  $effect(() => {
-    if (pendingSeek) {
-      const currentCanvasId = get(canvases)[get(selectedCanvasIndex)]?.id;
-      if (
-        currentCanvasId &&
-        (!pendingSeek.canvasId || pendingSeek.canvasId === currentCanvasId)
-      ) {
-        stageRef?.seekTo?.(pendingSeek.time);
-        pendingSeek = null;
-      }
-    }
-  });
   setContext('viewer-context', {
     state: viewerState,
     derived: viewerDerived,
@@ -1344,9 +1312,6 @@
       set locale(val) { applyViewerSettingsLocale(val); },
       get layoutMode() { return get(layoutMode); },
       set layoutMode(val) { controller.setLayoutMode(val); }
-    },
-    actions: {
-      seek: handleSeek
     },
     get canDrawAnnotations() { return canDrawAnnotations; },
     get annotationMode() { return effectiveAnnotationMode; }
@@ -1476,12 +1441,10 @@
                   bind:canZoom
                   fillHeight={isStoryBuilder}
                   rendererComponent={$rendererComponent}
+                  {avController}
                   mediaSource={$mediaSource}
-                  accompanyingSource={$accompanyingSource}
                   layoutMode={$layoutMode}
                   activeLayoutImages={$activeLayoutImages}
-                  captionTracks={$captionTracks}
-                  startTime={$startTime}
                   annotations={$overlayAnnotations}
                   highlightIds={$highlightIds}
                   activeAnnotationId={$activeAnnotationId}
@@ -1588,12 +1551,10 @@
                   bind:canZoom
                   fillHeight={true}
                   rendererComponent={$rendererComponent}
+                  {avController}
                   mediaSource={$mediaSource}
-                  accompanyingSource={$accompanyingSource}
                   layoutMode={$layoutMode}
                   activeLayoutImages={$activeLayoutImages}
-                  captionTracks={$captionTracks}
-                  startTime={$startTime}
                   annotations={editorStageAnnotations}
                   highlightIds={$highlightIds}
                   activeAnnotationId={$activeAnnotationId}
@@ -1734,12 +1695,10 @@
               bind:canZoom
               fillHeight={isStoryBuilder}
               rendererComponent={$rendererComponent}
+              {avController}
               mediaSource={$mediaSource}
-              accompanyingSource={$accompanyingSource}
               layoutMode={$layoutMode}
               activeLayoutImages={$activeLayoutImages}
-              captionTracks={$captionTracks}
-              startTime={$startTime}
               annotations={$overlayAnnotations}
               highlightIds={$highlightIds}
               activeAnnotationId={$activeAnnotationId}

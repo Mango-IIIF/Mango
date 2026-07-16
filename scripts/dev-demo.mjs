@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, rmSync, watch, readdirSync, statSync, copyFileSync } from 'node:fs';
+import { existsSync, mkdirSync, watch, readdirSync, statSync, copyFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -37,7 +37,6 @@ function syncDemo() {
 
   syncInFlight = true;
   try {
-    rmSync(demoDist, { force: true, recursive: true });
     mkdirSync(demoDist, { recursive: true });
     copyDirRecursive(srcDist, demoDist);
     log(`synced demo assets from ${srcDist} to ${demoDist}`);
@@ -53,7 +52,7 @@ function scheduleSync() {
   syncTimer = setTimeout(() => {
     syncTimer = null;
     syncDemo();
-  }, 150);
+  }, 500);
 }
 
 function spawnCommand(label, command, args) {

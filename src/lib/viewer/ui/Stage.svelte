@@ -8,7 +8,7 @@
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
   import type { ViewBox } from '../../core/types/viewer';
   import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
-  import type { MediaTextTrack } from '../../iiif/avResolver';
+  import type { AVPlayerController } from '@mango-iiif/av/core';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { PluginContext, ViewerPlugin } from '../../core/types/plugin';
   import type { RendererEventHandlers } from '../types/rendererEvents';
@@ -32,10 +32,8 @@
 
   interface Props {
     rendererComponent?: any;
+    avController?: AVPlayerController;
     mediaSource?: MediaSource | null;
-    accompanyingSource?: MediaSource | null;
-    captionTracks?: MediaTextTrack[];
-    startTime?: number | null;
     annotations?: ResolvedAnnotation[];
     highlightIds?: string[];
     activeAnnotationId?: string | null;
@@ -94,10 +92,8 @@
 
   let {
     rendererComponent = null,
+    avController = undefined,
     mediaSource = null,
-    accompanyingSource = null,
-    captionTracks = [],
-    startTime = null,
     annotations = [],
     highlightIds = [],
     activeAnnotationId = null,
@@ -157,7 +153,7 @@
   let isFixedStage = $derived(
     !fillHeight && (!mediaSource || mediaType !== 'video') && !useConstrainedMedia,
   );
-  let dockInline = $derived(!fillHeight && mediaType === 'audio' && !accompanyingSource);
+  let dockInline = $derived(!fillHeight && mediaType === 'audio');
   let useRendererNativeAnnotationLayer = $derived(mediaType === 'image' || mediaType === 'audio');
 
   let rendererInstance: any = $state(null);
@@ -360,10 +356,8 @@
       <RendererHost
         bind:rendererInstance
         {rendererComponent}
+        {avController}
         source={mediaSource}
-        {accompanyingSource}
-        {captionTracks}
-        {startTime}
         annotations={annotationEditorEnabled ? [] : annotations}
         {highlightIds}
         {activeAnnotationId}

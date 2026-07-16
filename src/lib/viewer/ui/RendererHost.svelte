@@ -2,17 +2,15 @@
   import { DEFAULT_IMAGE_FILTERS, type ImageFilters } from '../../core/types/filters';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
-  import type { MediaTextTrack } from '../../iiif/avResolver';
+  import type { AVPlayerController } from '@mango-iiif/av/core';
   import type { ViewBox } from '../../core/types/viewer';
   import type { RendererEventHandlers } from '../types/rendererEvents';
   import type { ViewerConfig } from '../../core/types/config';
 
   interface Props {
     rendererComponent?: any;
+    avController?: AVPlayerController;
     source?: MediaSource | null;
-    accompanyingSource?: MediaSource | null;
-    captionTracks?: MediaTextTrack[];
-    startTime?: number | null;
     annotations?: ResolvedAnnotation[];
     highlightIds?: string[];
     activeAnnotationId?: string | null;
@@ -36,10 +34,8 @@
 
   let {
     rendererComponent = null,
+    avController = undefined,
     source = null,
-    accompanyingSource = null,
-    captionTracks = [],
-    startTime = null,
     annotations = [],
     highlightIds = [],
     activeAnnotationId = null,
@@ -118,10 +114,8 @@
   {@const Renderer = rendererComponent}
   <Renderer
     bind:this={rendererInstance}
+    controller={avController}
     source={source}
-    {accompanyingSource}
-    {captionTracks}
-    {startTime}
     {annotations}
     {highlightIds}
     {activeAnnotationId}

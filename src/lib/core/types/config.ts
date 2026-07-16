@@ -1,3 +1,5 @@
+import type { AVPlayerConfig } from '@mango-iiif/av/core';
+
 export type ViewerConfig = {
   language?: string;
   theme?: 'light' | 'dark' | string;
@@ -29,6 +31,8 @@ export type ViewerConfig = {
   pdf?: {
     page?: number;
   };
+  /** Audio/video player, controls, transcript, request, and playback options. */
+  av?: AVPlayerConfig;
   initialCanvasIndex?: number;
   initialLayoutMode?: 'single' | 'two-page' | 'continuous' | 'gallery';
   initialRotation?: number;
