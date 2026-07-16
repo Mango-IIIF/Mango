@@ -69,6 +69,32 @@
     "panels": {
       "leftLabel": "Paneles izquierdos",
       "rightLabel": "Paneles derechos",
+      "collection": {
+        "label": "Panel de navegación de colecciones",
+        "title": "Colección",
+        "close": "Cerrar navegación de colecciones",
+        "error": "No se pudo cargar la navegación de colecciones",
+        "messages": {
+          "viewBy": "Ver por:",
+          "hierarchy": "Jerarquía",
+          "date": "Fecha",
+          "loadingDateMetadata": "Cargando metadatos de fechas…",
+          "loadNextDates": "Cargar las siguientes {count} fechas",
+          "loadMissingDate": "Cargar {count} fecha pendiente",
+          "loadMissingDates": "Cargar {count} fechas pendientes",
+          "dateNotLoaded": "Fecha no cargada",
+          "oneDateNotLoaded": "{count} fecha no cargada",
+          "datesNotLoaded": "{count} fechas no cargadas",
+          "undated": "Sin fecha",
+          "expand": "Expandir {label}",
+          "collapse": "Contraer {label}",
+          "retry": "{error} — seleccione + para reintentar",
+          "loadingStructure": "Cargando estructura IIIF…",
+          "noResource": "No se ha cargado ninguna colección ni manifiesto IIIF.",
+          "noNavigableItems": "No hay elementos navegables.",
+          "navigationLabel": "Navegación IIIF"
+        }
+      },
       "annotations": {
         "label": "Panel de anotaciones",
         "title": "Editor de anotaciones",
@@ -203,14 +229,17 @@
       "controls": {
         "label": "Controles del visor",
         "toggleGallery": "Alternar galería",
+        "toggleCollection": "Alternar navegación de colecciones",
         "toggleContents": "Alternar contenidos",
         "toggleSearch": "Alternar búsqueda",
         "toggleMetadata": "Alternar metadatos",
         "toggleAnnotations": "Alternar anotaciones",
         "toggleTools": "Alternar herramientas",
         "showGallery": "Mostrar galería",
+        "showCollection": "Mostrar navegación de colecciones",
         "showContents": "Mostrar contenidos",
         "hideGallery": "Ocultar galería",
+        "hideCollection": "Ocultar navegación de colecciones",
         "hideContents": "Ocultar contenidos",
         "showSearch": "Mostrar búsqueda",
         "hideSearch": "Ocultar búsqueda",
@@ -252,6 +281,7 @@
     },
     "dock": {
       "gallery": "G",
+      "collection": "C",
       "contents": "C",
       "search": "B",
       "info": "I",

@@ -11,8 +11,12 @@
   import SettingsPanel from './SettingsPanel.svelte';
   import LayersPanel from './LayersPanel.svelte';
   import ComparePanel from './ComparePanel.svelte';
+  import CollectionPanel from './CollectionPanel.svelte';
+  import type { CollectionSelection } from '@mango-iiif/collection-navigator';
 
   interface Props {
+    visible?: boolean;
+    showCollection?: boolean;
     showAnnotations?: boolean;
     showTools?: boolean;
     showContents?: boolean;
@@ -25,10 +29,13 @@
     contentsTab?: 'toc' | 'transcript';
     leftPlugins?: ViewerPlugin[];
     pluginContext: Omit<PluginContext, 'mount'>;
-    onpanelToggle?: (panel: 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers' | 'compare', open: boolean) => void;
+    onpanelToggle?: (panel: 'collection' | 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers' | 'compare', open: boolean) => void;
+    oncollectionSelect?: (selection: CollectionSelection) => void;
   }
 
   let {
+    visible = true,
+    showCollection = false,
     showAnnotations = false,
     showTools = false,
     showContents = false,
@@ -42,17 +49,33 @@
     leftPlugins = [],
     pluginContext,
     onpanelToggle,
+    oncollectionSelect,
   }: Props = $props();
 
   const viewer = getViewerContext();
   const mediaType = viewer.derived.mediaType;
+  let loadedCollection = $state(false);
+
+  $effect(() => {
+    if (showCollection) loadedCollection = true;
+  });
 </script>
 
 <aside
   class="panel-stack panel-stack--left"
   class:panel-stack--redesigned={redesigned}
+  hidden={!visible}
   aria-label={$t('viewer.panels.leftLabel')}
 >
+  {#if loadedCollection}
+    <div hidden={!showCollection}>
+      <CollectionPanel
+        onclose={() => onpanelToggle?.('collection', false)}
+        onselect={oncollectionSelect}
+      />
+    </div>
+  {/if}
+
   {#if showContents && ($mediaType === 'audio' || $mediaType === 'video')}
     <ContentsPanel
       {redesigned}

@@ -20,6 +20,7 @@
 
   type PanelName =
     | 'thumbnails'
+    | 'collection'
     | 'contents'
     | 'search'
     | 'metadata'
@@ -30,6 +31,7 @@
 
   interface Props {
     allowThumbnails?: boolean;
+    allowCollection?: boolean;
     allowSearch?: boolean;
     allowMetadata?: boolean;
     allowAnnotations?: boolean;
@@ -39,6 +41,7 @@
     allowChapters?: boolean;
     allowTranscript?: boolean;
     showThumbnails?: boolean;
+    showCollection?: boolean;
     showContents?: boolean;
     showSearch?: boolean;
     showMetadata?: boolean;
@@ -66,6 +69,7 @@
 
   let {
     allowThumbnails = true,
+    allowCollection = false,
     allowSearch = true,
     allowMetadata = true,
     allowAnnotations = true,
@@ -76,6 +80,7 @@
     allowChapters = false,
     allowTranscript = false,
     showThumbnails = true,
+    showCollection = false,
     showContents = false,
     showSearch = true,
     showMetadata = true,
@@ -122,6 +127,19 @@
           >
             <Image aria-hidden="true" />
             <span>{$t('workspace.sidebar.gallery')}</span>
+          </button>
+        {/if}
+        {#if allowCollection}
+          <button
+            class:viewer-sidebar__button--active={showCollection}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? $t('viewer.panels.collection.title') : undefined}
+            aria-pressed={showCollection}
+            onclick={() => onpanelToggle?.({ panel: 'collection', open: !showCollection })}
+          >
+            <ListTree aria-hidden="true" />
+            <span>{$t('viewer.panels.collection.title')}</span>
           </button>
         {/if}
         {#if allowMetadata}
@@ -488,8 +506,7 @@
       type="button"
       aria-pressed={showThumbnails}
       aria-label={$t('viewer.stage.controls.toggleGallery')}
-      onclick={() =>
-        onpanelToggle?.( { panel: 'thumbnails', open: !showThumbnails })}
+      onclick={() => onpanelToggle?.({ panel: 'thumbnails', open: !showThumbnails })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -499,6 +516,30 @@
         </svg>
       </span>
       <span class="viewer__dock-label">{$t('viewer.dock.gallery')}</span>
+    </button>
+  {/if}
+  {#if allowCollection}
+    <button
+      class:viewer__dock-button--active={showCollection}
+      class="viewer__dock-button"
+      data-tone="collection"
+      data-label={showCollection
+        ? $t('viewer.stage.controls.hideCollection')
+        : $t('viewer.stage.controls.showCollection')}
+      type="button"
+      aria-pressed={showCollection}
+      aria-label={$t('viewer.stage.controls.toggleCollection')}
+      onclick={() => onpanelToggle?.({ panel: 'collection', open: !showCollection })}
+    >
+      <span class="viewer__dock-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="4" y="4" width="6" height="6" rx="1"></rect>
+          <rect x="14" y="4" width="6" height="6" rx="1"></rect>
+          <rect x="4" y="14" width="6" height="6" rx="1"></rect>
+          <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+        </svg>
+      </span>
+      <span class="viewer__dock-label">{$t('viewer.dock.collection')}</span>
     </button>
   {/if}
   {#if allowContents}
@@ -512,7 +553,7 @@
       type="button"
       aria-pressed={showContents}
       aria-label={$t('viewer.stage.controls.toggleContents')}
-      onclick={() => onpanelToggle?.( { panel: 'contents', open: !showContents })}
+      onclick={() => onpanelToggle?.({ panel: 'contents', open: !showContents })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -538,7 +579,7 @@
       type="button"
       aria-pressed={showMetadata}
       aria-label={$t('viewer.stage.controls.toggleMetadata')}
-      onclick={() => onpanelToggle?.( { panel: 'metadata', open: !showMetadata })}
+      onclick={() => onpanelToggle?.({ panel: 'metadata', open: !showMetadata })}
     >
       <span class="viewer__dock-icon viewer__dock-icon--info" aria-hidden="true">
         <span class="viewer__dock-info-chip">i</span>
@@ -557,7 +598,7 @@
       type="button"
       aria-pressed={showSearch}
       aria-label={$t('viewer.stage.controls.toggleSearch')}
-      onclick={() => onpanelToggle?.( { panel: 'search', open: !showSearch })}
+      onclick={() => onpanelToggle?.({ panel: 'search', open: !showSearch })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -579,8 +620,7 @@
       type="button"
       aria-pressed={showAnnotations}
       aria-label={$t('viewer.stage.controls.toggleAnnotations')}
-      onclick={() =>
-        onpanelToggle?.( { panel: 'annotations', open: !showAnnotations })}
+      onclick={() => onpanelToggle?.({ panel: 'annotations', open: !showAnnotations })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -603,7 +643,7 @@
       aria-pressed={showTools}
       aria-label={$t('viewer.stage.controls.toggleTools')}
       disabled={multiView}
-      onclick={() => onpanelToggle?.( { panel: 'tools', open: !showTools })}
+      onclick={() => onpanelToggle?.({ panel: 'tools', open: !showTools })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -627,7 +667,7 @@
       type="button"
       aria-pressed={showLayers}
       aria-label={$t('viewer.stage.controls.toggleLayers')}
-      onclick={() => onpanelToggle?.( { panel: 'layers', open: !showLayers })}
+      onclick={() => onpanelToggle?.({ panel: 'layers', open: !showLayers })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
@@ -647,7 +687,7 @@
       type="button"
       aria-pressed={showSettings}
       aria-label={$t('workspace.toggleSettings')}
-      onclick={() => onpanelToggle?.( { panel: 'settings', open: !showSettings })}
+      onclick={() => onpanelToggle?.({ panel: 'settings', open: !showSettings })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">

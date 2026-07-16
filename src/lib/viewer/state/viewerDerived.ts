@@ -70,6 +70,7 @@ export type PluginSlots = {
 export type ViewerDerivedStores = {
   av: ViewerAV;
   manifestEntry: Readable<ManifestEntry | undefined>;
+  collectionEntry: Readable<ManifestEntry | undefined>;
   canvases: Readable<CanvasSummary[]>;
   canvasThumbnails: Readable<Array<string | null>>;
   mediaSources: Readable<MediaSource[]>;
@@ -100,6 +101,7 @@ export type ViewerDerivedStores = {
   uiLocale: Readable<string>;
   metadataLocale: Readable<string>;
   allowThumbnails: Readable<boolean>;
+  allowCollection: Readable<boolean>;
   allowMetadata: Readable<boolean>;
   allowSearch: Readable<boolean>;
   allowAnnotations: Readable<boolean>;
@@ -210,6 +212,12 @@ export const createViewerDerived = (
     [manifestsStore, state.manifestId],
     ([$manifestsStore, manifestId]) =>
       manifestId ? $manifestsStore[manifestId] : undefined,
+  );
+
+  const collectionEntry = derived(
+    [manifestsStore, state.collectionId],
+    ([$manifestsStore, collectionId]) =>
+      collectionId ? $manifestsStore[collectionId] : undefined,
   );
 
   const canvases = derived(manifestEntry, (entry) => entry?.canvases ?? []);
@@ -389,6 +397,13 @@ export const createViewerDerived = (
     [state.config, galleryAvailable],
     ([config, available]) => config?.showThumbnails !== false && available,
   );
+  const allowCollection = derived(
+    [state.config, collectionEntry],
+    ([config, entry]) =>
+      config?.showCollection !== false &&
+      entry?.resourceType === "collection" &&
+      Boolean(entry.json),
+  );
   const allowMetadata = derived(
     state.config,
     (config) => config?.showMetadata !== false,
@@ -439,6 +454,8 @@ export const createViewerDerived = (
 
   const leftVisible = derived(
     [
+      state.showCollection,
+      allowCollection,
       state.showSearch,
       allowSearch,
       state.showAnnotations,
@@ -453,6 +470,8 @@ export const createViewerDerived = (
       pluginSlots,
     ],
     ([
+      showCollection,
+      allowCollectionValue,
       showSearch,
       allowSearchValue,
       showAnnotations,
@@ -466,6 +485,7 @@ export const createViewerDerived = (
       allowLayersValue,
       slots,
     ]) =>
+      (showCollection && allowCollectionValue) ||
       (showSearch && allowSearchValue) ||
       (showAnnotations && allowAnnotationsValue) ||
       showContents ||
@@ -531,6 +551,7 @@ export const createViewerDerived = (
   return {
     av,
     manifestEntry,
+    collectionEntry,
     canvases,
     canvasThumbnails,
     mediaSources,
@@ -561,6 +582,7 @@ export const createViewerDerived = (
     uiLocale,
     metadataLocale,
     allowThumbnails,
+    allowCollection,
     allowMetadata,
     allowSearch,
     allowAnnotations,

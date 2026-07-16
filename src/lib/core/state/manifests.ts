@@ -23,10 +23,19 @@ export type ManifestEntry = {
   json?: unknown;
   manifesto?: ManifestoManifest;
   model?: NormalizedManifest;
+  resourceType?: "collection" | "manifest";
   label?: string;
   canvases: CanvasSummary[];
   isFetching: boolean;
   error?: string;
+};
+
+export const isIIIFCollection = (value: unknown): boolean => {
+  if (!value || typeof value !== "object") return false;
+  const resource = value as { type?: unknown; "@type"?: unknown };
+  return (
+    resource.type === "Collection" || resource["@type"] === "sc:Collection"
+  );
 };
 
 export type ManifestCache = Record<string, ManifestEntry>;
@@ -63,22 +72,25 @@ export const fetchManifest = async (manifestId: string): Promise<void> => {
       throw new Error(`HTTP error ${response.status}`);
     }
     const json: unknown = await response.json();
+    const resourceType = isIIIFCollection(json) ? "collection" : "manifest";
     let manifestoObject: ManifestoManifest | undefined;
     let model: NormalizedManifest | undefined;
     let canvases: CanvasSummary[] = [];
     let label: string | undefined;
 
-    try {
-      manifestoObject = parseManifest(json);
-      model = normalizeManifest(json, manifestoObject, manifestId);
-      canvases = model.canvases;
-      label = model.label ?? getManifestLabel(manifestoObject);
-    } catch (error) {
-      console.error(
-        "[Mango] Failed to parse manifest with manifesto.js:",
-        error,
-      );
-      manifestoObject = undefined;
+    if (resourceType === "manifest") {
+      try {
+        manifestoObject = parseManifest(json);
+        model = normalizeManifest(json, manifestoObject, manifestId);
+        canvases = model.canvases;
+        label = model.label ?? getManifestLabel(manifestoObject);
+      } catch (error) {
+        console.error(
+          "[Mango] Failed to parse manifest with manifesto.js:",
+          error,
+        );
+        manifestoObject = undefined;
+      }
     }
 
     manifestsStore.update((current) => ({
@@ -88,6 +100,7 @@ export const fetchManifest = async (manifestId: string): Promise<void> => {
         json,
         manifesto: manifestoObject,
         model,
+        resourceType,
         label,
         canvases,
         isFetching: false,

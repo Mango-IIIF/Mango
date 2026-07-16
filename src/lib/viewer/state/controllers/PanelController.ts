@@ -12,6 +12,7 @@ import type { ViewerEventEmitter } from "../../../core/types/events";
 
 export type ViewerPanel =
   | "thumbnails"
+  | "collection"
   | "contents"
   | "search"
   | "metadata"
@@ -43,6 +44,7 @@ export const createPanelController = ({
   initialActivePanel = "metadata",
 }: PanelControllerConfig): PanelController => {
   const leftPanelOrder: ViewerPanel[] = [
+    "collection",
     "contents",
     "annotations",
     "tools",
@@ -63,6 +65,7 @@ export const createPanelController = ({
   const leftPanelStores: Partial<
     Record<ViewerPanel, typeof state.showContents>
   > = {
+    collection: state.showCollection,
     contents: state.showContents,
     annotations: state.showAnnotations,
     tools: state.showTools,
@@ -79,6 +82,8 @@ export const createPanelController = ({
   const leftPanelAllowed = (panel: ViewerPanel): boolean => {
     if (get(state.config)?.sidebar?.enabled === false) return false;
     switch (panel) {
+      case "collection":
+        return get(derivedStores.allowCollection);
       case "contents":
         return get(derivedStores.contentsAvailable);
       case "annotations":

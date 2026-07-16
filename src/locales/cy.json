@@ -69,6 +69,32 @@
     "panels": {
       "leftLabel": "Paneli chwith",
       "rightLabel": "Paneli dde",
+      "collection": {
+        "label": "Panel llywio casgliad",
+        "title": "Casgliad",
+        "close": "Cau llywio casgliad",
+        "error": "Methu llwytho llywio casgliad",
+        "messages": {
+          "viewBy": "Gweld yn ôl:",
+          "hierarchy": "Hierarchaeth",
+          "date": "Dyddiad",
+          "loadingDateMetadata": "Wrthi'n llwytho metadata dyddiad…",
+          "loadNextDates": "Llwytho'r {count} dyddiad nesaf",
+          "loadMissingDate": "Llwytho {count} dyddiad coll",
+          "loadMissingDates": "Llwytho {count} dyddiad coll",
+          "dateNotLoaded": "Dyddiad heb ei lwytho",
+          "oneDateNotLoaded": "{count} dyddiad heb ei lwytho",
+          "datesNotLoaded": "{count} dyddiad heb eu llwytho",
+          "undated": "Heb ddyddiad",
+          "expand": "Ehangu {label}",
+          "collapse": "Cwympo {label}",
+          "retry": "{error} — dewiswch + i roi cynnig arall",
+          "loadingStructure": "Wrthi'n llwytho strwythur IIIF…",
+          "noResource": "Dim casgliad na maniffest IIIF wedi'i lwytho.",
+          "noNavigableItems": "Dim eitemau llywio.",
+          "navigationLabel": "Llywio IIIF"
+        }
+      },
       "annotations": {
         "label": "Panel anodiadau",
         "title": "Anodiadau",
@@ -203,14 +229,17 @@
       "controls": {
         "label": "Rheolyddion y gwyliwr",
         "toggleGallery": "Togl galeri",
+        "toggleCollection": "Togl llywio casgliad",
         "toggleContents": "Togl cynnwys",
         "toggleSearch": "Togl chwilio",
         "toggleMetadata": "Togl metadata",
         "toggleAnnotations": "Togl anodiadau",
         "toggleTools": "Togl offer",
         "showGallery": "Dangos galeri",
+        "showCollection": "Dangos llywio casgliad",
         "showContents": "Dangos cynnwys",
         "hideGallery": "Cuddio galeri",
+        "hideCollection": "Cuddio llywio casgliad",
         "hideContents": "Cuddio cynnwys",
         "showSearch": "Dangos chwilio",
         "hideSearch": "Cuddio chwilio",
@@ -252,6 +281,7 @@
     },
     "dock": {
       "gallery": "G",
+      "collection": "C",
       "contents": "C",
       "search": "S",
       "info": "I",

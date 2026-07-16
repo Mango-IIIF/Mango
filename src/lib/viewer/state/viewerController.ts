@@ -250,6 +250,8 @@ export const createViewerController = ({
   };
 
   const setManifest = (manifestId: string) => {
+    state.collectionId.set("");
+    state.showCollection.set(false);
     state.manifestId.set(manifestId);
   };
 
@@ -267,7 +269,17 @@ export const createViewerController = ({
   unsubscribers.push(
     state.manifestId.subscribe((manifestId) => {
       if (manifestId) {
-        fetchManifest(manifestId);
+        void fetchManifest(manifestId).then(() => {
+          const entry = get(derivedStores.manifestEntry);
+          if (
+            entry?.id === manifestId &&
+            entry.resourceType === "collection" &&
+            get(state.manifestId) === manifestId
+          ) {
+            state.collectionId.set(manifestId);
+            panelController.setPanelOpen("collection", true);
+          }
+        });
       }
       if (manifestId && manifestId !== lastManifestId) {
         const isInitialManifest = !lastManifestId;
@@ -307,6 +319,7 @@ export const createViewerController = ({
       const allowTools = config?.showTools !== false;
 
       if (config?.sidebar?.enabled === false) {
+        state.showCollection.set(false);
         state.showContents.set(false);
         state.showAnnotations.set(false);
         state.showTools.set(false);
@@ -317,6 +330,7 @@ export const createViewerController = ({
       }
 
       if (!allowThumbnails) state.showThumbnails.set(false);
+      if (config?.showCollection === false) state.showCollection.set(false);
       if (!allowMetadata) state.showMetadata.set(false);
       if (!allowSearch) state.showSearch.set(false);
       if (!allowAnnotations) state.showAnnotations.set(false);
@@ -359,7 +373,11 @@ export const createViewerController = ({
           state.layoutMode.set(defaultLayout);
         }
       }
-      if (entry?.json && entry.id !== loadedAVManifestId) {
+      if (
+        entry?.json &&
+        entry.resourceType !== "collection" &&
+        entry.id !== loadedAVManifestId
+      ) {
         loadedAVManifestId = entry.id;
         void derivedStores.av.load(entry.json as Record<string, unknown>);
       }

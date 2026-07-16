@@ -35,12 +35,15 @@ export class Mango implements ViewerApi {
         plugins,
       },
     });
-    const api = this.instance as { setEventTarget?: (target: HTMLElement) => void };
+    const api = this.instance as {
+      setEventTarget?: (target: HTMLElement) => void;
+    };
     api?.setEventTarget?.(target);
   }
 
   getManifestId(): string | null {
-    return this.manifestId || null;
+    const instance = this.instance as { getManifestId?: () => string | null };
+    return instance?.getManifestId?.() ?? (this.manifestId || null);
   }
 
   getViewBox(): ViewBox | null {
@@ -116,12 +119,16 @@ export class Mango implements ViewerApi {
   }
 
   setModelOrbit(orbit: string): void {
-    const instance = this.instance as { setModelOrbit?: (value: string) => void };
+    const instance = this.instance as {
+      setModelOrbit?: (value: string) => void;
+    };
     instance?.setModelOrbit?.(orbit);
   }
 
   setModelTarget(target: string): void {
-    const instance = this.instance as { setModelTarget?: (value: string) => void };
+    const instance = this.instance as {
+      setModelTarget?: (value: string) => void;
+    };
     instance?.setModelTarget?.(target);
   }
 
@@ -150,7 +157,9 @@ export class Mango implements ViewerApi {
   }
 
   getModelOrientation(): string | null {
-    const instance = this.instance as { getModelOrientation?: () => string | null };
+    const instance = this.instance as {
+      getModelOrientation?: () => string | null;
+    };
     return instance?.getModelOrientation?.() ?? null;
   }
 
@@ -184,12 +193,16 @@ export class Mango implements ViewerApi {
   }
 
   updateLayerOpacity(id: string, opacity: number): void {
-    const instance = this.instance as { updateLayerOpacity?: (id: string, opacity: number) => void };
+    const instance = this.instance as {
+      updateLayerOpacity?: (id: string, opacity: number) => void;
+    };
     instance?.updateLayerOpacity?.(id, opacity);
   }
 
   getLayerOpacities(): Record<string, number> {
-    const instance = this.instance as { getLayerOpacities?: () => Record<string, number> };
+    const instance = this.instance as {
+      getLayerOpacities?: () => Record<string, number>;
+    };
     return instance?.getLayerOpacities?.() ?? {};
   }
 

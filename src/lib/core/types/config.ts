@@ -5,6 +5,7 @@ export type ViewerConfig = {
   theme?: 'light' | 'dark' | string;
   allowCreateMode?: boolean;
   showThumbnails?: boolean;
+  showCollection?: boolean;
   showMetadata?: boolean;
   showSearch?: boolean;
   showAnnotations?: boolean;
