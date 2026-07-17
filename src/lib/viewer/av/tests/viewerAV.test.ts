@@ -177,4 +177,26 @@ describe('viewer AV integration', () => {
       'https://example.org/video/master.m3u8',
     );
   });
+
+  it('configures default audioArt properties and allows overrides', () => {
+    const state = createViewerState();
+    integration = createViewerAV(state);
+    expect(integration.controller.config.audioArt).toEqual({
+      transcript: true,
+      visualizer: 'pulse',
+    });
+
+    state.config.set({
+      av: {
+        audioArt: {
+          transcript: false,
+          visualizer: 'waveform',
+        },
+      },
+    });
+    expect(integration.controller.config.audioArt).toEqual({
+      transcript: false,
+      visualizer: 'waveform',
+    });
+  });
 });

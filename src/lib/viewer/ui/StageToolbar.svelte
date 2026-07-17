@@ -45,9 +45,7 @@
     viewportState?.selectedCanvasIndex ?? selectedCanvasIndex,
   );
 
-  let isVisible = $derived(
-    mediaType === 'image' || mediaType === 'audio' || mediaType === 'video',
-  );
+  let isVisible = $derived(mediaType === 'image');
   let canPrevCanvas = $derived(totalCanvases > 0 && effectiveSelectedCanvasIndex > 0);
   let canNextCanvas = $derived(
     totalCanvases > 0 && effectiveSelectedCanvasIndex < totalCanvases - 1,

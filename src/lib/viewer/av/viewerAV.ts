@@ -32,7 +32,12 @@ const preferredLanguages = (config?: ViewerConfig): string[] => {
 };
 
 const avConfig = (config?: ViewerConfig): AVPlayerConfig => ({
-  ...(config?.av ?? {}),
+  ...config?.av,
+  audioArt: {
+    transcript: true,
+    visualizer: 'pulse',
+    ...config?.av?.audioArt,
+  },
   preferredLanguages: preferredLanguages(config),
 });
 
