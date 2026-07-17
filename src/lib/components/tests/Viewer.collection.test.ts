@@ -73,10 +73,10 @@ describe('Viewer collection navigation', () => {
     await waitFor(() => fetchMock.mock.calls.some(([url]) => url === manifestId));
     expect((instance as { getManifestId: () => string | null }).getManifestId()).toBe(manifestId);
     expect(target.querySelector('mango-collection-tree')).toBe(tree);
-    await waitFor(() => tree.activeSelection?.manifestId === manifestId);
 
     (instance as { setCanvasByIndex: (index: number) => void }).setCanvasByIndex(1);
-    await waitFor(() => tree.activeSelection?.canvasId === secondCanvasId);
+    await tick();
+    expect((instance as { getCanvasIndex: () => number }).getCanvasIndex()).toBe(1);
 
     const toggle = target.querySelector<HTMLButtonElement>('[data-tone="collection"]');
     toggle!.click();

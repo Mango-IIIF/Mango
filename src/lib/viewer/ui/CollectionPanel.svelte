@@ -8,7 +8,6 @@
   import { getContext } from 'svelte';
   import { t } from '../../i18n';
   import type { ViewerDerivedStores } from '../state/viewerDerived';
-  import type { ViewerStateStores } from '../state/viewerState';
 
   interface Props {
     onclose?: () => void;
@@ -17,18 +16,12 @@
 
   let { onclose, onselect }: Props = $props();
   const viewer = getContext<{
-    derived: Pick<ViewerDerivedStores, 'collectionEntry' | 'canvases' | 'uiLocale'>;
-    state: Pick<ViewerStateStores, 'manifestId' | 'selectedCanvasIndex'>;
+    derived: Pick<ViewerDerivedStores, 'collectionEntry' | 'uiLocale'>;
   }>('viewer-context');
   const collectionEntry = viewer.derived.collectionEntry;
-  const canvases = viewer.derived.canvases;
   const uiLocale = viewer.derived.uiLocale;
-  const manifestId = viewer.state.manifestId;
-  const selectedCanvasIndex = viewer.state.selectedCanvasIndex;
   let tree: CollectionTreeElement | undefined = $state();
   let loadedCollectionId = '';
-  let treeReady = $state(0);
-  let revealRequest = 0;
   let error = $state('');
 
   const collectionMessages = (): Partial<CollectionTreeMessages> => ({
@@ -76,34 +69,8 @@
     error = '';
     void element
       .load(entry.json as Record<string, unknown>)
-      .then(() => {
-        treeReady += 1;
-      })
       .catch((cause: unknown) => {
         error = cause instanceof Error ? cause.message : String(cause);
-      });
-  });
-
-  $effect(() => {
-    const element = tree;
-    const collection = $collectionEntry;
-    const currentManifestId = $manifestId;
-    const canvasId = $canvases[$selectedCanvasIndex]?.id;
-    treeReady;
-
-    const request = ++revealRequest;
-    if (!element || !collection?.json || !currentManifestId || currentManifestId === collection.id) {
-      element?.clearSelection();
-      return;
-    }
-
-    void element
-      .revealSelection(
-        { manifestId: currentManifestId, ...(canvasId ? { canvasId } : {}) },
-        { resolve: true, scroll: true },
-      )
-      .then((result) => {
-        if (request === revealRequest && result === null) element.clearSelection();
       });
   });
 </script>
