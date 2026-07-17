@@ -97,7 +97,7 @@
     "@google/model-viewer": "^4.1.0",
     "@mango-iiif/annotation": "^0.0.3",
     "@mango-iiif/av": "^0.0.2",
-    "@mango-iiif/collection-navigator": "^0.0.4",
+    "@mango-iiif/collection-navigator": "^0.0.5",
     "@mango-iiif/iiif-search-client": "^0.0.2",
     "@mango-iiif/w3c-parser": "^0.0.2",
     "manifesto.js": "^4.3.0",
