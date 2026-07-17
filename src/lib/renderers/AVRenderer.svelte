@@ -53,6 +53,15 @@
       label:has(input[data-action='auto-advance']) {
         display: none !important;
       }
+      .audio-art.visualizer--pulse {
+        background: radial-gradient(
+          ellipse 140% 72% at 50% calc(100% + var(--mango-av-wave-rise)),
+          color-mix(in srgb, var(--mango-av-accent) calc(var(--mango-av-wave-strength) * 0.4), transparent) 0%,
+          color-mix(in srgb, var(--mango-av-accent) calc(var(--mango-av-wave-mid-strength) * 0.4), transparent) 40%,
+          color-mix(in srgb, var(--mango-av-accent) calc(var(--mango-av-wave-edge-strength) * 0.4), transparent) 62%,
+          transparent 78%
+        ), linear-gradient(#09080d, #111019) !important;
+      }
     `;
     root.append(style);
   };

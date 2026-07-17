@@ -357,8 +357,7 @@ body {
 }
 
 .cookbook-viewer__frame {
-  height: min(820px, 84dvh);
-  min-height: 620px;
+  height: 820px;
   border: 1px solid rgba(43, 37, 32, 0.14);
   background: #ffffff;
 }
@@ -628,8 +627,7 @@ body {
   }
 
   .cookbook-viewer__frame {
-    height: min(780px, 88dvh);
-    min-height: 600px;
+    height: 820px;
   }
 
   .cookbook-filters {
