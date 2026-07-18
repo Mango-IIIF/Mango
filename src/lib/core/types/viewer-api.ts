@@ -1,7 +1,7 @@
-import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
-import type { ModelPose, ModelPoseOptions } from './model';
-import type { ViewerEventMap } from './events';
-import type { ViewBox, ViewerStateSnapshot } from './viewer';
+import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
+import type { ModelPose, ModelPoseOptions } from "./model";
+import type { ViewerEventMap } from "./events";
+import type { ViewBox, ViewerStateSnapshot } from "./viewer";
 
 export type ViewerApi = {
   getViewBox: () => ViewBox | null;
@@ -43,4 +43,8 @@ export type ViewerApi = {
     event: K,
     handler: (payload: ViewerEventMap[K]) => void,
   ) => void;
+};
+
+export type ViewerApiTarget = Partial<ViewerApi> & {
+  setEventTarget?: (target: EventTarget) => void;
 };

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
+  import { getViewerContext } from '../context';
   import { t } from '../../i18n';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import PanelCloseButton from './PanelCloseButton.svelte';
@@ -11,7 +11,7 @@
 
   let { redesigned = false, onclose = undefined }: Props = $props();
 
-  const viewer = getContext<any>('viewer-context');
+  const viewer = getViewerContext();
   const { searchHits } = viewer.derived;
   const { searchQuery, selectedSearchResultId } = viewer.state;
   const controller = viewer.controller;

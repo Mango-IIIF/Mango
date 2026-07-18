@@ -27,6 +27,10 @@
   import type { MediaSource } from '../iiif/mediaResolver';
   import type { ViewBox } from '../core/types/viewer';
 
+  type PdfJs = typeof import('pdfjs-dist/legacy/build/pdf');
+  type PdfLoadingTask = ReturnType<PdfJs['getDocument']>;
+  type PdfDocument = Awaited<PdfLoadingTask['promise']>;
+
   interface Props {
     source?: MediaSource | null;
     initialPage?: number;
@@ -43,11 +47,11 @@
 
   let canvas: HTMLCanvasElement | null = $state(null);
   let canvasWrap: HTMLDivElement | null = $state(null);
-  let pdfDoc: any = null;
+  let pdfDoc: PdfDocument | null = null;
   let pageNumber = $state(1);
   let pageCount = $state(0);
   let scale = 1;
-  let loadingTask: any = null;
+  let loadingTask: PdfLoadingTask | null = null;
   let lastViewBox: ViewBox | null = null;
   let lastSrc = $state('');
 

@@ -43,13 +43,14 @@
   import type { ViewerConfig } from '../core/types/config';
   import type { ViewerEventMap } from '../core/types/events';
   import type { ModelPose, ModelPoseOptions } from '../core/types/model';
-  import type { ViewerApi } from '../core/types/viewer-api';
+  import type { ViewerApiTarget } from '../core/types/viewer-api';
   import { translate } from '../i18n';
   import type { ViewBox } from '../core/types/viewer';
   import type { MediaType, MediaSource } from '../iiif/mediaResolver';
   import type { ViewerPlugin } from '../core/types/plugin';
   import type { Story } from '../core/types/story';
   import { normaliseStoryInput } from '../story/viewer/storyLoader';
+  import { ViewerApiAdapter } from '../viewer/api/ViewerApiAdapter';
 
   export let manifestId = '';
   export let config: string | ViewerConfig | undefined = undefined;
@@ -62,9 +63,9 @@
   let modePlugins: ViewerPlugin[] = [];
   let lastMode: string | undefined = undefined;
   let lastStoryForBuilder: typeof story | typeof storyUrl = undefined;
-  let builderStoryData: Record<string, unknown> | null = null;
   let resolvedPlugins: ViewerPlugin[] = [];
-  let viewerInstance: (ViewerApi & { setEventTarget?: (target: EventTarget) => void }) | null = null;
+  let viewerInstance: ViewerApiTarget | null = null;
+  const api = new ViewerApiAdapter(() => viewerInstance);
   let hostElement: HTMLDivElement | null = null;
   let eventTargetOwner: unknown = null;
   let storyBuilderPluginRequest = 0;
@@ -92,7 +93,6 @@
       const requestId = ++storyBuilderPluginRequest;
       void loadStoryForBuilder().then((loadedStory) => {
         if (requestId !== storyBuilderPluginRequest) return;
-        builderStoryData = loadedStory;
         void import('../plugins/storyBuilder').then(({ createStoryBuilderPlugins }) => {
           if (requestId !== storyBuilderPluginRequest) return;
           modePlugins = createStoryBuilderPlugins({
@@ -103,13 +103,12 @@
       });
     } else {
       storyBuilderPluginRequest++;
-      builderStoryData = null;
       modePlugins = [];
     }
   }
   $: resolvedPlugins = [...modePlugins, ...plugins];
 
-  async function loadStoryForBuilder(): Promise<Record<string, unknown> | null> {
+  async function loadStoryForBuilder(): Promise<Story | Record<string, unknown> | null> {
     let source: unknown = undefined;
     if (story !== undefined && story !== null && `${story}` !== '') {
       source = story;
@@ -139,7 +138,7 @@
     // Parse and normalise the story input to support standard IIIF Presentation API v3 AnnotationPages
     const normalised = normaliseStoryInput(parsed);
     if (normalised.ok && normalised.story) {
-      return normalised.story as any;
+      return normalised.story;
     }
 
     // Extract story data from envelope if needed
@@ -147,137 +146,154 @@
       return parsed.data as Record<string, unknown>;
     }
 
-    return parsed as Record<string, unknown>;
+    return parsed && typeof parsed === 'object'
+      ? parsed as Record<string, unknown>
+      : null;
   }
 
   export function getViewBox(): ViewBox | null {
-    return viewerInstance?.getViewBox?.() ?? null;
+    return api.getViewBox();
   }
 
   export function setViewBox(box: ViewBox): void {
-    viewerInstance?.setViewBox?.(box);
+    api.setViewBox(box);
   }
 
   export function getMediaType(): MediaType | null {
-    return viewerInstance?.getMediaType?.() ?? null;
+    return api.getMediaType();
   }
 
   export function getState() {
-    return viewerInstance?.getState?.() ?? null;
+    return api.getState();
   }
 
   export function getCanvasIndex(): number {
-    return viewerInstance?.getCanvasIndex?.() ?? -1;
+    return api.getCanvasIndex();
   }
 
   export function getCanvasId(): string | null {
-    return viewerInstance?.getCanvasId?.() ?? null;
+    return api.getCanvasId();
+
+  }
+
+  export function getCanvasCount(): number {
+    return api.getCanvasCount();
   }
 
   export function setCanvasByIndex(index: number): void {
-    viewerInstance?.setCanvasByIndex?.(index);
+    api.setCanvasByIndex(index);
   }
 
   export function setCanvasById(canvasId: string): void {
-    viewerInstance?.setCanvasById?.(canvasId);
+    api.setCanvasById(canvasId);
   }
 
   export function setManifest(id: string): void {
-    viewerInstance?.setManifest?.(id);
+    api.setManifest(id);
   }
 
   export function getManifestId(): string | null {
-    return viewerInstance?.getManifestId?.() ?? null;
+    return api.getManifestId();
   }
 
   export function start(): void {
-    viewerInstance?.start?.();
+    api.start();
   }
 
   export function play(): void {
-    viewerInstance?.play?.();
+    api.play();
   }
 
   export function pause(): void {
-    viewerInstance?.pause?.();
+    api.pause();
   }
 
   export function stop(): void {
-    viewerInstance?.stop?.();
+    api.stop();
   }
 
   export function seekBy(delta: number): void {
-    viewerInstance?.seekBy?.(delta);
+    api.seekBy(delta);
   }
 
   export function seekTo(time: number): void {
-    viewerInstance?.seekTo?.(time);
+    api.seekTo(time);
+
+  }
+
+  export function setMediaSegment(start: number, end: number): void {
+    api.setMediaSegment(start, end);
   }
 
   export function setModelOrbit(orbit: string): void {
-    viewerInstance?.setModelOrbit?.(orbit);
+    api.setModelOrbit(orbit);
   }
 
   export function setModelTarget(target: string): void {
-    viewerInstance?.setModelTarget?.(target);
+    api.setModelTarget(target);
   }
 
   export function setModelOrientation(orientation: string): void {
-    viewerInstance?.setModelOrientation?.(orientation);
+    api.setModelOrientation(orientation);
   }
 
   export function setModelPose(pose: ModelPose, options?: ModelPoseOptions): void {
-    viewerInstance?.setModelPose?.(pose, options);
+    api.setModelPose(pose, options);
   }
 
   export function getModelOrbit(): string | null {
-    return viewerInstance?.getModelOrbit?.() ?? null;
+    return api.getModelOrbit();
   }
 
   export function getModelTarget(): string | null {
-    return viewerInstance?.getModelTarget?.() ?? null;
+    return api.getModelTarget();
   }
 
   export function getModelOrientation(): string | null {
-    return viewerInstance?.getModelOrientation?.() ?? null;
+    return api.getModelOrientation();
   }
 
   export function getModelPose(): ModelPose | null {
-    return viewerInstance?.getModelPose?.() ?? null;
+    return api.getModelPose();
   }
 
   export function addAnnotation(annotation: unknown): Promise<void> {
-    return viewerInstance?.addAnnotation?.(annotation) ?? Promise.resolve();
+    return api.addAnnotation(annotation);
+
+  }
+
+  export function removeAnnotation(annotationId: string): Promise<void> {
+    return api.removeAnnotation(annotationId);
   }
 
   export function updateLayerOpacity(id: string, opacity: number): void {
-    viewerInstance?.updateLayerOpacity?.(id, opacity);
+    api.updateLayerOpacity(id, opacity);
   }
 
   export function getLayerOpacities(): Record<string, number> {
-    return viewerInstance?.getLayerOpacities?.() ?? {};
+    return api.getLayerOpacities();
   }
 
   export function getMediaSources(): MediaSource[] {
-    return viewerInstance?.getMediaSources?.() ?? [];
+    return api.getMediaSources();
   }
 
   export function on<K extends keyof ViewerEventMap>(
     event: K,
     handler: (payload: ViewerEventMap[K]) => void,
   ) {
-    return viewerInstance?.on?.(event, handler) ?? (() => undefined);
+    return api.on(event, handler);
   }
 
   export function off<K extends keyof ViewerEventMap>(
     event: K,
     handler: (payload: ViewerEventMap[K]) => void,
   ) {
-    viewerInstance?.off?.(event, handler);
+    api.off(event, handler);
   }
 
   $: if (viewerInstance && hostElement && eventTargetOwner !== viewerInstance) {
-    viewerInstance?.setEventTarget?.(hostElement);
+    api.setEventTarget(hostElement);
     eventTargetOwner = viewerInstance;
   }
 </script>

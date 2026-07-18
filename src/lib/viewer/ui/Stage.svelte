@@ -19,6 +19,8 @@
   import type { LayerItem } from '../../features/annotations/workspace/LeftSidebar.svelte';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
   import { VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
+  import type { ActiveLayoutImage, RendererComponent, RendererInstance } from '../../core/types/renderer';
+  import type OpenSeadragon from 'openseadragon';
 
   type DockPanel =
     | 'thumbnails'
@@ -31,7 +33,7 @@
     | 'settings';
 
   interface Props {
-    rendererComponent?: any;
+    rendererComponent?: RendererComponent | null;
     avController?: AVPlayerController;
     mediaSource?: MediaSource | null;
     annotations?: ResolvedAnnotation[];
@@ -89,7 +91,7 @@
       | ((payload: { tool: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line' }) => void)
       | undefined;
     layoutMode?: 'single' | 'two-page' | 'continuous';
-    activeLayoutImages?: any[];
+    activeLayoutImages?: ActiveLayoutImage[];
   }
 
   let {
@@ -158,8 +160,8 @@
   let dockInline = $derived(!fillHeight && mediaType === 'audio');
   let useRendererNativeAnnotationLayer = $derived(mediaType === 'image' || mediaType === 'audio');
 
-  let rendererInstance: any = $state(null);
-  let annotationViewer: any = $state(null);
+  let rendererInstance: RendererInstance | null = $state(null);
+  let annotationViewer: OpenSeadragon.Viewer | null = $state(null);
   let annotationCanvasSize = $state({ width: 0, height: 0 });
   let mediaBounds: HTMLDivElement | null = $state(null);
   let stageWidth = $state(0);
@@ -278,14 +280,14 @@
     onzoomchange?.(payload);
   };
 
-  const syncAnnotationCanvasSize = (viewer: any) => {
+  const syncAnnotationCanvasSize = (viewer: OpenSeadragon.Viewer) => {
     const size = viewer?.world?.getItemAt(0)?.getContentSize?.();
     if (size?.x > 0 && size?.y > 0) {
       annotationCanvasSize = { width: size.x, height: size.y };
     }
   };
 
-  const handleRendererViewerReady = (payload: { viewer: any }) => {
+  const handleRendererViewerReady = (payload: { viewer: OpenSeadragon.Viewer }) => {
     annotationViewer = payload.viewer;
     syncAnnotationCanvasSize(payload.viewer);
   };

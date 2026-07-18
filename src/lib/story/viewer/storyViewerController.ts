@@ -145,9 +145,12 @@ export const createStoryViewerRuntime = (
       setIntervalFn: deps.setIntervalFn,
       clearIntervalFn: deps.clearIntervalFn,
     });
-  const globalNarrationFactory =
-    typeof globalThis !== 'undefined' &&
-    (globalThis as any).__MangoStoryNarrationPlayer;
+  type MangoStoryGlobals = typeof globalThis & {
+    __MangoStoryNarrationPlayer?: () => ReturnType<typeof createNarrationPlayer>;
+    __calls?: Record<string, number>;
+  };
+  const globals = globalThis as MangoStoryGlobals;
+  const globalNarrationFactory = globals.__MangoStoryNarrationPlayer;
   const narrationPlayer =
     deps.createNarrationPlayer?.() ??
     (typeof globalNarrationFactory === 'function'
@@ -168,7 +171,7 @@ export const createStoryViewerRuntime = (
 
   const bumpCall = (name: string) => {
     if (typeof window === 'undefined') return;
-    const calls = (window as any).__calls;
+    const calls = globals.__calls;
     if (!calls) return;
     calls[name] = (calls[name] ?? 0) + 1;
   };

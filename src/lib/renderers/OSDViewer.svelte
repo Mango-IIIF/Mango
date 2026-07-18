@@ -10,6 +10,7 @@
   import type { ViewBox } from '../core/types/viewer';
   import type { ViewerConfig } from '../core/types/config';
   import { applyIIIFExactTileLevelWorkaround } from '../viewer/osd/iiifTileSourceWorkaround';
+  import type { ActiveLayoutImage } from '../core/types/renderer';
 
   interface Props {
     tileSource?: TileSource | null;
@@ -20,7 +21,7 @@
     activeAnnotationId?: string | null;
     hoverAnnotationId?: string | null;
     layoutMode?: 'single' | 'two-page' | 'continuous';
-    activeLayoutImages?: any[];
+    activeLayoutImages?: ActiveLayoutImage[];
     osdConfig?: Record<string, unknown>;
     legacyOsdConfig?: ViewerConfig['osd'];
     rotation?: number;
@@ -77,7 +78,8 @@
 
   let container: HTMLDivElement | null = $state(null);
   let viewer: OpenSeadragon.Viewer | null = $state(null);
-  let OpenSeadragonClass: any = null;
+  let OpenSeadragonClass: typeof OpenSeadragon | null = null;
+  const tiledImageLayerIds = new WeakMap<OpenSeadragon.TiledImage, string>();
   let baseImageLoaded = $state(false);
   let rendered: RenderedAnnotation[] = $state([]);
   let lastViewBox: ViewBox | null = null;
@@ -254,7 +256,7 @@
       const itemCount = viewer.world.getItemCount();
       for (let i = 0; i < itemCount; i++) {
         const item = viewer.world.getItemAt(i);
-        const cid = (item as any).customLayerId || '';
+        const cid = tiledImageLayerIds.get(item) ?? '';
         if (cid === activeBaseLayerId || cid.endsWith(':' + activeBaseLayerId)) {
           tiledImage = item;
           break;
@@ -604,7 +606,7 @@
     customLayerId: string;
     canvasIndex: number;
     layerId: string;
-    tileSource: any;
+    tileSource: TileSource;
     x: number;
     y: number;
     width: number;
@@ -792,7 +794,7 @@
     const baseTarget = items[0];
     const baseItem = loadedItems[0];
     if (baseItem && baseTarget) {
-      (baseItem as any).customLayerId = baseTarget.customLayerId;
+      tiledImageLayerIds.set(baseItem, baseTarget.customLayerId);
       baseItem.setOpacity(baseTarget.opacity);
       
       const bounds = baseItem.getBounds();
@@ -808,7 +810,7 @@
 
     // 1. Remove loaded secondary items that are not in secondaryTargets
     loadedItems.slice(1).forEach((item) => {
-      const customId = (item as any).customLayerId;
+      const customId = tiledImageLayerIds.get(item);
       if (!customId) return; // Keep loading items
       const exists = secondaryTargets.some((target) => target.customLayerId === customId);
       if (!exists) {
@@ -818,7 +820,9 @@
 
     // 2. Add or update secondary targets
     secondaryTargets.forEach((target) => {
-      const loadedItem = loadedItems.find((item) => (item as any).customLayerId === target.customLayerId);
+      const loadedItem = loadedItems.find(
+        (item) => tiledImageLayerIds.get(item) === target.customLayerId,
+      );
 
       if (loadedItem) {
         loadedItem.setOpacity(target.opacity);
@@ -836,7 +840,7 @@
 
         loadingLayerIds.add(target.customLayerId);
 
-        viewer.addTiledImage({
+        const options = {
           tileSource: target.tileSource,
           x: target.x,
           y: target.y,
@@ -845,7 +849,7 @@
           success: (event) => {
             loadingLayerIds.delete(target.customLayerId);
             const item = event.item;
-            (item as any).customLayerId = target.customLayerId;
+            tiledImageLayerIds.set(item, target.customLayerId);
 
             // Check if this layer is still in the targetItems list and get latest properties
             const currentTargets = compileTargetItems();
@@ -868,7 +872,8 @@
             console.error(`Failed to load tile source for layer ${target.customLayerId}:`, err);
             loadingLayerIds.delete(target.customLayerId);
           }
-        } as any);
+        } as unknown as Parameters<OpenSeadragon.Viewer['addTiledImage']>[0];
+        viewer.addTiledImage(options);
       }
     });
   });

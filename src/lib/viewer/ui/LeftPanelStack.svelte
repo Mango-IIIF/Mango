@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
+  import { getViewerContext } from '../context';
   import { t } from '../../i18n';
   import PluginSlot from '../../plugins/PluginSlot.svelte';
   import type { PluginContext, ViewerPlugin } from '../../core/types/plugin';
@@ -44,7 +44,7 @@
     onpanelToggle,
   }: Props = $props();
 
-  const viewer = getContext<any>('viewer-context');
+  const viewer = getViewerContext();
   const mediaType = viewer.derived.mediaType;
 </script>
 

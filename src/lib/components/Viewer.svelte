@@ -1,7 +1,5 @@
 <script lang="ts">
   import ViewerLayout from '../features/viewer/ViewerLayout.svelte';
-  import StoryViewerLayout from '../features/storytelling/StoryViewerLayout.svelte';
-  import StoryBuilderLayout from '../features/storytelling/StoryBuilderLayout.svelte';
   import WorkspaceLayout from '../features/workspace/WorkspaceLayout.svelte';
   import type { ViewerConfig } from '../core/types/config';
   import type { ViewerPlugin } from '../core/types/plugin';
@@ -9,6 +7,8 @@
   import type { ViewBox } from '../core/types/viewer';
   import type { ModelPose, ModelPoseOptions } from '../core/types/model';
   import type { MediaSource } from '../iiif/mediaResolver';
+  import type { ViewerApiTarget } from '../core/types/viewer-api';
+  import { ViewerApiAdapter } from '../viewer/api/ViewerApiAdapter';
 
   interface Props {
     manifestId?: string;
@@ -28,7 +28,8 @@
     storyUrl = $bindable(undefined),
   }: Props = $props();
 
-  let layoutRef: any = $state(null);
+  let layoutRef: ViewerApiTarget | null = $state(null);
+  const api = new ViewerApiAdapter(() => layoutRef);
 
   $effect(() => {
     if (typeof window !== 'undefined') {
@@ -48,142 +49,142 @@
     event: K,
     handler: (payload: ViewerEventMap[K]) => void,
   ): () => void {
-    return layoutRef?.on?.(event, handler) ?? (() => undefined);
+    return api.on(event, handler);
   }
 
   export function off<K extends keyof ViewerEventMap>(
     event: K,
     handler: (payload: ViewerEventMap[K]) => void,
   ): void {
-    layoutRef?.off?.(event, handler);
+    api.off(event, handler);
   }
 
   export function setEventTarget(target: EventTarget): void {
-    layoutRef?.setEventTarget?.(target);
+    api.setEventTarget(target);
   }
 
   export function getViewBox(): ViewBox | null {
-    return layoutRef?.getViewBox?.() ?? null;
+    return api.getViewBox();
   }
 
   export function setViewBox(box: ViewBox): void {
-    layoutRef?.setViewBox?.(box);
+    api.setViewBox(box);
   }
 
   export function getMediaType() {
-    return layoutRef?.getMediaType?.() ?? null;
+    return api.getMediaType();
   }
 
   export function setModelOrbit(orbit: string): void {
-    layoutRef?.setModelOrbit?.(orbit);
+    api.setModelOrbit(orbit);
   }
 
   export function setModelTarget(target: string): void {
-    layoutRef?.setModelTarget?.(target);
+    api.setModelTarget(target);
   }
 
   export function setModelOrientation(orientation: string): void {
-    layoutRef?.setModelOrientation?.(orientation);
+    api.setModelOrientation(orientation);
   }
 
   export function setModelPose(pose: ModelPose, options?: ModelPoseOptions): void {
-    layoutRef?.setModelPose?.(pose, options);
+    api.setModelPose(pose, options);
   }
 
   export function getModelOrbit(): string | null {
-    return layoutRef?.getModelOrbit?.() ?? null;
+    return api.getModelOrbit();
   }
 
   export function getModelTarget(): string | null {
-    return layoutRef?.getModelTarget?.() ?? null;
+    return api.getModelTarget();
   }
 
   export function getModelOrientation(): string | null {
-    return layoutRef?.getModelOrientation?.() ?? null;
+    return api.getModelOrientation();
   }
 
   export function getModelPose(): ModelPose | null {
-    return layoutRef?.getModelPose?.() ?? null;
+    return api.getModelPose();
   }
 
   export function getState() {
-    return layoutRef?.getState?.() ?? null;
+    return api.getState();
   }
 
   export function getCanvasIndex(): number {
-    return layoutRef?.getCanvasIndex?.() ?? 0;
+    return api.getCanvasIndex();
   }
 
   export function getCanvasId(): string | null {
-    return layoutRef?.getCanvasId?.() ?? null;
+    return api.getCanvasId();
   }
 
   export function getCanvasCount(): number {
-    return layoutRef?.getCanvasCount?.() ?? 0;
+    return api.getCanvasCount();
   }
 
   export function setCanvasByIndex(index: number): void {
-    layoutRef?.setCanvasByIndex?.(index);
+    api.setCanvasByIndex(index);
   }
 
   export function setCanvasById(canvasId: string): void {
-    layoutRef?.setCanvasById?.(canvasId);
+    api.setCanvasById(canvasId);
   }
 
   export function setManifest(id: string): void {
-    layoutRef?.setManifest?.(id);
+    api.setManifest(id);
   }
 
   export function getManifestId(): string | null {
-    return layoutRef?.getManifestId?.() ?? null;
+    return api.getManifestId();
   }
 
   export function start(): void {
-    layoutRef?.start?.();
+    api.start();
   }
 
   export function play(): void {
-    layoutRef?.play?.();
+    api.play();
   }
 
   export function pause(): void {
-    layoutRef?.pause?.();
+    api.pause();
   }
 
   export function stop(): void {
-    layoutRef?.stop?.();
+    api.stop();
   }
 
   export function seekBy(delta: number): void {
-    layoutRef?.seekBy?.(delta);
+    api.seekBy(delta);
   }
 
   export function seekTo(time: number): void {
-    layoutRef?.seekTo?.(time);
+    api.seekTo(time);
   }
 
   export function setMediaSegment(start: number, end: number): void {
-    layoutRef?.setMediaSegment?.(start, end);
+    api.setMediaSegment(start, end);
   }
 
   export async function addAnnotation(annotation: unknown): Promise<void> {
-    return layoutRef?.addAnnotation?.(annotation);
+    return api.addAnnotation(annotation);
   }
 
   export async function removeAnnotation(annotationId: string): Promise<void> {
-    return layoutRef?.removeAnnotation?.(annotationId);
+    return api.removeAnnotation(annotationId);
   }
 
   export function updateLayerOpacity(id: string, opacity: number): void {
-    layoutRef?.updateLayerOpacity?.(id, opacity);
+    api.updateLayerOpacity(id, opacity);
   }
 
   export function getLayerOpacities(): Record<string, number> {
-    return layoutRef?.getLayerOpacities?.() ?? {};
+    return api.getLayerOpacities();
   }
 
   export function getMediaSources(): MediaSource[] {
-    return layoutRef?.getMediaSources?.() ?? [];
+    return api.getMediaSources();
   }
 </script>
 

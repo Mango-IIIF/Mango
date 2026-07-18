@@ -1,9 +1,12 @@
-import * as manifesto from 'manifesto.js';
-import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
-import { getAnnotationPageAnnotations } from '../../iiif/annotationResolver';
+import type { ResolvedAnnotation } from "../../iiif/annotationResolver";
+import { getAnnotationPageAnnotations } from "../../iiif/annotationResolver";
 
 type ExternalAnnotationLoader = {
-  load: (canvasJson: any, canvasKey: string, canvasId?: string) => Promise<ResolvedAnnotation[]>;
+  load: (
+    canvasJson: unknown,
+    canvasKey: string,
+    canvasId?: string,
+  ) => Promise<ResolvedAnnotation[]>;
   getForKey: (canvasKey: string) => ResolvedAnnotation[] | undefined;
   clear: () => void;
 };
@@ -13,72 +16,88 @@ const normaliseArray = <T>(value: T | T[] | undefined | null): T[] => {
   return Array.isArray(value) ? value : [value];
 };
 
-const readId = (value: any): string => {
-  if (!value) return '';
-  if (typeof value === 'string') return value;
-  return value.id || value['@id'] || '';
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : null;
+
+const call = (value: unknown, method: string, ...args: unknown[]): unknown => {
+  const fn = asRecord(value)?.[method];
+  return typeof fn === "function" ? fn.apply(value, args) : undefined;
+};
+
+const readId = (value: unknown): string => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  const record = asRecord(value);
+  const id = record?.id ?? record?.["@id"];
+  return typeof id === "string" ? id : "";
 };
 
 /**
  * Collect external annotation page URLs from a canvas
  * These are URLs that need to be fetched to get the annotation content
- * 
+ *
  * @param canvas - Either a manifesto canvas object or raw JSON
  * @returns Array of annotation page URLs that need to be fetched
  */
-export const collectAnnotationPageRefs = (canvas: any): string[] => {
+export const collectAnnotationPageRefs = (canvas: unknown): string[] => {
   if (!canvas) return [];
   const refs: string[] = [];
 
   // First try to get annotations via manifesto.js API if available
-  let annotationCandidates: any[] = [];
-  
+  let annotationCandidates: unknown[] = [];
+  const canvasRecord = asRecord(canvas);
+
   // Try manifesto API for v3 annotations
-  if (typeof canvas.getAnnotations === 'function') {
-    const annotationPages = canvas.getAnnotations();
+  if (typeof canvasRecord?.getAnnotations === "function") {
+    const annotationPages = call(canvas, "getAnnotations");
     if (Array.isArray(annotationPages)) {
       annotationCandidates.push(...annotationPages);
     }
   }
-  
+
   // Try manifesto API for v2 otherContent
-  if (typeof canvas.getProperty === 'function') {
-    const otherContent = canvas.getProperty('otherContent');
+  if (typeof canvasRecord?.getProperty === "function") {
+    const otherContent = call(canvas, "getProperty", "otherContent");
     if (otherContent) {
       annotationCandidates.push(...normaliseArray(otherContent));
     }
   }
-  
+
   // Fallback to raw JSON if manifesto API didn't work
   if (annotationCandidates.length === 0) {
     annotationCandidates = [
-      ...normaliseArray(canvas.annotations),
-      ...normaliseArray(canvas.otherContent),
+      ...normaliseArray(canvasRecord?.annotations),
+      ...normaliseArray(canvasRecord?.otherContent),
     ];
   }
 
   // Process candidates to find external URLs
   for (const entry of annotationCandidates) {
     if (!entry) continue;
-    if (typeof entry === 'string') {
+    if (typeof entry === "string") {
       refs.push(entry);
       continue;
     }
-    
+
     const id = readId(entry);
     if (!id) continue;
-    
+
     // Check if this is an external reference (has ID but no inline items)
     // For manifesto objects, we need to check if getItems() returns empty or doesn't exist
     let hasItems = false;
-    if (typeof entry.getItems === 'function') {
-      const items = entry.getItems();
+    const entryRecord = asRecord(entry);
+    if (typeof entryRecord?.getItems === "function") {
+      const items = call(entry, "getItems");
       hasItems = Array.isArray(items) && items.length > 0;
     } else {
       // For raw JSON
-      hasItems = Array.isArray(entry.items) || Array.isArray(entry.resources);
+      hasItems =
+        Array.isArray(entryRecord?.items) ||
+        Array.isArray(entryRecord?.resources);
     }
-    
+
     if (!hasItems) {
       refs.push(id);
     }
@@ -96,13 +115,13 @@ export const createExternalAnnotationLoader = (
   let requestId = 0;
 
   const load = async (
-    canvasJson: any,
+    canvasJson: unknown,
     canvasKey: string,
     canvasId?: string,
   ): Promise<ResolvedAnnotation[]> => {
     if (!canvasJson) return [];
     const refs = collectAnnotationPageRefs(canvasJson);
-    const refKey = refs.join('|');
+    const refKey = refs.join("|");
     const existing = annotationsByKey.get(canvasKey);
     if (refKeys.get(canvasKey) === refKey && existing) {
       return existing;
@@ -116,7 +135,7 @@ export const createExternalAnnotationLoader = (
     const currentRequestId = ++requestId;
     const results = await Promise.all(
       refs.map(async (url) => {
-        const cacheKey = `${canvasId ?? ''}::${url}`;
+        const cacheKey = `${canvasId ?? ""}::${url}`;
         const cached = externalAnnotationCache.get(cacheKey);
         if (cached) {
           return cached;
@@ -128,7 +147,12 @@ export const createExternalAnnotationLoader = (
         try {
           const response = await fetcher(url);
           if (!response.ok) {
-            console.warn('[Mango ExternalAnnotations] Failed to fetch annotation page', url, '- status:', response.status);
+            console.warn(
+              "[Mango ExternalAnnotations] Failed to fetch annotation page",
+              url,
+              "- status:",
+              response.status,
+            );
             return [];
           }
           const pageJson = await response.json();
@@ -136,7 +160,11 @@ export const createExternalAnnotationLoader = (
           externalAnnotationCache.set(cacheKey, parsed);
           return parsed;
         } catch (error) {
-          console.warn('[Mango ExternalAnnotations] Failed to load annotation page', url, error);
+          console.warn(
+            "[Mango ExternalAnnotations] Failed to load annotation page",
+            url,
+            error,
+          );
           return [];
         } finally {
           externalAnnotationRequests.delete(cacheKey);

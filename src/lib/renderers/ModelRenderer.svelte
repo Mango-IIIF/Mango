@@ -44,13 +44,13 @@
   }: ModelRendererProps = $props();
 
   type ModelViewerLike = HTMLElement & {
-    cameraOrbit?: any;
-    cameraTarget?: any;
-    fieldOfView?: any;
-    orientation?: any;
-    getCameraOrbit?: () => any;
-    getCameraTarget?: () => any;
-    getFieldOfView?: () => any;
+    cameraOrbit?: unknown;
+    cameraTarget?: unknown;
+    fieldOfView?: unknown;
+    orientation?: unknown;
+    getCameraOrbit?: () => unknown;
+    getCameraTarget?: () => unknown;
+    getFieldOfView?: () => unknown;
     jumpCameraToGoal?: () => void;
   };
 
@@ -67,15 +67,27 @@
 
   const hasNumeric = (value?: string | null) => Boolean(value && /\d/.test(value));
 
-  const formatOrbitValue = (value: any): string | undefined => {
+  const valueRecord = (value: unknown): Record<string, unknown> | null =>
+    typeof value === 'object' && value !== null
+      ? value as Record<string, unknown>
+      : null;
+
+  const stringifyStructuredValue = (value: unknown): string | undefined => {
+    if (!value || typeof value !== 'object') return undefined;
+    const text = String(value);
+    return text !== '[object Object]' && hasNumeric(text) ? text : undefined;
+  };
+
+  const formatOrbitValue = (value: unknown): string | undefined => {
     if (value == null) return undefined;
     if (typeof value === 'string') return hasNumeric(value) ? value : undefined;
     if (typeof value === 'object') {
-      const text = value.toString?.();
+      const text = stringifyStructuredValue(value);
       if (text && text !== '[object Object]' && hasNumeric(text)) return text;
-      const theta = value?.theta ?? value?.x ?? value?.yaw;
-      const phi = value?.phi ?? value?.y ?? value?.pitch;
-      const radius = value?.radius ?? value?.z ?? value?.roll;
+      const record = valueRecord(value);
+      const theta = record?.theta ?? record?.x ?? record?.yaw;
+      const phi = record?.phi ?? record?.y ?? record?.pitch;
+      const radius = record?.radius ?? record?.z ?? record?.roll;
       if (
         typeof theta === 'number' ||
         typeof phi === 'number' ||
@@ -92,15 +104,16 @@
     return undefined;
   };
 
-  const formatTargetValue = (value: any): string | undefined => {
+  const formatTargetValue = (value: unknown): string | undefined => {
     if (value == null) return undefined;
     if (typeof value === 'string') return hasNumeric(value) ? value : undefined;
     if (typeof value === 'object') {
-      const text = value.toString?.();
+      const text = stringifyStructuredValue(value);
       if (text && text !== '[object Object]' && hasNumeric(text)) return text;
-      const x = value?.x ?? value?.theta ?? value?.yaw;
-      const y = value?.y ?? value?.phi ?? value?.pitch;
-      const z = value?.z ?? value?.radius ?? value?.roll;
+      const record = valueRecord(value);
+      const x = record?.x ?? record?.theta ?? record?.yaw;
+      const y = record?.y ?? record?.phi ?? record?.pitch;
+      const z = record?.z ?? record?.radius ?? record?.roll;
       if (typeof x === 'number' || typeof y === 'number' || typeof z === 'number') {
         const parts = [x, y, z].map((part) =>
           typeof part === 'number' ? `${part.toFixed(3)}m` : '-',
@@ -111,15 +124,16 @@
     return undefined;
   };
 
-  const formatOrientationValue = (value: any): string | undefined => {
+  const formatOrientationValue = (value: unknown): string | undefined => {
     if (value == null) return undefined;
     if (typeof value === 'string') return hasNumeric(value) ? value : undefined;
     if (typeof value === 'object') {
-      const text = value.toString?.();
+      const text = stringifyStructuredValue(value);
       if (text && text !== '[object Object]' && hasNumeric(text)) return text;
-      const x = value?.x ?? value?.yaw ?? value?.theta;
-      const y = value?.y ?? value?.pitch ?? value?.phi;
-      const z = value?.z ?? value?.roll ?? value?.radius;
+      const record = valueRecord(value);
+      const x = record?.x ?? record?.yaw ?? record?.theta;
+      const y = record?.y ?? record?.pitch ?? record?.phi;
+      const z = record?.z ?? record?.roll ?? record?.radius;
       if (typeof x === 'number' || typeof y === 'number' || typeof z === 'number') {
         const parts = [x, y, z].map((part) =>
           typeof part === 'number' ? `${part.toFixed(3)}deg` : '-',
@@ -130,7 +144,7 @@
     return undefined;
   };
 
-  const formatFieldOfViewValue = (value: any): string | undefined => {
+  const formatFieldOfViewValue = (value: unknown): string | undefined => {
     const deg = normaliseFovDeg(value);
     return deg != null ? formatFovDeg(deg) : undefined;
   };
@@ -289,14 +303,23 @@
   onMount(() => {
     if (!modelViewerEl) return;
     listenerTarget = modelViewerEl;
-    listenerTarget.addEventListener('camera-change', handleCameraChange as EventListener);
-    listenerTarget.addEventListener('load', handleLoad as EventListener);
+    listenerTarget.addEventListener(
+      'camera-change',
+      handleCameraChange as (event: Event) => void,
+    );
+    listenerTarget.addEventListener('load', handleLoad as (event: Event) => void);
   });
 
   onDestroy(() => {
     if (listenerTarget) {
-      listenerTarget.removeEventListener('camera-change', handleCameraChange as EventListener);
-      listenerTarget.removeEventListener('load', handleLoad as EventListener);
+      listenerTarget.removeEventListener(
+        'camera-change',
+        handleCameraChange as (event: Event) => void,
+      );
+      listenerTarget.removeEventListener(
+        'load',
+        handleLoad as (event: Event) => void,
+      );
       listenerTarget = null;
     }
     if (raf) cancelAnimationFrame(raf);

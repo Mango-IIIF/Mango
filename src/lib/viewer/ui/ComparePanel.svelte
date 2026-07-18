@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
+  import { getViewerContext } from '../context';
   import { t } from '../../i18n';
   import PanelCloseButton from './PanelCloseButton.svelte';
 
@@ -9,7 +9,7 @@
 
   let { onclose = undefined }: Props = $props();
 
-  const viewer = getContext<any>('viewer-context');
+  const viewer = getViewerContext();
   const settings = viewer.settings;
   const layouts: Array<'1x1' | '1x2' | '2x1' | '2x2'> = ['1x1', '1x2', '2x1', '2x2'];
 </script>

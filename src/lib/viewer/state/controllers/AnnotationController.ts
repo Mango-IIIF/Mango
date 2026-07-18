@@ -5,25 +5,26 @@
  * annotation interactions (hover, select), and search functionality.
  */
 
-import { get } from 'svelte/store';
-import type { ViewerStateStores } from '../viewerState';
-import type { ViewerDerivedStores } from '../viewerDerived';
+import { get } from "svelte/store";
+import type { ViewerStateStores } from "../viewerState";
+import type { ViewerDerivedStores } from "../viewerDerived";
 import type {
   AnnotationRect,
   AnnotationTime,
   ResolvedAnnotation,
-} from '../../../iiif/annotationResolver';
-import type { ViewBox } from '../../../core/types/viewer';
-import { resolveAnnotationViewBox, padViewBox } from '../../annotations/focus';
+} from "../../../iiif/annotationResolver";
+import type { ViewBox } from "../../../core/types/viewer";
+import { resolveAnnotationViewBox, padViewBox } from "../../annotations/focus";
 import {
   w3cToResolved,
   type W3CAnnotation,
-} from '../../../features/annotations/w3c';
+} from "../../../features/annotations/w3c";
+import type { ViewerEventEmitter } from "../../../core/types/events";
 
 export type AnnotationControllerConfig = {
   state: ViewerStateStores;
   derived: ViewerDerivedStores;
-  emitEvent: <K extends string>(event: K, payload: any) => void;
+  emitEvent: ViewerEventEmitter;
   emitStateChange: () => void;
   getCanvasId: () => string | null;
   getCanvasIndex: () => number;
@@ -39,7 +40,7 @@ export type AnnotationController = {
     patch: Partial<ResolvedAnnotation>,
   ) => Promise<void>;
   removeAnnotation: (annotationId: string) => Promise<void>;
-  setAnnotationMode: (mode: 'edit' | 'create') => void;
+  setAnnotationMode: (mode: "edit" | "create") => void;
   setSearchQuery: (value: string) => void;
   handleSearchResultClick: (annotation: ResolvedAnnotation) => void;
 };
@@ -78,20 +79,24 @@ export const createAnnotationController = ({
     const key = resolveCanvasKey(canvasId, getCanvasIndex());
     const next = {
       ...annotation,
-      id: annotation.id || `user-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      id:
+        annotation.id ||
+        `user-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     };
     state.userAnnotations.update((current) => {
       const items = current[key] ?? [];
       const updated = updateRecord(current, key, [...items, next]);
       return updated;
     });
-    emitEvent('addAnnotation', { annotation: next });
-    emitEvent('annotationCreate', { annotation: next });
+    emitEvent("addAnnotation", { annotation: next });
+    emitEvent("annotationCreate", { annotation: next });
     emitStateChange();
   };
 
-  const toResolvedAnnotation = (annotation: unknown): ResolvedAnnotation | null => {
-    if (!annotation || typeof annotation !== 'object') {
+  const toResolvedAnnotation = (
+    annotation: unknown,
+  ): ResolvedAnnotation | null => {
+    if (!annotation || typeof annotation !== "object") {
       return null;
     }
     const value = annotation as {
@@ -104,11 +109,11 @@ export const createAnnotationController = ({
       label?: string;
       notes?: string;
       tags?: string[];
-      bodies?: ResolvedAnnotation['bodies'];
-      motivation?: ResolvedAnnotation['motivation'];
-      stylesheets?: ResolvedAnnotation['stylesheets'];
-      targetStyleClass?: ResolvedAnnotation['targetStyleClass'];
-      targetStyle?: ResolvedAnnotation['targetStyle'];
+      bodies?: ResolvedAnnotation["bodies"];
+      motivation?: ResolvedAnnotation["motivation"];
+      stylesheets?: ResolvedAnnotation["stylesheets"];
+      targetStyleClass?: ResolvedAnnotation["targetStyleClass"];
+      targetStyle?: ResolvedAnnotation["targetStyle"];
       x?: number;
       y?: number;
       w?: number;
@@ -118,7 +123,7 @@ export const createAnnotationController = ({
     };
     if (value.rect || value.time || value.point || value.polygon) {
       const resolved = {
-        id: value.id ?? '',
+        id: value.id ?? "",
         rect: value.rect,
         time: value.time,
         point: value.point,
@@ -136,28 +141,30 @@ export const createAnnotationController = ({
       return resolved;
     }
     if (
-      typeof value.x === 'number' &&
-      typeof value.y === 'number' &&
-      typeof value.w === 'number' &&
-      typeof value.h === 'number'
+      typeof value.x === "number" &&
+      typeof value.y === "number" &&
+      typeof value.w === "number" &&
+      typeof value.h === "number"
     ) {
       const resolved = {
-        id: value.id ?? '',
+        id: value.id ?? "",
         rect: { x: value.x, y: value.y, w: value.w, h: value.h },
         text: value.text,
       };
       return resolved;
     }
-    if (value.target && typeof value.target === 'object') {
+    if (value.target && typeof value.target === "object") {
       const asW3C = value as unknown as W3CAnnotation;
       const resolved = w3cToResolved(asW3C);
       if (!resolved) {
         return null;
       }
       const bodyText =
-        Array.isArray(asW3C.body) && asW3C.body[0] && typeof asW3C.body[0] === 'object'
-          ? ((asW3C.body[0] as { value?: string }).value ?? '')
-          : '';
+        Array.isArray(asW3C.body) &&
+        asW3C.body[0] &&
+        typeof asW3C.body[0] === "object"
+          ? ((asW3C.body[0] as { value?: string }).value ?? "")
+          : "";
       const finalResolved = {
         ...resolved,
         text: resolved.text ?? bodyText,
@@ -181,12 +188,12 @@ export const createAnnotationController = ({
       }
       return next;
     });
-    emitEvent('removeAnnotation', { annotationId });
-    emitEvent('annotationDelete', { annotationId });
+    emitEvent("removeAnnotation", { annotationId });
+    emitEvent("annotationDelete", { annotationId });
     emitStateChange();
   };
 
-  const setAnnotationMode = (mode: 'edit' | 'create') => {
+  const setAnnotationMode = (mode: "edit" | "create") => {
     state.annotationMode.set(mode);
   };
 
@@ -204,7 +211,7 @@ export const createAnnotationController = ({
                 ...patch,
                 bodies:
                   patch.text !== undefined
-                    ? [{ type: 'text', value: patch.text }]
+                    ? [{ type: "text", value: patch.text }]
                     : item.bodies,
               }
             : item,
@@ -212,7 +219,7 @@ export const createAnnotationController = ({
       }
       return next;
     });
-    emitEvent('annotationUpdate', { annotationId, patch });
+    emitEvent("annotationUpdate", { annotationId, patch });
     emitStateChange();
   };
 
@@ -222,7 +229,9 @@ export const createAnnotationController = ({
   };
 
   const handleSearchResultClick = (annotation: ResolvedAnnotation) => {
-    const searchResult = annotation as ResolvedAnnotation & { canvasId?: string };
+    const searchResult = annotation as ResolvedAnnotation & {
+      canvasId?: string;
+    };
 
     // Set the selected search result ID for highlighting in the sidebar
     state.selectedSearchResultId.set(searchResult.id);
@@ -231,7 +240,10 @@ export const createAnnotationController = ({
     let targetViewBox: ViewBox | null = null;
     if (searchResult.rect) {
       const currentViewBox = get(state.viewBox);
-      const annotationViewBox = resolveAnnotationViewBox(searchResult, currentViewBox);
+      const annotationViewBox = resolveAnnotationViewBox(
+        searchResult,
+        currentViewBox,
+      );
       if (annotationViewBox) {
         targetViewBox = padViewBox(annotationViewBox, 0.15);
       }
@@ -239,8 +251,9 @@ export const createAnnotationController = ({
 
     // If the search result has canvasId metadata, navigate to that canvas
     if (searchResult.canvasId) {
-      const currentCanvasId = get(derivedStores.canvases)[get(state.selectedCanvasIndex)]
-        ?.id;
+      const currentCanvasId = get(derivedStores.canvases)[
+        get(state.selectedCanvasIndex)
+      ]?.id;
       const needsNavigation = currentCanvasId !== searchResult.canvasId;
 
       if (needsNavigation) {
@@ -251,13 +264,13 @@ export const createAnnotationController = ({
         // Same canvas, apply zoom immediately
         state.viewBox.set(targetViewBox);
         applyViewBox(targetViewBox);
-        emitEvent('viewBoxChange', { viewBox: targetViewBox });
+        emitEvent("viewBoxChange", { viewBox: targetViewBox });
       }
     } else if (targetViewBox) {
       // No canvas change needed, apply zoom immediately
       state.viewBox.set(targetViewBox);
       applyViewBox(targetViewBox);
-      emitEvent('viewBoxChange', { viewBox: targetViewBox });
+      emitEvent("viewBoxChange", { viewBox: targetViewBox });
     }
 
     // Select the annotation to highlight it
@@ -266,7 +279,7 @@ export const createAnnotationController = ({
       const ANNOTATION_SELECT_DELAY = 50;
       setTimeout(() => {
         state.activeAnnotationId.set(searchResult.id);
-        emitEvent('annotationSelect', {
+        emitEvent("annotationSelect", {
           id: searchResult.id,
           annotation: resolveAnnotation(derivedStores, searchResult.id),
         });

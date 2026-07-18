@@ -1,28 +1,38 @@
-import { derived, type Readable } from 'svelte/store';
-import { getCanvasAnnotations } from '../../iiif/annotationResolver';
-import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
-import type { CanvasSummary, ManifestEntry } from '../../state/manifests';
-import type { ViewerStateStores } from '../state/viewerState';
+import { derived, type Readable } from "svelte/store";
+import { getCanvasAnnotations } from "../../iiif/annotationResolver";
+import type { ResolvedAnnotation } from "../../iiif/annotationResolver";
+import type { CanvasSummary, ManifestEntry } from "../../state/manifests";
+import type { ViewerStateStores } from "../state/viewerState";
 import {
   IIIFSearchClient,
   type Fetcher,
   type SearchResult as IIIFSearchResult,
-} from '@mango-iiif/iiif-search-client';
-import type { IIIFSearchAnnotation } from '../state/viewerState';
+} from "@mango-iiif/iiif-search-client";
+import type { IIIFSearchAnnotation } from "../state/viewerState";
 
-const getCanvasKey = (canvas: CanvasSummary | undefined, index: number): string =>
-  canvas?.id ?? `index-${index}`;
+const getCanvasKey = (
+  canvas: CanvasSummary | undefined,
+  index: number,
+): string => canvas?.id ?? `index-${index}`;
 
 const isPaintingMotivation = (annotation: ResolvedAnnotation): boolean =>
-  annotation.motivation?.some((m) => m === 'painting' || m === 'sc:painting') ?? false;
+  annotation.motivation?.some((m) => m === "painting" || m === "sc:painting") ??
+  false;
 
 const hasImageBody = (annotation: ResolvedAnnotation): boolean =>
-  annotation.bodies?.some((body) => body.type === 'image') ?? false;
+  annotation.bodies?.some((body) => body.type === "image") ?? false;
 
 const hasSpecificTarget = (annotation: ResolvedAnnotation): boolean =>
-  Boolean(annotation.rect || annotation.point || annotation.polygon || annotation.time);
+  Boolean(
+    annotation.rect ||
+    annotation.point ||
+    annotation.polygon ||
+    annotation.time,
+  );
 
-const shouldDisplayOverlayAnnotation = (annotation: ResolvedAnnotation): boolean => {
+const shouldDisplayOverlayAnnotation = (
+  annotation: ResolvedAnnotation,
+): boolean => {
   if (!isPaintingMotivation(annotation)) return true;
 
   // Exclude canvas-level painting entries and image-resource painting entries,
@@ -34,29 +44,35 @@ const shouldDisplayOverlayAnnotation = (annotation: ResolvedAnnotation): boolean
 // Track ongoing search requests to prevent race conditions
 let currentSearchController: AbortController | null = null;
 
-const LEGACY_SEARCH_PROFILE = 'http://iiif.io/api/search/0/search';
+const LEGACY_SEARCH_PROFILE = "http://iiif.io/api/search/0/search";
 
 const readServiceId = (value: Record<string, unknown>): string | null => {
-  const id = value.id ?? value['@id'];
-  return typeof id === 'string' && id ? id : null;
+  const id = value.id ?? value["@id"];
+  return typeof id === "string" && id ? id : null;
 };
 
 const hasLegacySearchProfile = (profile: unknown): boolean => {
-  if (typeof profile === 'string') return profile === LEGACY_SEARCH_PROFILE;
+  if (typeof profile === "string") return profile === LEGACY_SEARCH_PROFILE;
   if (Array.isArray(profile)) return profile.some(hasLegacySearchProfile);
-  if (!profile || typeof profile !== 'object') return false;
-  return readServiceId(profile as Record<string, unknown>) === LEGACY_SEARCH_PROFILE;
+  if (!profile || typeof profile !== "object") return false;
+  return (
+    readServiceId(profile as Record<string, unknown>) === LEGACY_SEARCH_PROFILE
+  );
 };
 
 const findLegacySearchServiceUrl = (manifest: unknown): string | null => {
-  if (!manifest || typeof manifest !== 'object') return null;
+  if (!manifest || typeof manifest !== "object") return null;
   const value = manifest as Record<string, unknown>;
   const services = value.service ?? value.services;
-  const entries = Array.isArray(services) ? services : services ? [services] : [];
+  const entries = Array.isArray(services)
+    ? services
+    : services
+      ? [services]
+      : [];
   for (const entry of entries) {
-    if (!entry || typeof entry !== 'object') continue;
+    if (!entry || typeof entry !== "object") continue;
     const service = entry as Record<string, unknown>;
-    if (hasLegacySearchProfile(service.profile ?? service['@profile'])) {
+    if (hasLegacySearchProfile(service.profile ?? service["@profile"])) {
       return readServiceId(service);
     }
   }
@@ -82,7 +98,7 @@ export const mapIIIFSearchResult = (
   response.hits.flatMap((hit) =>
     hit.annotations.map((annotation) => ({
       id: annotation.id,
-      text: annotation.text || hit.matchText || '',
+      text: annotation.text || hit.matchText || "",
       label: annotation.label,
       rect: annotation.geometry
         ? {
@@ -102,19 +118,19 @@ export const mapIIIFSearchResult = (
 const triggerIIIFSearch = async (
   manifestEntry: ManifestEntry | undefined,
   query: string,
-  iiifSearchResults: ViewerStateStores['iiifSearchResults'],
+  iiifSearchResults: ViewerStateStores["iiifSearchResults"],
 ) => {
   // Cancel previous search if still running
   if (currentSearchController) {
     currentSearchController.abort();
   }
-  
+
   // Clear results if query is empty
   if (!query || !manifestEntry) {
     iiifSearchResults.set([]);
     return;
   }
-  
+
   const controller = new AbortController();
   currentSearchController = controller;
   try {
@@ -125,10 +141,14 @@ const triggerIIIFSearch = async (
     const results = mapIIIFSearchResult(response);
     if (currentSearchController !== controller) return;
     iiifSearchResults.set(results);
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (controller.signal.aborted) return;
-    if (error?.code !== 'SERVICE_NOT_FOUND') {
-      console.warn('[Mango IIIF Search] Search failed:', error);
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? error.code
+        : undefined;
+    if (code !== "SERVICE_NOT_FOUND") {
+      console.warn("[Mango IIIF Search] Search failed:", error);
     }
     iiifSearchResults.set([]);
   } finally {
@@ -192,19 +212,24 @@ export const createAnnotationDerivedStores = ({
   );
 
   const searchHits = derived(
-    [state.searchQuery, state.showSearch, allCanvasAnnotations, state.iiifSearchResults],
+    [
+      state.searchQuery,
+      state.showSearch,
+      allCanvasAnnotations,
+      state.iiifSearchResults,
+    ],
     ([query, showSearch, items, iiifResults]) => {
       const normalised = query.trim().toLowerCase();
       if (!showSearch || !normalised) return [];
-      
+
       // If we have IIIF search results, return all results from the entire manifest
       if (iiifResults.length > 0) {
         return iiifResults;
       }
-      
+
       // Otherwise, fall back to annotations from every canvas in the manifest.
       return items.filter((annotation) =>
-        `${annotation.label ?? ''} ${annotation.text ?? ''}`
+        `${annotation.label ?? ""} ${annotation.text ?? ""}`
           .toLowerCase()
           .includes(normalised),
       );
@@ -212,7 +237,13 @@ export const createAnnotationDerivedStores = ({
   );
 
   const overlayAnnotations = derived(
-    [state.showAnnotations, annotations, searchHits, canvases, state.selectedCanvasIndex],
+    [
+      state.showAnnotations,
+      annotations,
+      searchHits,
+      canvases,
+      state.selectedCanvasIndex,
+    ],
     ([showAnnotations, items, hits, canvasList, canvasIndex]) => {
       const displayable = items.filter((annotation) =>
         shouldDisplayOverlayAnnotation(annotation),
@@ -221,13 +252,13 @@ export const createAnnotationDerivedStores = ({
         // Show all annotations for current canvas
         return displayable;
       }
-      
+
       // During search, only show hits that belong to current canvas
       if (hits.length === 0) return hits;
-      
+
       const currentCanvas = canvasList[canvasIndex];
       if (!currentCanvas) return [];
-      
+
       // Filter search hits to only those on the current canvas
       return hits.filter((hit) => hit.canvasId === currentCanvas.id);
     },
@@ -249,11 +280,15 @@ export const createAnnotationDerivedStores = ({
     [manifestEntry, state.searchQuery, state.showSearch],
     ([$manifestEntry, $searchQuery, $showSearch]) => {
       if ($showSearch) {
-        triggerIIIFSearch($manifestEntry, $searchQuery.trim(), state.iiifSearchResults);
+        triggerIIIFSearch(
+          $manifestEntry,
+          $searchQuery.trim(),
+          state.iiifSearchResults,
+        );
       } else {
         state.iiifSearchResults.set([]);
       }
-    }
+    },
   ).subscribe(() => {});
 
   return {

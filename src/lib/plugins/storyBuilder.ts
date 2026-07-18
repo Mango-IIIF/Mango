@@ -1,12 +1,12 @@
-import { get } from 'svelte/store';
-import { mount, unmount } from 'svelte';
-import type { PluginContext, ViewerPlugin } from '../core/types/plugin';
+import { get } from "svelte/store";
+import { mount, unmount } from "svelte";
+import type { PluginContext, ViewerPlugin } from "../core/types/plugin";
 import {
   createStoryBuilderController,
   type StoryBuilderOptions,
-} from '../story/storyBuilderController';
-import StoryBuilderSidebar from '../story/ui/StoryBuilderSidebar.svelte';
-import StoryBuilderOverlay from '../story/ui/StoryBuilderOverlay.svelte';
+} from "../story/storyBuilderController";
+import StoryBuilderSidebar from "../story/ui/StoryBuilderSidebar.svelte";
+import StoryBuilderOverlay from "../story/ui/StoryBuilderOverlay.svelte";
 
 export const createStoryBuilderPlugins = (
   options: StoryBuilderOptions = {},
@@ -16,8 +16,11 @@ export const createStoryBuilderPlugins = (
   const makePlugin = (
     id: string,
     label: string,
-    slot: ViewerPlugin['slot'],
-    createMount: (target: HTMLElement, ctx: PluginContext) => { destroy: () => void },
+    slot: ViewerPlugin["slot"],
+    createMount: (
+      target: HTMLElement,
+      ctx: PluginContext,
+    ) => { destroy: () => void },
   ): ViewerPlugin => {
     let detach: (() => void) | null = null;
     let handle: { destroy: () => void } | null = null;
@@ -40,11 +43,11 @@ export const createStoryBuilderPlugins = (
   };
 
   const sidebar = makePlugin(
-    'story-builder-sidebar',
-    'Story Builder',
-    'left',
+    "story-builder-sidebar",
+    "Story Builder",
+    "left",
     (target, ctx) => {
-      controller.setSaveConfig((ctx.config?.story as any)?.save ?? {});
+      controller.setSaveConfig(ctx.config?.story?.save ?? {});
       const instance = mount(StoryBuilderSidebar, {
         target,
         props: {
@@ -75,10 +78,10 @@ export const createStoryBuilderPlugins = (
   );
 
   const overlay = makePlugin(
-    'story-builder-overlay',
-    'Story Builder Overlay',
-    'overlay',
-    (target, _ctx) => {
+    "story-builder-overlay",
+    "Story Builder Overlay",
+    "overlay",
+    (target) => {
       const instance = mount(StoryBuilderOverlay, {
         target,
         props: {
@@ -121,7 +124,8 @@ export const createStoryBuilderPlugins = (
           onUpdateLayerOpacity: controller.updateLayerOpacity,
           positioningLanguage: controller.positioningLanguage,
           onStartAnnotationPositioning: controller.startAnnotationPositioning,
-          onConfirmAnnotationPositioning: controller.confirmAnnotationPositioning,
+          onConfirmAnnotationPositioning:
+            controller.confirmAnnotationPositioning,
           onCancelAnnotationPositioning: controller.cancelAnnotationPositioning,
         },
       });

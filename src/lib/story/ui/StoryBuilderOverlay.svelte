@@ -11,6 +11,7 @@
   import type { UIMode } from '../storyBuilderController';
   import type { MediaType, MediaSource } from '../../iiif/mediaResolver';
   import type { MediaMarksState } from '../mediaMarks';
+  import type { ExportEnvelope } from '../storySerializer';
  
   export let story: Readable<Story>;
   export let layers: Readable<MediaSource[]>;
@@ -24,7 +25,7 @@
   export let mediaMarks: Readable<MediaMarksState>;
   export let avMarksValid: Readable<boolean>;
   export let saveModalOpen: Readable<boolean>;
-  export let saveModalPayload: Readable<any>;
+  export let saveModalPayload: Readable<ExportEnvelope | null>;
   export let onCloseSaveModal: () => void;
   export let onSetAnnotationLanguage: (lang: string) => void;
   export let annotationLanguage: Readable<string>;
@@ -66,7 +67,7 @@
   $: chapterOpen = currentMode === 'chapterEdit';
   let overlayAnnotationLanguage = language;
   $: overlayAnnotationLanguage = $annotationLanguage ?? language;
-  let exportPayload: any = null;
+  let exportPayload: ExportEnvelope | null = null;
   $: exportPayload = $saveModalPayload;
   let exportModalOpen = false;
   $: exportModalOpen = $saveModalOpen;
@@ -90,7 +91,6 @@
   $: currentViewBox = $viewBox;
 
   let placementRectValue: { x: number; y: number; w: number; h: number } | null = null;
-  let draftPlacementRect: { x: number; y: number; w: number; h: number } | null = null;
 
   const toScreenX = (canvasX: number): number =>
     currentViewBox && overlayWidth > 0 ? ((canvasX - currentViewBox.x) / currentViewBox.w) * overlayWidth : 0;
@@ -182,7 +182,6 @@
     lastMode = currentMode;
     editingCanvasRect = null;
     placementRectValue = null;
-    draftPlacementRect = null;
   }
 
   $: if (currentMode === 'annotationPositioning' && editingCanvasRect && currentViewBox && overlayWidth > 0 && overlayHeight > 0) {
@@ -198,12 +197,10 @@
     } else {
       placementRectValue = { x: 0.33, y: 0.33, w: 0.34, h: 0.34 };
     }
-    draftPlacementRect = placementRectValue;
   }
 
   const handleEditorChange = (rect: { x: number; y: number; w: number; h: number } | null) => {
     if (rect) {
-      draftPlacementRect = rect;
       const absCanvas = canvasFromNormalized(rect);
       if (absCanvas && Number.isFinite(absCanvas.x)) {
         editingCanvasRect = absCanvas;
@@ -264,7 +261,7 @@
       onUpdateAnnotationPlacement(lang, placement)}
     onUpdateAdvanceMode={(chapterId, mode) => onUpdateAdvanceMode(mode)}
     onUpdateDelay={(chapterId, delayMs) => onUpdateDelay(delayMs)}
-    onUpdateChapterPosition={(chapterId) => onUpdateChapterPosition()}
+    onUpdateChapterPosition={() => onUpdateChapterPosition()}
     onSave={onSaveChapterSettings}
     onSetAnnotationLanguage={onSetAnnotationLanguage}
     onSetAnnotationPositioning={(lang) => onStartAnnotationPositioning(lang)}

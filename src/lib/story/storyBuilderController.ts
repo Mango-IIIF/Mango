@@ -1,15 +1,25 @@
-import { derived, get, writable, type Readable, type Writable } from 'svelte/store';
-import type { MediaSource, MediaType } from '../iiif/mediaResolver';
-import type { PluginContext } from '../core/types/plugin';
-import { createStoryStore } from '../state/story.svelte';
-import { createMediaMarks, type MediaMarksState } from './mediaMarks';
-import { createModelPose } from './modelPose';
-import { createNarrationPlayer } from './narrationPlayer';
-import { captureAudioVideo, captureImagePdf, captureModel } from './capture';
-import { resolveManifestForNewChapter } from './manifestResolver';
-import { animateViewBoxTransition, animateLayerOpacities } from './viewBoxAnimation';
-import { createStoryHistory } from './storyHistory';
-import { createChapterActions } from './chapterActions';
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
+import type { MediaSource, MediaType } from "../iiif/mediaResolver";
+import type { PluginContext } from "../core/types/plugin";
+import { createStoryStore } from "../state/story.svelte";
+import { createMediaMarks, type MediaMarksState } from "./mediaMarks";
+import { createModelPose } from "./modelPose";
+import { createNarrationPlayer } from "./narrationPlayer";
+import { captureAudioVideo, captureImagePdf, captureModel } from "./capture";
+import { resolveManifestForNewChapter } from "./manifestResolver";
+import {
+  animateViewBoxTransition,
+  animateLayerOpacities,
+} from "./viewBoxAnimation";
+import { createStoryHistory } from "./storyHistory";
+import { createChapterActions } from "./chapterActions";
+import { createStoryPreviewOrchestrator } from "./previewOrchestrator";
 import {
   buildExportEnvelope,
   loadStoryIntoStore,
@@ -19,16 +29,16 @@ import {
   type SaveConfig,
   type SaveResult,
   type SaveState,
-} from './storySerializer';
+} from "./storySerializer";
 import type {
   AnnotationPlacement,
   Chapter,
   ChapterAdvance,
   ChapterModel,
   Story,
-} from '../core/types/story';
-import type { ViewBox } from '../core/types/viewer';
-import type { ViewerConfig } from '../core/types/config';
+} from "../core/types/story";
+import type { ViewBox } from "../core/types/viewer";
+import type { ViewerConfig } from "../core/types/config";
 
 export type StoryBuilderController = {
   story: Readable<Story>;
@@ -48,11 +58,13 @@ export type StoryBuilderController = {
   saveState: Readable<SaveState>;
   saveModalOpen: Readable<boolean>;
   saveModalPayload: Readable<ExportEnvelope | null>;
-  setSaveConfig: (config: ViewerConfig['story'] extends infer S
-    ? S extends { save?: infer T }
-      ? T
-      : Record<string, never>
-    : Record<string, never>) => void;
+  setSaveConfig: (
+    config: ViewerConfig["story"] extends infer S
+      ? S extends { save?: infer T }
+        ? T
+        : Record<string, never>
+      : Record<string, never>,
+  ) => void;
   closeSaveModal: () => void;
   mediaSources: Readable<MediaSource[]>;
   layerOpacities: Readable<Record<string, number>>;
@@ -66,7 +78,7 @@ export type StoryBuilderController = {
   reorderChapter: (
     chapterId: string,
     targetChapterId: string,
-    position?: 'before' | 'after',
+    position?: "before" | "after",
   ) => void;
   selectChapter: (chapterId: string | null) => void;
   openNarration: () => void;
@@ -84,8 +96,11 @@ export type StoryBuilderController = {
   updateChapterDescription: (lang: string, value: string) => void;
   assignNarrationSegment: (lang: string, start: number, end: number) => void;
   updateAnnotationText: (lang: string, text: string) => void;
-  updateAnnotationPlacement: (lang: string, placement: AnnotationPlacement) => void;
-  updateAdvanceMode: (mode: ChapterAdvance['mode']) => void;
+  updateAnnotationPlacement: (
+    lang: string,
+    placement: AnnotationPlacement,
+  ) => void;
+  updateAdvanceMode: (mode: ChapterAdvance["mode"]) => void;
   updateDelay: (delayMs?: number) => void;
   updateManifest: (manifest: string) => void;
   reloadManifest: (manifest: string, canvasIndex: number) => void;
@@ -102,7 +117,8 @@ export type StoryBuilderController = {
   cancelAnnotationPositioning: () => void;
 };
 
-export type UIMode = 'idle' | 'chapterEdit' | 'narrationPanel' | 'annotationPositioning';
+export type UIMode =
+  "idle" | "chapterEdit" | "narrationPanel" | "annotationPositioning";
 
 export type StoryBuilderOptions = {
   language?: string;
@@ -114,74 +130,41 @@ export const createStoryBuilderController = (
   options: StoryBuilderOptions = {},
 ): StoryBuilderController => {
   const initialStoryData = options.initialStory || {
-    version: '1.0',
-    type: 'story',
+    version: "1.0",
+    type: "story",
     chapters: [],
   };
-  
+
   const runesStore = createStoryStore(initialStoryData);
-  
+
   // Create a writable store that wraps the runes store for backward compatibility
   const storyStore = writable(runesStore.story);
-  
+
+  const wrapMutation =
+    <Payload>(
+      mutation: (payload: Payload) => void,
+    ): ((payload: Payload) => void) =>
+    (payload) => {
+      mutation(payload);
+      storyStore.set(runesStore.story);
+    };
+
   // Wrap the runes store methods to update the writable store
   const storyStoreWrapper = {
-    addChapterFromCapture: (payload: any) => {
-      runesStore.addChapterFromCapture(payload);
-      storyStore.set(runesStore.story);
-    },
-    updateChapterFromCapture: (payload: any) => {
-      runesStore.updateChapterFromCapture(payload);
-      storyStore.set(runesStore.story);
-    },
-    deleteChapter: (payload: any) => {
-      runesStore.deleteChapter(payload);
-      storyStore.set(runesStore.story);
-    },
-    reorderChapter: (payload: any) => {
-      runesStore.reorderChapter(payload);
-      storyStore.set(runesStore.story);
-    },
-    setNarrationTrack: (payload: any) => {
-      runesStore.setNarrationTrack(payload);
-      storyStore.set(runesStore.story);
-    },
-    setNarrationSegment: (payload: any) => {
-      runesStore.setNarrationSegment(payload);
-      storyStore.set(runesStore.story);
-    },
-    setAnnotationText: (payload: any) => {
-      runesStore.setAnnotationText(payload);
-      storyStore.set(runesStore.story);
-    },
-    setAnnotationPlacement: (payload: any) => {
-      runesStore.setAnnotationPlacement(payload);
-      storyStore.set(runesStore.story);
-    },
-    setAdvanceMode: (payload: any) => {
-      runesStore.setAdvanceMode(payload);
-      storyStore.set(runesStore.story);
-    },
-    setDelay: (payload: any) => {
-      runesStore.setDelay(payload);
-      storyStore.set(runesStore.story);
-    },
-    setChapterManifest: (payload: any) => {
-      runesStore.setChapterManifest(payload);
-      storyStore.set(runesStore.story);
-    },
-    setChapterTitle: (payload: any) => {
-      runesStore.setChapterTitle(payload);
-      storyStore.set(runesStore.story);
-    },
-    setChapterDescription: (payload: any) => {
-      runesStore.setChapterDescription(payload);
-      storyStore.set(runesStore.story);
-    },
-    setLayerOpacities: (payload: any) => {
-      runesStore.setLayerOpacities(payload);
-      storyStore.set(runesStore.story);
-    },
+    addChapterFromCapture: wrapMutation(runesStore.addChapterFromCapture),
+    updateChapterFromCapture: wrapMutation(runesStore.updateChapterFromCapture),
+    deleteChapter: wrapMutation(runesStore.deleteChapter),
+    reorderChapter: wrapMutation(runesStore.reorderChapter),
+    setNarrationTrack: wrapMutation(runesStore.setNarrationTrack),
+    setNarrationSegment: wrapMutation(runesStore.setNarrationSegment),
+    setAnnotationText: wrapMutation(runesStore.setAnnotationText),
+    setAnnotationPlacement: wrapMutation(runesStore.setAnnotationPlacement),
+    setAdvanceMode: wrapMutation(runesStore.setAdvanceMode),
+    setDelay: wrapMutation(runesStore.setDelay),
+    setChapterManifest: wrapMutation(runesStore.setChapterManifest),
+    setChapterTitle: wrapMutation(runesStore.setChapterTitle),
+    setChapterDescription: wrapMutation(runesStore.setChapterDescription),
+    setLayerOpacities: wrapMutation(runesStore.setLayerOpacities),
     exportStory: () => runesStore.exportStory(),
     loadStory: (next: Story) => {
       runesStore.loadStory(next);
@@ -190,17 +173,20 @@ export const createStoryBuilderController = (
   };
 
   const selectedChapterId = writable<string | null>(null);
-  const uiMode = writable<UIMode>('idle');
+  const uiMode = writable<UIMode>("idle");
   const positioningLanguage = writable<string | null>(null);
-  const drawerOpen = derived(uiMode, (mode) => mode !== 'idle' && mode !== 'annotationPositioning');
+  const drawerOpen = derived(
+    uiMode,
+    (mode) => mode !== "idle" && mode !== "annotationPositioning",
+  );
   const viewBox = writable<ViewBox | null>(null);
   const mediaType = writable<MediaType | null>(null);
   const avMarksValid = writable(true);
   const error = writable<string | null>(null);
   const currentManifest = writable<string | null>(null);
   const modelPoseDebug = writable<string | null>(null);
-  const annotationLanguage = writable(options.language ?? 'en');
-  const saveState = writable<SaveState>({ status: 'idle' });
+  const annotationLanguage = writable(options.language ?? "en");
+  const saveState = writable<SaveState>({ status: "idle" });
   const saveModalOpen = writable(false);
   const saveModalPayload = writable<ExportEnvelope | null>(null);
   const mediaSourcesStore = writable<MediaSource[]>([]);
@@ -212,11 +198,11 @@ export const createStoryBuilderController = (
   const modelPose = createModelPose();
   const narrationPlayer = createNarrationPlayer();
 
-  const language = options.language ?? 'en';
-  const languages = options.languages ?? ['en'];
+  const language = options.language ?? "en";
+  const languages = options.languages ?? ["en"];
   const history = createStoryHistory(initialStoryData);
 
-  let viewer: PluginContext['viewer'] | null = null;
+  let viewer: PluginContext["viewer"] | null = null;
   let attachedCount = 0;
   let detachEvents: (() => void) | null = null;
   let lastManifest: string | null = null;
@@ -230,11 +216,16 @@ export const createStoryBuilderController = (
   let activePlaybackChapterId: string | null = null;
   let activeMediaEnd: number | null = null;
   let pendingMediaSyncToken = 0; // Token for media type sync (safety timeout only)
-  
-  // Preview mode state
-  const isPreviewing = writable(false);
-  let previewToken = 0;
-  let previewChapterIndex = 0;
+
+  const preview = createStoryPreviewOrchestrator({
+    getStory: () => get(storyStore),
+    selectChapter: (chapterId) => selectedChapterId.set(chapterId),
+    applyChapter: (chapter) => applyChapter(chapter),
+    getNarrationSegment: (chapter) => getNarrationSegment(chapter),
+    closeEditors: () => uiMode.set("idle"),
+    stopPlayback: () => stopChapterPlayback(),
+  });
+  const isPreviewing = preview.isPreviewing;
 
   const setError = (message: string | null) => {
     error.set(message);
@@ -247,15 +238,22 @@ export const createStoryBuilderController = (
     if (!hasEndpoint) {
       saveModalPayload.set(payload);
       saveModalOpen.set(true);
-      saveState.set({ status: 'idle' });
+      saveState.set({ status: "idle" });
       return { ok: true };
     }
-    saveState.set({ status: 'saving' });
-    const result = await performFetchWithTimeout(saveConfig as SaveConfig, payload);
+    saveState.set({ status: "saving" });
+    const result = await performFetchWithTimeout(
+      saveConfig as SaveConfig,
+      payload,
+    );
     if (result.ok) {
-      saveState.set({ status: 'success', message: result.message });
+      saveState.set({ status: "success", message: result.message });
     } else {
-      saveState.set({ status: 'error', message: result.message, code: result.code });
+      saveState.set({
+        status: "error",
+        message: result.message,
+        code: result.code,
+      });
     }
     return result;
   };
@@ -287,13 +285,16 @@ export const createStoryBuilderController = (
   };
 
   const isValidSegment = (start?: number, end?: number) =>
-    Number.isFinite(start) && Number.isFinite(end) && (end as number) > (start as number);
+    Number.isFinite(start) &&
+    Number.isFinite(end) &&
+    (end as number) > (start as number);
 
   const getNarrationSegment = (chapter: Chapter) => {
     const lang = get(annotationLanguage);
     const segment = chapter.narrationSegment?.[lang];
-    const src = get(storyStore).narration?.tracks?.[lang]?.src ?? '';
-    if (!src || !segment || !isValidSegment(segment.start, segment.end)) return null;
+    const src = get(storyStore).narration?.tracks?.[lang]?.src ?? "";
+    if (!src || !segment || !isValidSegment(segment.start, segment.end))
+      return null;
     return { src, start: segment.start, end: segment.end };
   };
 
@@ -308,7 +309,8 @@ export const createStoryBuilderController = (
   const startMediaSegment = (chapter: Chapter) => {
     if (!viewer || !chapter.media) return;
     const currentType = viewer.getMediaType?.() ?? null;
-    if (currentType && currentType !== 'audio' && currentType !== 'video') return;
+    if (currentType && currentType !== "audio" && currentType !== "video")
+      return;
     if (!isValidSegment(chapter.media.start, chapter.media.end)) return;
     activeMediaEnd = chapter.media.end;
     activePlaybackChapterId = chapter.id;
@@ -340,7 +342,7 @@ export const createStoryBuilderController = (
       startPlaybackForChapter(chapter);
       return;
     }
-    
+
     // Outside preview mode, story builder should not auto-play audio/narration
     // Audio playback is only for story viewer mode and preview mode
     return;
@@ -348,18 +350,20 @@ export const createStoryBuilderController = (
 
   const updateMediaType = (next: MediaType | null) => {
     mediaType.set(next);
-    if (next !== 'audio' && next !== 'video') {
+    if (next !== "audio" && next !== "video") {
       mediaMarks.clear();
     } else {
       // When media type is audio/video, restore marks from the selected chapter if available
       const id = get(selectedChapterId);
       const storyValue = get(storyStore);
-      const chapter = id ? storyValue.chapters.find((item) => item.id === id) : null;
+      const chapter = id
+        ? storyValue.chapters.find((item) => item.id === id)
+        : null;
       if (chapter?.media) {
         mediaMarks.setSegment(chapter.media.start, chapter.media.end);
       }
     }
-    if (next !== 'model') {
+    if (next !== "model") {
       modelPose.clear();
     }
     syncMediaMarks();
@@ -369,26 +373,23 @@ export const createStoryBuilderController = (
    * Wait for media type to become available via state change events.
    * No polling - uses event-driven approach with safety timeout.
    */
-  const scheduleMediaTypeSync = (
-    attempts = 12,
-    delayMs = 200,
-  ) => {
+  const scheduleMediaTypeSync = (attempts = 12, delayMs = 200) => {
     if (!viewer) return;
     const token = ++pendingMediaSyncToken;
     let count = 0;
     let lastSeenType: MediaType | null = null;
-    
+
     // Safety timeout-based bounded wait (not for readiness detection)
     const tick = () => {
       if (token !== pendingMediaSyncToken) return;
       const next = viewer?.getMediaType?.() ?? null;
-      
+
       // Update if media type changed or if this is the first check
       if (next !== lastSeenType) {
         lastSeenType = next;
         updateMediaType(next);
       }
-      
+
       // Keep checking until we reach max attempts
       if (count < attempts) {
         count += 1;
@@ -433,7 +434,7 @@ export const createStoryBuilderController = (
     }
     if (chapter.model) {
       if (viewer.setModelPose) {
-        viewer.setModelPose(chapter.model, { transition: 'interpolate' });
+        viewer.setModelPose(chapter.model, { transition: "interpolate" });
       } else {
         if (chapter.model.cameraOrbit) {
           viewer.setModelOrbit(chapter.model.cameraOrbit);
@@ -467,11 +468,15 @@ export const createStoryBuilderController = (
   const getCurrentModelPose = (): ChapterModel | null => {
     if (!viewer) return null;
     const pose = viewer.getModelPose?.() ?? null;
-    const cameraOrbit = pose?.cameraOrbit ?? viewer.getModelOrbit?.() ?? undefined;
-    const cameraTarget = pose?.cameraTarget ?? viewer.getModelTarget?.() ?? undefined;
+    const cameraOrbit =
+      pose?.cameraOrbit ?? viewer.getModelOrbit?.() ?? undefined;
+    const cameraTarget =
+      pose?.cameraTarget ?? viewer.getModelTarget?.() ?? undefined;
     const fieldOfView = pose?.fieldOfView ?? undefined;
-    const orientation = pose?.orientation ?? viewer.getModelOrientation?.() ?? undefined;
-    if (!cameraOrbit && !cameraTarget && !orientation && !fieldOfView) return null;
+    const orientation =
+      pose?.orientation ?? viewer.getModelOrientation?.() ?? undefined;
+    if (!cameraOrbit && !cameraTarget && !orientation && !fieldOfView)
+      return null;
     return { cameraOrbit, cameraTarget, fieldOfView, orientation };
   };
 
@@ -487,18 +492,14 @@ export const createStoryBuilderController = (
   const animateViewBox = (from: ViewBox, to: ViewBox, durationMs = 320) => {
     if (!viewer) return;
     pendingApplyToken += 1;
-    
+
     // Cancel any previous animation
     if (cancelAnimation) {
       cancelAnimation();
     }
-    
+
     // Start new animation with cancel function
-    cancelAnimation = animateViewBoxTransition(
-      viewer,
-      to,
-      durationMs
-    );
+    cancelAnimation = animateViewBoxTransition(viewer, to, durationMs);
   };
 
   const beginPendingApply = (chapter: Chapter) => {
@@ -533,7 +534,7 @@ export const createStoryBuilderController = (
       setTimeout(attempt, 80);
     };
 
-    if (typeof window !== 'undefined' && 'requestAnimationFrame' in window) {
+    if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
       window.requestAnimationFrame(() => attempt());
     } else {
       setTimeout(attempt, 0);
@@ -555,7 +556,10 @@ export const createStoryBuilderController = (
       return;
     }
     const currentIndex = viewer.getCanvasIndex?.() ?? -1;
-    if (typeof chapter.canvasIndex === 'number' && chapter.canvasIndex !== currentIndex) {
+    if (
+      typeof chapter.canvasIndex === "number" &&
+      chapter.canvasIndex !== currentIndex
+    ) {
       pendingChapterApply = chapter;
       viewer.setCanvasByIndex(chapter.canvasIndex);
       return;
@@ -564,7 +568,11 @@ export const createStoryBuilderController = (
 
     if (chapter.layerOpacities) {
       const fromOpacities = viewer.getLayerOpacities?.() ?? {};
-      cancelLayersAnimation = animateLayerOpacities(viewer, fromOpacities, chapter.layerOpacities);
+      cancelLayersAnimation = animateLayerOpacities(
+        viewer,
+        fromOpacities,
+        chapter.layerOpacities,
+      );
     }
 
     if (chapter.viewBox) {
@@ -612,10 +620,10 @@ export const createStoryBuilderController = (
 
   const handleCaptureResult = (result: ReturnType<typeof capture>) => {
     if (!result.ok) {
-      if (result.reason === 'missing-manifest') {
+      if (result.reason === "missing-manifest") {
         setError(null);
         selectedChapterId.set(null);
-        uiMode.set('chapterEdit');
+        uiMode.set("chapterEdit");
       } else {
         setError(`Capture blocked: ${result.reason}`);
       }
@@ -630,30 +638,36 @@ export const createStoryBuilderController = (
     }
     setTimeout(() => {
       if (get(selectedChapterId) === lastId) {
-        uiMode.set('chapterEdit');
+        uiMode.set("chapterEdit");
       }
     }, 0);
     return true;
   };
 
-  const handleUpdateResult = (result: ReturnType<typeof capture>, chapterId: string) => {
+  const handleUpdateResult = (
+    result: ReturnType<typeof capture>,
+    chapterId: string,
+  ) => {
     if (!result.ok) {
-      if (result.reason === 'missing-manifest') {
+      if (result.reason === "missing-manifest") {
         setError(null);
-        uiMode.set('chapterEdit');
+        uiMode.set("chapterEdit");
       } else {
         setError(`Capture blocked: ${result.reason}`);
       }
       return false;
     }
     setError(null);
-    storyStoreWrapper.updateChapterFromCapture({ chapterId, capture: result.capture });
+    storyStoreWrapper.updateChapterFromCapture({
+      chapterId,
+      capture: result.capture,
+    });
     return true;
   };
 
   const resolveManifest = () => {
     if (!viewer) {
-      return { ok: false as const, reason: 'missing-manifest' as const };
+      return { ok: false as const, reason: "missing-manifest" as const };
     }
     const storyValue = get(storyStore);
     const previousChapterManifest =
@@ -661,25 +675,37 @@ export const createStoryBuilderController = (
     const viewerManifest = viewer.getManifestId?.() ?? null;
     const stateManifest = viewer.getState?.()?.manifestId ?? null;
     const effectiveManifest =
-      viewerManifest || stateManifest || lastManifest || get(currentManifest) || null;
-    return resolveManifestForNewChapter(effectiveManifest, previousChapterManifest);
+      viewerManifest ||
+      stateManifest ||
+      lastManifest ||
+      get(currentManifest) ||
+      null;
+    return resolveManifestForNewChapter(
+      effectiveManifest,
+      previousChapterManifest,
+    );
   };
 
   const capture = () => {
-    if (!viewer) return { ok: false as const, reason: 'missing-manifest' as const };
+    if (!viewer)
+      return { ok: false as const, reason: "missing-manifest" as const };
     const manifestResolution = resolveManifest();
     if (!manifestResolution.ok) {
-      return { ok: false as const, reason: 'missing-manifest' as const };
+      return { ok: false as const, reason: "missing-manifest" as const };
     }
     const manifestOverride = viewer.getManifestId()
       ? undefined
       : manifestResolution.manifest;
 
     const type = viewer.getMediaType();
-    if (type === 'audio' || type === 'video') {
-      return captureAudioVideo(viewer, mediaMarks.getSegment(), manifestOverride);
+    if (type === "audio" || type === "video") {
+      return captureAudioVideo(
+        viewer,
+        mediaMarks.getSegment(),
+        manifestOverride,
+      );
     }
-    if (type === 'model') {
+    if (type === "model") {
       return captureModel(viewer, modelPose.getPose(), manifestOverride);
     }
     return captureImagePdf(viewer, manifestOverride);
@@ -690,9 +716,14 @@ export const createStoryBuilderController = (
       return () => undefined;
     }
     viewer = ctx.viewer;
-    lastManifest = ctx.viewer.getManifestId?.() ?? ctx.viewer.getState?.()?.manifestId ?? null;
+    lastManifest =
+      ctx.viewer.getManifestId?.() ??
+      ctx.viewer.getState?.()?.manifestId ??
+      null;
     currentManifest.set(lastManifest);
-    viewBox.set(ctx.viewer.getViewBox?.() ?? ctx.viewer.getState?.()?.viewBox ?? null);
+    viewBox.set(
+      ctx.viewer.getViewBox?.() ?? ctx.viewer.getState?.()?.viewBox ?? null,
+    );
     mediaSourcesStore.set(ctx.viewer.getMediaSources?.() ?? []);
     layerOpacitiesStore.set(ctx.viewer.getLayerOpacities?.() ?? {});
     const initialMediaType = ctx.viewer.getMediaType?.() ?? null;
@@ -703,14 +734,14 @@ export const createStoryBuilderController = (
     // No mediaTypePolling interval - use event-driven updates via stateChange/mediaChange
     attachedCount += 1;
     if (attachedCount === 1) {
-      const offState = ctx.events.on('stateChange', ({ snapshot }) => {
+      const offState = ctx.events.on("stateChange", ({ snapshot }) => {
         updateMediaType(snapshot.mediaType);
         lastManifest = snapshot.manifestId || null;
         currentManifest.set(lastManifest);
         viewBox.set(snapshot.viewBox ?? null);
         mediaSourcesStore.set(ctx.viewer.getMediaSources?.() ?? []);
         layerOpacitiesStore.set(ctx.viewer.getLayerOpacities?.() ?? {});
-        if (snapshot.mediaType === 'model') {
+        if (snapshot.mediaType === "model") {
           updateModelPoseDebug(getCurrentModelPose() ?? modelPose.getPose());
         }
         if (pendingChapterApply && snapshot.manifestId) {
@@ -726,17 +757,20 @@ export const createStoryBuilderController = (
         }
         setError(null);
       });
-      const offManifest = ctx.events.on('manifestChange', ({ manifestId }) => {
+      const offManifest = ctx.events.on("manifestChange", ({ manifestId }) => {
         lastManifest = manifestId || null;
         currentManifest.set(lastManifest);
         updateMediaType(null);
         scheduleMediaTypeSync();
-        if (pendingChapterApply && pendingChapterApply.manifest === manifestId) {
+        if (
+          pendingChapterApply &&
+          pendingChapterApply.manifest === manifestId
+        ) {
           viewer?.setCanvasByIndex(pendingChapterApply.canvasIndex);
         }
         setError(null);
       });
-      const offPage = ctx.events.on('pageChange', ({ index }) => {
+      const offPage = ctx.events.on("pageChange", ({ index }) => {
         // Update media type when navigating to different canvas
         // The media type might not be immediately available, so poll for it
         scheduleMediaTypeSync(12, 100); // Check more frequently (100ms intervals)
@@ -746,13 +780,19 @@ export const createStoryBuilderController = (
           beginPendingApply(pending);
         }
       });
-      const offViewBox = ctx.events.on('viewBoxChange', ({ viewBox: nextViewBox }) => {
-        viewBox.set(nextViewBox ?? null);
-      });
-      const offZoom = ctx.events.on('zoomChange', ({ viewBox: nextViewBox }) => {
-        viewBox.set(nextViewBox ?? null);
-      });
-      const offTime = ctx.events.on('mediaTimeUpdate', ({ time }) => {
+      const offViewBox = ctx.events.on(
+        "viewBoxChange",
+        ({ viewBox: nextViewBox }) => {
+          viewBox.set(nextViewBox ?? null);
+        },
+      );
+      const offZoom = ctx.events.on(
+        "zoomChange",
+        ({ viewBox: nextViewBox }) => {
+          viewBox.set(nextViewBox ?? null);
+        },
+      );
+      const offTime = ctx.events.on("mediaTimeUpdate", ({ time }) => {
         mediaMarks.updateTime(time);
         syncMediaMarks();
         if (
@@ -765,34 +805,41 @@ export const createStoryBuilderController = (
         }
       });
       const offModel = ctx.events.on(
-        'modelChange',
+        "modelChange",
         ({ cameraOrbit, cameraTarget, fieldOfView, orientation }) => {
-          modelPose.updateFromEvent({ cameraOrbit, cameraTarget, fieldOfView, orientation });
-        updateModelPoseDebug(modelPose.getPose());
-      },
+          modelPose.updateFromEvent({
+            cameraOrbit,
+            cameraTarget,
+            fieldOfView,
+            orientation,
+          });
+          updateModelPoseDebug(modelPose.getPose());
+        },
       );
-      const offMedia = ctx.events.on('mediaChange', ({ mediaType }) => {
+      const offMedia = ctx.events.on("mediaChange", ({ mediaType }) => {
         updateMediaType(mediaType);
       });
-      
-      const offMediaPlay = ctx.events.on('mediaPlay', ({ time }) => {
+
+      const offMediaPlay = ctx.events.on("mediaPlay", ({ time }) => {
         // When user manually starts audio/video playback, seek to Mark In if set
         const id = get(selectedChapterId);
         const storyValue = get(storyStore);
-        const chapter = id ? storyValue.chapters.find((item) => item.id === id) : null;
-        
+        const chapter = id
+          ? storyValue.chapters.find((item) => item.id === id)
+          : null;
+
         if (chapter?.media && time < chapter.media.start) {
           // If playback started before Mark In, seek to Mark In
           viewer?.seekTo?.(chapter.media.start);
         }
-        
+
         // Set up auto-stop at Mark Out
         if (chapter?.media) {
           activeMediaEnd = chapter.media.end;
           activePlaybackChapterId = chapter.id;
         }
       });
-      
+
       detachEvents = () => {
         offState();
         offManifest();
@@ -804,7 +851,7 @@ export const createStoryBuilderController = (
         offMedia();
         offMediaPlay();
       };
-      
+
       // Auto-select the first chapter on initial attach so editor shows content
       autoSelectFirstChapterIfNeeded();
     }
@@ -827,7 +874,7 @@ export const createStoryBuilderController = (
       handleCaptureResult(result);
       return;
     }
-    if (result.reason !== 'missing-manifest') {
+    if (result.reason !== "missing-manifest") {
       handleCaptureResult(result);
       return;
     }
@@ -850,7 +897,7 @@ export const createStoryBuilderController = (
       handleUpdateResult(result, id);
       return;
     }
-    if (result.reason !== 'missing-manifest') {
+    if (result.reason !== "missing-manifest") {
       handleUpdateResult(result, id);
       return;
     }
@@ -873,7 +920,7 @@ export const createStoryBuilderController = (
   const reorderChapter = (
     chapterId: string,
     targetChapterId: string,
-    position: 'before' | 'after' = 'before',
+    position: "before" | "after" = "before",
   ) => {
     pushHistorySnapshot();
     chapterActions.reorderChapter(chapterId, targetChapterId, position);
@@ -916,115 +963,21 @@ export const createStoryBuilderController = (
     }
   };
 
-  const openNarration = () => uiMode.set('narrationPanel');
+  const openNarration = () => uiMode.set("narrationPanel");
   const backFromNarration = () =>
-    uiMode.set(get(selectedChapterId) ? 'chapterEdit' : 'idle');
-  const closeNarration = () => uiMode.set('idle');
+    uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
+  const closeNarration = () => uiMode.set("idle");
   const openChapter = () => {
     setTimeout(() => {
       if (get(selectedChapterId)) {
-        uiMode.set('chapterEdit');
+        uiMode.set("chapterEdit");
       }
     }, 0);
   };
-  const closeChapter = () => uiMode.set('idle');
+  const closeChapter = () => uiMode.set("idle");
 
-  const startPreview = async () => {
-    // Prevent multiple concurrent preview sessions
-    if (get(isPreviewing)) {
-      return;
-    }
-    
-    const storyValue = get(storyStore);
-    if (!storyValue.chapters || storyValue.chapters.length === 0) {
-      return;
-    }
-
-    isPreviewing.set(true);
-    previewChapterIndex = 0;
-    const token = ++previewToken;
-    
-    // Close any open editors
-    uiMode.set('idle');
-    
-    // Play through chapters sequentially
-    while (token === previewToken) {
-      // Get current chapters list in case story was modified during preview
-      const currentStory = get(storyStore);
-      if (previewChapterIndex >= currentStory.chapters.length) break;
-      
-      const chapter = currentStory.chapters[previewChapterIndex];
-      
-      // Select and apply the chapter
-      selectedChapterId.set(chapter.id);
-      
-      // Apply chapter to viewer
-      if (chapter) {
-        await applyChapterAsync(chapter);
-      }
-      
-      // Wait for chapter playback to complete
-      const duration = await getChapterDuration(chapter);
-      await new Promise(resolve => setTimeout(resolve, duration));
-      
-      // Check if preview was stopped
-      if (token !== previewToken) break;
-      
-      previewChapterIndex++;
-    }
-    
-    // Preview completed or stopped
-    if (token === previewToken) {
-      isPreviewing.set(false);
-      previewChapterIndex = 0;
-    }
-  };
-  
-  const stopPreview = () => {
-    previewToken++;
-    isPreviewing.set(false);
-    previewChapterIndex = 0;
-    // Stop any active chapter playback (audio/video/narration)
-    stopChapterPlayback();
-  };
-  
-  const applyChapterAsync = async (chapter: Chapter): Promise<void> => {
-    return new Promise((resolve) => {
-      applyChapter(chapter);
-      // Give time for chapter to load
-      setTimeout(resolve, 300);
-    });
-  };
-  
-  const getChapterDuration = async (chapter: Chapter): Promise<number> => {
-    // Calculate total duration by summing narration, media, and advance delay
-    let totalDuration = 0;
-    
-    // Add narration duration (narration plays first)
-    const narration = getNarrationSegment(chapter);
-    if (narration) {
-      const narrationDuration = (narration.end - narration.start) * 1000;
-      totalDuration += narrationDuration;
-    }
-    
-    // Add media (audio/video) duration (plays after narration)
-    if (chapter.media) {
-      const mediaDuration = (chapter.media.end - chapter.media.start) * 1000;
-      totalDuration += mediaDuration;
-    }
-    
-    // Add advance delay (plays after narration and media)
-    if (chapter.advance?.mode === 'auto' && chapter.advance.delayMs) {
-      totalDuration += chapter.advance.delayMs;
-    }
-    
-    // Use default duration if nothing else is configured
-    if (totalDuration === 0) {
-      totalDuration = 2000;
-    }
-    
-    return totalDuration;
-  };
+  const startPreview = preview.start;
+  const stopPreview = preview.stop;
 
   const markIn = () => {
     mediaMarks.markIn();
@@ -1048,14 +1001,14 @@ export const createStoryBuilderController = (
     const end = state.markOut;
     if (start == null || end == null || end <= start) return;
     const currentType = viewer.getMediaType?.() ?? null;
-    if (currentType !== 'audio' && currentType !== 'video') return;
-    
+    if (currentType !== "audio" && currentType !== "video") return;
+
     // Set the active playback chapter ID so the time update handler works
     const currentChapterId = get(selectedChapterId);
     if (currentChapterId) {
       activePlaybackChapterId = currentChapterId;
     }
-    
+
     activeMediaEnd = end;
     viewer.seekTo?.(start);
     viewer.play?.();
@@ -1066,7 +1019,7 @@ export const createStoryBuilderController = (
     viewer.pause?.();
     activeMediaEnd = null;
     activePlaybackChapterId = null;
-    
+
     // Reset to start position
     const state = mediaMarks.getState();
     const start = state.markIn;
@@ -1100,12 +1053,15 @@ export const createStoryBuilderController = (
     chapterActions.updateAnnotationText(lang, text);
   };
 
-  const updateAnnotationPlacement = (lang: string, placement: AnnotationPlacement) => {
+  const updateAnnotationPlacement = (
+    lang: string,
+    placement: AnnotationPlacement,
+  ) => {
     pushHistorySnapshot();
     chapterActions.updateAnnotationPlacement(lang, placement);
   };
 
-  const updateAdvanceMode = (mode: ChapterAdvance['mode']) => {
+  const updateAdvanceMode = (mode: ChapterAdvance["mode"]) => {
     pushHistorySnapshot();
     chapterActions.updateAdvanceMode(mode);
   };
@@ -1116,17 +1072,17 @@ export const createStoryBuilderController = (
   };
 
   const startAnnotationPositioning = (lang: string) => {
-    uiMode.set('annotationPositioning');
+    uiMode.set("annotationPositioning");
     positioningLanguage.set(lang);
   };
 
   const confirmAnnotationPositioning = () => {
-    uiMode.set('chapterEdit');
+    uiMode.set("chapterEdit");
     positioningLanguage.set(null);
   };
 
   const cancelAnnotationPositioning = () => {
-    uiMode.set('chapterEdit');
+    uiMode.set("chapterEdit");
     positioningLanguage.set(null);
   };
 
@@ -1142,11 +1098,11 @@ export const createStoryBuilderController = (
 
   const reloadManifest = (manifest: string, canvasIndex: number) => {
     if (!viewer) {
-      setError('Viewer not ready.');
+      setError("Viewer not ready.");
       return;
     }
     if (!manifest.trim()) {
-      setError('Manifest URL is required.');
+      setError("Manifest URL is required.");
       return;
     }
     viewer.setManifest(manifest);
@@ -1155,12 +1111,12 @@ export const createStoryBuilderController = (
 
   const loadManifest = (manifest: string) => {
     if (!viewer) {
-      setError('Viewer not ready.');
+      setError("Viewer not ready.");
       return;
     }
     const trimmed = manifest.trim();
     if (!trimmed) {
-      setError('Manifest URL is required.');
+      setError("Manifest URL is required.");
       return;
     }
     viewer.setManifest(trimmed);
@@ -1171,14 +1127,14 @@ export const createStoryBuilderController = (
 
   const saveChapterSettings = () => {
     setError(null);
-    uiMode.set('idle');
+    uiMode.set("idle");
   };
 
   const saveExport = () => {
     const storyValue = storyStoreWrapper.exportStory();
     const validation = validateStoryForExport(storyValue);
     if (!validation.ok) {
-      setError(validation.errors.join(' · '));
+      setError(validation.errors.join(" · "));
     } else {
       setError(null);
     }
@@ -1188,16 +1144,16 @@ export const createStoryBuilderController = (
   const loadStory = (storyToLoad: Story) => {
     pushHistorySnapshot();
     loadStoryIntoStore(storyToLoad, storyStoreWrapper);
-    
+
     // Load the first chapter's manifest if available
     const firstChapter = storyToLoad.chapters?.[0];
     if (firstChapter?.manifest && viewer) {
       viewer.setManifest?.(firstChapter.manifest);
-      if (typeof firstChapter.canvasIndex === 'number') {
+      if (typeof firstChapter.canvasIndex === "number") {
         viewer.setCanvasByIndex?.(firstChapter.canvasIndex);
       }
     }
-    
+
     // Auto-select the first chapter so the editor shows content on load
     autoSelectFirstChapterIfNeeded();
     history.reset(storyStoreWrapper.exportStory());

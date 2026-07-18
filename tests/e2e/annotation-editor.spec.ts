@@ -53,7 +53,7 @@ test('creates and saves an annotation with the package editor', async ({ page })
 
 test('opens an off-canvas search hit, zooms to it, and highlights it', async ({ page }) => {
   await page.goto('/viewer.html');
-  await page.getByRole('button', { name: 'Toggle search' }).click();
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
 
   const query = page.getByRole('searchbox', { name: 'Search annotations' });
   await query.fill('Vererbung');
