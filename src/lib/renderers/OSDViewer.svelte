@@ -529,6 +529,10 @@
         showFullPageControl: false,
         showSequenceControl: false,
         showZoomControl: false,
+        // OSD 6 prefers WebGL by default. Large cookbook runs can exhaust or
+        // reject texture allocation and leave otherwise valid IIIF images
+        // blank, so use the Canvas2D drawer unless a host explicitly opts in.
+        drawer: 'canvas',
         animationTime: 0.5,
         minZoomImageRatio: 0.1,
         // Ensure consistent viewport behavior across devices
@@ -557,17 +561,14 @@
       };
 
       viewer.addHandler('open', () => {
+        if (openPendingBaseTarget()) return;
         baseImageLoaded = true;
+        openingBaseCustomId = '';
         onviewerready?.({ viewer: viewer as OpenSeadragon.Viewer });
         setRotation(rotation);
         if (initialViewBox && !initialViewBoxApplied) {
           initialViewBoxApplied = true;
           requestAnimationFrame(() => setViewBox(initialViewBox));
-        } else if (!(legacyOsdConfig?.preserveViewport ?? false)) {
-          // Establish home bounds from the newly opened canvas. Otherwise a
-          // differently sized previous canvas can leave this one cropped.
-          viewer?.viewport.goHome?.(true);
-          viewer?.viewport.applyConstraints?.();
         }
         handleViewportChange();
       });
@@ -576,15 +577,15 @@
       viewer.addHandler('animation', handleAnimation);
       viewer.addHandler('animation-finish', handleViewportChange);
       viewer.addHandler('resize', handleViewportChange);
+      viewer.addHandler('open-failed', () => {
+        openingBaseCustomId = '';
+        baseImageLoaded = false;
+        openPendingBaseTarget();
+      });
 
       // The editor needs the viewer instance before the first image-open event.
       // The open handler calls this again once intrinsic canvas dimensions exist.
       onviewerready?.({ viewer });
-
-      if (tileSource) {
-        baseImageLoaded = false;
-        viewer.open(tileSource);
-      }
     };
 
     init();
@@ -726,7 +727,33 @@
   });
 
   let loadedBaseCustomId = $state('');
+  let openingBaseCustomId = '';
+  let pendingBaseTarget: TargetItem | null = null;
   const loadingLayerIds = new Set<string>();
+
+  const openBaseTarget = (target: TargetItem): void => {
+    if (!viewer) return;
+    if ((viewer as OpenSeadragon.Viewer & { _opening?: boolean })._opening) {
+      pendingBaseTarget = target;
+      return;
+    }
+    pendingBaseTarget = null;
+    openingBaseCustomId = target.customLayerId;
+    baseImageLoaded = false;
+    viewer.open(target.tileSource);
+  };
+
+  const openPendingBaseTarget = (): boolean => {
+    const pending = pendingBaseTarget;
+    if (!pending || pending.customLayerId === openingBaseCustomId) {
+      pendingBaseTarget = null;
+      return false;
+    }
+    pendingBaseTarget = null;
+    openingBaseCustomId = '';
+    openBaseTarget(pending);
+    return true;
+  };
 
   $effect(() => {
     if (!viewer) return;
@@ -736,12 +763,13 @@
       const baseId = baseTarget.customLayerId;
       if (baseId !== loadedBaseCustomId) {
         loadedBaseCustomId = baseId;
-        baseImageLoaded = false;
         loadingLayerIds.clear();
-        viewer.open(baseTarget.tileSource);
+        openBaseTarget(baseTarget);
       }
     } else {
       loadedBaseCustomId = '';
+      openingBaseCustomId = '';
+      pendingBaseTarget = null;
       baseImageLoaded = false;
       loadingLayerIds.clear();
       viewer.close();

@@ -165,6 +165,9 @@
         No: { label: 'Fail', description: 'Not supported' },
       };
       const defaultIssueUrl = 'https://github.com/Mango-IIIF/Mango/issues';
+      const requestedManifest = new URLSearchParams(window.location.search)
+        .get('iiif-content')
+        ?.trim();
       const state = {
         recipes: [],
         categories: [],
@@ -343,7 +346,16 @@
 
         renderSummary();
         renderFilters();
-        activateRecipe(state.recipes.find((recipe) => recipe.manifest));
+        if (requestedManifest) {
+          elements.activeTitle.textContent = 'Custom IIIF manifest';
+          elements.activeUrl.href = requestedManifest;
+          elements.activeUrl.textContent = requestedManifest;
+          elements.activeStatus.textContent = 'Custom';
+          elements.activeStatus.className = 'cookbook-status';
+          renderRecipes();
+        } else {
+          activateRecipe(state.recipes.find((recipe) => recipe.manifest));
+        }
       }
 
       [elements.search, elements.categoryFilter, elements.supportFilter].forEach((element) => {
