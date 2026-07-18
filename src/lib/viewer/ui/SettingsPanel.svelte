@@ -1,24 +1,25 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import { supportedLocales, t } from '../../i18n';
+  import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {
+    redesigned?: boolean;
     onclose?: (() => void) | undefined;
   }
 
-  let { onclose = undefined }: Props = $props();
+  let { redesigned = false, onclose = undefined }: Props = $props();
 
   const viewer = getContext<any>('viewer-context');
   const settings = viewer.settings;
   const { layoutMode } = viewer.derived;
 
-  const layouts: Array<'1x1' | '1x2' | '2x1' | '2x2'> = ['1x1', '1x2', '2x1', '2x2'];
 </script>
 
 <section class="panel" aria-label={$t('workspace.settings')}>
   <div class="panel__header">
     <div class="panel__title">{$t('workspace.settings')}</div>
-    <button class="panel__close" type="button" aria-label="Close" onclick={() => onclose?.()}>{$t('common.closeGlyph')}</button>
+    <PanelCloseButton lucide={redesigned} label="Close settings" {onclose} />
   </div>
 
   <div class="panel__body settings-panel">
@@ -70,21 +71,6 @@
           class:panel__tab--active={$layoutMode === 'gallery'}
           onclick={() => settings.layoutMode = 'gallery'}
         >{$t('workspace.viewModeGallery') ?? 'Gallery'}</button>
-      </div>
-    </div>
-
-    <!-- layout -->
-    <div class="settings-panel__section">
-      <div class="settings-panel__label">{$t('workspace.layout')}</div>
-      <div class="panel__tabs">
-        {#each layouts as option}
-          <button
-            type="button"
-            class="panel__tab"
-            class:panel__tab--active={settings.layout === option}
-            onclick={() => settings.layout = option}
-          >{option}</button>
-        {/each}
       </div>
     </div>
 

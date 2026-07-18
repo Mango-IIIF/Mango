@@ -168,7 +168,9 @@ body {
 }
 
 .page--editor .viewer-shell {
-  height: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .viewer-shell mango-viewer {
@@ -359,7 +361,9 @@ body {
 .cookbook-viewer__frame {
   height: 820px;
   border: 1px solid rgba(43, 37, 32, 0.14);
-  background: #ffffff;
+  border-radius: 24px;
+  background: #0f141b;
+  overflow: hidden;
 }
 
 .cookbook-viewer__frame mango-viewer {

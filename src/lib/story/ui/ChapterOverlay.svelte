@@ -1686,12 +1686,13 @@
     appearance: none;
     width: 14px;
     height: 14px;
+    margin-top: -5px;
     border-radius: 999px;
     border: 2px solid rgba(236, 241, 248, 0.92);
     background: #d3dae6;
     box-shadow: none;
     pointer-events: auto;
-    cursor: ew-resize;
+    cursor: grab;
   }
 
   .chapter-overlay__range::-moz-range-thumb {
@@ -1702,7 +1703,15 @@
     background: #d3dae6;
     box-shadow: none;
     pointer-events: auto;
-    cursor: ew-resize;
+    cursor: grab;
+  }
+
+  .chapter-overlay__range:active::-webkit-slider-thumb {
+    cursor: grabbing;
+  }
+
+  .chapter-overlay__range:active::-moz-range-thumb {
+    cursor: grabbing;
   }
 
   .chapter-overlay__range::-webkit-slider-runnable-track,

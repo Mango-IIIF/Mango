@@ -53,8 +53,6 @@
   export let onUpdateDelay: (delayMs?: number) => void;
   export let onUpdateChapterPosition: () => void;
   export let onSaveChapterSettings: () => void;
-  export let onMarkIn: () => void;
-  export let onMarkOut: () => void;
 
   let chapterId: string | null = null;
   let manifestValue: string | null = null;
@@ -328,34 +326,6 @@
     </div>
   {/if}
 
-  <!-- Show Mark In/Out buttons when audio/video is loaded and chapter editor is NOT open -->
-  {#if $mediaType === 'audio' || $mediaType === 'video'}
-    {#if !chapterOpen && currentMode !== 'annotationPositioning'}
-      <div class="story-builder-av" data-testid="authoring-av-controls">
-        <div class="story-builder-av__hint">
-          Use Mark In/Out to capture the segment for this chapter.
-        </div>
-        <div class="story-builder-av__buttons">
-          <button
-            class="story-builder-av__button"
-            type="button"
-            data-testid="authoring-mark-in"
-            on:click={onMarkIn}
-          >
-            Mark In
-          </button>
-          <button
-            class="story-builder-av__button"
-            type="button"
-            data-testid="authoring-mark-out"
-            on:click={onMarkOut}
-          >
-            Mark Out
-          </button>
-        </div>
-      </div>
-    {/if}
-  {/if}
 </div>
 
 <style>
@@ -423,39 +393,4 @@
     box-shadow: 0 0 12px rgba(224, 122, 63, 0.4);
   }
 
-  .story-builder-av {
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    display: grid;
-    gap: 8px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: rgba(11, 18, 26, 0.9);
-    color: #eef3f8;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-    z-index: 20;
-  }
-
-  .story-builder-av__hint {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.8);
-  }
-
-  .story-builder-av__buttons {
-    display: flex;
-    gap: 8px;
-  }
-
-  .story-builder-av__button {
-    border: none;
-    border-radius: 10px;
-    padding: 8px 12px;
-    background: var(--accent, #e07a3f);
-    color: #fffaf6;
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
-  }
 </style>

@@ -7,12 +7,19 @@
   } from '@mango-iiif/av';
   import { getContext } from 'svelte';
   import { t } from '../../i18n';
+  import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {
+    redesigned?: boolean;
+    selectedTab?: 'toc' | 'transcript';
     onclose?: () => void;
   }
 
-  let { onclose = undefined }: Props = $props();
+  let {
+    redesigned = false,
+    selectedTab = 'toc',
+    onclose = undefined,
+  }: Props = $props();
 
   const viewer = getContext<any>('viewer-context');
   const { avChaptersAvailable, avTranscriptAvailable } = viewer.derived;
@@ -24,6 +31,14 @@
 
   let hasToc = $derived($avChaptersAvailable);
   let hasTranscript = $derived($avTranscriptAvailable);
+
+  $effect(() => {
+    if (selectedTab === 'transcript' && hasTranscript) {
+      activeTab = 'transcript';
+    } else if (selectedTab === 'toc' && hasToc) {
+      activeTab = 'toc';
+    }
+  });
 
   $effect(() => {
     if (!hasToc && hasTranscript) {
@@ -42,18 +57,21 @@
 
 <section class="panel panel--contents" aria-label={$t('viewer.panels.contents.label')}>
   <div class="panel__header">
-    <div class="panel__title">{$t('viewer.panels.contents.title')}</div>
-    <button
-      class="panel__close"
-      type="button"
-      aria-label={$t('viewer.panels.contents.close')}
-      onclick={() => onclose?.()}
-    >
-      {$t('common.closeGlyph')}
-    </button>
+    <div class="panel__title">
+      {redesigned
+        ? activeTab === 'transcript'
+          ? 'Transcription'
+          : 'Collections'
+        : $t('viewer.panels.contents.title')}
+    </div>
+    <PanelCloseButton
+      lucide={redesigned}
+      label={$t('viewer.panels.contents.close')}
+      {onclose}
+    />
   </div>
 
-  {#if hasToc && hasTranscript}
+  {#if !redesigned && hasToc && hasTranscript}
     <div
       class="panel__tabs"
       role="tablist"
@@ -111,5 +129,9 @@
     --mango-av-muted: var(--viewer-muted, #9aa6b2);
     --mango-av-border: var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
     --mango-av-radius: 0.625rem;
+  }
+
+  mango-av-transcript {
+    --mango-av-radius: 0;
   }
 </style>

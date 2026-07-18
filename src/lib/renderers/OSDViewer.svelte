@@ -9,6 +9,7 @@
   import type { ImageFilters } from '../core/types/filters';
   import type { ViewBox } from '../core/types/viewer';
   import type { ViewerConfig } from '../core/types/config';
+  import { applyIIIFExactTileLevelWorkaround } from '../viewer/osd/iiifTileSourceWorkaround';
 
   interface Props {
     tileSource?: TileSource | null;
@@ -24,7 +25,9 @@
     legacyOsdConfig?: ViewerConfig['osd'];
     rotation?: number;
     initialViewBox?: ViewBox | null;
-    onzoomchange?: ((payload: { zoom: number; viewBox: ViewBox }) => void) | undefined;
+    onzoomchange?:
+      | ((payload: { zoom: number; viewBox: ViewBox; homeZoom?: number }) => void)
+      | undefined;
     onviewboxchange?: ((payload: { viewBox: ViewBox }) => void) | undefined;
     onannotationhover?: ((payload: { id: string | null }) => void) | undefined;
     onannotationselect?: ((payload: { id: string }) => void) | undefined;
@@ -377,11 +380,16 @@
       h: imageRect.height,
     };
     const zoom = viewer.viewport.getZoom(true);
+    const homeZoom = viewer.viewport.getHomeZoom?.();
 
     lastViewBox = viewBox;
     lastZoom = zoom;
     onviewboxchange?.({ viewBox });
-    onzoomchange?.({ zoom, viewBox });
+    onzoomchange?.({
+      zoom,
+      viewBox,
+      ...(Number.isFinite(homeZoom) && homeZoom > 0 ? { homeZoom } : {}),
+    });
   };
 
   export const getViewBox = (): ViewBox | null => {
@@ -511,6 +519,7 @@
         return;
       }
       const OSD = (module.default || module) as typeof OpenSeadragon;
+      applyIIIFExactTileLevelWorkaround(OSD);
       OpenSeadragonClass = OSD;
 
       viewer = OSD({
@@ -554,6 +563,11 @@
         if (initialViewBox && !initialViewBoxApplied) {
           initialViewBoxApplied = true;
           requestAnimationFrame(() => setViewBox(initialViewBox));
+        } else if (!(legacyOsdConfig?.preserveViewport ?? false)) {
+          // Establish home bounds from the newly opened canvas. Otherwise a
+          // differently sized previous canvas can leave this one cropped.
+          viewer?.viewport.goHome?.(true);
+          viewer?.viewport.applyConstraints?.();
         }
         handleViewportChange();
       });

@@ -2,12 +2,14 @@
   import { getContext } from 'svelte';
   import { t } from '../../i18n';
   import { sanitizeHtml } from '../util/sanitiseHtml';
+  import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {
+    redesigned?: boolean;
     onclose?: (() => void) | undefined;
   }
 
-  let { onclose = undefined }: Props = $props();
+  let { redesigned = false, onclose = undefined }: Props = $props();
 
   const viewer = getContext<any>('viewer-context');
   const { overlayAnnotations } = viewer.derived;
@@ -34,14 +36,11 @@
 >
   <div class="panel__header">
     <div class="panel__title">{$t('viewer.panels.annotations.title')}</div>
-    <button
-      class="panel__close"
-      type="button"
-      aria-label={$t('viewer.panels.annotations.close')}
-      onclick={() => onclose?.()}
-    >
-      {$t('common.closeGlyph')}
-    </button>
+    <PanelCloseButton
+      lucide={redesigned}
+      label={$t('viewer.panels.annotations.close')}
+      {onclose}
+    />
   </div>
   {#if allowCreateMode}
     <div class="panel__tabs">

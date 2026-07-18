@@ -10,6 +10,7 @@
   import ContentsPanel from './ContentsPanel.svelte';
   import SettingsPanel from './SettingsPanel.svelte';
   import LayersPanel from './LayersPanel.svelte';
+  import ComparePanel from './ComparePanel.svelte';
 
   interface Props {
     showAnnotations?: boolean;
@@ -19,9 +20,12 @@
     showMetadata?: boolean;
     showSettings?: boolean;
     showLayers?: boolean;
+    showCompare?: boolean;
+    redesigned?: boolean;
+    contentsTab?: 'toc' | 'transcript';
     leftPlugins?: ViewerPlugin[];
     pluginContext: Omit<PluginContext, 'mount'>;
-    onpanelToggle?: (panel: 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers', open: boolean) => void;
+    onpanelToggle?: (panel: 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers' | 'compare', open: boolean) => void;
   }
 
   let {
@@ -32,6 +36,9 @@
     showMetadata = false,
     showSettings = false,
     showLayers = false,
+    showCompare = false,
+    redesigned = false,
+    contentsTab = 'toc',
     leftPlugins = [],
     pluginContext,
     onpanelToggle,
@@ -41,45 +48,61 @@
   const mediaType = viewer.derived.mediaType;
 </script>
 
-<aside class="panel-stack panel-stack--left" aria-label={$t('viewer.panels.leftLabel')}>
+<aside
+  class="panel-stack panel-stack--left"
+  class:panel-stack--redesigned={redesigned}
+  aria-label={$t('viewer.panels.leftLabel')}
+>
   {#if showContents && ($mediaType === 'audio' || $mediaType === 'video')}
     <ContentsPanel
+      {redesigned}
+      selectedTab={contentsTab}
       onclose={() => onpanelToggle?.('contents', false)}
     />
   {/if}
 
   {#if showSettings}
     <SettingsPanel
+      {redesigned}
       onclose={() => onpanelToggle?.('settings', false)}
     />
   {/if}
 
+  {#if showCompare}
+    <ComparePanel onclose={() => onpanelToggle?.('compare', false)} />
+  {/if}
+
   {#if showAnnotations}
     <AnnotationsPanel
+      {redesigned}
       onclose={() => onpanelToggle?.('annotations', false)}
     />
   {/if}
 
   {#if showTools}
     <ToolsPanel
+      {redesigned}
       onclose={() => onpanelToggle?.('tools', false)}
     />
   {/if}
 
   {#if showSearch}
     <SearchPanel
+      {redesigned}
       onclose={() => onpanelToggle?.('search', false)}
     />
   {/if}
 
   {#if showMetadata}
     <MetadataPanel
+      {redesigned}
       onclose={() => onpanelToggle?.('metadata', false)}
     />
   {/if}
 
   {#if showLayers}
     <LayersPanel
+      {redesigned}
       onclose={() => onpanelToggle?.('layers', false)}
     />
   {/if}
@@ -111,6 +134,64 @@
     overflow: auto;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
     overscroll-behavior: contain;
+  }
+
+  .panel-stack--left.panel-stack--redesigned {
+    padding: 18px 24px 28px;
+    border-radius: 0 18px 18px 0;
+    background: rgba(18, 25, 34, 0.72);
+    box-shadow: none;
+    transform-origin: left center;
+    animation: viewer-secondary-panel-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .panel-stack--left.panel-stack--redesigned :global(.panel) {
+    gap: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .panel-stack--left.panel-stack--redesigned :global(.panel__header) {
+    min-height: 46px;
+  }
+
+  .panel-stack--left.panel-stack--redesigned :global(.panel__title) {
+    color: var(--viewer-text);
+    font-size: 24px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .panel-stack--left.panel-stack--redesigned :global(.panel__close) {
+    width: 42px;
+    height: 42px;
+    font-size: 22px;
+  }
+
+  .panel-stack--left.panel-stack--redesigned :global(.panel__body) {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  @keyframes viewer-secondary-panel-enter {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel-stack--left.panel-stack--redesigned {
+      animation: none;
+    }
   }
 
   .panel-stack--left :global(.panel) {
