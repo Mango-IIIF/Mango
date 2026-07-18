@@ -1,28 +1,29 @@
 /**
  * PanelController
- * 
+ *
  * Manages panel visibility and state, including enforcement of single left panel rule.
  * Handles panel permissions and panel toggle events.
  */
 
-import { derived, get } from 'svelte/store';
-import type { ViewerStateStores } from '../viewerState';
-import type { ViewerDerivedStores } from '../viewerDerived';
+import { derived, get } from "svelte/store";
+import type { ViewerStateStores } from "../viewerState";
+import type { ViewerDerivedStores } from "../viewerDerived";
+import type { ViewerEventEmitter } from "../../../core/types/events";
 
 export type ViewerPanel =
-  | 'thumbnails'
-  | 'contents'
-  | 'search'
-  | 'metadata'
-  | 'annotations'
-  | 'tools'
-  | 'settings'
-  | 'layers';
+  | "thumbnails"
+  | "contents"
+  | "search"
+  | "metadata"
+  | "annotations"
+  | "tools"
+  | "settings"
+  | "layers";
 
 export type PanelControllerConfig = {
   state: ViewerStateStores;
   derived: ViewerDerivedStores;
-  emitEvent: <K extends string>(event: K, payload: any) => void;
+  emitEvent: ViewerEventEmitter;
   emitStateChange: () => void;
   initialOpen?: boolean;
   initialActivePanel?: string;
@@ -39,28 +40,29 @@ export const createPanelController = ({
   emitEvent,
   emitStateChange,
   initialOpen = true,
-  initialActivePanel = 'metadata',
+  initialActivePanel = "metadata",
 }: PanelControllerConfig): PanelController => {
-  
   const leftPanelOrder: ViewerPanel[] = [
-    'contents',
-    'annotations',
-    'tools',
-    'settings',
-    'search',
-    'metadata',
-    'layers',
+    "contents",
+    "annotations",
+    "tools",
+    "settings",
+    "search",
+    "metadata",
+    "layers",
   ];
 
   const configuredInitialPanel = leftPanelOrder.includes(
     initialActivePanel as ViewerPanel,
   )
     ? (initialActivePanel as ViewerPanel)
-    : 'metadata';
+    : "metadata";
   let lastOpenedLeftPanel: ViewerPanel | null = configuredInitialPanel;
   let awaitingInitialPanel = initialOpen;
 
-  const leftPanelStores: Partial<Record<ViewerPanel, typeof state.showContents>> = {
+  const leftPanelStores: Partial<
+    Record<ViewerPanel, typeof state.showContents>
+  > = {
     contents: state.showContents,
     annotations: state.showAnnotations,
     tools: state.showTools,
@@ -70,25 +72,26 @@ export const createPanelController = ({
     layers: state.showLayers,
   };
 
-  const isLeftPanel = (panel: ViewerPanel): panel is Exclude<ViewerPanel, 'thumbnails'> =>
-    panel !== 'thumbnails';
+  const isLeftPanel = (
+    panel: ViewerPanel,
+  ): panel is Exclude<ViewerPanel, "thumbnails"> => panel !== "thumbnails";
 
   const leftPanelAllowed = (panel: ViewerPanel): boolean => {
     if (get(state.config)?.sidebar?.enabled === false) return false;
     switch (panel) {
-      case 'contents':
+      case "contents":
         return get(derivedStores.contentsAvailable);
-      case 'annotations':
+      case "annotations":
         return get(derivedStores.allowAnnotations);
-      case 'tools':
+      case "tools":
         return get(derivedStores.allowTools);
-      case 'search':
+      case "search":
         return get(derivedStores.allowSearch);
-      case 'metadata':
+      case "metadata":
         return get(derivedStores.allowMetadata);
-      case 'layers':
+      case "layers":
         return get(derivedStores.allowLayers);
-      case 'settings':
+      case "settings":
         return get(state.config)?.showSettings !== false;
       default:
         return false;
@@ -118,7 +121,9 @@ export const createPanelController = ({
 
     if (!useFallback) return null;
 
-    const firstAllowed = leftPanelOrder.find((panel) => leftPanelAllowed(panel));
+    const firstAllowed = leftPanelOrder.find((panel) =>
+      leftPanelAllowed(panel),
+    );
     return firstAllowed ?? null;
   };
 
@@ -151,7 +156,7 @@ export const createPanelController = ({
   }
 
   const setPanelOpen = (panel: ViewerPanel, open: boolean) => {
-    if (panel === 'thumbnails') {
+    if (panel === "thumbnails") {
       state.showThumbnails.set(open);
     } else if (isLeftPanel(panel)) {
       const store = leftPanelStores[panel];
@@ -163,7 +168,7 @@ export const createPanelController = ({
       }
     }
 
-    emitEvent('panelToggle', { panel, open });
+    emitEvent("panelToggle", { panel, open });
     emitStateChange();
   };
 
@@ -201,7 +206,10 @@ export const createPanelController = ({
           awaitingInitialPanel = false;
           return;
         }
-        enforceSingleLeftPanel(hasOpenLeftPanel() ? lastOpenedLeftPanel : null, false);
+        enforceSingleLeftPanel(
+          hasOpenLeftPanel() ? lastOpenedLeftPanel : null,
+          false,
+        );
       },
     );
     unsubscribers.push(leftPanelGuard.subscribe(() => undefined));

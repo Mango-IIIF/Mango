@@ -1,5 +1,13 @@
-import { get, writable } from 'svelte/store';
-import * as manifesto from 'manifesto.js';
+import { get, writable } from "svelte/store";
+import {
+  getManifestLabel,
+  parseManifest,
+  type ManifestoManifest,
+} from "../../viewer/iiif/manifestoAdapter";
+import {
+  normalizeManifest,
+  type NormalizedManifest,
+} from "../types/normalized-iiif";
 
 export type CanvasSummary = {
   id: string;
@@ -13,7 +21,8 @@ export type CanvasSummary = {
 export type ManifestEntry = {
   id: string;
   json?: unknown;
-  manifesto?: any;
+  manifesto?: ManifestoManifest;
+  model?: NormalizedManifest;
   label?: string;
   canvases: CanvasSummary[];
   isFetching: boolean;
@@ -27,29 +36,6 @@ const createEmptyEntry = (id: string): ManifestEntry => ({
   canvases: [],
   isFetching: false,
 });
-
-const parseCanvases = (manifestoObject: any): CanvasSummary[] => {
-  if (!manifestoObject) return [];
-
-  try {
-    const sequences = manifestoObject.getSequences();
-    if (!sequences || sequences.length === 0) return [];
-
-    const canvases = sequences[0].getCanvases();
-    if (!canvases || canvases.length === 0) return [];
-
-    return canvases.map((canvas: any, index: number) => ({
-      id: canvas.id || '',
-      label: canvas.getLabel()?.getValue() || `Canvas ${index + 1}`,
-      index,
-      width: canvas.getWidth(),
-      height: canvas.getHeight(),
-      type: canvas.getType(),
-    }));
-  } catch (error) {
-    return [];
-  }
-};
 
 export const manifestsStore = writable<ManifestCache>({});
 
@@ -76,17 +62,22 @@ export const fetchManifest = async (manifestId: string): Promise<void> => {
     if (!response.ok) {
       throw new Error(`HTTP error ${response.status}`);
     }
-    const json = await response.json();
-    let manifestoObject: any | undefined;
+    const json: unknown = await response.json();
+    let manifestoObject: ManifestoManifest | undefined;
+    let model: NormalizedManifest | undefined;
     let canvases: CanvasSummary[] = [];
     let label: string | undefined;
 
     try {
-      manifestoObject = manifesto.parseManifest(json);
-      canvases = parseCanvases(manifestoObject);
-      label = manifestoObject.getLabel()?.getValue();
+      manifestoObject = parseManifest(json);
+      model = normalizeManifest(json, manifestoObject, manifestId);
+      canvases = model.canvases;
+      label = model.label ?? getManifestLabel(manifestoObject);
     } catch (error) {
-      console.error('[Mango] Failed to parse manifest with manifesto.js:', error);
+      console.error(
+        "[Mango] Failed to parse manifest with manifesto.js:",
+        error,
+      );
       manifestoObject = undefined;
     }
 
@@ -96,6 +87,7 @@ export const fetchManifest = async (manifestId: string): Promise<void> => {
         id: manifestId,
         json,
         manifesto: manifestoObject,
+        model,
         label,
         canvases,
         isFetching: false,

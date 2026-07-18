@@ -1,14 +1,21 @@
-import { derived, type Readable } from 'svelte/store';
-import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
-import { resolveMedia, type MediaSource, type MediaType } from '../../iiif/mediaResolver';
-import { pluginsStore } from '../../plugins/registry';
-import type { ViewerPlugin } from '../../core/types/plugin';
-import type { CanvasSummary, ManifestEntry } from '../../state/manifests';
-import { manifestsStore } from '../../state/manifests';
-import type { ViewBox } from '../../core/types/viewer';
-import type { ViewerConfig } from '../../core/types/config';
-import { createAnnotationDerivedStores } from '../annotations/derived';
-import { getCanvasAnnotations, hasExternalAnnotationRefs } from '../../iiif/annotationResolver';
+import { derived, type Readable } from "svelte/store";
+import type { ResolvedAnnotation } from "../../iiif/annotationResolver";
+import {
+  resolveMedia,
+  type MediaSource,
+  type MediaType,
+} from "../../iiif/mediaResolver";
+import { pluginsStore } from "../../plugins/registry";
+import type { ViewerPlugin } from "../../core/types/plugin";
+import type { CanvasSummary, ManifestEntry } from "../../state/manifests";
+import { manifestsStore } from "../../state/manifests";
+import type { ViewBox } from "../../core/types/viewer";
+import type { ViewerConfig } from "../../core/types/config";
+import { createAnnotationDerivedStores } from "../annotations/derived";
+import {
+  getCanvasAnnotations,
+  hasExternalAnnotationRefs,
+} from "../../iiif/annotationResolver";
 import {
   resolveManifestAttribution,
   resolveManifestDescription,
@@ -21,17 +28,36 @@ import {
   type ManifestMetadataItem,
   type ManifestProvider,
   type ManifestGeoLocation,
-} from '../iiif/manifestMetadata';
-import { resolveCanvasThumbnail } from '../iiif/thumbnails';
-import type { ViewerStateStores } from './viewerState';
-import { createViewerAV, toViewerMediaSource, type ViewerAV } from '../av/viewerAV';
+} from "../iiif/manifestMetadata";
+import { resolveCanvasThumbnail } from "../iiif/thumbnails";
+import type { ViewerStateStores } from "./viewerState";
+import {
+  createViewerAV,
+  toViewerMediaSource,
+  type ViewerAV,
+} from "../av/viewerAV";
+import type {
+  ActiveLayoutImage,
+  RendererComponent,
+} from "../../core/types/renderer";
+import type { ManifestoManifest } from "../iiif/manifestoAdapter";
+import { getManifestCanvases } from "../iiif/manifestoAdapter";
 
-const rendererLoaders: Record<MediaType, () => Promise<{ default: any }>> = {
-  image: () => import('../../renderers/ImageRenderer.svelte'),
-  video: () => import('../../renderers/AVRenderer.svelte'),
-  audio: () => import('../../renderers/AVRenderer.svelte'),
-  pdf: () => import('../../renderers/PdfRenderer.svelte'),
-  model: () => import('../../renderers/ModelRenderer.svelte'),
+type RendererModule = { default: RendererComponent };
+const asRendererModule = (module: unknown): RendererModule =>
+  module as RendererModule;
+
+const rendererLoaders: Record<MediaType, () => Promise<RendererModule>> = {
+  image: async () =>
+    asRendererModule(await import("../../renderers/ImageRenderer.svelte")),
+  video: async () =>
+    asRendererModule(await import("../../renderers/AVRenderer.svelte")),
+  audio: async () =>
+    asRendererModule(await import("../../renderers/AVRenderer.svelte")),
+  pdf: async () =>
+    asRendererModule(await import("../../renderers/PdfRenderer.svelte")),
+  model: async () =>
+    asRendererModule(await import("../../renderers/ModelRenderer.svelte")),
 };
 
 export type PluginSlots = {
@@ -49,7 +75,7 @@ export type ViewerDerivedStores = {
   mediaSources: Readable<MediaSource[]>;
   mediaSource: Readable<MediaSource | null>;
   mediaType: Readable<MediaType | null>;
-  rendererComponent: Readable<any>;
+  rendererComponent: Readable<RendererComponent | null>;
   annotations: Readable<ResolvedAnnotation[]>;
   overlayAnnotations: Readable<ResolvedAnnotation[]>;
   searchHits: Readable<ResolvedAnnotation[]>;
@@ -80,18 +106,19 @@ export type ViewerDerivedStores = {
   allowTools: Readable<boolean>;
   allowLayers: Readable<boolean>;
   viewBox: Readable<ViewBox | null>;
-  activeLayoutImages: Readable<any[]>;
+  activeLayoutImages: Readable<ActiveLayoutImage[]>;
 };
 
 const resolveUiLocale = (config?: ViewerConfig): string => {
   if (config?.language) return config.language;
-  if (typeof navigator !== 'undefined' && navigator.language) {
+  if (typeof navigator !== "undefined" && navigator.language) {
     return navigator.language;
   }
-  return 'en';
+  return "en";
 };
 
-const toMetadataLocale = (value: string): string => value.split('-')[0] || value;
+const toMetadataLocale = (value: string): string =>
+  value.split("-")[0] || value;
 
 const normaliseArray = <T>(value: T | T[] | undefined | null): T[] => {
   if (!value) return [];
@@ -100,72 +127,78 @@ const normaliseArray = <T>(value: T | T[] | undefined | null): T[] => {
 
 const hasSearchProfile = (profile: unknown): boolean => {
   if (!profile) return false;
-  const target = 'http://iiif.io/api/search/0/search';
-  if (typeof profile === 'string') return profile === target;
+  const target = "http://iiif.io/api/search/0/search";
+  if (typeof profile === "string") return profile === target;
   if (Array.isArray(profile)) {
     return profile.some((entry) => hasSearchProfile(entry));
   }
-  if (typeof profile === 'object') {
-    const value = (profile as { id?: string; '@id'?: string }).id ?? (profile as { '@id'?: string })['@id'];
+  if (typeof profile === "object") {
+    const value =
+      (profile as { id?: string; "@id"?: string }).id ??
+      (profile as { "@id"?: string })["@id"];
     return value === target;
   }
   return false;
 };
 
-const hasSearchService = (manifestJson: any): boolean => {
-  if (!manifestJson || typeof manifestJson !== 'object') return false;
+const hasSearchService = (manifestJson: unknown): boolean => {
+  if (!manifestJson || typeof manifestJson !== "object") return false;
+  const record = manifestJson as Record<string, unknown>;
   // Try to get services from manifesto object first
   let services;
-  if (typeof manifestJson.getProperty === 'function') {
+  if (typeof record.getProperty === "function") {
     services = normaliseArray(
-      manifestJson.getProperty('service') ?? manifestJson.getProperty('services'),
+      record.getProperty.call(manifestJson, "service") ??
+        record.getProperty.call(manifestJson, "services"),
     );
   } else {
-    services = normaliseArray(
-      manifestJson.service ?? manifestJson.services,
-    );
+    services = normaliseArray(record.service ?? record.services);
   }
   return services.some((service) => {
-    if (!service || typeof service !== 'object') return false;
-    const profile = service.profile ?? service['@profile'];
+    if (!service || typeof service !== "object") return false;
+    const serviceRecord = service as Record<string, unknown>;
+    const profile = serviceRecord.profile ?? serviceRecord["@profile"];
     return hasSearchProfile(profile);
   });
 };
 
 const hasManifestAnnotations = (
-  manifestoObject: any,
+  manifestoObject: ManifestoManifest | undefined,
   canvases: CanvasSummary[],
 ): boolean => {
   if (!manifestoObject || canvases.length === 0) return false;
-  
+
   // Get the actual canvas objects from manifesto once (optimization)
-  const sequences = manifestoObject.getSequences?.();
-  const manifestoCanvases = sequences?.[0]?.getCanvases?.() || [];
-  
+  const manifestoCanvases = getManifestCanvases(manifestoObject);
+
   return canvases.some((canvas, index) => {
     // First check for inline annotations that are immediately available
-    const items = getCanvasAnnotations(manifestoObject, canvas.id, canvas.index);
+    const items = getCanvasAnnotations(
+      manifestoObject,
+      canvas.id,
+      canvas.index,
+    );
     if (items.length > 0) return true;
-    
+
     // Also check if this canvas has external annotation references
     // This is important for v2 manifests where annotations are often external
     const manifestoCanvas = manifestoCanvases[index];
     if (manifestoCanvas && hasExternalAnnotationRefs(manifestoCanvas)) {
       return true;
     }
-    
+
     return false;
   });
 };
 
 const countImageCanvases = (
-  manifestoObject: any,
+  manifestoObject: ManifestoManifest | undefined,
   canvases: CanvasSummary[],
 ): number => {
   if (!manifestoObject || canvases.length === 0) return 0;
   return canvases.filter((canvas) => {
     const resolved = resolveMedia(manifestoObject, canvas.id, canvas.index);
-    return resolved.primary?.type === 'image';
+    return resolved.primary?.type === "image";
   }).length;
 };
 
@@ -182,7 +215,9 @@ export const createViewerDerived = (
   const canvases = derived(manifestEntry, (entry) => entry?.canvases ?? []);
 
   const uiLocale = derived(state.config, (config) => resolveUiLocale(config));
-  const metadataLocale = derived(uiLocale, (locale) => toMetadataLocale(locale));
+  const metadataLocale = derived(uiLocale, (locale) =>
+    toMetadataLocale(locale),
+  );
 
   const canvasThumbnails = derived(
     [manifestEntry, canvases],
@@ -199,17 +234,22 @@ export const createViewerDerived = (
     ([entry, list, index, avManifest]) => {
       if (!entry?.manifesto || list.length === 0) return [];
       const canvas = list[index];
-      const avCanvas = avManifest?.canvases.find((item) => item.id === canvas?.id);
+      const avCanvas = avManifest?.canvases.find(
+        (item) => item.id === canvas?.id,
+      );
       if (avCanvas?.sources.length) {
-        return avCanvas.sources.map((source) => toViewerMediaSource(source, avCanvas));
+        return avCanvas.sources.map((source) =>
+          toViewerMediaSource(source, avCanvas),
+        );
       }
       const resolved = resolveMedia(entry.manifesto, canvas?.id, index);
-      if (resolved.primary?.type === 'audio' || resolved.primary?.type === 'video') {
+      if (
+        resolved.primary?.type === "audio" ||
+        resolved.primary?.type === "video"
+      ) {
         return [];
       }
-      return resolved.primary
-        ? [resolved.primary, ...resolved.alternates]
-        : [];
+      return resolved.primary ? [resolved.primary, ...resolved.alternates] : [];
     },
   );
 
@@ -233,7 +273,7 @@ export const createViewerDerived = (
         };
       };
 
-      if (layoutMode === 'two-page') {
+      if (layoutMode === "two-page") {
         if (index === 0) {
           // Cover page
           const cover = getCanvasImage(0);
@@ -252,7 +292,7 @@ export const createViewerDerived = (
         return result;
       }
 
-      if (layoutMode === 'continuous') {
+      if (layoutMode === "continuous") {
         const result = [];
         for (let i = 0; i < list.length; i++) {
           const img = getCanvasImage(i);
@@ -274,14 +314,18 @@ export const createViewerDerived = (
 
   const mediaType = derived(mediaSource, (source) => source?.type ?? null);
 
-  const rendererComponent = derived(
+  const rendererComponent = derived<
+    Readable<MediaType | null>,
+    RendererComponent | null
+  >(
     mediaType,
     (type, set) => {
       let cancelled = false;
       set(null);
-      if (!type) return () => {
-        cancelled = true;
-      };
+      if (!type)
+        return () => {
+          cancelled = true;
+        };
       void rendererLoaders[type]().then((module) => {
         if (!cancelled) set(module.default);
       });
@@ -306,7 +350,8 @@ export const createViewerDerived = (
       const canvasId = list[index]?.id;
       if (!manifest || !canvasId) return false;
       return Boolean(
-        manifest.canvases.find((canvas) => canvas.id === canvasId)?.transcripts.length,
+        manifest.canvases.find((canvas) => canvas.id === canvasId)?.transcripts
+          .length,
       );
     },
   );
@@ -314,8 +359,7 @@ export const createViewerDerived = (
   const contentsAvailable = derived(
     [avChaptersAvailable, avTranscriptAvailable, mediaType],
     ([chapters, transcript, type]) =>
-      (type === 'audio' || type === 'video') &&
-      (chapters || transcript),
+      (type === "audio" || type === "video") && (chapters || transcript),
   );
 
   const contentsVisible = derived(
@@ -332,14 +376,13 @@ export const createViewerDerived = (
     ([entry, list]) => hasManifestAnnotations(entry?.manifesto, list),
   );
 
-  const imageCanvasCount = derived(
-    [manifestEntry, canvases],
-    ([entry, list]) => countImageCanvases(entry?.manifesto, list),
+  const imageCanvasCount = derived([manifestEntry, canvases], ([entry, list]) =>
+    countImageCanvases(entry?.manifesto, list),
   );
 
   const galleryAvailable = derived(
     [mediaType, imageCanvasCount],
-    ([type, count]) => type === 'image' && count > 1,
+    ([type, count]) => type === "image" && count > 1,
   );
 
   const allowThumbnails = derived(
@@ -357,19 +400,22 @@ export const createViewerDerived = (
   const allowAnnotations = derived(
     [state.config, annotationsAvailable],
     ([config, available]) =>
-      config?.showAnnotations !== false && (available || config?.allowCreateMode === true),
+      config?.showAnnotations !== false &&
+      (available || config?.allowCreateMode === true),
   );
   const allowTools = derived(
     [state.config, mediaType],
-    ([config, type]) => config?.showTools !== false && type === 'image',
+    ([config, type]) => config?.showTools !== false && type === "image",
   );
 
   const allowLayers = derived(
     [state.config, mediaSources],
     ([config, sources]) => {
-      return config?.showLayers !== false &&
+      return (
+        config?.showLayers !== false &&
         sources.length > 1 &&
-        sources.every((src) => src.type === 'image');
+        sources.every((src) => src.type === "image")
+      );
     },
   );
 
@@ -383,10 +429,10 @@ export const createViewerDerived = (
       }
       const allPlugins = Array.from(deduped.values());
       return {
-        left: allPlugins.filter((plugin) => plugin.slot === 'left'),
-        right: allPlugins.filter((plugin) => plugin.slot === 'right'),
-        bottom: allPlugins.filter((plugin) => plugin.slot === 'bottom'),
-        overlay: allPlugins.filter((plugin) => plugin.slot === 'overlay'),
+        left: allPlugins.filter((plugin) => plugin.slot === "left"),
+        right: allPlugins.filter((plugin) => plugin.slot === "right"),
+        bottom: allPlugins.filter((plugin) => plugin.slot === "bottom"),
+        overlay: allPlugins.filter((plugin) => plugin.slot === "overlay"),
       };
     },
   );
@@ -430,10 +476,7 @@ export const createViewerDerived = (
       slots.left.length > 0,
   );
 
-  const rightVisible = derived(
-    pluginSlots,
-    (slots) => slots.right.length > 0,
-  );
+  const rightVisible = derived(pluginSlots, (slots) => slots.right.length > 0);
 
   const manifestTitle = derived(
     [manifestEntry, metadataLocale],
@@ -468,7 +511,11 @@ export const createViewerDerived = (
   const manifestProviders = derived(
     [manifestEntry, metadataLocale],
     ([entry, locale]) => {
-      const providers = resolveManifestProviders(entry?.manifesto, entry?.json, locale);
+      const providers = resolveManifestProviders(
+        entry?.manifesto,
+        entry?.json,
+        locale,
+      );
       return providers;
     },
   );

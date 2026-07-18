@@ -1,39 +1,69 @@
-import { validateStory } from './validation';
-import type { Story } from '../core/types/story';
-import type { CapturePayload } from '../core/state/story.svelte';
-import { W3CParser, type RectGeometry, type TemporalFragment } from '@mango-iiif/w3c-parser';
+import { validateStory } from "./validation";
+import type { Story } from "../core/types/story";
+import type { CapturePayload } from "../core/state/story.svelte";
+import {
+  W3CParser,
+  type RectGeometry,
+  type TemporalFragment,
+} from "@mango-iiif/w3c-parser";
 
 export type SaveConfig = {
   endpoint?: string;
-  method?: 'POST' | 'PUT';
+  method?: "POST" | "PUT";
   headers?: Record<string, string>;
   timeoutMs?: number;
   credentials?: RequestCredentials;
   enabled?: boolean;
 };
 
-export type ExportEnvelope = {
-  version: 1;
-  exportedAt: string;
-  meta: {
-    source: 'storybuilder';
-    appVersion?: string;
-  };
-  data: Story;
+export type StorySelector = {
+  type?: string;
+  conformsTo?: string;
+  value?: string;
+  [key: string]: unknown;
 };
+
+export type StoryTarget = {
+  source?: string;
+  type?: string;
+  partOf?: { id: string; type: "Manifest" };
+  selector?: StorySelector | StorySelector[];
+  [key: string]: unknown;
+};
+
+export type StoryAnnotation = {
+  id: string;
+  type: "Annotation";
+  motivation: "supplementing";
+  label?: Record<string, string[]>;
+  summary?: Record<string, string[]>;
+  transitionTimeMs: number;
+  body?: Record<string, unknown> | Record<string, unknown>[];
+  target: StoryTarget;
+};
+
+export type StoryAnnotationPage = {
+  "@context": "http://iiif.io/api/presentation/3/context.json";
+  id: string;
+  type: "AnnotationPage";
+  label: Record<string, string[]>;
+  items: StoryAnnotation[];
+};
+
+export type ExportEnvelope = StoryAnnotationPage;
 
 export type SaveResult =
   | { ok: true; message?: string }
   | { ok: false; message: string; code?: string };
 
 export type SaveState =
-  | { status: 'idle'; message?: string; code?: string }
-  | { status: 'saving'; message?: string; code?: string }
-  | { status: 'success'; message?: string }
-  | { status: 'error'; message?: string; code?: string };
+  | { status: "idle"; message?: string; code?: string }
+  | { status: "saving"; message?: string; code?: string }
+  | { status: "success"; message?: string }
+  | { status: "error"; message?: string; code?: string };
 
 const normaliseStoryFragment = (value: string): string =>
-  value.replace('xywh=pixel:', 'xywh=');
+  value.replace("xywh=pixel:", "xywh=");
 
 const serializeFragment = (
   id: string,
@@ -44,35 +74,46 @@ const serializeFragment = (
   const annotation = W3CParser.serialize({
     id,
     canvasId,
-    text: '',
-    shape: rect ? { type: 'rect', geometry: rect } : { type: 'none' },
+    text: "",
+    shape: rect ? { type: "rect", geometry: rect } : { type: "none" },
     temporal,
   });
-  if (typeof annotation.target === 'string') return '';
+  if (typeof annotation.target === "string") return "";
   const selectors = Array.isArray(annotation.target.selector)
     ? annotation.target.selector
     : annotation.target.selector
       ? [annotation.target.selector]
       : [];
   return normaliseStoryFragment(
-    selectors.map((selector) => selector.value).filter(Boolean).join('&'),
+    selectors
+      .map((selector) => selector.value)
+      .filter(Boolean)
+      .join("&"),
   );
 };
 
-const normaliseStoryTarget = (target: any): any => {
-  if (!target || typeof target === 'string') return target;
-  const selectors = Array.isArray(target.selector) ? target.selector : [target.selector];
-  const normalized = selectors.filter(Boolean).map((selector: any) => ({
-    ...selector,
-    value: normaliseStoryFragment(selector.value),
-  }));
+const normaliseStoryTarget = (target: unknown): StoryTarget | string => {
+  if (typeof target === "string") return target;
+  if (!target || typeof target !== "object") return {};
+  const record = target as StoryTarget;
+  const selectors = Array.isArray(record.selector)
+    ? record.selector
+    : [record.selector];
+  const normalized = selectors
+    .filter((selector): selector is StorySelector => Boolean(selector))
+    .map((selector) => ({
+      ...selector,
+      ...(typeof selector.value === "string"
+        ? { value: normaliseStoryFragment(selector.value) }
+        : {}),
+    }));
   return {
-    ...target,
-    selector: Array.isArray(target.selector) ? normalized : normalized[0],
+    ...record,
+    selector: Array.isArray(record.selector) ? normalized : normalized[0],
   };
 };
 
-export const serializeStoryToIiif = (raw: Story): any => {
+export const serializeStoryToIiif = (raw: Story): StoryAnnotationPage => {
   const label: Record<string, string[]> = {};
   if (raw.title) {
     for (const [lang, val] of Object.entries(raw.title)) {
@@ -80,7 +121,7 @@ export const serializeStoryToIiif = (raw: Story): any => {
     }
   }
 
-  const items = raw.chapters.map((chapter, index) => {
+  const items: StoryAnnotation[] = raw.chapters.map((chapter, index) => {
     const chapterId = chapter.id || `chapter_${index + 1}`;
     const annotationId = `https://example.org/stories/story-2/annotation/${chapterId}`;
 
@@ -99,9 +140,10 @@ export const serializeStoryToIiif = (raw: Story): any => {
     }
 
     // Build target
-    const canvasId = chapter.canvasId || `${chapter.manifest}/canvas/${chapter.canvasIndex}`;
-    
-    let viewBoxValue = 'xywh=0,0,0,0';
+    const canvasId =
+      chapter.canvasId || `${chapter.manifest}/canvas/${chapter.canvasIndex}`;
+
+    let viewBoxValue = "xywh=0,0,0,0";
     if (chapter.viewBox) {
       const vx = Math.round(Math.max(0, chapter.viewBox.x));
       const vy = Math.round(Math.max(0, chapter.viewBox.y));
@@ -127,22 +169,22 @@ export const serializeStoryToIiif = (raw: Story): any => {
       }
     }
 
-    const target: any = {
+    const target: StoryTarget = {
       source: sourceUrl,
-      type: 'SpecificResource',
+      type: "SpecificResource",
       partOf: {
         id: chapter.manifest,
-        type: 'Manifest'
+        type: "Manifest",
       },
       selector: {
-        type: 'FragmentSelector',
-        conformsTo: 'http://www.w3.org/TR/media-frags/',
-        value: selectorValue
-      }
+        type: "FragmentSelector",
+        conformsTo: "http://www.w3.org/TR/media-frags/",
+        value: selectorValue,
+      },
     };
 
     // Build body list
-    const bodyItems: any[] = [];
+    const bodyItems: Record<string, unknown>[] = [];
 
     // Add narration segment
     if (chapter.narrationSegment) {
@@ -151,9 +193,9 @@ export const serializeStoryToIiif = (raw: Story): any => {
         if (track && track.src) {
           bodyItems.push({
             id: `${track.src}#t=${segment.start},${segment.end}`,
-            type: 'Sound',
-            format: 'audio/mp3',
-            language: lang
+            type: "Sound",
+            format: "audio/mp3",
+            language: lang,
           });
         }
       }
@@ -163,23 +205,38 @@ export const serializeStoryToIiif = (raw: Story): any => {
     if (chapter.annotations) {
       for (const [lang, annotation] of Object.entries(chapter.annotations)) {
         if (annotation.text) {
-          const placement = annotation.placement || { x: 4500, y: 6500, w: 800, h: 300 };
-          const px = Number.isFinite(placement.x) ? Math.round(placement.x) : 4500;
-          const py = Number.isFinite(placement.y) ? Math.round(placement.y) : 6500;
-          const pw = Number.isFinite(placement.w) && placement.w > 0 ? Math.round(placement.w) : 800;
-          const ph = Number.isFinite(placement.h) && placement.h > 0 ? Math.round(placement.h) : 300;
+          const placement = annotation.placement || {
+            x: 4500,
+            y: 6500,
+            w: 800,
+            h: 300,
+          };
+          const px = Number.isFinite(placement.x)
+            ? Math.round(placement.x)
+            : 4500;
+          const py = Number.isFinite(placement.y)
+            ? Math.round(placement.y)
+            : 6500;
+          const pw =
+            Number.isFinite(placement.w) && placement.w > 0
+              ? Math.round(placement.w)
+              : 800;
+          const ph =
+            Number.isFinite(placement.h) && placement.h > 0
+              ? Math.round(placement.h)
+              : 300;
           const serializedText = W3CParser.serialize({
             id: `${annotationId}-${lang}`,
             canvasId,
             text: annotation.text,
             shape: {
-              type: 'rect',
+              type: "rect",
               geometry: { x: px, y: py, w: pw, h: ph },
             },
           });
           bodyItems.push({
             ...serializedText.body[0],
-            purpose: 'describing',
+            purpose: "describing",
             language: lang,
             target: normaliseStoryTarget(serializedText.target),
           });
@@ -189,26 +246,34 @@ export const serializeStoryToIiif = (raw: Story): any => {
 
     return {
       id: annotationId,
-      type: 'Annotation',
-      motivation: 'supplementing',
+      type: "Annotation",
+      motivation: "supplementing",
       label: Object.keys(labelMap).length > 0 ? labelMap : undefined,
       summary: Object.keys(summaryMap).length > 0 ? summaryMap : undefined,
       transitionTimeMs: chapter.transitionTimeMs ?? 2000,
-      body: bodyItems.length === 1 ? bodyItems[0] : (bodyItems.length > 1 ? bodyItems : undefined),
-      target
+      body:
+        bodyItems.length === 1
+          ? bodyItems[0]
+          : bodyItems.length > 1
+            ? bodyItems
+            : undefined,
+      target,
     };
   });
 
   return {
-    '@context': 'http://iiif.io/api/presentation/3/context.json',
-    id: 'https://404mike.github.io/uv4-manifest/annotationList.json',
-    type: 'AnnotationPage',
-    label: Object.keys(label).length > 0 ? label : { en: ['Story Annotation Track'] },
-    items
+    "@context": "http://iiif.io/api/presentation/3/context.json",
+    id: "https://404mike.github.io/uv4-manifest/annotationList.json",
+    type: "AnnotationPage",
+    label:
+      Object.keys(label).length > 0
+        ? label
+        : { en: ["Story Annotation Track"] },
+    items,
   };
 };
 
-export const buildExportEnvelope = (raw: Story): any => {
+export const buildExportEnvelope = (raw: Story): ExportEnvelope => {
   return serializeStoryToIiif(raw);
 };
 
@@ -221,9 +286,9 @@ export const performFetchWithTimeout = async (
 
   try {
     const res = await fetch(cfg.endpoint as string, {
-      method: cfg.method ?? 'POST',
+      method: cfg.method ?? "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...(cfg.headers ?? {}),
       },
       credentials: cfg.credentials,
@@ -240,25 +305,46 @@ export const performFetchWithTimeout = async (
     try {
       body = await res.json();
     } catch {
-      return { ok: false, message: 'Save failed (invalid JSON response)' };
+      return { ok: false, message: "Save failed (invalid JSON response)" };
     }
 
-    const success = (body as any)?.success === true;
+    const response =
+      body && typeof body === "object"
+        ? (body as {
+            success?: unknown;
+            message?: unknown;
+            error?: { message?: unknown; code?: unknown };
+          })
+        : {};
+    const success = response.success === true;
     if (success) {
-      return { ok: true, message: (body as any)?.message ?? 'Saved successfully' };
+      return {
+        ok: true,
+        message:
+          typeof response.message === "string"
+            ? response.message
+            : "Saved successfully",
+      };
     }
 
     return {
       ok: false,
-      message: (body as any)?.error?.message || (body as any)?.message || 'Save failed',
-      code: (body as any)?.error?.code,
+      message:
+        (typeof response.error?.message === "string" &&
+          response.error.message) ||
+        (typeof response.message === "string" && response.message) ||
+        "Save failed",
+      code:
+        typeof response.error?.code === "string"
+          ? response.error.code
+          : undefined,
     };
   } catch (err) {
     clearTimeout(timeout);
-    if (err instanceof DOMException && err.name === 'AbortError') {
-      return { ok: false, message: 'Save timed out', code: 'timeout' };
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return { ok: false, message: "Save timed out", code: "timeout" };
     }
-    return { ok: false, message: 'Could not reach server', code: 'network' };
+    return { ok: false, message: "Could not reach server", code: "network" };
   }
 };
 
@@ -266,23 +352,41 @@ export const validateStoryForExport = (story: Story) => validateStory(story);
 
 export type StoryStoreWrapper = {
   loadStory: (next: Story) => void;
-  addChapterFromCapture: (payload: { capture: CapturePayload; id?: string }) => void;
+  addChapterFromCapture: (payload: {
+    capture: CapturePayload;
+    id?: string;
+  }) => void;
   setNarrationTrack: (payload: { language: string; src: string }) => void;
-  setChapterTitle: (payload: { chapterId: string; language: string; value: string }) => void;
-  setChapterDescription: (payload: { chapterId: string; language: string; value: string }) => void;
+  setChapterTitle: (payload: {
+    chapterId: string;
+    language: string;
+    value: string;
+  }) => void;
+  setChapterDescription: (payload: {
+    chapterId: string;
+    language: string;
+    value: string;
+  }) => void;
   setNarrationSegment: (payload: {
     chapterId: string;
     language: string;
     start: number;
     end: number;
   }) => void;
-  setAnnotationText: (payload: { chapterId: string; language: string; text: string }) => void;
+  setAnnotationText: (payload: {
+    chapterId: string;
+    language: string;
+    text: string;
+  }) => void;
   setAnnotationPlacement: (payload: {
     chapterId: string;
     language: string;
-    placement: any;
+    placement: import("../core/types/story").AnnotationPlacement;
   }) => void;
-  setAdvanceMode: (payload: { chapterId: string; mode: any }) => void;
+  setAdvanceMode: (payload: {
+    chapterId: string;
+    mode: import("../core/types/story").ChapterAdvance["mode"];
+  }) => void;
   setDelay: (payload: { chapterId: string; delayMs?: number }) => void;
 };
 
@@ -291,21 +395,23 @@ export const loadStoryIntoStore = (
   storyStoreWrapper: StoryStoreWrapper,
 ): void => {
   storyStoreWrapper.loadStory({
-    version: '1.0',
-    type: 'story',
+    version: "1.0",
+    type: "story",
     title: storyToLoad.title,
     chapters: [],
   });
 
   if (storyToLoad.narration) {
-    for (const [lang, track] of Object.entries(storyToLoad.narration.tracks || {})) {
+    for (const [lang, track] of Object.entries(
+      storyToLoad.narration.tracks || {},
+    )) {
       storyStoreWrapper.setNarrationTrack({ language: lang, src: track.src });
     }
   }
 
   for (const chapter of storyToLoad.chapters || []) {
     const capture: CapturePayload = {
-      manifest: chapter.manifest || '',
+      manifest: chapter.manifest || "",
       canvasIndex: chapter.canvasIndex || 0,
       canvasId: chapter.canvasId,
       viewBox: chapter.viewBox,
@@ -318,13 +424,21 @@ export const loadStoryIntoStore = (
 
     if (chapter.title) {
       for (const [lang, value] of Object.entries(chapter.title)) {
-        storyStoreWrapper.setChapterTitle({ chapterId: chapter.id, language: lang, value });
+        storyStoreWrapper.setChapterTitle({
+          chapterId: chapter.id,
+          language: lang,
+          value,
+        });
       }
     }
 
     if (chapter.description) {
       for (const [lang, value] of Object.entries(chapter.description)) {
-        storyStoreWrapper.setChapterDescription({ chapterId: chapter.id, language: lang, value });
+        storyStoreWrapper.setChapterDescription({
+          chapterId: chapter.id,
+          language: lang,
+          value,
+        });
       }
     }
 
@@ -359,11 +473,17 @@ export const loadStoryIntoStore = (
     }
 
     if (chapter.advance?.mode) {
-      storyStoreWrapper.setAdvanceMode({ chapterId: chapter.id, mode: chapter.advance.mode });
+      storyStoreWrapper.setAdvanceMode({
+        chapterId: chapter.id,
+        mode: chapter.advance.mode,
+      });
     }
 
     if (chapter.transitionTimeMs !== undefined) {
-      storyStoreWrapper.setDelay({ chapterId: chapter.id, delayMs: chapter.transitionTimeMs });
+      storyStoreWrapper.setDelay({
+        chapterId: chapter.id,
+        delayMs: chapter.transitionTimeMs,
+      });
     }
   }
 };

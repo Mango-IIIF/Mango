@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
+  /* eslint-disable svelte/no-at-html-tags -- HTML bodies are sanitized before rendering */
+  import { getViewerContext } from '../context';
   import { t } from '../../i18n';
   import { sanitizeHtml } from '../util/sanitiseHtml';
   import PanelCloseButton from './PanelCloseButton.svelte';
@@ -11,7 +12,7 @@
 
   let { redesigned = false, onclose = undefined }: Props = $props();
 
-  const viewer = getContext<any>('viewer-context');
+  const viewer = getViewerContext();
   const { overlayAnnotations } = viewer.derived;
   const { activeAnnotationId } = viewer.state;
   const controller = viewer.controller;

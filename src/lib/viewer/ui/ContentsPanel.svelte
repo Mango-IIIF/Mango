@@ -5,7 +5,7 @@
     MangoAVChaptersElement,
     MangoAVTranscriptElement,
   } from '@mango-iiif/av';
-  import { getContext } from 'svelte';
+  import { getViewerContext } from '../context';
   import { t } from '../../i18n';
   import PanelCloseButton from './PanelCloseButton.svelte';
 
@@ -21,7 +21,7 @@
     onclose = undefined,
   }: Props = $props();
 
-  const viewer = getContext<any>('viewer-context');
+  const viewer = getViewerContext();
   const { avChaptersAvailable, avTranscriptAvailable } = viewer.derived;
   const avController = viewer.derived.av.controller;
 

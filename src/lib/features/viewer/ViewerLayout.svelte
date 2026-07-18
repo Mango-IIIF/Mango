@@ -42,6 +42,10 @@
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
   import { ChevronsRight, Expand, Shrink } from '@lucide/svelte';
+  import { setViewerContext } from '../../viewer/context';
+  import { createViewerFullscreenController } from '../../viewer/lifecycle/fullscreen';
+  import { observeResponsiveLayout } from '../../viewer/lifecycle/responsiveLayout';
+  import type { Component } from 'svelte';
 
   interface Props {
     manifestId?: string;
@@ -131,9 +135,9 @@
     initialNormalisedConfig,
     typeof window !== 'undefined' ? parseURLHash(window.location.hash) : {},
   );
-  let StoryControlsStageComponent: any = $state(null);
-  let StoryAnnotationOverlayComponent: any = $state(null);
-  let AnnotationWorkspaceComponent: any = $state(null);
+  let StoryControlsStageComponent: Component | null = $state(null);
+  let StoryAnnotationOverlayComponent: Component | null = $state(null);
+  let AnnotationWorkspaceComponent: Component | null = $state(null);
   let storyComponentsLoading = false;
   let annotationWorkspaceLoading = false;
   const createInitialViewerState = () =>
@@ -149,9 +153,9 @@
   const controller = createViewerController({
     state: viewerState,
     derived: viewerDerived,
-    dispatch: (event: string, payload: any) => {
+    dispatch: (event, payload) => {
       if (event === 'storyViewerError') {
-        onstoryViewerError?.(payload);
+        onstoryViewerError?.(payload as ViewerEventMap['storyViewerError']);
       }
     },
     applyViewBox: (box) => stageRef?.setViewBox?.(box),
@@ -379,7 +383,6 @@
   let viewerRoot: HTMLDivElement | null = $state(null);
   let isViewerFullscreen = $state(false);
   let isViewerFullscreenFallback = $state(false);
-  let fullscreenFallbackCleanup: (() => void) | null = null;
   let storyChapterThumbnails: Array<string | null> = $state([]);
   const storyThumbnailCache = new Map<string, string>();
   let storyChapterDurationSec = $state(0);
@@ -452,10 +455,17 @@
     return null;
   }
 
-  function callViewerMethod<T extends (...args: any[]) => any>(name: string, fallback: T, ...args: Parameters<T>): ReturnType<T> {
+  function callViewerMethod<TArgs extends unknown[], TResult>(
+    name: string,
+    fallback: (...args: TArgs) => TResult,
+    ...args: TArgs
+  ): TResult {
     const host = getShadowHost();
-    if (host && Object.prototype.hasOwnProperty.call(host, name)) {
-      return (host as any)[name](...args);
+    const method = host
+      ? (host as unknown as Record<string, unknown>)[name]
+      : undefined;
+    if (typeof method === 'function') {
+      return method.apply(host, args) as TResult;
     }
     return fallback(...args);
   }
@@ -546,35 +556,15 @@
     if (storyControlsDisabled || storyLoading) return;
     void storyRuntime.loadChapter(storyCurrentChapterIndex, { autoPlay: false });
   };
-  const handleStoryFullscreen = async () => {
-    if (typeof document === 'undefined') return;
-    if (isViewerFullscreenFallback) {
-      setViewerFullscreenFallback(false);
-      return;
-    }
-    if (isNativeViewerFullscreenActive()) {
-      await document.exitFullscreen?.();
-      syncFullscreenState();
-      return;
-    }
-    if (!viewerRoot) return;
-
-    if (canUseNativeFullscreen()) {
-      try {
-        await viewerRoot.requestFullscreen({ navigationUI: 'hide' });
-        syncFullscreenState();
-        if (!isNativeViewerFullscreenActive()) {
-          setViewerFullscreenFallback(true);
-        }
-        return;
-      } catch {
-        setViewerFullscreenFallback(true);
-        return;
-      }
-    }
-
-    setViewerFullscreenFallback(true);
-  };
+  const fullscreenController = createViewerFullscreenController({
+    getRoot: () => viewerRoot,
+    getShadowHost,
+    onChange: ({ active, fallback }) => {
+      isViewerFullscreen = active;
+      isViewerFullscreenFallback = fallback;
+    },
+  });
+  const handleStoryFullscreen = () => fullscreenController.toggle();
 
   const closeMobileLeftDrawer = () => {
     controller.setPanelOpen('contents', false);
@@ -595,122 +585,18 @@
     sidebarCollapsed = false;
   };
 
-  const isNativeViewerFullscreenActive = () => {
-    if (!viewerRoot || typeof document === 'undefined') return false;
-    const rootNode = viewerRoot.getRootNode();
-    const shadowFullscreenElement =
-      rootNode instanceof ShadowRoot ? rootNode.fullscreenElement : null;
-    const host = getShadowHost();
-    return (
-      document.fullscreenElement === viewerRoot ||
-      document.fullscreenElement === host ||
-      shadowFullscreenElement === viewerRoot
-    );
-  };
-
-  const isViewerFullscreenActive = () =>
-    isViewerFullscreenFallback || isNativeViewerFullscreenActive();
-
-  const canUseNativeFullscreen = () =>
-    Boolean(viewerRoot?.requestFullscreen) && document.fullscreenEnabled !== false;
-
-  const setViewerFullscreenFallback = (active: boolean) => {
-    if (typeof document === 'undefined') return;
-    if (isViewerFullscreenFallback === active) {
-      syncFullscreenState();
-      return;
-    }
-    fullscreenFallbackCleanup?.();
-    fullscreenFallbackCleanup = null;
-    isViewerFullscreenFallback = active;
-    if (active) {
-      const body = document.body;
-      const root = document.documentElement;
-      const previousBodyOverflow = body.style.overflow;
-      const previousRootOverflow = root.style.overflow;
-      body.style.overflow = 'hidden';
-      root.style.overflow = 'hidden';
-      fullscreenFallbackCleanup = () => {
-        body.style.overflow = previousBodyOverflow;
-        root.style.overflow = previousRootOverflow;
-      };
-    }
-    syncFullscreenState();
-  };
-
-  const syncFullscreenState = () => {
-    isViewerFullscreen = isViewerFullscreenActive();
-  };
-
-  const allowsFullscreenTouchInteraction = (target: EventTarget) =>
-    target instanceof Element &&
-    (target.classList.contains('gallery__list') ||
-      target.classList.contains('panel-stack--left') ||
-      target.classList.contains('stage-gallery-view') ||
-      target.classList.contains('osd') ||
-      target.classList.contains('osd__viewport') ||
-      target.classList.contains('openseadragon-canvas'));
-
-  const guardFullscreenDrag = (event: TouchEvent | PointerEvent) => {
-    if (!isViewerFullscreenActive()) return;
-    if ('pointerType' in event && event.pointerType !== 'touch') return;
-    const path = event.composedPath();
-    if (path.some(allowsFullscreenTouchInteraction)) {
-      return;
-    }
-    event.preventDefault();
-  };
-
-  const handleFullscreenKeydown = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || !isViewerFullscreenFallback) return;
-    event.preventDefault();
-    setViewerFullscreenFallback(false);
-  };
-
-  let wasMobileLayout = initialMobileLayout;
-  const syncMobileLayout = () => {
-    if (!viewerRoot) return;
-    const nextIsMobileLayout = viewerRoot.clientWidth <= MOBILE_LAYOUT_WIDTH;
-    if (nextIsMobileLayout && !wasMobileLayout) {
-      closeLeftPanelStores();
-    }
-    isMobileLayout = nextIsMobileLayout;
-    wasMobileLayout = nextIsMobileLayout;
-  };
-
   onMount(() => {
-    const root = viewerRoot;
-    syncMobileLayout();
-    syncFullscreenState();
-    document.addEventListener('fullscreenchange', syncFullscreenState);
-    document.addEventListener('keydown', handleFullscreenKeydown, { capture: true });
-    root?.addEventListener('touchmove', guardFullscreenDrag, {
-      capture: true,
-      passive: false,
+    const detachFullscreen = fullscreenController.attach();
+    const detachResponsiveLayout = observeResponsiveLayout({
+      root: viewerRoot,
+      breakpoint: MOBILE_LAYOUT_WIDTH,
+      wasMobile: initialMobileLayout,
+      onChange: (value) => { isMobileLayout = value; },
+      onEnterMobile: closeLeftPanelStores,
     });
-    root?.addEventListener('pointermove', guardFullscreenDrag, {
-      capture: true,
-    });
-    let observer: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined' && root) {
-      observer = new ResizeObserver(() => {
-        syncMobileLayout();
-      });
-      observer.observe(root);
-    }
     return () => {
-      document.removeEventListener('fullscreenchange', syncFullscreenState);
-      document.removeEventListener('keydown', handleFullscreenKeydown, {
-        capture: true,
-      });
-      setViewerFullscreenFallback(false);
-      root?.removeEventListener('touchmove', guardFullscreenDrag, {
-        capture: true,
-      });
-      root?.removeEventListener('pointermove', guardFullscreenDrag, {
-        capture: true,
-      });
-      observer?.disconnect();
+      detachResponsiveLayout();
+      detachFullscreen();
     };
   });
 
@@ -819,7 +705,7 @@
   });
   onDestroy(unsubscribeActiveId);
 
-  const handleAnnotationCreate = async (payload: { annotation: any }) => {
+  const handleAnnotationCreate = async (payload: { annotation: unknown }) => {
     const annotation = payload?.annotation;
     if (!annotation || typeof annotation !== 'object') return;
 
@@ -1189,7 +1075,7 @@
     storyData = null;
     storyChapters = 0;
 
-    let source: any = undefined;
+    let source: unknown = undefined;
     if (story !== undefined && story !== null && `${story}` !== '') {
       source = story;
     } else if (storyUrl) {
@@ -1376,7 +1262,7 @@
   let storyCurrentChapterId = $derived(
     storyData?.chapters[storyCurrentChapterIndex]?.id ?? null,
   );
-  setContext('viewer-context', {
+  setViewerContext({
     state: viewerState,
     derived: viewerDerived,
     controller,

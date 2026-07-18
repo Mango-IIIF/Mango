@@ -24,6 +24,7 @@
   import type { ImageFilters } from '../core/types/filters';
   import type { ViewBox } from '../core/types/viewer';
   import type { ViewerConfig } from '../core/types/config';
+  import type { ActiveLayoutImage } from '../core/types/renderer';
 
   interface Props {
     source?: MediaSource | null;
@@ -34,7 +35,7 @@
     activeAnnotationId?: string | null;
     hoverAnnotationId?: string | null;
     layoutMode?: 'single' | 'two-page' | 'continuous';
-    activeLayoutImages?: any[];
+    activeLayoutImages?: ActiveLayoutImage[];
     osdConfig?: Record<string, unknown>;
     legacyOsdConfig?: ViewerConfig['osd'];
     rotation?: number;
@@ -71,7 +72,7 @@
     onviewerready = undefined,
   }: Props = $props();
 
-  let osd: any = $state(null);
+  let osd: ReturnType<typeof OSDViewer> | null = $state(null);
   let tileSource: TileSource | null = $derived(toTileSource(source));
 
   const toTileSource = (media: MediaSource | null): TileSource | null => {

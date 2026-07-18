@@ -1,19 +1,20 @@
 /**
  * MediaController
- * 
+ *
  * Manages media sources, playback events, and media state tracking.
  * Handles media selection, playback control, and model changes.
  */
 
-import { derived, get } from 'svelte/store';
-import type { ViewerStateStores } from '../viewerState';
-import type { ViewerDerivedStores } from '../viewerDerived';
-import type { MediaSource, MediaType } from '../../../iiif/mediaResolver';
+import { derived } from "svelte/store";
+import type { ViewerStateStores } from "../viewerState";
+import type { ViewerDerivedStores } from "../viewerDerived";
+import type { MediaSource, MediaType } from "../../../iiif/mediaResolver";
+import type { ViewerEventEmitter } from "../../../core/types/events";
 
 export type MediaControllerConfig = {
   state: ViewerStateStores;
   derived: ViewerDerivedStores;
-  emitEvent: <K extends string>(event: K, payload: any) => void;
+  emitEvent: ViewerEventEmitter;
   emitStateChange: () => void;
   getCanvasId: () => string | null;
 };
@@ -31,8 +32,14 @@ export type MediaController = {
     fieldOfView?: string;
     orientation?: string;
   }) => void;
-  getMediaLabel: (source: MediaSource, translate: (key: string) => string) => string;
-  getMediaTypeLabel: (type: MediaType | null, translate: (key: string) => string) => string;
+  getMediaLabel: (
+    source: MediaSource,
+    translate: (key: string) => string,
+  ) => string;
+  getMediaTypeLabel: (
+    type: MediaType | null,
+    translate: (key: string) => string,
+  ) => string;
   setupMediaEffects: () => (() => void)[];
 };
 
@@ -43,40 +50,39 @@ export const createMediaController = ({
   emitStateChange,
   getCanvasId,
 }: MediaControllerConfig): MediaController => {
-  let lastMediaKey = '';
-
-  const emitMediaEvent = <K extends 'mediaPlay' | 'mediaPause' | 'mediaTimeUpdate' | 'mediaSeek' | 'mediaSegmentEnd'>(
-    event: K,
-    detail: any,
-  ) => {
-    const canvasId = getCanvasId();
-    if (!canvasId) return;
-    emitEvent(event, { canvasId, ...detail });
-  };
+  let lastMediaKey = "";
 
   const handleMediaPlay = (detail: { time: number }) => {
-    emitMediaEvent('mediaPlay', { time: detail.time });
+    const canvasId = getCanvasId();
+    if (canvasId) emitEvent("mediaPlay", { canvasId, time: detail.time });
   };
 
   const handleMediaPause = (detail: { time: number }) => {
-    emitMediaEvent('mediaPause', { time: detail.time });
+    const canvasId = getCanvasId();
+    if (canvasId) emitEvent("mediaPause", { canvasId, time: detail.time });
   };
 
-  const handleMediaTimeUpdate = (detail: { time: number; duration?: number }) => {
+  const handleMediaTimeUpdate = (detail: {
+    time: number;
+    duration?: number;
+  }) => {
     state.mediaTime.set(detail.time);
     if (detail.duration != null) {
       state.mediaDuration.set(detail.duration);
     }
-    emitMediaEvent('mediaTimeUpdate', detail);
+    const canvasId = getCanvasId();
+    if (canvasId) emitEvent("mediaTimeUpdate", { canvasId, ...detail });
   };
 
   const handleMediaSeek = (detail: { from: number; to: number }) => {
     state.mediaTime.set(detail.to);
-    emitMediaEvent('mediaSeek', detail);
+    const canvasId = getCanvasId();
+    if (canvasId) emitEvent("mediaSeek", { canvasId, ...detail });
   };
 
   const handleMediaSegmentEnd = () => {
-    emitMediaEvent('mediaSegmentEnd', {});
+    const canvasId = getCanvasId();
+    if (canvasId) emitEvent("mediaSegmentEnd", { canvasId });
   };
 
   const handleModelChange = (detail: {
@@ -88,14 +94,14 @@ export const createMediaController = ({
   }) => {
     const canvasId = getCanvasId();
     if (!canvasId) return;
-    emitEvent('modelChange', { canvasId, ...detail });
+    emitEvent("modelChange", { canvasId, ...detail });
   };
 
   const getMediaLabel = (
     source: MediaSource,
     translate: (key: string) => string,
   ): string => {
-    if (typeof source.label === 'string' && source.label.trim()) {
+    if (typeof source.label === "string" && source.label.trim()) {
       return source.label;
     }
     if (source.format) return source.format;
@@ -106,7 +112,7 @@ export const createMediaController = ({
     type: MediaType | null,
     translate: (key: string) => string,
   ): string => {
-    if (!type) return translate('common.emptyValue');
+    if (!type) return translate("common.emptyValue");
     return translate(`media.type.${type}`);
   };
 
@@ -136,7 +142,7 @@ export const createMediaController = ({
         state.selectedCanvasIndex,
       ],
       ([source, type, canvases, index]) => {
-        const key = source ? `${source.type}:${source.src}` : '';
+        const key = source ? `${source.type}:${source.src}` : "";
         if (key && key !== lastMediaKey) {
           lastMediaKey = key;
           state.viewBox.set(null);
@@ -145,11 +151,11 @@ export const createMediaController = ({
           state.mediaDuration.set(undefined);
           const canvas = canvases[index];
           if (canvas?.id && type) {
-            emitEvent('mediaChange', { canvasId: canvas.id, mediaType: type });
+            emitEvent("mediaChange", { canvasId: canvas.id, mediaType: type });
             emitStateChange();
           }
         } else if (!key) {
-          lastMediaKey = '';
+          lastMediaKey = "";
         }
       },
     );

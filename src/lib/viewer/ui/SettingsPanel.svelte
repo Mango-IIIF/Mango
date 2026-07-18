@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
+  import { getViewerContext } from '../context';
   import { supportedLocales, t } from '../../i18n';
   import PanelCloseButton from './PanelCloseButton.svelte';
 
@@ -10,7 +10,7 @@
 
   let { redesigned = false, onclose = undefined }: Props = $props();
 
-  const viewer = getContext<any>('viewer-context');
+  const viewer = getViewerContext();
   const settings = viewer.settings;
   const { layoutMode } = viewer.derived;
 

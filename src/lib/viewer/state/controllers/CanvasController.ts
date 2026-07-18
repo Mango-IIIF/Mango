@@ -1,19 +1,20 @@
 /**
  * CanvasController
- * 
+ *
  * Manages canvas (page) selection, navigation, and lifecycle.
  * Handles canvas change effects including state resets.
  */
 
-import { derived, get } from 'svelte/store';
-import type { ViewerStateStores } from '../viewerState';
-import type { ViewerDerivedStores } from '../viewerDerived';
-import { DEFAULT_IMAGE_FILTERS } from '../../../core/types/filters';
+import { derived, get } from "svelte/store";
+import type { ViewerStateStores } from "../viewerState";
+import type { ViewerDerivedStores } from "../viewerDerived";
+import { DEFAULT_IMAGE_FILTERS } from "../../../core/types/filters";
+import type { ViewerEventEmitter } from "../../../core/types/events";
 
 export type CanvasControllerConfig = {
   state: ViewerStateStores;
   derived: ViewerDerivedStores;
-  emitEvent: <K extends string>(event: K, payload: any) => void;
+  emitEvent: ViewerEventEmitter;
   emitStateChange: () => void;
   preserveViewport?: boolean; // If true, maintains viewport across canvas changes
 };
@@ -34,7 +35,7 @@ export const createCanvasController = ({
   emitStateChange,
   preserveViewport = false,
 }: CanvasControllerConfig): CanvasController => {
-  let lastCanvasId = '';
+  let lastCanvasId = "";
   let lastCanvasIndex = -1;
 
   const getCanvasIndex = () => get(state.selectedCanvasIndex);
@@ -82,7 +83,7 @@ export const createCanvasController = ({
       [derivedStores.canvases, state.selectedCanvasIndex],
       ([canvases, index]) => {
         const canvas = canvases[index];
-        const canvasId = canvas?.id ?? '';
+        const canvasId = canvas?.id ?? "";
         if (
           canvasId &&
           (canvasId !== lastCanvasId || index !== lastCanvasIndex)
@@ -90,7 +91,7 @@ export const createCanvasController = ({
           const isInitialLoad = !lastCanvasId;
           lastCanvasId = canvasId;
           lastCanvasIndex = index;
-          
+
           if (!isInitialLoad) {
             // Reset state when canvas changes (unless preserveViewport is enabled)
             state.selectedMediaIndex.set(0);
@@ -106,8 +107,8 @@ export const createCanvasController = ({
             state.mediaTime.set(0);
             state.mediaDuration.set(undefined);
           }
-          
-          emitEvent('pageChange', { canvasId, index, label: canvas?.label });
+
+          emitEvent("pageChange", { canvasId, index, label: canvas?.label });
           emitStateChange();
         }
       },

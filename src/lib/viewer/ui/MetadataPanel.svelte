@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { getContext, onMount } from 'svelte';
+  /* eslint-disable svelte/no-at-html-tags -- IIIF HTML is sanitized before rendering */
+  import { onMount } from 'svelte';
+  import { getViewerContext } from '../context';
   import { t } from '../../i18n';
 
   import 'ol/ol.css';
@@ -14,6 +16,7 @@
   import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
   import { fromLonLat } from 'ol/proj.js';
   import PanelCloseButton from './PanelCloseButton.svelte';
+  import { sanitizeHtml } from '../util/sanitiseHtml';
 
   interface Props {
     redesigned?: boolean;
@@ -22,7 +25,7 @@
 
   let { redesigned = false, onclose = undefined }: Props = $props();
 
-  const viewer = getContext<any>('viewer-context');
+  const viewer = getViewerContext();
   const {
     manifestTitle,
     manifestDescription,
@@ -116,7 +119,7 @@
     {/if}
     {#if $manifestDescription}
       <div class="metadata__description">
-        {@html $manifestDescription}
+        {@html sanitizeHtml($manifestDescription)}
       </div>
     {/if}
     {#if $manifestProviders.length > 0}
@@ -171,7 +174,7 @@
             $t('viewer.panels.metadata.attribution')}
         </div>
         <div class="metadata__block-value">
-          {@html $manifestAttribution.value}
+          {@html sanitizeHtml($manifestAttribution.value)}
         </div>
       </div>
     {/if}
@@ -196,7 +199,9 @@
       <dl class="metadata__list">
         {#each $manifestMetadata as item}
           <dt class="metadata__term">{item.label}</dt>
-          <dd class="metadata__value">{@html item.value}</dd>
+          <dd class="metadata__value">
+            {@html sanitizeHtml(item.value)}
+          </dd>
         {/each}
       </dl>
     {:else if !$manifestDescription && !$manifestAttribution.value && !$manifestLicence}

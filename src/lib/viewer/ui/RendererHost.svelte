@@ -6,9 +6,11 @@
   import type { ViewBox } from '../../core/types/viewer';
   import type { RendererEventHandlers } from '../types/rendererEvents';
   import type { ViewerConfig } from '../../core/types/config';
+  import type { ActiveLayoutImage, RendererComponent, RendererInstance } from '../../core/types/renderer';
+  import type { ModelViewChange } from '../../core/types/events';
 
   interface Props {
-    rendererComponent?: any;
+    rendererComponent?: RendererComponent | null;
     avController?: AVPlayerController;
     source?: MediaSource | null;
     annotations?: ResolvedAnnotation[];
@@ -30,8 +32,8 @@
     layers?: MediaSource[];
     layerOpacities?: Record<string, number>;
     layoutMode?: 'single' | 'two-page' | 'continuous';
-    activeLayoutImages?: any[];
-    rendererInstance?: any;
+    activeLayoutImages?: ActiveLayoutImage[];
+    rendererInstance?: RendererInstance | null;
   }
 
   let {
@@ -91,7 +93,7 @@
     rendererHandlers?.onAnnotationClear?.();
   };
 
-  const handleModelChange = (detail: any) => {
+  const handleModelChange = (detail: ModelViewChange) => {
     rendererHandlers?.onModelChange?.(detail);
   };
 

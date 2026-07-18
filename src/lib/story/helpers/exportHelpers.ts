@@ -2,13 +2,13 @@
  * Export Helpers - Functions for building export envelopes
  */
 
-import type { Story } from '../../core/types/story';
+import type { Chapter, Story } from "../../core/types/story";
 
 export type ExportEnvelope = {
   version: 1;
   exportedAt: string;
   meta: {
-    source: 'storybuilder';
+    source: "storybuilder";
     appVersion?: string;
   };
   data: Story;
@@ -24,17 +24,18 @@ export const buildExportEnvelope = (
   const mapped = {
     ...story,
     chapters: story.chapters.map((chapter, index) => {
-      const { advance, annotationPlacement, annotations, ...rest } = chapter as any;
+      const { advance, annotationPlacement, annotations, ...rest } = chapter;
       const transitionTimeMs = advance?.delayMs;
-      const next: any = { ...rest, id: `chapter_${index + 1}` };
+      const next: Chapter = { ...rest, id: `chapter_${index + 1}` };
       const mergedAnnotations = { ...(annotations ?? {}) };
-      
+
       // Push placement into each annotation entry if missing, or as a special key
       if (annotationPlacement) {
         for (const lang of Object.keys(mergedAnnotations)) {
           mergedAnnotations[lang] = {
             ...(mergedAnnotations[lang] ?? {}),
-            placement: mergedAnnotations[lang]?.placement ?? annotationPlacement,
+            placement:
+              mergedAnnotations[lang]?.placement ?? annotationPlacement,
           };
         }
         // If no annotations exist, keep placement as fallback
@@ -42,7 +43,7 @@ export const buildExportEnvelope = (
           mergedAnnotations._default = { placement: annotationPlacement };
         }
       }
-      
+
       if (Object.keys(mergedAnnotations).length > 0) {
         next.annotations = mergedAnnotations;
       }
@@ -52,12 +53,12 @@ export const buildExportEnvelope = (
       return next;
     }),
   };
-  
+
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
     meta: {
-      source: 'storybuilder',
+      source: "storybuilder",
       ...(appVersion ? { appVersion } : {}),
     },
     data: mapped as Story,

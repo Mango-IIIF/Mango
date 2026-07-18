@@ -1,40 +1,60 @@
 /**
  * ViewerController
- * 
+ *
  * Main controller that orchestrates sub-controllers and manages the viewer lifecycle.
  * Delegates specific responsibilities to focused controllers while coordinating overall state.
  */
 
-import { get } from 'svelte/store';
-import { createEventBus } from '../../events/eventBus';
-import type { ViewerEventBus, ViewerEventMap } from '../../core/types/events';
-import { fetchManifest } from '../../state/manifests';
-import { DEFAULT_IMAGE_FILTERS, type ImageFilters } from '../../core/types/filters';
-import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
-import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
-import type { ViewBox, ViewerStateSnapshot } from '../../core/types/viewer';
-import { setLocale } from '../../i18n';
-import { createAnnotationInteractionHandlers } from '../annotations/interactions';
-import { createExternalAnnotationEffects } from '../annotations/externalAnnotations';
-import type { ViewerDerivedStores } from './viewerDerived';
-import type { ViewerStateStores } from './viewerState';
+import { get } from "svelte/store";
+import { createEventBus } from "../../events/eventBus";
+import type {
+  ViewerEventBus,
+  ViewerEventEmitter,
+  ViewerEventMap,
+} from "../../core/types/events";
+import { fetchManifest } from "../../state/manifests";
+import {
+  DEFAULT_IMAGE_FILTERS,
+  type ImageFilters,
+} from "../../core/types/filters";
+import type { ResolvedAnnotation } from "../../iiif/annotationResolver";
+import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
+import type { ViewBox, ViewerStateSnapshot } from "../../core/types/viewer";
+import { setLocale } from "../../i18n";
+import { createAnnotationInteractionHandlers } from "../annotations/interactions";
+import { createExternalAnnotationEffects } from "../annotations/externalAnnotations";
+import type { ViewerDerivedStores } from "./viewerDerived";
+import type { ViewerStateStores } from "./viewerState";
 
 // Import sub-controllers
-import { createCanvasController, type CanvasController } from './controllers/CanvasController';
-import { createMediaController, type MediaController } from './controllers/MediaController';
-import { createAnnotationController, type AnnotationController } from './controllers/AnnotationController';
-import { createPanelController, type PanelController, type ViewerPanel } from './controllers/PanelController';
-import { createViewStateController, type ViewStateController } from './controllers/ViewStateController';
+import {
+  createCanvasController,
+  type CanvasController,
+} from "./controllers/CanvasController";
+import {
+  createMediaController,
+  type MediaController,
+} from "./controllers/MediaController";
+import {
+  createAnnotationController,
+  type AnnotationController,
+} from "./controllers/AnnotationController";
+import {
+  createPanelController,
+  type PanelController,
+  type ViewerPanel,
+} from "./controllers/PanelController";
+import {
+  createViewStateController,
+  type ViewStateController,
+} from "./controllers/ViewStateController";
 
-type Dispatch = <K extends keyof ViewerEventMap>(
-  event: K,
-  payload: ViewerEventMap[K],
-) => void;
+type Dispatch = ViewerEventEmitter;
 
 export type ViewerController = {
   events: ViewerEventBus;
-  on: ViewerEventBus['on'];
-  off: ViewerEventBus['off'];
+  on: ViewerEventBus["on"];
+  off: ViewerEventBus["off"];
   emitStateChange: () => void;
   emitEvent: <K extends keyof ViewerEventMap>(
     event: K,
@@ -60,12 +80,14 @@ export type ViewerController = {
     value: ImageFilters[K],
   ) => void;
   resetImageFilters: () => void;
-  setAnnotationMode: (mode: 'edit' | 'create') => void;
+  setAnnotationMode: (mode: "edit" | "create") => void;
   setSearchQuery: (value: string) => void;
   handleSearchResultClick: (annotation: ResolvedAnnotation) => void;
   setPanelOpen: (panel: ViewerPanel, open: boolean) => void;
   updateLayerOpacity: (id: string, opacity: number) => void;
-  setLayoutMode: (mode: 'single' | 'two-page' | 'continuous' | 'gallery') => void;
+  setLayoutMode: (
+    mode: "single" | "two-page" | "continuous" | "gallery",
+  ) => void;
   handleViewBoxChange: (detail: { viewBox: ViewBox }) => void;
   handleZoomChange: (detail: { zoom: number; viewBox: ViewBox }) => void;
   handleRotationChange: (detail: { rotation: number }) => void;
@@ -82,10 +104,19 @@ export type ViewerController = {
     orientation?: string;
   }) => void;
   handleAnnotationHover: (detail: { id: string | null }) => void;
-  handleAnnotationSelect: (detail: { id: string; preventZoom?: boolean }) => void;
+  handleAnnotationSelect: (detail: {
+    id: string;
+    preventZoom?: boolean;
+  }) => void;
   handleAnnotationClear: () => void;
-  getMediaLabel: (source: MediaSource, translate: (key: string) => string) => string;
-  getMediaTypeLabel: (type: MediaType | null, translate: (key: string) => string) => string;
+  getMediaLabel: (
+    source: MediaSource,
+    translate: (key: string) => string,
+  ) => string;
+  getMediaTypeLabel: (
+    type: MediaType | null,
+    translate: (key: string) => string,
+  ) => string;
   destroy: () => void;
 };
 
@@ -106,14 +137,14 @@ export const createViewerController = ({
   let eventTarget: EventTarget | null = null;
   const unsubscribers: Array<() => void> = [];
 
-  let lastManifestId = '';
-  let lastErrorMessage = '';
-  let lastSearchQuery = '';
-  let lastConfigStr = '';
+  let lastManifestId = "";
+  let lastErrorMessage = "";
+  let lastSearchQuery = "";
+  let lastConfigStr = "";
 
-  const emitEvent = <K extends string>(event: K, payload: any) => {
-    eventBus.emit(event as any, payload);
-    dispatch(event as any, payload);
+  const emitEvent: ViewerEventEmitter = (event, payload) => {
+    eventBus.emit(event, payload);
+    dispatch(event, payload);
     if (eventTarget) {
       eventTarget.dispatchEvent(
         new CustomEvent(event, {
@@ -126,7 +157,7 @@ export const createViewerController = ({
   };
 
   const emitStateChange = () => {
-    emitEvent('stateChange', { snapshot: getStateSnapshot() });
+    emitEvent("stateChange", { snapshot: getStateSnapshot() });
   };
 
   const getStateSnapshot = (): ViewerStateSnapshot => {
@@ -175,17 +206,19 @@ export const createViewerController = ({
     getCanvasId: canvasController.getCanvasId,
   });
 
-  const annotationController: AnnotationController = createAnnotationController({
-    state,
-    derived: derivedStores,
-    emitEvent,
-    emitStateChange,
-    getCanvasId: canvasController.getCanvasId,
-    getCanvasIndex: canvasController.getCanvasIndex,
-    setCanvasById: canvasController.setCanvasById,
-    setPendingViewBox: viewStateController.setPendingViewBox,
-    applyViewBox,
-  });
+  const annotationController: AnnotationController = createAnnotationController(
+    {
+      state,
+      derived: derivedStores,
+      emitEvent,
+      emitStateChange,
+      getCanvasId: canvasController.getCanvasId,
+      getCanvasIndex: canvasController.getCanvasIndex,
+      setCanvasById: canvasController.setCanvasById,
+      setPendingViewBox: viewStateController.setPendingViewBox,
+      applyViewBox,
+    },
+  );
 
   const panelController: PanelController = createPanelController({
     state,
@@ -246,7 +279,7 @@ export const createViewerController = ({
           state.rotation.set(0);
         }
         state.selectedMediaIndex.set(0);
-        state.searchQuery.set('');
+        state.searchQuery.set("");
         state.imageFilters.set({ ...DEFAULT_IMAGE_FILTERS });
         state.activeAnnotationId.set(null);
         state.hoverAnnotationId.set(null);
@@ -255,13 +288,11 @@ export const createViewerController = ({
         state.externalAnnotations.set({});
         clearPersistedAnnotations();
         annotationEffects.reset();
-        emitEvent('manifestChange', { manifestId });
+        emitEvent("manifestChange", { manifestId });
         emitStateChange();
       }
     }),
   );
-
-
 
   // Setup config subscription
   unsubscribers.push(
@@ -290,7 +321,7 @@ export const createViewerController = ({
       if (!allowSearch) state.showSearch.set(false);
       if (!allowAnnotations) state.showAnnotations.set(false);
       if (config?.showSettings === false) state.showSettings.set(false);
-      if (config && Object.prototype.hasOwnProperty.call(config, 'showTools')) {
+      if (config && Object.prototype.hasOwnProperty.call(config, "showTools")) {
         state.showTools.set(config.showTools !== false);
       } else if (!allowTools) {
         state.showTools.set(false);
@@ -299,25 +330,30 @@ export const createViewerController = ({
   );
 
   // Setup error and manifest layout mode initialization subscription
-  let loadedManifestId = '';
-  let loadedAVManifestId = '';
+  let loadedManifestId = "";
+  let loadedAVManifestId = "";
   unsubscribers.push(
     derivedStores.manifestEntry.subscribe((entry) => {
       if (entry?.error && entry.error !== lastErrorMessage) {
         lastErrorMessage = entry.error;
-        emitEvent('error', { scope: 'manifest', message: entry.error });
+        emitEvent("error", { scope: "manifest", message: entry.error });
       }
       if (entry?.manifesto && entry.id !== loadedManifestId) {
         loadedManifestId = entry.id;
-        const viewingHint = entry.manifesto.getViewingHint()?.toString();
-        const behaviors = entry.manifesto.getProperty('behavior');
-        const behaviorList = Array.isArray(behaviors) ? behaviors : [behaviors].filter(Boolean);
+        const viewingHint = entry.manifesto.getViewingHint?.()?.toString();
+        const behaviors = entry.manifesto.getProperty?.("behavior");
+        const behaviorList = Array.isArray(behaviors)
+          ? behaviors
+          : [behaviors].filter(Boolean);
 
-        let defaultLayout: 'single' | 'two-page' | 'continuous' = 'single';
-        if (viewingHint === 'paged' || behaviorList.includes('paged')) {
-          defaultLayout = 'two-page';
-        } else if (viewingHint === 'continuous' || behaviorList.includes('continuous')) {
-          defaultLayout = 'continuous';
+        let defaultLayout: "single" | "two-page" | "continuous" = "single";
+        if (viewingHint === "paged" || behaviorList.includes("paged")) {
+          defaultLayout = "two-page";
+        } else if (
+          viewingHint === "continuous" ||
+          behaviorList.includes("continuous")
+        ) {
+          defaultLayout = "continuous";
         }
         if (!get(state.config)?.initialLayoutMode) {
           state.layoutMode.set(defaultLayout);
@@ -353,7 +389,9 @@ export const createViewerController = ({
     emitStateChange();
   };
 
-  const setLayoutMode = (mode: 'single' | 'two-page' | 'continuous' | 'gallery') => {
+  const setLayoutMode = (
+    mode: "single" | "two-page" | "continuous" | "gallery",
+  ) => {
     state.layoutMode.set(mode);
     emitStateChange();
   };
@@ -375,18 +413,18 @@ export const createViewerController = ({
     emitStateChange,
     setEventTarget,
     getStateSnapshot,
-    
+
     // Canvas controller methods
     getCanvasIndex: canvasController.getCanvasIndex,
     getCanvasId: canvasController.getCanvasId,
     getCanvasCount: canvasController.getCanvasCount,
     setCanvasByIndex: canvasController.setCanvasByIndex,
     setCanvasById: canvasController.setCanvasById,
-    
+
     // Manifest methods
     setManifest,
     getManifestId,
-    
+
     // Annotation controller methods
     addAnnotation: annotationController.addAnnotation,
     updateAnnotation: annotationController.updateAnnotation,
@@ -394,19 +432,19 @@ export const createViewerController = ({
     setAnnotationMode: annotationController.setAnnotationMode,
     setSearchQuery: annotationController.setSearchQuery,
     handleSearchResultClick: annotationController.handleSearchResultClick,
-    
+
     // View state controller methods
     updateImageFilter: viewStateController.updateImageFilter,
     resetImageFilters: viewStateController.resetImageFilters,
     handleViewBoxChange: viewStateController.handleViewBoxChange,
     handleZoomChange: viewStateController.handleZoomChange,
     handleRotationChange: viewStateController.handleRotationChange,
-    
+
     // Panel controller methods
     setPanelOpen: panelController.setPanelOpen,
     updateLayerOpacity,
     setLayoutMode,
-    
+
     // Media controller methods
     handleMediaPlay: mediaController.handleMediaPlay,
     handleMediaPause: mediaController.handleMediaPause,
@@ -416,12 +454,12 @@ export const createViewerController = ({
     handleModelChange: mediaController.handleModelChange,
     getMediaLabel: mediaController.getMediaLabel,
     getMediaTypeLabel: mediaController.getMediaTypeLabel,
-    
+
     // Annotation interaction methods
     handleAnnotationHover: annotationInteractions.handleAnnotationHover,
     handleAnnotationSelect: annotationInteractions.handleAnnotationSelect,
     handleAnnotationClear: annotationInteractions.handleAnnotationClear,
-    
+
     destroy,
   };
 };
