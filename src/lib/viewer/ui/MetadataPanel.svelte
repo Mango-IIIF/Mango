@@ -13,12 +13,14 @@
   import { Vector as VectorSource } from 'ol/source.js';
   import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
   import { fromLonLat } from 'ol/proj.js';
+  import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {
+    redesigned?: boolean;
     onclose?: () => void;
   }
 
-  let { onclose = undefined }: Props = $props();
+  let { redesigned = false, onclose = undefined }: Props = $props();
 
   const viewer = getContext<any>('viewer-context');
   const {
@@ -91,22 +93,26 @@
 >
   <div class="panel__header">
     <div class="panel__title">{$t('viewer.panels.metadata.title')}</div>
-    <button
-      class="panel__close"
-      type="button"
-      aria-label={$t('viewer.panels.metadata.close')}
-      onclick={() => onclose?.()}
-    >
-      {$t('common.closeGlyph')}
-    </button>
+    <PanelCloseButton
+      lucide={redesigned}
+      label={$t('viewer.panels.metadata.close')}
+      {onclose}
+    />
   </div>
-  <div class="panel__body metadata">
+  <div class="panel__body metadata" class:metadata--redesigned={redesigned}>
     <div class="metadata__map" hidden={!$manifestGeoLocation}>
       <div class="metadata__map-target" bind:this={mapElement}></div>
     </div>
 
     {#if $manifestTitle}
-      <div class="metadata__label">{$manifestTitle}</div>
+      {#if redesigned}
+        <div class="metadata__block metadata__block--title">
+          <div class="metadata__block-title">Title</div>
+          <div class="metadata__block-value">{$manifestTitle}</div>
+        </div>
+      {:else}
+        <div class="metadata__label">{$manifestTitle}</div>
+      {/if}
     {/if}
     {#if $manifestDescription}
       <div class="metadata__description">
@@ -289,5 +295,48 @@
 
   .metadata__provider-body a {
     display: block;
+  }
+
+  .metadata--redesigned {
+    gap: 0;
+  }
+
+  .metadata--redesigned .metadata__description,
+  .metadata--redesigned .metadata__block {
+    padding-block: 14px;
+    border-bottom: 1px solid var(--viewer-panel-border);
+  }
+
+  .metadata--redesigned .metadata__block {
+    gap: 7px;
+  }
+
+  .metadata--redesigned .metadata__block-value,
+  .metadata--redesigned .metadata__value {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .metadata--redesigned .metadata__list {
+    gap: 0;
+  }
+
+  .metadata--redesigned .metadata__term {
+    padding-top: 14px;
+    border-top: 1px solid var(--viewer-panel-border);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .metadata--redesigned .metadata__term:first-child {
+    border-top: 0;
+  }
+
+  .metadata--redesigned .metadata__value {
+    padding-block: 7px 14px;
+    margin: 0;
   }
 </style>

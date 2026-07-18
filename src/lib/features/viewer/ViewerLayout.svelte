@@ -41,6 +41,7 @@
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
+  import { ChevronsRight, Expand, Shrink } from '@lucide/svelte';
 
   interface Props {
     manifestId?: string;
@@ -111,7 +112,19 @@
   const initialMobileLayout = matchesInitialMobileLayout();
 
   const corePlugins = [createAnnotationFocusPlugin()];
-  const initialViewerConfig = () => normaliseViewerConfig(config);
+  const normaliseConfigForMode = (value?: ViewerConfig): ViewerConfig => {
+    const next = normaliseViewerConfig(value);
+    const isPlainViewer = !mode || mode === 'viewer';
+    if (!isPlainViewer || next.sidebar?.open !== undefined) return next;
+    return {
+      ...next,
+      sidebar: {
+        ...next.sidebar,
+        open: false,
+      },
+    };
+  };
+  const initialViewerConfig = () => normaliseConfigForMode(config);
   const initialNormalisedConfig = initialViewerConfig();
   let normalisedConfig: ViewerConfig = $state(initialNormalisedConfig);
   const initialViewState = resolveInitialViewerState(
@@ -165,6 +178,8 @@
     allowLayers,
     mediaSources,
     contentsAvailable,
+    avChaptersAvailable,
+    avTranscriptAvailable,
     activeLayoutImages,
   } = viewerDerived;
   const avController = viewerDerived.av.controller;
@@ -217,6 +232,7 @@
   setContext(VIEWPORT_STATE_CONTEXT_KEY, viewportState);
 
   let isMobileLayout = $state(initialMobileLayout);
+  let sidebarCollapsed = $state(false);
   let sidebarEnabled = $derived(normalisedConfig.sidebar?.enabled !== false);
   let sidebarPosition = $derived(normalisedConfig.sidebar?.position ?? 'left');
 
@@ -263,6 +279,8 @@
   >('rectangle');
   let effectiveAnnotationMode = $derived(canDrawAnnotations ? $annotationMode : 'edit');
   let viewerSettingsLayout = $state<'1x1' | '1x2' | '2x1' | '2x2'>('1x1');
+  let contentsPanelTab = $state<'toc' | 'transcript'>('toc');
+  let showComparePanel = $state(false);
   let workspace = $state<WorkspaceStore | null>(null);
   const closeLeftPanelStores = () => {
     viewerState.showContents.set(false);
@@ -272,6 +290,34 @@
     viewerState.showSearch.set(false);
     viewerState.showMetadata.set(false);
     viewerState.showLayers.set(false);
+    showComparePanel = false;
+  };
+
+  const openContentsPanel = (tab: 'toc' | 'transcript') => {
+    if (contentsPanelTab === tab && get(showContents)) {
+      controller.setPanelOpen('contents', false);
+      return;
+    }
+    showComparePanel = false;
+    contentsPanelTab = tab;
+    controller.setPanelOpen('contents', true);
+  };
+
+  const handleViewerPanelToggle = (
+    panel: 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers' | 'thumbnails' | 'compare',
+    open: boolean,
+  ) => {
+    if (panel === 'compare') {
+      if (open) {
+        closeLeftPanelStores();
+        showComparePanel = true;
+      } else {
+        showComparePanel = false;
+      }
+      return;
+    }
+    showComparePanel = false;
+    controller.setPanelOpen(panel, open);
   };
 
   if (initialMobileLayout) {
@@ -292,8 +338,14 @@
       language: nextLocale,
     }));
   };
-  let showControlRail = $derived(isPlainViewerMode && sidebarEnabled);
-  let stageDockVisible = $derived(!isStoryViewer && !showControlRail);
+  let showControlRail = $derived(
+    isPlainViewerMode && sidebarEnabled && (isMobileLayout || !sidebarCollapsed),
+  );
+  let stageDockVisible = $derived(
+    !isStoryViewer &&
+      !showControlRail &&
+      !(isPlainViewerMode && sidebarEnabled && sidebarCollapsed),
+  );
   let zoomBaseline = $state(0);
   let zoomBaselineCanvasIndex = $state(-1);
   let zoomPercent = $derived(
@@ -301,6 +353,17 @@
       ? Math.max(10, Math.round(($zoom / zoomBaseline) * 100))
       : 100,
   );
+  const handleStageZoomChange = (detail: {
+    zoom: number;
+    viewBox: ViewBox;
+    homeZoom?: number;
+  }) => {
+    if (detail.homeZoom && detail.homeZoom > 0) {
+      zoomBaseline = detail.homeZoom;
+      zoomBaselineCanvasIndex = $selectedCanvasIndex;
+    }
+    controller.handleZoomChange(detail);
+  };
   let pendingZoomDirection: 'in' | 'out' | null = $state(null);
   let storyData: StoryWithDefaults | null = $state(null);
   let storyError: string | null = $state(null);
@@ -521,6 +584,15 @@
     controller.setPanelOpen('search', false);
     controller.setPanelOpen('metadata', false);
     controller.setPanelOpen('layers', false);
+    showComparePanel = false;
+  };
+
+  const collapseViewerSidebar = () => {
+    sidebarCollapsed = true;
+  };
+
+  const expandViewerSidebar = () => {
+    sidebarCollapsed = false;
   };
 
   const isNativeViewerFullscreenActive = () => {
@@ -1177,7 +1249,7 @@
   onDestroy(unsubscribeStoryPlayState);
   onDestroy(unsubscribeStoryPlaybackState);
   $effect.pre(() => {
-    normalisedConfig = normaliseViewerConfig(config);
+    normalisedConfig = normaliseConfigForMode(config);
   });
   $effect.pre(() => {
     viewerState.manifestId.set(manifestId);
@@ -1255,7 +1327,12 @@
     }
   });
   let leftVisibleEffective = $derived(
-    isStoryViewer || isAnnotationEditor || !sidebarEnabled ? false : $leftVisible,
+    isStoryViewer ||
+      isAnnotationEditor ||
+      !sidebarEnabled ||
+      (isPlainViewerMode && sidebarCollapsed && !isMobileLayout)
+      ? false
+      : $leftVisible || showComparePanel,
   );
   let rightVisibleEffective = $derived(
     isStoryViewer ? false : enableRightPanel && $rightVisible,
@@ -1282,6 +1359,16 @@
   let allowToolsStory = $derived(isStoryViewer ? false : $allowTools);
   let allowLayersStory = $derived((isStoryViewer || isStoryBuilder) ? false : $allowLayers);
   let allowContentsStory = $derived(isStoryViewer ? false : $contentsAvailable);
+  let allowChaptersStory = $derived(
+    !isStoryViewer &&
+      ($mediaType === 'audio' || $mediaType === 'video') &&
+      $avChaptersAvailable,
+  );
+  let allowTranscriptStory = $derived(
+    !isStoryViewer &&
+      ($mediaType === 'audio' || $mediaType === 'video') &&
+      $avTranscriptAvailable,
+  );
   // Story annotation overlay reactive variables
   $effect(() => {
     storyDataStore.set(storyData ?? EMPTY_STORY);
@@ -1320,6 +1407,7 @@
 
 <div
   class="viewer"
+  class:viewer--story-builder={isStoryBuilder}
   class:viewer--fullscreen-fallback={isViewerFullscreenFallback}
   data-theme={viewerSettingsTheme}
   aria-live="polite"
@@ -1351,18 +1439,41 @@
       <button
         type="button"
         class="viewer__fullscreen-btn"
+        class:viewer__fullscreen-btn--labelled={isPlainViewerMode}
         onclick={handleStoryFullscreen}
         aria-label={isViewerFullscreen ? 'Close fullscreen' : 'Enter fullscreen'}
         title={isViewerFullscreen ? 'Close fullscreen' : 'Enter fullscreen'}
       >
-        ⛶
+        {#if isPlainViewerMode}
+          {#if isViewerFullscreen}
+            <Shrink aria-hidden="true" />
+          {:else}
+            <Expand aria-hidden="true" />
+          {/if}
+          <span>{isViewerFullscreen ? 'Close fullscreen' : 'Fullscreen'}</span>
+        {:else}
+          ⛶
+        {/if}
       </button>
     </div>
   </div>
 
+  {#if isPlainViewerMode && sidebarEnabled && sidebarCollapsed && !isMobileLayout}
+    <button
+      class="viewer__expand-sidebar"
+      type="button"
+      onclick={expandViewerSidebar}
+      aria-label="Expand sidebar"
+      title="Expand sidebar"
+    >
+      <ChevronsRight aria-hidden="true" />
+    </button>
+  {/if}
+
   <div
     class="viewer__grid"
     class:viewer__grid--controls={showControlRail}
+    class:viewer__grid--nav-compact={showControlRail && leftVisibleEffective && !isMobileLayout}
     class:viewer__grid--left={leftVisibleEffective}
     class:viewer__grid--right={rightVisibleEffective}
     class:viewer__grid--sidebar-right={sidebarPosition === 'right'}
@@ -1371,8 +1482,15 @@
       <aside class="viewer__control-rail" aria-label={$t('viewer.stage.controls.label')}>
         <ViewerDock
           compact={true}
+          variant="sidebar"
+          mobile={isMobileLayout}
+          iconOnly={leftVisibleEffective}
+          galleryActive={$layoutMode === 'gallery'}
+          contentsTab={contentsPanelTab}
           allowThumbnails={allowThumbnailsStory}
           allowContents={allowContentsStory}
+          allowChapters={allowChaptersStory}
+          allowTranscript={allowTranscriptStory}
           allowSearch={allowSearchStory}
           allowMetadata={allowMetadataStory}
           allowAnnotations={allowAnnotationsStory}
@@ -1387,14 +1505,22 @@
           showTools={showToolsEffectiveStory}
           showLayers={showLayersEffectiveStory}
           showSettings={showSettingsEffectiveStory}
+          showCompare={showComparePanel}
+          oncollapse={collapseViewerSidebar}
+          ongalleryopen={() => controller.setLayoutMode('gallery')}
+          oncontentsopen={openContentsPanel}
+          oncomparetoggle={() =>
+            handleViewerPanelToggle('compare', !showComparePanel)}
           onpanelToggle={(detail) =>
-            controller.setPanelOpen(detail.panel, detail.open)}
+            handleViewerPanelToggle(detail.panel, detail.open)}
         />
       </aside>
     {/if}
 
     {#if leftVisibleEffective && !isAnnotationEditor}
       <LeftPanelStack
+        redesigned={isPlainViewerMode}
+        contentsTab={contentsPanelTab}
         showAnnotations={showAnnotationsEffectiveStory}
         showTools={showToolsEffectiveStory}
         showSearch={showSearchEffectiveStory}
@@ -1402,9 +1528,10 @@
         showSettings={showSettingsEffectiveStory}
         showContents={showContentsEffectiveStory}
         showLayers={showLayersEffectiveStory}
+        showCompare={showComparePanel}
         leftPlugins={$pluginSlots.left}
         {pluginContext}
-        onpanelToggle={(panel, open) => controller.setPanelOpen(panel, open)}
+        onpanelToggle={handleViewerPanelToggle}
       />
     {/if}
 
@@ -1482,7 +1609,7 @@
                     controller.handleViewBoxChange(detail);
                     storyViewBoxStore.set(detail.viewBox);
                   }}
-                  onzoomchange={(detail) => controller.handleZoomChange(detail)}
+                  onzoomchange={handleStageZoomChange}
                   onrotationchange={(detail) => controller.handleRotationChange(detail)}
                   onpaneltoggle={(detail) =>
                     controller.setPanelOpen(detail.panel, detail.open)}
@@ -1590,7 +1717,7 @@
                   annotationLayers={annotationLayers}
                   canvasId={activeCanvasId}
                   onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
-                  onzoomchange={(detail) => controller.handleZoomChange(detail)}
+                  onzoomchange={handleStageZoomChange}
                   onrotationchange={(detail) => controller.handleRotationChange(detail)}
                   onannotationcreate={handleAnnotationCreate}
                   onannotationupdate={(payload) =>
@@ -1630,11 +1757,14 @@
     {:else}
       <main
         class="stage"
+        class:stage--viewer={isPlainViewerMode}
+        class:stage--story-builder={isStoryBuilder}
         class:stage--with-bottom-toolbar={!toolbarAboveMedia}
         class:stage--workspace={!!workspace && viewerSettingsLayout !== '1x1'}
         aria-label={$t('viewer.stage.label')}
       >
         {#if viewerSettingsLayout === '1x1'}
+          <div class:stage__viewer-frame={isPlainViewerMode} class="stage__primary">
           {#if toolbarAboveMedia && $layoutMode !== 'gallery'}
             <StageToolbar
               {canZoom}
@@ -1733,7 +1863,7 @@
               layerOpacities={$layerOpacities}
               canvasId={activeCanvasId}
               onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
-              onzoomchange={(detail) => controller.handleZoomChange(detail)}
+              onzoomchange={handleStageZoomChange}
               onrotationchange={(detail) => controller.handleRotationChange(detail)}
               onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
               onannotationcreate={handleAnnotationCreate}
@@ -1761,15 +1891,20 @@
               onnextCanvas={handleNextCanvas}
             />
           {/if}
+          </div>
 
           {#if showThumbnailsEffectiveStory && $layoutMode !== 'gallery'}
             <Gallery
+              redesigned={isPlainViewerMode}
               canvases={$canvases}
               canvasThumbnails={$canvasThumbnails}
               selectedCanvasIndex={$selectedCanvasIndex}
               onpanelToggle={(detail) =>
                 controller.setPanelOpen(detail.panel, detail.open)}
               oncanvasSelect={(detail) => controller.setCanvasByIndex(detail.index)}
+              onviewall={isPlainViewerMode
+                ? () => controller.setLayoutMode('gallery')
+                : undefined}
             />
           {/if}
 
@@ -1814,7 +1949,7 @@
 
 <style>
   .stage-gallery-view {
-    width: 100%;
+    width: 220px;
     height: 100%;
     overflow-y: auto;
     background: var(--viewer-stage, #111720);
@@ -1961,6 +2096,10 @@
   }
 
   .viewer__fullscreen-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     border: 1px solid var(--viewer-panel-border);
     border-radius: 10px;
     background: var(--viewer-panel);
@@ -1971,6 +2110,61 @@
     z-index: 10;
     line-height: 1;
     font-size: 16px;
+  }
+
+  .viewer__fullscreen-btn--labelled {
+    width: auto;
+    padding-inline: 10px;
+    border-color: transparent;
+    background: transparent;
+    font-size: 13px;
+  }
+
+  .viewer__fullscreen-btn :global(svg) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .viewer__expand-sidebar {
+    position: absolute;
+    top: 50%;
+    left: -1px;
+    z-index: 8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 58px;
+    padding: 0;
+    border: 1px solid var(--viewer-panel-border);
+    border-left: 0;
+    border-radius: 0 12px 12px 0;
+    background: var(--viewer-panel-strong);
+    color: var(--viewer-text);
+    font: inherit;
+    cursor: pointer;
+    box-shadow: 6px 0 18px rgba(0, 0, 0, 0.24);
+    transform: translateY(-50%);
+    transition:
+      width 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .viewer__expand-sidebar:hover {
+    width: 42px;
+    border-color: var(--viewer-accent);
+    background: var(--viewer-panel);
+  }
+
+  .viewer__expand-sidebar:focus-visible {
+    outline: 2px solid var(--viewer-accent);
+    outline-offset: 2px;
+  }
+
+  .viewer__expand-sidebar :global(svg) {
+    width: 20px;
+    height: 20px;
   }
 
   .viewer {
@@ -2065,6 +2259,10 @@
     border-radius: 0;
     overscroll-behavior: none;
     touch-action: none;
+  }
+
+  .viewer.viewer--story-builder {
+    min-height: 0;
   }
 
   .viewer:-webkit-full-screen {
@@ -2180,6 +2378,9 @@
     height: 100%;
     max-height: 100%;
     min-height: 0;
+    transition:
+      grid-template-columns 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      column-gap 240ms ease;
   }
 
   .viewer__grid--left {
@@ -2187,7 +2388,7 @@
   }
 
   .viewer__grid--controls {
-    grid-template-columns: 68px 1fr;
+    grid-template-columns: 220px 1fr;
   }
 
   .viewer__grid--right {
@@ -2195,17 +2396,25 @@
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left {
-    grid-template-columns: 68px minmax(240px, 300px) 1fr;
+    grid-template-columns: 220px minmax(320px, 410px) 1fr;
     column-gap: 0;
+  }
+
+  .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
+    grid-template-columns: 72px minmax(320px, 410px) 1fr;
   }
 
   .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls {
-    grid-template-columns: 1fr 68px;
+    grid-template-columns: 1fr 220px;
   }
 
   .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left {
-    grid-template-columns: 1fr minmax(240px, 300px) 68px;
+    grid-template-columns: 1fr minmax(320px, 410px) 220px;
     column-gap: 0;
+  }
+
+  .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
+    grid-template-columns: 1fr minmax(320px, 410px) 72px;
   }
 
   .viewer__grid--sidebar-right > .stage {
@@ -2229,7 +2438,7 @@
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--right {
-    grid-template-columns: 68px 1fr minmax(220px, 280px);
+    grid-template-columns: 220px 1fr minmax(220px, 280px);
   }
 
   .viewer__grid.viewer__grid--left.viewer__grid--right {
@@ -2237,8 +2446,12 @@
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--right {
-    grid-template-columns: 68px minmax(240px, 300px) 1fr minmax(220px, 280px);
+    grid-template-columns: 220px minmax(320px, 410px) 1fr minmax(220px, 280px);
     column-gap: 0;
+  }
+
+  .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--right.viewer__grid--nav-compact {
+    grid-template-columns: 72px minmax(320px, 410px) 1fr minmax(220px, 280px);
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left > .stage {
@@ -2254,14 +2467,19 @@
     z-index: 4;
     display: grid;
     align-content: start;
-    justify-items: center;
+    justify-items: stretch;
     box-sizing: border-box;
-    padding: 14px 8px;
+    padding: 24px 14px 18px;
     border: 1px solid var(--viewer-panel-border);
     border-right: none;
     border-radius: 18px 0 0 18px;
     background: var(--viewer-control-rail-bg);
+    width: 100%;
     min-height: 0;
+    overflow: hidden;
+    transition:
+      width 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      padding 220ms ease;
   }
 
   .viewer__control-rail :global(.viewer__dock) {
@@ -2269,6 +2487,15 @@
     right: auto;
     top: auto;
     transform: none;
+  }
+
+  .viewer__grid--nav-compact > .viewer__control-rail {
+    width: 72px;
+    padding-inline: 10px;
+  }
+
+  .viewer__grid--sidebar-right.viewer__grid--nav-compact > .viewer__control-rail {
+    justify-self: end;
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left :global(.panel-stack--left),
@@ -2295,6 +2522,40 @@
     align-content: start;
   }
 
+  .stage--viewer {
+    gap: 12px;
+  }
+
+  .stage__primary {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-height: 0;
+  }
+
+  .stage__viewer-frame {
+    gap: 0;
+    box-sizing: border-box;
+    padding: 0 10px 10px;
+    border: 1px solid var(--viewer-panel-border);
+    border-radius: 18px;
+    background: rgba(18, 25, 34, 0.52);
+  }
+
+  .stage__viewer-frame :global(.stage__media) {
+    border: 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .stage__viewer-frame :global(.stage__toolbar--below) {
+    margin-top: 0;
+    padding-top: 8px;
+  }
+
+  .stage--story-builder :global(.stage__toolbar--below) {
+    margin-top: 0;
+    padding-top: 8px;
+  }
+
   .stage--with-bottom-toolbar {
     grid-template-rows: minmax(0, 1fr);
     grid-auto-rows: auto;
@@ -2302,6 +2563,7 @@
   }
 
   .stage--story {
+    --mango-viewer-av-player-max-width: calc((100cqh - 24px) * 16 / 9);
     overflow: hidden;
     align-content: stretch;
   }
@@ -2440,6 +2702,7 @@
       grid-row: 2;
       grid-column: 1;
 
+      width: 100%;
       height: auto;
       box-sizing: border-box;
       padding: 4px 6px;
@@ -2489,6 +2752,20 @@
       height: auto;
       min-height: 0;
       overflow: visible;
+    }
+
+    .stage--viewer {
+      --mango-viewer-av-player-aspect-ratio: 3 / 4;
+      --mango-viewer-audio-art-aspect-ratio: auto;
+      --mango-viewer-audio-art-min-height: clamp(280px, 44vh, 380px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .viewer__grid,
+    .viewer__control-rail,
+    .viewer__expand-sidebar {
+      transition: none;
     }
   }
 

@@ -22,7 +22,9 @@
     rotation?: number;
     initialViewBox?: ViewBox | null;
     onviewboxchange?: ((payload: { viewBox: ViewBox }) => void) | undefined;
-    onzoomchange?: ((payload: { zoom: number; viewBox: ViewBox }) => void) | undefined;
+    onzoomchange?:
+      | ((payload: { zoom: number; viewBox: ViewBox; homeZoom?: number }) => void)
+      | undefined;
     onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
     onviewerready?: ((payload: { viewer: unknown }) => void) | undefined;
     layers?: MediaSource[];

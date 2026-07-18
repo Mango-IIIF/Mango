@@ -116,8 +116,6 @@ export const createStoryBuilderPlugins = (
           onUpdateDelay: controller.updateDelay,
           onUpdateChapterPosition: controller.updateChapter,
           onSaveChapterSettings: controller.saveChapterSettings,
-          onMarkIn: controller.markIn,
-          onMarkOut: controller.markOut,
           layers: controller.mediaSources,
           layerOpacities: controller.layerOpacities,
           onUpdateLayerOpacity: controller.updateLayerOpacity,

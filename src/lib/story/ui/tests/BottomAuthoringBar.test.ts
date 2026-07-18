@@ -9,32 +9,6 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe('BottomAuthoringBar', () => {
-  it('shows AV controls only for audio/video media types', () => {
-    const target = createTarget();
-    const instance = mount(BottomAuthoringBar, {
-      target,
-      props: {
-        mediaType: 'image',
-      },
-    });
-
-    expect(target.querySelector('[data-testid="authoring-av-controls"]')).toBeNull();
-
-    unmount(instance);
-
-    const instanceAv = mount(BottomAuthoringBar, {
-      target,
-      props: {
-        mediaType: 'audio',
-      },
-    });
-
-    expect(target.querySelector('[data-testid="authoring-av-controls"]')).toBeTruthy();
-
-    unmount(instanceAv);
-    target.remove();
-  });
-
   it('disables update when no chapter is selected', () => {
     const target = createTarget();
     const instance = mount(BottomAuthoringBar, {
@@ -54,20 +28,4 @@ describe('BottomAuthoringBar', () => {
     target.remove();
   });
 
-  it('shows guidance when audio/video marks are missing', () => {
-    const target = createTarget();
-    const instance = mount(BottomAuthoringBar, {
-      target,
-      props: {
-        mediaType: 'audio',
-        avMarksValid: false,
-      },
-    });
-
-    const hint = target.querySelector('[data-testid="authoring-guidance"]');
-    expect(hint?.textContent).toContain('Use Mark In/Out');
-
-    unmount(instance);
-    target.remove();
-  });
 });

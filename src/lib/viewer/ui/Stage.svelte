@@ -70,7 +70,9 @@
     constrainMediaHeight?: boolean;
     canZoom?: boolean;
     onviewboxchange?: ((payload: { viewBox: ViewBox }) => void) | undefined;
-    onzoomchange?: ((payload: { zoom: number; viewBox: ViewBox }) => void) | undefined;
+    onzoomchange?:
+      | ((payload: { zoom: number; viewBox: ViewBox; homeZoom?: number }) => void)
+      | undefined;
     onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
     onpaneltoggle?: ((payload: { panel: DockPanel; open: boolean }) => void) | undefined;
     annotationTool?: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
@@ -267,7 +269,11 @@
     onviewboxchange?.(payload);
   };
 
-  const handleRendererZoomChange = (payload: { zoom: number; viewBox: ViewBox }) => {
+  const handleRendererZoomChange = (payload: {
+    zoom: number;
+    viewBox: ViewBox;
+    homeZoom?: number;
+  }) => {
     stageViewBox = payload.viewBox;
     onzoomchange?.(payload);
   };

@@ -62,6 +62,22 @@
           transparent 78%
         ), linear-gradient(#09080d, #111019) !important;
       }
+      media-controller:not([audio]) {
+        aspect-ratio: var(
+          --mango-viewer-av-player-aspect-ratio,
+          var(--mango-av-player-aspect-ratio)
+        );
+        width: min(
+          100%,
+          var(--mango-viewer-av-player-max-width, 100%)
+        );
+        margin-inline: auto;
+      }
+      .audio-art {
+        aspect-ratio: var(--mango-viewer-audio-art-aspect-ratio, 16 / 7);
+        min-height: var(--mango-viewer-audio-art-min-height, 0);
+        box-sizing: border-box;
+      }
     `;
     root.append(style);
   };
@@ -144,8 +160,10 @@
 <style>
   .av-renderer {
     box-sizing: border-box;
+    container-type: size;
     display: grid;
-    min-height: 100%;
+    height: 100%;
+    min-height: 0;
     width: 100%;
     place-items: center;
     padding: 12px;

@@ -4,21 +4,26 @@
   import type { CanvasSummary } from '../../state/manifests';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
   import { VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
+  import { ArrowRight } from '@lucide/svelte';
 
   interface Props {
     canvases?: CanvasSummary[];
     canvasThumbnails?: Array<string | null>;
     selectedCanvasIndex?: number;
+    redesigned?: boolean;
     onpanelToggle?: (payload: { panel: 'thumbnails'; open: boolean }) => void;
     oncanvasSelect?: (payload: { index: number }) => void;
+    onviewall?: () => void;
   }
 
   let {
     canvases = [],
     canvasThumbnails = [],
     selectedCanvasIndex = 0,
+    redesigned = false,
     onpanelToggle = undefined,
     oncanvasSelect = undefined,
+    onviewall = undefined,
   }: Props = $props();
   const viewportState = getContext<ViewportState | undefined>(VIEWPORT_STATE_CONTEXT_KEY);
   let effectiveSelectedCanvasIndex = $derived(
@@ -60,17 +65,28 @@
   };
 </script>
 
-<section class="gallery" aria-label={$t('viewer.gallery.label')}>
+<section
+  class="gallery"
+  class:gallery--redesigned={redesigned}
+  aria-label={$t('viewer.gallery.label')}
+>
   <div class="gallery__header">
-    <div class="gallery__title">{$t('viewer.gallery.title')}</div>
-    <button
-      class="gallery__close"
-      type="button"
-      aria-label={$t('viewer.gallery.hide')}
-      onclick={() => onpanelToggle?.({ panel: 'thumbnails', open: false })}
-    >
-      {$t('common.closeGlyph')}
-    </button>
+    <div class="gallery__title">{redesigned ? 'Pages' : $t('viewer.gallery.title')}</div>
+    {#if redesigned && onviewall}
+      <button class="gallery__view-all" type="button" onclick={() => onviewall?.()}>
+        <span>View all {canvases.length} pages</span>
+        <ArrowRight aria-hidden="true" />
+      </button>
+    {:else}
+      <button
+        class="gallery__close"
+        type="button"
+        aria-label={$t('viewer.gallery.hide')}
+        onclick={() => onpanelToggle?.({ panel: 'thumbnails', open: false })}
+      >
+        {$t('common.closeGlyph')}
+      </button>
+    {/if}
   </div>
   {#if canvases.length === 0}
     <div class="gallery__empty">{$t('viewer.gallery.empty')}</div>
@@ -135,6 +151,28 @@
     text-transform: uppercase;
     letter-spacing: 0.16em;
     color: var(--viewer-muted);
+  }
+
+  .gallery__view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px;
+    border: 0;
+    background: transparent;
+    color: var(--viewer-muted);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .gallery__view-all:hover {
+    color: var(--viewer-text);
+  }
+
+  .gallery__view-all :global(svg) {
+    width: 16px;
+    height: 16px;
   }
 
   .gallery__close {
@@ -238,5 +276,29 @@
   .gallery__label {
     font-size: 11px;
     color: var(--viewer-muted);
+  }
+
+  .gallery--redesigned .gallery__title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--viewer-text);
+  }
+
+  .gallery--redesigned .gallery__list {
+    grid-auto-columns: minmax(82px, 112px);
+    gap: 18px;
+  }
+
+  .gallery--redesigned .gallery__button {
+    border-color: transparent;
+    padding: 5px;
+    border-radius: 10px;
+    background: transparent;
+  }
+
+  .gallery--redesigned .gallery__label {
+    text-align: center;
   }
 </style>

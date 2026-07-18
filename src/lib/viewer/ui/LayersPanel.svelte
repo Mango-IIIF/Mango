@@ -1,12 +1,14 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import { t } from '../../i18n';
+  import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {
+    redesigned?: boolean;
     onclose?: (() => void) | undefined;
   }
 
-  let { onclose = undefined }: Props = $props();
+  let { redesigned = false, onclose = undefined }: Props = $props();
 
   const viewer = getContext<any>('viewer-context');
   const { mediaSources } = viewer.derived;
@@ -22,15 +24,14 @@
 
 <section class="panel panel--layers" aria-label={$t('viewer.panels.layers.label') ?? 'Layers panel'}>
   <div class="panel__header">
-    <div class="panel__title">{$t('viewer.panels.layers.title') ?? 'Layers'}</div>
-    <button
-      class="panel__close"
-      type="button"
-      aria-label={$t('viewer.panels.layers.close') ?? 'Close layers'}
-      onclick={() => onclose?.()}
-    >
-      {$t('common.closeGlyph') ?? 'x'}
-    </button>
+    <div class="panel__title">
+      {redesigned ? 'Image layers' : ($t('viewer.panels.layers.title') ?? 'Layers')}
+    </div>
+    <PanelCloseButton
+      lucide={redesigned}
+      label={$t('viewer.panels.layers.close') ?? 'Close layers'}
+      {onclose}
+    />
   </div>
   <div class="panel__body">
     <div class="layers__list">

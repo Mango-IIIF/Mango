@@ -1,5 +1,21 @@
 <script lang="ts">
   import { t } from '../../i18n';
+  import {
+    ChevronsLeft,
+    Columns2,
+    Download,
+    Hammer,
+    Image,
+    Info,
+    ListTree,
+    MessageSquare,
+    MessageSquareText,
+    Quote,
+    ScanEye,
+    Search,
+    Settings,
+    Share2,
+  } from '@lucide/svelte';
 
   type PanelName =
     | 'thumbnails'
@@ -19,6 +35,8 @@
     allowTools?: boolean;
     allowSettings?: boolean;
     allowContents?: boolean;
+    allowChapters?: boolean;
+    allowTranscript?: boolean;
     showThumbnails?: boolean;
     showContents?: boolean;
     showSearch?: boolean;
@@ -26,9 +44,19 @@
     showAnnotations?: boolean;
     showTools?: boolean;
     showSettings?: boolean;
+    showCompare?: boolean;
     allowLayers?: boolean;
     showLayers?: boolean;
     compact?: boolean;
+    variant?: 'legacy' | 'sidebar';
+    mobile?: boolean;
+    iconOnly?: boolean;
+    galleryActive?: boolean;
+    contentsTab?: 'toc' | 'transcript';
+    oncollapse?: () => void;
+    ongalleryopen?: () => void;
+    oncontentsopen?: (tab: 'toc' | 'transcript') => void;
+    oncomparetoggle?: () => void;
     onpanelToggle?: (payload: { panel: PanelName; open: boolean }) => void;
   }
 
@@ -41,6 +69,8 @@
     allowLayers = false,
     allowSettings = false,
     allowContents = false,
+    allowChapters = false,
+    allowTranscript = false,
     showThumbnails = true,
     showContents = false,
     showSearch = true,
@@ -49,11 +79,359 @@
     showTools = false,
     showLayers = false,
     showSettings = false,
+    showCompare = false,
     compact = false,
+    variant = 'legacy',
+    mobile = false,
+    iconOnly = false,
+    galleryActive = false,
+    contentsTab = 'toc',
+    oncollapse = undefined,
+    ongalleryopen = undefined,
+    oncontentsopen = undefined,
+    oncomparetoggle = undefined,
     onpanelToggle = undefined,
   }: Props = $props();
 </script>
 
+{#if variant === 'sidebar' && !mobile}
+  <nav
+    class="viewer-sidebar"
+    class:viewer-sidebar--icon-only={iconOnly}
+    aria-label="Viewer navigation"
+  >
+    <div class="viewer-sidebar__section">
+      <div class="viewer-sidebar__heading">Browse</div>
+      <div class="viewer-sidebar__items">
+        {#if allowThumbnails}
+          <button
+            class:viewer-sidebar__button--active={galleryActive}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? 'Pages' : undefined}
+            aria-pressed={galleryActive}
+            onclick={() => ongalleryopen?.()}
+          >
+            <Image aria-hidden="true" />
+            <span>Pages</span>
+          </button>
+        {/if}
+        {#if allowMetadata}
+          <button
+            class:viewer-sidebar__button--active={showMetadata}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? 'Metadata' : undefined}
+            aria-pressed={showMetadata}
+            onclick={() => onpanelToggle?.({ panel: 'metadata', open: !showMetadata })}
+          >
+            <Info aria-hidden="true" />
+            <span>Metadata</span>
+          </button>
+        {/if}
+        {#if allowSearch}
+          <button
+            class:viewer-sidebar__button--active={showSearch}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? 'Search' : undefined}
+            aria-pressed={showSearch}
+            onclick={() => onpanelToggle?.({ panel: 'search', open: !showSearch })}
+          >
+            <Search aria-hidden="true" />
+            <span>Search</span>
+          </button>
+        {/if}
+        {#if allowAnnotations}
+          <button
+            class:viewer-sidebar__button--active={showAnnotations}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? 'Annotations' : undefined}
+            aria-pressed={showAnnotations}
+            onclick={() => onpanelToggle?.({ panel: 'annotations', open: !showAnnotations })}
+          >
+            <MessageSquare aria-hidden="true" />
+            <span>Annotations</span>
+          </button>
+        {/if}
+        {#if allowChapters}
+          <button
+            class:viewer-sidebar__button--active={showContents && contentsTab === 'toc'}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? 'Collections' : undefined}
+            aria-pressed={showContents && contentsTab === 'toc'}
+            onclick={() => oncontentsopen?.('toc')}
+          >
+            <ListTree aria-hidden="true" />
+            <span>Collections</span>
+          </button>
+        {/if}
+        {#if allowTranscript}
+          <button
+            class:viewer-sidebar__button--active={showContents && contentsTab === 'transcript'}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? 'Transcription' : undefined}
+            aria-pressed={showContents && contentsTab === 'transcript'}
+            onclick={() => oncontentsopen?.('transcript')}
+          >
+            <MessageSquareText aria-hidden="true" />
+            <span>Transcription</span>
+          </button>
+        {/if}
+      </div>
+    </div>
+
+    {#if allowLayers}
+      <div class="viewer-sidebar__section">
+        <div class="viewer-sidebar__heading">Explore</div>
+        <div class="viewer-sidebar__items">
+          <button
+            class:viewer-sidebar__button--active={showLayers}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? 'Image layers' : undefined}
+            aria-pressed={showLayers}
+            onclick={() => onpanelToggle?.({ panel: 'layers', open: !showLayers })}
+          >
+            <ScanEye aria-hidden="true" />
+            <span>Image layers</span>
+          </button>
+        </div>
+      </div>
+    {/if}
+
+    <div class="viewer-sidebar__section">
+      <div class="viewer-sidebar__heading">Tools</div>
+      <div class="viewer-sidebar__items">
+        {#if allowTools}
+          <button
+            class:viewer-sidebar__button--active={showTools}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? 'Tools' : undefined}
+            aria-pressed={showTools}
+            onclick={() => onpanelToggle?.({ panel: 'tools', open: !showTools })}
+          >
+            <Hammer aria-hidden="true" />
+            <span>Tools</span>
+          </button>
+        {/if}
+        {#if allowSettings}
+          <button
+            class:viewer-sidebar__button--active={showSettings}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? 'View settings' : undefined}
+            aria-pressed={showSettings}
+            onclick={() => onpanelToggle?.({ panel: 'settings', open: !showSettings })}
+          >
+            <Settings aria-hidden="true" />
+            <span>View settings</span>
+          </button>
+        {/if}
+        <button
+          class:viewer-sidebar__button--active={showCompare}
+          class="viewer-sidebar__button"
+          type="button"
+          title={iconOnly ? 'Compare' : undefined}
+          aria-pressed={showCompare}
+          onclick={() => oncomparetoggle?.()}
+        >
+          <Columns2 aria-hidden="true" />
+          <span>Compare</span>
+        </button>
+        <button
+          class="viewer-sidebar__button"
+          type="button"
+          title={iconOnly ? 'Download' : undefined}
+          disabled
+        >
+          <Download aria-hidden="true" />
+          <span>Download</span>
+        </button>
+        <button
+          class="viewer-sidebar__button"
+          type="button"
+          title={iconOnly ? 'Share' : undefined}
+          disabled
+        >
+          <Share2 aria-hidden="true" />
+          <span>Share</span>
+        </button>
+        <button
+          class="viewer-sidebar__button"
+          type="button"
+          title={iconOnly ? 'Cite' : undefined}
+          disabled
+        >
+          <Quote aria-hidden="true" />
+          <span>Cite</span>
+        </button>
+      </div>
+    </div>
+
+    <button
+      class="viewer-sidebar__collapse"
+      type="button"
+      title={iconOnly ? 'Collapse sidebar' : undefined}
+      onclick={() => oncollapse?.()}
+    >
+      <ChevronsLeft aria-hidden="true" />
+      <span>Collapse sidebar</span>
+    </button>
+  </nav>
+{:else if variant === 'sidebar' && mobile}
+  <nav class="viewer-mobile-nav" aria-label="Viewer navigation">
+    <div class="viewer-mobile-nav__group" aria-label="Browse">
+      {#if allowThumbnails}
+        <button
+          class:viewer-mobile-nav__button--active={galleryActive}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label="Pages"
+          title="Pages"
+          aria-pressed={galleryActive}
+          onclick={() => ongalleryopen?.()}
+        >
+          <Image aria-hidden="true" />
+        </button>
+      {/if}
+      {#if allowMetadata}
+        <button
+          class:viewer-mobile-nav__button--active={showMetadata}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label="Metadata"
+          title="Metadata"
+          aria-pressed={showMetadata}
+          onclick={() => onpanelToggle?.({ panel: 'metadata', open: !showMetadata })}
+        >
+          <Info aria-hidden="true" />
+        </button>
+      {/if}
+      {#if allowSearch}
+        <button
+          class:viewer-mobile-nav__button--active={showSearch}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label="Search"
+          title="Search"
+          aria-pressed={showSearch}
+          onclick={() => onpanelToggle?.({ panel: 'search', open: !showSearch })}
+        >
+          <Search aria-hidden="true" />
+        </button>
+      {/if}
+      {#if allowAnnotations}
+        <button
+          class:viewer-mobile-nav__button--active={showAnnotations}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label="Annotations"
+          title="Annotations"
+          aria-pressed={showAnnotations}
+          onclick={() => onpanelToggle?.({ panel: 'annotations', open: !showAnnotations })}
+        >
+          <MessageSquare aria-hidden="true" />
+        </button>
+      {/if}
+      {#if allowChapters}
+        <button
+          class:viewer-mobile-nav__button--active={showContents && contentsTab === 'toc'}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label="Collections"
+          title="Collections"
+          aria-pressed={showContents && contentsTab === 'toc'}
+          onclick={() => oncontentsopen?.('toc')}
+        >
+          <ListTree aria-hidden="true" />
+        </button>
+      {/if}
+      {#if allowTranscript}
+        <button
+          class:viewer-mobile-nav__button--active={showContents && contentsTab === 'transcript'}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label="Transcription"
+          title="Transcription"
+          aria-pressed={showContents && contentsTab === 'transcript'}
+          onclick={() => oncontentsopen?.('transcript')}
+        >
+          <MessageSquareText aria-hidden="true" />
+        </button>
+      {/if}
+    </div>
+
+    {#if allowLayers}
+      <div class="viewer-mobile-nav__group" aria-label="Explore">
+        <button
+          class:viewer-mobile-nav__button--active={showLayers}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label="Image layers"
+          title="Image layers"
+          aria-pressed={showLayers}
+          onclick={() => onpanelToggle?.({ panel: 'layers', open: !showLayers })}
+        >
+          <ScanEye aria-hidden="true" />
+        </button>
+      </div>
+    {/if}
+
+    <div class="viewer-mobile-nav__group" aria-label="Tools">
+      {#if allowTools}
+        <button
+          class:viewer-mobile-nav__button--active={showTools}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label="Tools"
+          title="Tools"
+          aria-pressed={showTools}
+          onclick={() => onpanelToggle?.({ panel: 'tools', open: !showTools })}
+        >
+          <Hammer aria-hidden="true" />
+        </button>
+      {/if}
+      {#if allowSettings}
+        <button
+          class:viewer-mobile-nav__button--active={showSettings}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label="View settings"
+          title="View settings"
+          aria-pressed={showSettings}
+          onclick={() => onpanelToggle?.({ panel: 'settings', open: !showSettings })}
+        >
+          <Settings aria-hidden="true" />
+        </button>
+      {/if}
+      <button
+        class:viewer-mobile-nav__button--active={showCompare}
+        class="viewer-mobile-nav__button"
+        type="button"
+        aria-label="Compare"
+        title="Compare"
+        aria-pressed={showCompare}
+        onclick={() => oncomparetoggle?.()}
+      >
+        <Columns2 aria-hidden="true" />
+      </button>
+      <button class="viewer-mobile-nav__button" type="button" aria-label="Download" title="Download" disabled>
+        <Download aria-hidden="true" />
+      </button>
+      <button class="viewer-mobile-nav__button" type="button" aria-label="Share" title="Share" disabled>
+        <Share2 aria-hidden="true" />
+      </button>
+      <button class="viewer-mobile-nav__button" type="button" aria-label="Cite" title="Cite" disabled>
+        <Quote aria-hidden="true" />
+      </button>
+    </div>
+  </nav>
+{:else}
 <div
   class="viewer__dock"
   class:viewer__dock--compact={compact}
@@ -242,8 +620,237 @@
     </button>
   {/if}
 </div>
+{/if}
 
 <style>
+  .viewer-mobile-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 2px 3px 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--viewer-panel-border) transparent;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .viewer-mobile-nav::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .viewer-mobile-nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: var(--viewer-panel-border);
+  }
+
+  .viewer-mobile-nav__group {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 4px;
+  }
+
+  .viewer-mobile-nav__group + .viewer-mobile-nav__group {
+    padding-left: 10px;
+    border-left: 1px solid var(--viewer-panel-border);
+  }
+
+  .viewer-mobile-nav__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.025);
+    color: var(--viewer-text);
+    cursor: pointer;
+  }
+
+  .viewer-mobile-nav__button :global(svg) {
+    width: 19px;
+    height: 19px;
+    stroke-width: 1.8;
+  }
+
+  .viewer-mobile-nav__button--active {
+    border-color: var(--viewer-accent-2);
+    background: rgba(42, 199, 255, 0.09);
+    color: var(--viewer-text);
+  }
+
+  .viewer-mobile-nav__button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .viewer-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 34px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    transition: gap 220ms ease;
+  }
+
+  .viewer-sidebar__section,
+  .viewer-sidebar__items {
+    display: grid;
+  }
+
+  .viewer-sidebar__section {
+    gap: 14px;
+    transition: gap 220ms ease;
+  }
+
+  .viewer-sidebar__items {
+    gap: 10px;
+  }
+
+  .viewer-sidebar__heading {
+    padding-inline: 8px;
+    color: var(--viewer-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    max-height: 18px;
+    opacity: 1;
+    overflow: hidden;
+    transition:
+      max-height 180ms ease,
+      opacity 140ms ease,
+      padding 180ms ease;
+  }
+
+  .viewer-sidebar__button,
+  .viewer-sidebar__collapse {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 46px;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--viewer-panel-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.025);
+    color: var(--viewer-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      color 0.18s ease,
+      gap 220ms ease,
+      padding 220ms ease;
+  }
+
+  .viewer-sidebar__button span,
+  .viewer-sidebar__collapse span {
+    max-width: 160px;
+    opacity: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    transform: translateX(0);
+    transition:
+      max-width 220ms ease,
+      opacity 140ms ease,
+      transform 220ms ease;
+  }
+
+  .viewer-sidebar__button :global(svg),
+  .viewer-sidebar__collapse :global(svg) {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    stroke-width: 1.8;
+  }
+
+  .viewer-sidebar__button:hover:not(:disabled),
+  .viewer-sidebar__collapse:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .viewer-sidebar__button--active {
+    border-color: var(--viewer-accent-2);
+    background: rgba(42, 199, 255, 0.09);
+    box-shadow: inset 0 0 0 1px rgba(42, 199, 255, 0.12);
+  }
+
+  .viewer-sidebar__button:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+
+  .viewer-sidebar__collapse {
+    margin-top: auto;
+    min-height: 38px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--viewer-muted);
+  }
+
+  .viewer-sidebar--icon-only {
+    gap: 22px;
+  }
+
+  .viewer-sidebar--icon-only .viewer-sidebar__section {
+    gap: 0;
+  }
+
+  .viewer-sidebar--icon-only .viewer-sidebar__section + .viewer-sidebar__section {
+    padding-top: 18px;
+    border-top: 1px solid var(--viewer-panel-border);
+  }
+
+  .viewer-sidebar--icon-only .viewer-sidebar__heading {
+    max-height: 0;
+    padding: 0;
+    opacity: 0;
+  }
+
+  .viewer-sidebar--icon-only .viewer-sidebar__button,
+  .viewer-sidebar--icon-only .viewer-sidebar__collapse {
+    min-height: 44px;
+    gap: 0;
+    padding: 10px 15px;
+  }
+
+  .viewer-sidebar--icon-only .viewer-sidebar__button span,
+  .viewer-sidebar--icon-only .viewer-sidebar__collapse span {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .viewer-sidebar,
+    .viewer-sidebar__section,
+    .viewer-sidebar__heading,
+    .viewer-sidebar__button,
+    .viewer-sidebar__collapse,
+    .viewer-sidebar__button span,
+    .viewer-sidebar__collapse span {
+      transition: none;
+    }
+  }
+
   .viewer__dock {
     position: absolute;
     right: 18px;

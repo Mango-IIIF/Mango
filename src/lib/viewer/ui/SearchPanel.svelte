@@ -2,12 +2,14 @@
   import { getContext } from 'svelte';
   import { t } from '../../i18n';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
+  import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {
+    redesigned?: boolean;
     onclose?: () => void;
   }
 
-  let { onclose = undefined }: Props = $props();
+  let { redesigned = false, onclose = undefined }: Props = $props();
 
   const viewer = getContext<any>('viewer-context');
   const { searchHits } = viewer.derived;
@@ -30,14 +32,11 @@
 <section class="panel" aria-label={$t('viewer.panels.search.label')}>
   <div class="panel__header">
     <div class="panel__title">{$t('viewer.panels.search.title')}</div>
-    <button
-      class="panel__close"
-      type="button"
-      aria-label={$t('viewer.panels.search.close')}
-      onclick={() => onclose?.()}
-    >
-      {$t('common.closeGlyph')}
-    </button>
+    <PanelCloseButton
+      lucide={redesigned}
+      label={$t('viewer.panels.search.close')}
+      {onclose}
+    />
   </div>
   <div class="panel__body">
     <div class="search">
