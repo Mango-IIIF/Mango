@@ -14,9 +14,6 @@
 
   let activeLanguage = language;
   let lastLanguageProp = language;
-  let audioRef: HTMLAudioElement | null = null;
-  let lastTime = 0;
-  let lastTimeFromEvent = false;
   let url = '';
   
   const getTrackSrc = (value: Story, lang: string): string => {
@@ -33,21 +30,6 @@
   const handleInput = (event: Event) => {
     const value = (event.target as HTMLInputElement).value;
     onSetNarrationTrack?.(activeLanguage, value);
-  };
-
-  const updateTime = (event?: Event) => {
-    const detailTime =
-      (event as CustomEvent<{ time?: number }> | undefined)?.detail?.time;
-    if (Number.isFinite(detailTime)) {
-      lastTime = detailTime as number;
-      lastTimeFromEvent = true;
-      return;
-    }
-    if (!audioRef) return;
-    if (Number.isFinite(audioRef.currentTime)) {
-      lastTime = audioRef.currentTime;
-      lastTimeFromEvent = false;
-    }
   };
 
   const handleSaveUrl = () => {
@@ -131,8 +113,6 @@
             class="narration-overlay__player"
             controls
             src={url}
-            bind:this={audioRef}
-            on:timeupdate={updateTime}
           ></audio>
         </div>
 

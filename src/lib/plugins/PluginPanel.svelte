@@ -10,14 +10,12 @@
   let hasMounted = false;
   let hasDestroyed = false;
   let initPromise: Promise<void> | null = null;
-  let initError: Error | null = null;
   let hasError = false;
 
   const mountPlugin = async () => {
     if (hasMounted || !container) return;
     hasMounted = true;
     hasError = false;
-    initError = null;
     
     const ctx: PluginContext = { ...context, mount: container };
     
@@ -29,7 +27,6 @@
       }
     } catch (error) {
       hasError = true;
-      initError = error instanceof Error ? error : new Error(String(error));
       const errorMessage = `Plugin "${plugin.label}" (${plugin.id}) failed to initialize`;
       console.error(errorMessage, error);
       

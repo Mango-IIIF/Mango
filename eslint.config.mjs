@@ -22,7 +22,21 @@ export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['**/*.{js,ts}'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+          varsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+  {
+    files: ['**/*.{js,mjs,cjs,ts}'],
     languageOptions: {
       globals: sharedGlobals,
     },
@@ -41,6 +55,13 @@ export default [
     },
     rules: {
       ...sveltePlugin.configs.recommended.rules,
+    },
+  },
+  {
+    files: ['**/tests/**/*.{js,ts}', '**/*.{test,spec}.{js,ts}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 ];

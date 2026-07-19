@@ -116,7 +116,7 @@ export function parseContentState(token: string): ContentStateTarget | null {
     
     // Extract first target
     if (contentState.target) {
-      let targetObj = contentState.target;
+      const targetObj = contentState.target;
       
       // Handle string targets
       if (typeof targetObj === 'string') {

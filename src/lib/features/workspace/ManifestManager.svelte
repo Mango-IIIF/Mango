@@ -10,7 +10,6 @@
 
   interface Props {
     workspace?: WorkspaceStore | null;
-    singleManifestId?: string;
     onclose?: () => void;
     onsingleload?: (manifestId: string) => void;
   }
@@ -39,7 +38,6 @@
 
   let {
     workspace = null,
-    singleManifestId = '',
     onclose = undefined,
     onsingleload = undefined,
   }: Props = $props();
@@ -137,7 +135,6 @@
 
   onMount(() => {
     selectedWindowId = workspace?.activeWindowId ?? windows[0]?.id ?? '';
-    manifestUrl = singleManifestId;
     try {
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
       if (Array.isArray(stored)) {
@@ -434,6 +431,7 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     width: 100%;
+    min-height: 120px;
     padding: 0;
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
     border-radius: 11px;
@@ -450,9 +448,10 @@
 
   .manifest-card__select {
     display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 16px;
     align-items: center;
+    align-self: stretch;
     min-width: 0;
     padding: 13px;
     border: 0;
@@ -497,17 +496,19 @@
   .manifest-card__thumbnail {
     display: grid;
     place-items: center;
-    width: 72px;
-    height: 52px;
-    border-radius: 7px;
-    background: rgba(0, 0, 0, 0.22);
+    width: 112px;
+    height: 78px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.16));
+    border-radius: 9px;
+    background: rgba(0, 0, 0, 0.32);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     overflow: hidden;
   }
 
   .manifest-card__thumbnail img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
   }
 
   .manifest-card__thumbnail .manifest-card__iiif {
@@ -550,6 +551,20 @@
 
     .manifest-manager__header {
       padding: 22px 20px 18px;
+    }
+
+    .manifest-card__select {
+      grid-template-columns: 88px minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .manifest-card {
+      min-height: 100px;
+    }
+
+    .manifest-card__thumbnail {
+      width: 88px;
+      height: 64px;
     }
   }
 </style>

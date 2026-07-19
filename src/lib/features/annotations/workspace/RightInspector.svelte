@@ -66,7 +66,6 @@
   });
   $effect(() => {
     if (!annotation) return;
-    layers;
     const normalized = normalizeLayer(annotation.targetStyleClass);
     if (localLayer !== normalized) {
       localLayer = normalized;

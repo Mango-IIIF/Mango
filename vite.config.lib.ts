@@ -7,7 +7,7 @@ if (
   typeof globalThis.crypto === 'undefined' ||
   typeof globalThis.crypto.getRandomValues !== 'function'
 ) {
-  (globalThis as any).crypto = webcrypto;
+  Object.defineProperty(globalThis, 'crypto', { configurable: true, value: webcrypto });
 }
 
 const customElementConfig = (filename: string | undefined) => {

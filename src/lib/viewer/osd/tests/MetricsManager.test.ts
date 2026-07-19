@@ -5,8 +5,6 @@ import {
   isMobileMetric,
   isTabletMetric,
   MetricsManager,
-  DEFAULT_BREAKPOINTS,
-  type Metric,
 } from '../MetricsManager';
 
 describe('MetricsManager', () => {

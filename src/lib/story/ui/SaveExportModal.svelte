@@ -25,7 +25,7 @@
         await navigator.clipboard.writeText(pretty());
         return;
       }
-    } catch (e) {
+    } catch {
       // fallback
     }
 
