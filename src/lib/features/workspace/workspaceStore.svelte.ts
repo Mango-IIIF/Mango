@@ -45,7 +45,11 @@ const removeWindow = (node: WorkspaceNode, targetId: string): WorkspaceNode | nu
   if (children.length === 0) return null;
   if (children.length === 1) return children[0];
 
-  return { ...node, children };
+  return {
+    ...node,
+    children,
+    sizes: node.sizes?.length === children.length ? node.sizes : equalSizes(children.length),
+  };
 };
 
 const collectWindowIds = (node: WorkspaceNode): string[] => {
@@ -56,6 +60,29 @@ const collectWindowIds = (node: WorkspaceNode): string[] => {
 const collectWindows = (node: WorkspaceNode): WindowNode[] => {
   if (node.type === 'window') return [node];
   return node.children.flatMap((child) => collectWindows(child));
+};
+
+export const getSplitNodeId = (node: WorkspaceNode): string =>
+  collectWindowIds(node).join('|');
+
+const equalSizes = (count: number): number[] =>
+  Array.from({ length: count }, () => 100 / count);
+
+const applySizesToTree = (
+  node: WorkspaceNode,
+  targetId: string,
+  sizes: number[],
+): WorkspaceNode => {
+  if (node.type === 'window') return node;
+  if (getSplitNodeId(node) === targetId) {
+    return { ...node, sizes: [...sizes] };
+  }
+  return {
+    ...node,
+    children: node.children.map((child) =>
+      applySizesToTree(child, targetId, sizes),
+    ),
+  };
 };
 
 type WindowMoveDirection = 'left' | 'right' | 'up' | 'down';
@@ -198,6 +225,7 @@ const swapWindows = (
 
 const layoutSlotCount = (preset: WorkspaceLayoutPreset): number => {
   if (preset === '1x1') return 1;
+  if (preset === '1x2-panel') return 3;
   if (preset === '2x2') return 4;
   return 2;
 };
@@ -225,17 +253,28 @@ const convertLayoutPreset = (
 
   if (preset === '1x1') return win1;
   if (preset === '1x2') {
-    return { type: 'column', children: [win1, win2] };
+    return { type: 'column', children: [win1, win2], sizes: equalSizes(2) };
   }
   if (preset === '2x1') {
-    return { type: 'row', children: [win1, win2] };
+    return { type: 'row', children: [win1, win2], sizes: equalSizes(2) };
+  }
+  if (preset === '1x2-panel') {
+    return {
+      type: 'column',
+      sizes: equalSizes(2),
+      children: [
+        win1,
+        { type: 'row', children: [win2, win3], sizes: equalSizes(2) },
+      ],
+    };
   }
 
   return {
     type: 'column',
+    sizes: equalSizes(2),
     children: [
-      { type: 'row', children: [win1, win2] },
-      { type: 'row', children: [win3, win4] },
+      { type: 'row', children: [win1, win2], sizes: equalSizes(2) },
+      { type: 'row', children: [win3, win4], sizes: equalSizes(2) },
     ],
   };
 };
@@ -303,6 +342,7 @@ export class WorkspaceStore {
     const layout = applyToTree(this.state.layout, id, (windowNode) => ({
       type: orientation,
       children: [windowNode, cloneWindow(windowNode, makeWindowId())],
+      sizes: equalSizes(2),
     }));
 
     this.state = { ...this.state, layout };
@@ -366,5 +406,17 @@ export class WorkspaceStore {
       viewBox,
     }));
     this.state = { ...this.state, layout };
+  }
+
+  updateSplitSizes(targetId: string, sizes: number[]) {
+    if (!targetId || sizes.length < 2 || sizes.some((size) => !Number.isFinite(size))) {
+      return;
+    }
+    const layout = applySizesToTree(this.state.layout, targetId, sizes);
+    this.state = { ...this.state, layout };
+  }
+
+  get windows(): WindowNode[] {
+    return collectWindows(this.state.layout);
   }
 }

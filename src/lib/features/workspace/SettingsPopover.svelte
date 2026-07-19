@@ -6,6 +6,7 @@
     activeLayout?: WorkspaceLayoutPreset;
     theme?: 'dark' | 'light';
     locale?: string;
+    placement?: 'left' | 'right';
     onlayoutchange?: ((layout: WorkspaceLayoutPreset) => void) | undefined;
     onthemechange?: ((theme: 'dark' | 'light') => void) | undefined;
     onlocalechange?: ((locale: string) => void) | undefined;
@@ -15,6 +16,7 @@
     activeLayout = '1x1',
     theme = 'dark',
     locale = 'en',
+    placement = 'left',
     onlayoutchange = undefined,
     onthemechange = undefined,
     onlocalechange = undefined,
@@ -22,7 +24,7 @@
 
   let open = $state(false);
 
-  const layouts: WorkspaceLayoutPreset[] = ['1x1', '1x2', '2x1', '2x2'];
+  const layouts: WorkspaceLayoutPreset[] = ['1x1', '1x2', '2x1', '1x2-panel', '2x2'];
 </script>
 
 <div class="settings-wrap">
@@ -36,7 +38,12 @@
   </button>
 
   {#if open}
-    <div class="settings-popover" role="dialog" aria-label={$t('workspace.settings')}>
+    <div
+      class="settings-popover"
+      class:settings-popover--right={placement === 'right'}
+      role="dialog"
+      aria-label={$t('workspace.settings')}
+    >
       <section class="settings-section">
         <h3>{$t('workspace.layout')}</h3>
         <div class="layout-grid">
@@ -102,6 +109,11 @@
     display: grid;
     gap: 12px;
     z-index: 15;
+  }
+
+  .settings-popover--right {
+    left: 48px;
+    bottom: 0;
   }
 
   .settings-section {

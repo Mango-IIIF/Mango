@@ -512,6 +512,8 @@
 
   onMount(() => {
     let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
+    let resizeFrameId: number | null = null;
 
     const init = async () => {
       if (!container) return;
@@ -552,6 +554,28 @@
         element: container,
         tileSources: null,
       });
+
+      if (typeof ResizeObserver !== 'undefined') {
+        let lastWidth = 0;
+        let lastHeight = 0;
+        resizeObserver = new ResizeObserver(() => {
+          if (!container || !viewer) return;
+          const width = container.clientWidth;
+          const height = container.clientHeight;
+          if (width <= 0 || height <= 0) return;
+          if (width === lastWidth && height === lastHeight) return;
+          lastWidth = width;
+          lastHeight = height;
+          if (resizeFrameId !== null) cancelAnimationFrame(resizeFrameId);
+          resizeFrameId = requestAnimationFrame(() => {
+            resizeFrameId = null;
+            viewer?.forceResize();
+            viewer?.viewport?.applyConstraints?.();
+            scheduleRenderedUpdate();
+          });
+        });
+        resizeObserver.observe(container);
+      }
 
       const handleViewportChange = () => {
         emitViewBox();
@@ -597,6 +621,11 @@
         cancelAnimationFrame(renderFrameId);
         renderFrameId = null;
       }
+      if (resizeFrameId !== null) {
+        cancelAnimationFrame(resizeFrameId);
+        resizeFrameId = null;
+      }
+      resizeObserver?.disconnect();
       cancelled = true;
       viewer?.destroy();
     };

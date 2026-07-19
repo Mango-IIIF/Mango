@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WindowNode, WorkspaceNode } from '../../../core/types/workspace';
-import { WorkspaceStore } from '../workspaceStore.svelte';
+import { getSplitNodeId, WorkspaceStore } from '../workspaceStore.svelte';
 
 const collectWindows = (node: WorkspaceNode): WindowNode[] => {
   if (node.type === 'window') return [node];
@@ -70,5 +70,50 @@ describe('WorkspaceStore', () => {
 
     expect(after).toEqual([bottomLeftId, topLeftId, before[2], before[3]]);
     expect(store.activeWindowId).toBe(topLeftId);
+  });
+
+  it('initializes equal split sizes for layout presets', () => {
+    const store = new WorkspaceStore('manifest-a');
+    store.setLayoutPreset('2x2');
+
+    expect(store.layout.type).toBe('column');
+    if (store.layout.type === 'window') return;
+    expect(store.layout.sizes).toEqual([50, 50]);
+    expect(store.layout.children.every((child) =>
+      child.type === 'window' || child.sizes?.every((size) => size === 50),
+    )).toBe(true);
+  });
+
+  it('creates one large left window and two stacked right windows for the one-by-two layout', () => {
+    const store = new WorkspaceStore('manifest-a');
+    store.setLayoutPreset('1x2-panel');
+
+    expect(collectWindows(store.layout)).toHaveLength(3);
+    expect(store.layout.type).toBe('column');
+    if (store.layout.type !== 'column') return;
+    expect(store.layout.sizes).toEqual([50, 50]);
+    expect(store.layout.children[0]?.type).toBe('window');
+    expect(store.layout.children[1]?.type).toBe('row');
+    if (store.layout.children[1]?.type === 'row') {
+      expect(store.layout.children[1].children).toHaveLength(2);
+      expect(store.layout.children[1].sizes).toEqual([50, 50]);
+    }
+  });
+
+  it('updates the requested split without changing nested split sizes', () => {
+    const store = new WorkspaceStore('manifest-a');
+    store.setLayoutPreset('2x2');
+    if (store.layout.type === 'window') return;
+    const targetId = getSplitNodeId(store.layout);
+
+    store.updateSplitSizes(targetId, [65, 35]);
+
+    expect(store.layout.type).toBe('column');
+    if (store.layout.type === 'window') return;
+    expect(store.layout.sizes).toEqual([65, 35]);
+    expect(store.layout.children[0]?.type).toBe('row');
+    if (store.layout.children[0]?.type === 'row') {
+      expect(store.layout.children[0].sizes).toEqual([50, 50]);
+    }
   });
 });

@@ -49,8 +49,8 @@
 
 <style>
   .panel__close :global(svg) {
-    width: 20px;
-    height: 20px;
+    width: 17px;
+    height: 17px;
     stroke-width: 2;
   }
 

@@ -38,6 +38,7 @@
   } from '../../core/state/viewportState.svelte';
   import { setLocale } from '../../i18n';
   import GridContainer from '../workspace/GridContainer.svelte';
+  import ManifestManager from '../workspace/ManifestManager.svelte';
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
@@ -55,6 +56,8 @@
     story?: string | Record<string, unknown> | undefined;
     storyUrl?: string | undefined;
     onstoryViewerError?: (payload: { message: string; cause?: unknown }) => void;
+    canvasIndex?: number | undefined;
+    oncanvaschange?: ((detail: { canvasIndex: number }) => void) | undefined;
   }
 
   const DEFAULT_LAYER_COLOR = '#a78bfa';
@@ -112,6 +115,8 @@
     story = undefined,
     storyUrl = undefined,
     onstoryViewerError = undefined,
+    canvasIndex = undefined,
+    oncanvaschange = undefined,
   }: Props = $props();
   const initialMobileLayout = matchesInitialMobileLayout();
 
@@ -146,9 +151,13 @@
       config: normalisedConfig,
       plugins: [...corePlugins],
       ...initialViewState,
+      selectedCanvasIndex: canvasIndex ?? initialViewState.selectedCanvasIndex,
     });
   const viewerState = createInitialViewerState();
   const viewerDerived = createViewerDerived(viewerState);
+  const initialReportedCanvasIndex = () =>
+    canvasIndex ?? get(viewerState.selectedCanvasIndex);
+  let lastReportedCanvasIndex = initialReportedCanvasIndex();
   let stageRef: ReturnType<typeof Stage> | null = $state(null);
   const controller = createViewerController({
     state: viewerState,
@@ -282,10 +291,12 @@
     'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line'
   >('rectangle');
   let effectiveAnnotationMode = $derived(canDrawAnnotations ? $annotationMode : 'edit');
-  let viewerSettingsLayout = $state<'1x1' | '1x2' | '2x1' | '2x2'>('1x1');
+  let viewerSettingsLayout = $state<'1x1' | '1x2' | '2x1' | '1x2-panel' | '2x2'>('1x1');
   let contentsPanelTab = $state<'toc' | 'transcript'>('toc');
   let showComparePanel = $state(false);
+  let showManifestManager = $state(false);
   let workspace = $state<WorkspaceStore | null>(null);
+  let isMultiView = $derived(viewerSettingsLayout !== '1x1' && !!workspace);
   const closeLeftPanelStores = () => {
     viewerState.showContents.set(false);
     viewerState.showAnnotations.set(false);
@@ -295,6 +306,7 @@
     viewerState.showMetadata.set(false);
     viewerState.showLayers.set(false);
     showComparePanel = false;
+    showManifestManager = false;
   };
 
   const openContentsPanel = (tab: 'toc' | 'transcript') => {
@@ -311,6 +323,7 @@
     panel: 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers' | 'thumbnails' | 'compare',
     open: boolean,
   ) => {
+    showManifestManager = false;
     if (panel === 'compare') {
       if (open) {
         closeLeftPanelStores();
@@ -324,11 +337,17 @@
     controller.setPanelOpen(panel, open);
   };
 
+  const toggleManifestManager = () => {
+    const nextOpen = !showManifestManager;
+    closeLeftPanelStores();
+    showManifestManager = nextOpen;
+  };
+
   if (initialMobileLayout) {
     closeLeftPanelStores();
   }
 
-  let viewerSettingsTheme = $state<'dark' | 'light'>('dark');
+  let viewerSettingsTheme = $state<'dark' | 'light' | 'sepia' | 'midnight'>('dark');
   let viewerSettingsLocale = $state('en');
   const applyViewerSettingsLocale = (locale: string) => {
     const nextLocale = locale.toLowerCase();
@@ -432,7 +451,12 @@
   });
   $effect(() => {
     const configuredTheme = normalisedConfig.theme?.toLowerCase();
-    viewerSettingsTheme = configuredTheme === 'light' ? 'light' : 'dark';
+    viewerSettingsTheme =
+      configuredTheme === 'light' ||
+      configuredTheme === 'sepia' ||
+      configuredTheme === 'midnight'
+        ? configuredTheme
+        : 'dark';
   });
   $effect(() => {
     setLocale(viewerSettingsLocale);
@@ -1140,6 +1164,18 @@
   $effect.pre(() => {
     viewerState.manifestId.set(manifestId);
   });
+  $effect(() => {
+    const requestedIndex = canvasIndex;
+    if (requestedIndex !== undefined && requestedIndex !== get(selectedCanvasIndex)) {
+      controller.setCanvasByIndex(requestedIndex);
+    }
+  });
+  $effect(() => {
+    const currentIndex = $selectedCanvasIndex;
+    if (currentIndex === lastReportedCanvasIndex) return;
+    lastReportedCanvasIndex = currentIndex;
+    oncanvaschange?.({ canvasIndex: currentIndex });
+  });
   $effect.pre(() => {
     const configWithModeDefaults = {
       ...normalisedConfig,
@@ -1269,8 +1305,13 @@
     settings: {
       get layout() { return viewerSettingsLayout; },
       set layout(val) {
+        if (val === viewerSettingsLayout) return;
         viewerSettingsLayout = val;
         if (val !== '1x1') {
+          viewerState.showMetadata.set(false);
+          viewerState.showSearch.set(false);
+          viewerState.showAnnotations.set(false);
+          viewerState.showTools.set(false);
           if (!workspace) {
             workspace = new WorkspaceStore(manifestId);
           }
@@ -1359,7 +1400,7 @@
   <div
     class="viewer__grid"
     class:viewer__grid--controls={showControlRail}
-    class:viewer__grid--nav-compact={showControlRail && leftVisibleEffective && !isMobileLayout}
+    class:viewer__grid--nav-compact={showControlRail && (leftVisibleEffective || showManifestManager) && !isMobileLayout}
     class:viewer__grid--left={leftVisibleEffective}
     class:viewer__grid--right={rightVisibleEffective}
     class:viewer__grid--sidebar-right={sidebarPosition === 'right'}
@@ -1370,8 +1411,8 @@
           compact={true}
           variant="sidebar"
           mobile={isMobileLayout}
-          iconOnly={leftVisibleEffective}
-          galleryActive={$layoutMode === 'gallery'}
+          iconOnly={leftVisibleEffective || showManifestManager}
+          galleryActive={showThumbnailsEffectiveStory}
           contentsTab={contentsPanelTab}
           allowThumbnails={allowThumbnailsStory}
           allowContents={allowContentsStory}
@@ -1392,15 +1433,33 @@
           showLayers={showLayersEffectiveStory}
           showSettings={showSettingsEffectiveStory}
           showCompare={showComparePanel}
+          {showManifestManager}
+          multiView={isMultiView}
           oncollapse={collapseViewerSidebar}
-          ongalleryopen={() => controller.setLayoutMode('gallery')}
+          ongalleryopen={() =>
+            controller.setPanelOpen('thumbnails', !showThumbnailsEffectiveStory)}
           oncontentsopen={openContentsPanel}
           oncomparetoggle={() =>
             handleViewerPanelToggle('compare', !showComparePanel)}
+          onmanifesttoggle={toggleManifestManager}
           onpanelToggle={(detail) =>
             handleViewerPanelToggle(detail.panel, detail.open)}
         />
       </aside>
+    {/if}
+
+    {#if showManifestManager}
+      <div
+        class="viewer__manifest-overlay"
+        class:viewer__manifest-overlay--right={sidebarPosition === 'right'}
+      >
+        <ManifestManager
+          {workspace}
+          singleManifestId={manifestId}
+          onclose={() => (showManifestManager = false)}
+          onsingleload={(id) => (manifestId = id)}
+        />
+      </div>
     {/if}
 
     {#if leftVisibleEffective && !isAnnotationEditor}
@@ -1626,6 +1685,7 @@
                   selectedCanvasIndex={$selectedCanvasIndex}
                   totalCanvases={$canvases.length}
                   {zoomPercent}
+                  rotation={$rotation}
                   onhome={handleHome}
                   onzoomIn={handleZoomIn}
                   onzoomOut={handleZoomOut}
@@ -1660,6 +1720,7 @@
               selectedCanvasIndex={$selectedCanvasIndex}
               totalCanvases={$canvases.length}
               {zoomPercent}
+              rotation={$rotation}
               onhome={handleHome}
               onzoomIn={handleZoomIn}
               onzoomOut={handleZoomOut}
@@ -1767,6 +1828,7 @@
               selectedCanvasIndex={$selectedCanvasIndex}
               totalCanvases={$canvases.length}
               {zoomPercent}
+              rotation={$rotation}
               onhome={handleHome}
               onzoomIn={handleZoomIn}
               onzoomOut={handleZoomOut}
@@ -1815,6 +1877,15 @@
               workspace?.setWindowManifest(detail.id, detail.manifestId);
               workspace?.setActiveWindow(detail.id);
             }}
+            oncanvaschange={(detail) =>
+              workspace?.setWindowCanvasIndex(detail.id, detail.canvasIndex)}
+            onresizesplit={(detail) =>
+              workspace?.updateSplitSizes(detail.targetId, detail.sizes)}
+            onopenmanifestmanager={(id) => {
+              workspace?.setActiveWindow(id);
+              closeLeftPanelStores();
+              showManifestManager = true;
+            }}
           />
         {/if}
       </main>
@@ -1835,7 +1906,8 @@
 
 <style>
   .stage-gallery-view {
-    width: 220px;
+    width: 100%;
+    min-width: 0;
     height: 100%;
     overflow-y: auto;
     background: var(--viewer-stage, #111720);
@@ -2071,9 +2143,9 @@
     --viewer-dock-button-bg: rgba(15, 20, 27, 0.95);
     --viewer-dock-button-border: rgba(255, 255, 255, 0.12);
     --viewer-dock-tooltip-bg: rgba(10, 14, 19, 0.95);
-    --viewer-dock-active-border: rgba(255, 209, 102, 0.42);
-    --viewer-dock-active-ring: rgba(255, 209, 102, 0.24);
-    --viewer-dock-active-chip-text: #0b0f14;
+    --viewer-dock-active-border: rgba(42, 199, 255, 0.58);
+    --viewer-dock-active-ring: rgba(42, 199, 255, 0.22);
+    --viewer-dock-active-chip-text: #06141d;
     --viewer-dock-button-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
     --viewer-dock-active-shadow-base: 0 12px 24px rgba(0, 0, 0, 0.35);
     --viewer-gallery-bg: rgba(10, 14, 19, 0.85);
@@ -2210,9 +2282,9 @@
     --viewer-dock-button-bg: rgba(248, 251, 255, 0.96);
     --viewer-dock-button-border: rgba(34, 48, 65, 0.2);
     --viewer-dock-tooltip-bg: rgba(241, 246, 252, 0.97);
-    --viewer-dock-active-border: rgba(197, 162, 100, 0.6);
-    --viewer-dock-active-ring: rgba(197, 162, 100, 0.22);
-    --viewer-dock-active-chip-text: #223041;
+    --viewer-dock-active-border: rgba(21, 159, 206, 0.65);
+    --viewer-dock-active-ring: rgba(42, 199, 255, 0.18);
+    --viewer-dock-active-chip-text: #16435a;
     --viewer-dock-button-shadow: 0 10px 20px rgba(34, 48, 65, 0.18);
     --viewer-dock-active-shadow-base: 0 10px 20px rgba(34, 48, 65, 0.2);
     --viewer-gallery-bg: rgba(242, 246, 252, 0.92);
@@ -2255,7 +2327,103 @@
     );
   }
 
+  .viewer[data-theme='sepia'] {
+    --viewer-bg: #eee4d2;
+    --viewer-surface: #f7f0e3;
+    --viewer-panel: #e8dcc6;
+    --viewer-panel-strong: #dac9aa;
+    --viewer-panel-border: rgba(76, 58, 35, 0.16);
+    --viewer-text: #3d3023;
+    --viewer-muted: #776650;
+    --viewer-accent: #a86f46;
+    --viewer-accent-2: #2f858b;
+    --viewer-accent-3: #b88645;
+    --viewer-accent-tools: #66864a;
+    --viewer-stage: #f4ecde;
+    --viewer-stage-glow: rgba(47, 133, 139, 0.13);
+    --viewer-stage-tail: #fffaf0;
+    --viewer-dock-button-bg: rgba(255, 250, 240, 0.94);
+    --viewer-dock-button-border: rgba(76, 58, 35, 0.2);
+    --viewer-dock-tooltip-bg: rgba(250, 243, 230, 0.97);
+    --viewer-dock-active-border: rgba(47, 133, 139, 0.68);
+    --viewer-dock-active-ring: rgba(47, 133, 139, 0.2);
+    --viewer-dock-active-chip-text: #173f42;
+    --viewer-dock-button-shadow: 0 10px 20px rgba(76, 58, 35, 0.16);
+    --viewer-dock-active-shadow-base: 0 10px 20px rgba(76, 58, 35, 0.18);
+    --viewer-gallery-bg: rgba(244, 236, 222, 0.94);
+    --viewer-gallery-item-bg: rgba(255, 250, 240, 0.94);
+    --viewer-gallery-item-border: rgba(76, 58, 35, 0.15);
+    --viewer-gallery-thumb-bg: rgba(224, 210, 185, 0.72);
+    --viewer-gallery-close-bg: rgba(255, 250, 240, 0.94);
+    --viewer-gallery-active-ring: rgba(47, 133, 139, 0.24);
+    --viewer-close-button-border: rgba(76, 58, 35, 0.2);
+    --viewer-close-button-bg: rgba(255, 250, 240, 0.94);
+    --viewer-close-button-hover-bg: rgba(239, 227, 207, 0.96);
+    --viewer-close-button-hover-border: rgba(76, 58, 35, 0.32);
+    --viewer-close-button-color: #3d3023;
+    --viewer-close-button-focus-ring: rgba(47, 133, 139, 0.58);
+    --viewer-stage-bottom-bg: rgba(241, 231, 212, 0.88);
+    --viewer-toolbar-separator: rgba(76, 58, 35, 0.16);
+    --viewer-toolbar-group-border: rgba(76, 58, 35, 0.16);
+    --viewer-toolbar-group-bg: rgba(235, 222, 199, 0.9);
+    --viewer-toolbar-button-bg: rgba(255, 250, 240, 0.86);
+    --viewer-toolbar-button-hover-bg: rgba(47, 133, 139, 0.15);
+    --viewer-toolbar-value-text: #3d3023;
+    --viewer-toolbar-value-bg: rgba(224, 210, 185, 0.9);
+    --viewer-search-input-bg: rgba(255, 250, 240, 0.94);
+    --viewer-search-clear-bg: rgba(47, 133, 139, 0.14);
+    --viewer-search-item-bg: rgba(255, 250, 240, 0.78);
+    --viewer-search-item-hover-bg: rgba(47, 133, 139, 0.16);
+    --viewer-search-focus: rgba(47, 133, 139, 0.65);
+    --viewer-control-rail-bg: linear-gradient(
+      180deg,
+      rgba(241, 231, 212, 0.96) 0%,
+      rgba(229, 214, 188, 0.96) 100%
+    );
+    border-color: #d8c7aa;
+    box-shadow: var(--viewer-frame-shadow, 0 24px 52px rgba(76, 58, 35, 0.16));
+    background: radial-gradient(
+      135% 135% at 10% 0%,
+      #f5ead7 0%,
+      #eee4d2 48%,
+      #e5d7bf 100%
+    );
+  }
+
+  .viewer[data-theme='midnight'] {
+    --viewer-bg: #07111f;
+    --viewer-surface: #0a1728;
+    --viewer-panel: #0c192a;
+    --viewer-panel-strong: #13263d;
+    --viewer-panel-border: rgba(126, 180, 235, 0.15);
+    --viewer-text: #edf6ff;
+    --viewer-muted: #91a7bf;
+    --viewer-accent: #a78bfa;
+    --viewer-accent-2: #38bdf8;
+    --viewer-accent-3: #e879f9;
+    --viewer-accent-tools: #5eead4;
+    --viewer-stage: #050d18;
+    --viewer-stage-glow: rgba(56, 189, 248, 0.15);
+    --viewer-stage-tail: #020711;
+    --viewer-dock-button-bg: rgba(7, 17, 31, 0.96);
+    --viewer-dock-tooltip-bg: rgba(3, 10, 20, 0.97);
+    --viewer-control-rail-bg: linear-gradient(
+      180deg,
+      rgba(12, 29, 48, 0.96) 0%,
+      rgba(5, 15, 28, 0.96) 100%
+    );
+    border-color: #142b46;
+    box-shadow: var(--viewer-frame-shadow, 0 30px 76px rgba(0, 3, 10, 0.72));
+    background: radial-gradient(
+      130% 130% at 8% 0%,
+      #142a46 0%,
+      #07111f 50%,
+      #020711 100%
+    );
+  }
+
   .viewer__grid {
+    position: relative;
     display: grid;
     grid-template-columns: 1fr;
     row-gap: 18px;
@@ -2267,6 +2435,18 @@
     transition:
       grid-template-columns 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
       column-gap 240ms ease;
+  }
+
+  .viewer__manifest-overlay {
+    position: absolute;
+    z-index: 20;
+    inset: 0 0 0 72px;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .viewer__manifest-overlay--right {
+    inset: 0 72px 0 0;
   }
 
   .viewer__grid--left {
@@ -2425,6 +2605,21 @@
     border: 1px solid var(--viewer-panel-border);
     border-radius: 18px;
     background: rgba(18, 25, 34, 0.52);
+  }
+
+  .viewer[data-theme='light'] .stage__viewer-frame {
+    border-color: rgba(34, 48, 65, 0.12);
+    background: rgba(247, 250, 253, 0.94);
+  }
+
+  .viewer[data-theme='sepia'] .stage__viewer-frame {
+    border-color: rgba(76, 58, 35, 0.16);
+    background: rgba(255, 250, 240, 0.94);
+  }
+
+  .viewer[data-theme='midnight'] .stage__viewer-frame {
+    border-color: rgba(126, 180, 235, 0.15);
+    background: rgba(3, 10, 20, 0.74);
   }
 
   .stage__viewer-frame :global(.stage__media) {

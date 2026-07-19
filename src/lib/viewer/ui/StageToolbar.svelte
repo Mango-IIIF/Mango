@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getContext } from 'svelte';
+  import { House, RotateCwSquare } from '@lucide/svelte';
   import { t } from '../../i18n';
   import type { MediaType } from '../../iiif/mediaResolver';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
@@ -13,6 +14,7 @@
     selectedCanvasIndex?: number;
     totalCanvases?: number;
     zoomPercent?: number;
+    rotation?: number;
     onhome?: () => void;
     onzoomIn?: () => void;
     onzoomOut?: () => void;
@@ -31,6 +33,7 @@
     selectedCanvasIndex = 0,
     totalCanvases = 0,
     zoomPercent = 100,
+    rotation = 0,
     onhome = undefined,
     onzoomIn = undefined,
     onzoomOut = undefined,
@@ -188,28 +191,16 @@
         disabled={!canRotate}
         onclick={() => onrotate?.()}
       >
-        <svg
-          class="stage__toolbar-icon stage__toolbar-icon--rotate"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
+        <span
+          class="stage__toolbar-rotate-icon"
+          style:transform={`rotate(${rotation}deg)`}
         >
-          <path
-            d="M21 4v6h-6"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+          <RotateCwSquare
+            class="stage__toolbar-icon"
+            aria-hidden="true"
+            strokeWidth={1.8}
           />
-          <path
-            d="M20.4 13.4A8.5 8.5 0 1 1 18 5.9"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        </span>
       </button>
     </div>
 
@@ -340,32 +331,11 @@
         disabled={!canHome}
         onclick={() => onhome?.()}
       >
-        <svg class="stage__toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M4 11.5L12 4l8 7.5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.7"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M7 10.5V20h10v-9.5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.7"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M10 20v-6h4v6"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.7"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <House
+          class="stage__toolbar-icon"
+          aria-hidden="true"
+          strokeWidth={1.8}
+        />
       </button>
     </div>
 
@@ -385,7 +355,6 @@
     --stage-toolbar-value-gap: 4px;
     --stage-toolbar-value-padding: 8px;
     --stage-toolbar-icon-size: 17px;
-    --stage-toolbar-rotate-icon-size: 18px;
     --stage-toolbar-radius: 10px;
     display: flex;
     align-items: center;
@@ -413,7 +382,6 @@
     --stage-toolbar-value-width: 90px;
     --stage-toolbar-zoom-width: 78px;
     --stage-toolbar-icon-size: 18px;
-    --stage-toolbar-rotate-icon-size: 19px;
     margin-top: -6px;
   }
 
@@ -447,9 +415,11 @@
   .stage__toolbar-button {
     border: 0;
     width: var(--stage-toolbar-button-width);
+    min-width: var(--stage-toolbar-button-width);
     height: var(--stage-toolbar-button-height);
     min-height: var(--stage-toolbar-button-height);
     padding: 0;
+    flex: 0 0 var(--stage-toolbar-button-width);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -545,12 +515,33 @@
     overflow: visible;
   }
 
-  .stage__toolbar-icon--rotate {
-    width: var(--stage-toolbar-rotate-icon-size);
-    height: var(--stage-toolbar-rotate-icon-size);
+  .stage__toolbar-rotate-icon {
+    display: grid;
+    width: var(--stage-toolbar-icon-size);
+    height: var(--stage-toolbar-icon-size);
+    place-items: center;
+    transform-origin: center;
+    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  @container (max-width: 430px) {
+  .stage__toolbar-rotate-icon :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .stage__toolbar-button > :global(svg.stage__toolbar-icon) {
+    width: var(--stage-toolbar-icon-size);
+    height: var(--stage-toolbar-icon-size);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage__toolbar-rotate-icon {
+      transition: none;
+    }
+  }
+
+  @container (max-width: 500px) {
     .stage__toolbar--below {
       --stage-toolbar-gap: clamp(3px, 1.1cqw, 5px);
       --stage-toolbar-button-width: clamp(26px, 10.2cqw, 34px);
@@ -563,7 +554,6 @@
       --stage-toolbar-value-gap: clamp(2px, .8cqw, 4px);
       --stage-toolbar-value-padding: clamp(3px, 1.2cqw, 6px);
       --stage-toolbar-icon-size: clamp(15px, 5.2cqw, 18px);
-      --stage-toolbar-rotate-icon-size: clamp(16px, 5.6cqw, 19px);
       --stage-toolbar-radius: clamp(8px, 2.8cqw, 10px);
       width: min(100% + 24px, 100vw - 28px);
       max-width: min(100% + 24px, 100vw - 28px);
@@ -620,86 +610,6 @@
       height: var(--stage-toolbar-icon-size);
     }
 
-    .stage__toolbar--below .stage__toolbar-icon--rotate {
-      width: var(--stage-toolbar-rotate-icon-size);
-      height: var(--stage-toolbar-rotate-icon-size);
-    }
   }
 
-  @media (max-width: 900px) {
-    .stage__toolbar--below {
-      --stage-toolbar-gap: clamp(3px, 1vw, 5px);
-      --stage-toolbar-button-width: clamp(26px, 8.2vw, 38px);
-      --stage-toolbar-button-height: clamp(30px, 8.8vw, 38px);
-      --stage-toolbar-group-height: calc(var(--stage-toolbar-button-height) + 2px);
-      --stage-toolbar-value-width: clamp(40px, 13.5vw, 70px);
-      --stage-toolbar-zoom-width: clamp(38px, 12vw, 60px);
-      --stage-toolbar-zoom-input-width: 3.6ch;
-      --stage-toolbar-value-font-size: clamp(10px, 2.7vw, 12px);
-      --stage-toolbar-value-gap: clamp(2px, .7vw, 4px);
-      --stage-toolbar-value-padding: clamp(3px, 1vw, 7px);
-      --stage-toolbar-icon-size: clamp(15px, 4vw, 18px);
-      --stage-toolbar-rotate-icon-size: clamp(16px, 4.4vw, 19px);
-      --stage-toolbar-radius: clamp(8px, 2.4vw, 10px);
-      width: min(100% + 24px, 100vw - 28px);
-      max-width: min(100% + 24px, 100vw - 28px);
-      position: relative;
-      left: 50%;
-      transform: translateX(-50%);
-      margin-inline: auto;
-      padding: 0;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .stage__toolbar--below .stage__toolbar-group {
-      min-height: var(--stage-toolbar-group-height);
-      border-radius: var(--stage-toolbar-radius);
-    }
-
-    .stage__toolbar--below .stage__toolbar-group--single {
-      min-height: var(--stage-toolbar-group-height);
-    }
-
-    .stage__toolbar--below .stage__toolbar-separator {
-      display: none;
-    }
-
-    .stage__toolbar--below .stage__toolbar-button {
-      width: var(--stage-toolbar-button-width);
-      height: var(--stage-toolbar-button-height);
-      min-height: var(--stage-toolbar-button-height);
-    }
-
-    .stage__toolbar--below .stage__toolbar-button--single {
-      width: var(--stage-toolbar-button-width);
-      height: var(--stage-toolbar-button-height);
-      border-radius: 0;
-      min-height: var(--stage-toolbar-button-height);
-    }
-
-    .stage__toolbar--below .stage__toolbar-value {
-      min-width: var(--stage-toolbar-value-width);
-      min-height: var(--stage-toolbar-button-height);
-      font-size: var(--stage-toolbar-value-font-size);
-      gap: var(--stage-toolbar-value-gap);
-      padding-inline: var(--stage-toolbar-value-padding);
-    }
-
-    .stage__toolbar--below .stage__toolbar-value--zoom {
-      width: var(--stage-toolbar-zoom-width);
-      min-width: var(--stage-toolbar-zoom-width);
-      flex-basis: var(--stage-toolbar-zoom-width);
-    }
-
-    .stage__toolbar--below .stage__toolbar-icon {
-      width: var(--stage-toolbar-icon-size);
-      height: var(--stage-toolbar-icon-size);
-    }
-
-    .stage__toolbar--below .stage__toolbar-icon--rotate {
-      width: var(--stage-toolbar-rotate-icon-size);
-      height: var(--stage-toolbar-rotate-icon-size);
-    }
-  }
 </style>

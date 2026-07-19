@@ -266,6 +266,12 @@
     "theme": "Tema",
     "themeDark": "Oscuro",
     "themeLight": "Claro",
+    "themeSepia": "Sepia",
+    "themeMidnight": "Medianoche",
+    "closeSettings": "Cerrar configuración",
+    "showSettings": "Mostrar configuración",
+    "hideSettings": "Ocultar configuración",
+    "toggleSettings": "Alternar configuración",
     "language": "Idioma",
     "viewMode": "Diseño de página",
     "viewModeSingle": "Única",
@@ -276,7 +282,36 @@
     "activeViewportHint": "El contexto del manifiesto sigue la ventana activa.",
     "canvasPosition": "Lienzo {current} de {total}",
     "searchHint": "El panel de búsqueda está vinculado al manifiesto de la ventana activa.",
-    "annotationsHint": "El contexto de anotaciones está vinculado a la ventana activa."
+    "annotationsHint": "El contexto de anotaciones está vinculado a la ventana activa.",
+    "resizeRows": "Cambiar el tamaño de las filas del espacio de trabajo",
+    "resizeColumns": "Cambiar el tamaño de las columnas del espacio de trabajo",
+    "unavailableMultiView": "No disponible en vista múltiple",
+    "details": "Detalles del espacio de trabajo",
+    "eyebrow": "Espacio de trabajo",
+    "selectedWindow": "Ventana seleccionada",
+    "none": "Ninguna",
+    "singleViewOnly": "Los metadatos, la búsqueda y las anotaciones están disponibles en la vista única.",
+    "manifest": "Manifiesto",
+    "pageLayout": { "group": "Diseño de página", "singleAria": "Diseño de página única", "sideBySideAria": "Diseño de páginas en paralelo", "continuousAria": "Diseño de desplazamiento continuo", "galleryAria": "Diseño de galería" },
+    "window": { "canvasNavigation": "Navegación por lienzos", "pageNumber": "Número de página", "replaceManifest": "Reemplazar el manifiesto de esta ventana", "previousCanvas": "Lienzo anterior", "nextCanvas": "Lienzo siguiente" },
+    "emptySlot": { "dropZone": "Ventana vacía", "dragOrPaste": "Arrastra un manifiesto aquí o pega su URL", "empty": "Vacía", "placeholder": "URL del manifiesto", "load": "Cargar manifiesto", "chooseLibrary": "Elegir de la biblioteca de manifiestos" },
+    "compare": {
+      "title": "Comparar", "close": "Cerrar comparación", "description": "Elige cómo se organizan las vistas de comparación.", "group": "Diseño de comparación",
+      "single": "Vista única", "singleAria": "Diseño de vista única, 1 por 1", "singleAnnouncement": "Diseño de vista única seleccionado",
+      "sideBySide": "En paralelo", "sideBySideAria": "Diseño en paralelo, 1 por 2", "sideBySideAnnouncement": "Diseño en paralelo seleccionado",
+      "stacked": "Apiladas", "stackedAria": "Diseño apilado, 2 por 1", "stackedAnnouncement": "Diseño apilado seleccionado",
+      "oneByTwo": "Uno y dos", "oneByTwoAria": "Diseño de uno y dos, una vista grande y dos vistas apiladas", "oneByTwoAnnouncement": "Diseño de uno y dos seleccionado. Hay tres vistas abiertas",
+      "grid": "Cuadrícula", "gridAria": "Diseño de cuadrícula, 2 por 2", "gridAnnouncement": "Diseño de cuadrícula seleccionado"
+    },
+    "manifestManager": {
+      "ariaLabel": "Gestor de manifiestos IIIF", "eyebrow": "Espacio de trabajo IIIF", "title": "Cargar un manifiesto", "close": "Cerrar el gestor de manifiestos",
+      "url": "URL del manifiesto", "urlPlaceholder": "https://ejemplo.org/iiif/manifest.json", "targetWindow": "Ventana de destino", "window": "Ventana {number}", "active": "activa",
+      "loading": "Cargando…", "loadSelected": "Cargar en la ventana seleccionada", "load": "Cargar manifiesto", "replaceAll": "Reemplazar todos los manifiestos",
+      "library": "Biblioteca de manifiestos", "resourceCount": "{count} recursos", "loadError": "No se pudo cargar el manifiesto: {error}", "remove": "Eliminar de la biblioteca", "removeAria": "Eliminar {label} de la biblioteca de manifiestos"
+    },
+    "sidebar": {
+      "navigation": "Navegación del visor", "browse": "Explorar", "gallery": "Galería", "metadata": "Metadatos", "search": "Buscar", "annotations": "Anotaciones", "collections": "Colecciones", "transcription": "Transcripción", "explore": "Explorar", "imageLayers": "Capas de imagen", "tools": "Herramientas", "viewSettings": "Configuración de vista", "compare": "Comparar", "download": "Descargar", "share": "Compartir", "cite": "Citar", "iiifManifests": "Manifiestos IIIF", "collapse": "Contraer barra lateral", "workspaceTools": "Herramientas del espacio de trabajo", "manageIiif": "Gestionar manifiestos IIIF"
+    }
   },
   "media": {
     "type": {

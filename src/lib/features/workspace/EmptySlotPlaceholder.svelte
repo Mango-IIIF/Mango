@@ -1,9 +1,16 @@
 <script lang="ts">
+  import { t } from '../../i18n';
   interface Props {
     onloadmanifest?: ((url: string) => void) | undefined;
+    onopenmanifestmanager?: (() => void) | undefined;
+    showInput?: boolean;
   }
 
-  let { onloadmanifest = undefined }: Props = $props();
+  let {
+    onloadmanifest = undefined,
+    onopenmanifestmanager = undefined,
+    showInput = true,
+  }: Props = $props();
 
   let isOver = $state(false);
   let inputUrl = $state('');
@@ -69,23 +76,31 @@
   class="empty-slot"
   class:empty-slot--active={isOver}
   role="region"
-  aria-label="Manifest drop zone"
+  aria-label={$t('workspace.emptySlot.dropZone')}
   ondragover={handleDragOver}
   ondragleave={handleDragLeave}
   ondrop={handleDrop}
 >
   <div class="empty-slot__card">
     <div class="empty-slot__icon" aria-hidden="true">📄</div>
-    <p class="empty-slot__title">Drag & Drop IIIF Manifest or Paste URL</p>
-    <div class="empty-slot__row">
-      <input
-        type="text"
-        placeholder="Enter Manifest URL..."
-        bind:value={inputUrl}
-        onkeydown={(event) => event.key === 'Enter' && handleSubmit()}
-      />
-      <button type="button" onclick={handleSubmit}>LOAD</button>
-    </div>
+    <p class="empty-slot__title">
+      {showInput ? $t('workspace.emptySlot.dragOrPaste') : $t('workspace.emptySlot.empty')}
+    </p>
+    {#if showInput}
+      <div class="empty-slot__row">
+        <input
+          type="text"
+          placeholder={$t('workspace.emptySlot.placeholder')}
+          bind:value={inputUrl}
+          onkeydown={(event) => event.key === 'Enter' && handleSubmit()}
+        />
+        <button type="button" onclick={handleSubmit}>{$t('workspace.emptySlot.load')}</button>
+      </div>
+    {:else}
+      <button class="empty-slot__library" type="button" onclick={() => onopenmanifestmanager?.()}>
+        {$t('workspace.emptySlot.chooseLibrary')}
+      </button>
+    {/if}
   </div>
 </div>
 
@@ -143,5 +158,9 @@
     cursor: pointer;
     font-weight: 600;
     letter-spacing: 0.08em;
+  }
+
+  .empty-slot__library {
+    justify-self: center;
   }
 </style>

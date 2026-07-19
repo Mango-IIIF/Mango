@@ -266,6 +266,12 @@
     "theme": "Thema",
     "themeDark": "Tywyll",
     "themeLight": "Golau",
+    "themeSepia": "Sepia",
+    "themeMidnight": "Canol nos",
+    "closeSettings": "Cau gosodiadau",
+    "showSettings": "Dangos gosodiadau",
+    "hideSettings": "Cuddio gosodiadau",
+    "toggleSettings": "Toglo gosodiadau",
     "language": "Iaith",
     "viewMode": "Gosodiad Tudalen",
     "viewModeSingle": "Sengl",
@@ -276,7 +282,36 @@
     "activeViewportHint": "Mae cyd-destun y maniffest yn dilyn ffocws y ffenestr weithredol.",
     "canvasPosition": "Cynfas {current} o {total}",
     "searchHint": "Mae'r panel chwilio wedi'i rwymo i faniffest y ffenestr weithredol.",
-    "annotationsHint": "Mae cyd-destun anodi wedi'i rwymo i'r ffenestr weithredol."
+    "annotationsHint": "Mae cyd-destun anodi wedi'i rwymo i'r ffenestr weithredol.",
+    "resizeRows": "Newid maint rhesi'r gweithle",
+    "resizeColumns": "Newid maint colofnau'r gweithle",
+    "unavailableMultiView": "Ddim ar gael mewn aml-olwg",
+    "details": "Manylion y gweithle",
+    "eyebrow": "Gweithle",
+    "selectedWindow": "Ffenestr a ddewiswyd",
+    "none": "Dim",
+    "singleViewOnly": "Mae metadata, chwilio ac anodiadau ar gael yn y modd un olwg.",
+    "manifest": "Maniffest",
+    "pageLayout": { "group": "Gosodiad tudalen", "singleAria": "Gosodiad tudalen sengl", "sideBySideAria": "Gosodiad tudalennau ochr yn ochr", "continuousAria": "Gosodiad sgrolio di-dor", "galleryAria": "Gosodiad galeri" },
+    "window": { "canvasNavigation": "Llywio cynfasau", "pageNumber": "Rhif tudalen", "replaceManifest": "Disodli'r maniffest yn y ffenestr hon", "previousCanvas": "Cynfas blaenorol", "nextCanvas": "Cynfas nesaf" },
+    "emptySlot": { "dropZone": "Ffenestr weithle wag", "dragOrPaste": "Llusgwch faniffest yma neu gludwch ei URL", "empty": "Gwag", "placeholder": "URL y maniffest", "load": "Llwytho maniffest", "chooseLibrary": "Dewis o'r llyfrgell faniffestau" },
+    "compare": {
+      "title": "Cymharu", "close": "Cau cymharu", "description": "Dewiswch sut mae'r golygon cymharu wedi'u trefnu.", "group": "Gosodiad cymharu",
+      "single": "Golwg sengl", "singleAria": "Gosodiad golwg sengl, 1 wrth 1", "singleAnnouncement": "Dewiswyd gosodiad golwg sengl",
+      "sideBySide": "Ochr yn ochr", "sideBySideAria": "Gosodiad ochr yn ochr, 1 wrth 2", "sideBySideAnnouncement": "Dewiswyd gosodiad ochr yn ochr",
+      "stacked": "Wedi'u pentyrru", "stackedAria": "Gosodiad pentwr, 2 wrth 1", "stackedAnnouncement": "Dewiswyd gosodiad pentwr",
+      "oneByTwo": "Un a dau", "oneByTwoAria": "Gosodiad un a dau, un olwg fawr a dau olwg mewn pentwr", "oneByTwoAnnouncement": "Dewiswyd y gosodiad un a dau. Mae tri golwg ar agor",
+      "grid": "Grid", "gridAria": "Gosodiad grid, 2 wrth 2", "gridAnnouncement": "Dewiswyd gosodiad grid"
+    },
+    "manifestManager": {
+      "ariaLabel": "Rheolwr maniffestau IIIF", "eyebrow": "Gweithle IIIF", "title": "Llwytho maniffest", "close": "Cau'r rheolwr maniffestau",
+      "url": "URL y maniffest", "urlPlaceholder": "https://enghraifft.org/iiif/manifest.json", "targetWindow": "Ffenestr darged", "window": "Ffenestr {number}", "active": "gweithredol",
+      "loading": "Wrthi'n llwytho…", "loadSelected": "Llwytho i'r ffenestr a ddewiswyd", "load": "Llwytho maniffest", "replaceAll": "Disodli pob maniffest",
+      "library": "Llyfrgell faniffestau", "resourceCount": "{count} adnodd", "loadError": "Methu llwytho'r maniffest: {error}", "remove": "Tynnu o'r llyfrgell", "removeAria": "Tynnu {label} o'r llyfrgell faniffestau"
+    },
+    "sidebar": {
+      "navigation": "Llywio'r gwyliwr", "browse": "Pori", "gallery": "Galeri", "metadata": "Metadata", "search": "Chwilio", "annotations": "Anodiadau", "collections": "Casgliadau", "transcription": "Trawsgrifiad", "explore": "Archwilio", "imageLayers": "Haenau delwedd", "tools": "Offer", "viewSettings": "Gosodiadau golwg", "compare": "Cymharu", "download": "Lawrlwytho", "share": "Rhannu", "cite": "Dyfynnu", "iiifManifests": "Maniffestau IIIF", "collapse": "Cwympo'r bar ochr", "workspaceTools": "Offer y gweithle", "manageIiif": "Rheoli maniffestau IIIF"
+    }
   },
   "media": {
     "type": {

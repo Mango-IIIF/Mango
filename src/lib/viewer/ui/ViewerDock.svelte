@@ -1,8 +1,8 @@
 <script lang="ts">
   import { t } from '../../i18n';
+  import iiifIcon from '../../features/workspace/iiif_bw.svg';
   import {
     ChevronsLeft,
-    Columns2,
     Download,
     Hammer,
     Image,
@@ -15,6 +15,7 @@
     Search,
     Settings,
     Share2,
+    SquareSplitHorizontal,
   } from '@lucide/svelte';
 
   type PanelName =
@@ -45,6 +46,8 @@
     showTools?: boolean;
     showSettings?: boolean;
     showCompare?: boolean;
+    showManifestManager?: boolean;
+    multiView?: boolean;
     allowLayers?: boolean;
     showLayers?: boolean;
     compact?: boolean;
@@ -57,6 +60,7 @@
     ongalleryopen?: () => void;
     oncontentsopen?: (tab: 'toc' | 'transcript') => void;
     oncomparetoggle?: () => void;
+    onmanifesttoggle?: () => void;
     onpanelToggle?: (payload: { panel: PanelName; open: boolean }) => void;
   }
 
@@ -80,6 +84,8 @@
     showLayers = false,
     showSettings = false,
     showCompare = false,
+    showManifestManager = false,
+    multiView = false,
     compact = false,
     variant = 'legacy',
     mobile = false,
@@ -90,6 +96,7 @@
     ongalleryopen = undefined,
     oncontentsopen = undefined,
     oncomparetoggle = undefined,
+    onmanifesttoggle = undefined,
     onpanelToggle = undefined,
   }: Props = $props();
 </script>
@@ -98,22 +105,23 @@
   <nav
     class="viewer-sidebar"
     class:viewer-sidebar--icon-only={iconOnly}
-    aria-label="Viewer navigation"
+    aria-label={$t('workspace.sidebar.navigation')}
   >
+    <div class="viewer-sidebar__scroll">
     <div class="viewer-sidebar__section">
-      <div class="viewer-sidebar__heading">Browse</div>
+      <div class="viewer-sidebar__heading">{$t('workspace.sidebar.browse')}</div>
       <div class="viewer-sidebar__items">
         {#if allowThumbnails}
           <button
             class:viewer-sidebar__button--active={galleryActive}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? 'Pages' : undefined}
+            title={iconOnly ? $t('workspace.sidebar.gallery') : undefined}
             aria-pressed={galleryActive}
             onclick={() => ongalleryopen?.()}
           >
             <Image aria-hidden="true" />
-            <span>Pages</span>
+            <span>{$t('workspace.sidebar.gallery')}</span>
           </button>
         {/if}
         {#if allowMetadata}
@@ -121,12 +129,13 @@
             class:viewer-sidebar__button--active={showMetadata}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? 'Metadata' : undefined}
+            title={iconOnly ? $t('workspace.sidebar.metadata') : undefined}
             aria-pressed={showMetadata}
+            disabled={multiView}
             onclick={() => onpanelToggle?.({ panel: 'metadata', open: !showMetadata })}
           >
             <Info aria-hidden="true" />
-            <span>Metadata</span>
+            <span>{$t('workspace.sidebar.metadata')}</span>
           </button>
         {/if}
         {#if allowSearch}
@@ -134,12 +143,13 @@
             class:viewer-sidebar__button--active={showSearch}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? 'Search' : undefined}
+            title={iconOnly ? $t('workspace.sidebar.search') : undefined}
             aria-pressed={showSearch}
+            disabled={multiView}
             onclick={() => onpanelToggle?.({ panel: 'search', open: !showSearch })}
           >
             <Search aria-hidden="true" />
-            <span>Search</span>
+            <span>{$t('workspace.sidebar.search')}</span>
           </button>
         {/if}
         {#if allowAnnotations}
@@ -147,12 +157,13 @@
             class:viewer-sidebar__button--active={showAnnotations}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? 'Annotations' : undefined}
+            title={iconOnly ? $t('workspace.sidebar.annotations') : undefined}
             aria-pressed={showAnnotations}
+            disabled={multiView}
             onclick={() => onpanelToggle?.({ panel: 'annotations', open: !showAnnotations })}
           >
             <MessageSquare aria-hidden="true" />
-            <span>Annotations</span>
+            <span>{$t('workspace.sidebar.annotations')}</span>
           </button>
         {/if}
         {#if allowChapters}
@@ -160,12 +171,12 @@
             class:viewer-sidebar__button--active={showContents && contentsTab === 'toc'}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? 'Collections' : undefined}
+            title={iconOnly ? $t('workspace.sidebar.collections') : undefined}
             aria-pressed={showContents && contentsTab === 'toc'}
             onclick={() => oncontentsopen?.('toc')}
           >
             <ListTree aria-hidden="true" />
-            <span>Collections</span>
+            <span>{$t('workspace.sidebar.collections')}</span>
           </button>
         {/if}
         {#if allowTranscript}
@@ -173,12 +184,12 @@
             class:viewer-sidebar__button--active={showContents && contentsTab === 'transcript'}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? 'Transcription' : undefined}
+            title={iconOnly ? $t('workspace.sidebar.transcription') : undefined}
             aria-pressed={showContents && contentsTab === 'transcript'}
             onclick={() => oncontentsopen?.('transcript')}
           >
             <MessageSquareText aria-hidden="true" />
-            <span>Transcription</span>
+            <span>{$t('workspace.sidebar.transcription')}</span>
           </button>
         {/if}
       </div>
@@ -186,37 +197,50 @@
 
     {#if allowLayers}
       <div class="viewer-sidebar__section">
-        <div class="viewer-sidebar__heading">Explore</div>
+        <div class="viewer-sidebar__heading">{$t('workspace.sidebar.explore')}</div>
         <div class="viewer-sidebar__items">
           <button
             class:viewer-sidebar__button--active={showLayers}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? 'Image layers' : undefined}
+            title={iconOnly ? $t('workspace.sidebar.imageLayers') : undefined}
             aria-pressed={showLayers}
             onclick={() => onpanelToggle?.({ panel: 'layers', open: !showLayers })}
           >
             <ScanEye aria-hidden="true" />
-            <span>Image layers</span>
+            <span>{$t('workspace.sidebar.imageLayers')}</span>
           </button>
         </div>
       </div>
     {/if}
 
     <div class="viewer-sidebar__section">
-      <div class="viewer-sidebar__heading">Tools</div>
+      <div class="viewer-sidebar__heading">{$t('workspace.sidebar.tools')}</div>
       <div class="viewer-sidebar__items">
+        <button
+          class:viewer-sidebar__button--active={showManifestManager}
+          class="viewer-sidebar__button viewer-sidebar__button--iiif"
+          type="button"
+          title={iconOnly ? $t('workspace.sidebar.iiifManifests') : undefined}
+          aria-label={$t('workspace.sidebar.iiifManifests')}
+          aria-pressed={showManifestManager}
+          onclick={() => onmanifesttoggle?.()}
+        >
+          <img src={iiifIcon} alt="" />
+          <span>{$t('workspace.sidebar.iiifManifests')}</span>
+        </button>
         {#if allowTools}
           <button
             class:viewer-sidebar__button--active={showTools}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? 'Tools' : undefined}
+            title={iconOnly ? $t('workspace.sidebar.tools') : undefined}
             aria-pressed={showTools}
+            disabled={multiView}
             onclick={() => onpanelToggle?.({ panel: 'tools', open: !showTools })}
           >
             <Hammer aria-hidden="true" />
-            <span>Tools</span>
+            <span>{$t('workspace.sidebar.tools')}</span>
           </button>
         {/if}
         {#if allowSettings}
@@ -224,75 +248,76 @@
             class:viewer-sidebar__button--active={showSettings}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? 'View settings' : undefined}
+            title={iconOnly ? $t('workspace.sidebar.viewSettings') : undefined}
             aria-pressed={showSettings}
             onclick={() => onpanelToggle?.({ panel: 'settings', open: !showSettings })}
           >
             <Settings aria-hidden="true" />
-            <span>View settings</span>
+            <span>{$t('workspace.sidebar.viewSettings')}</span>
           </button>
         {/if}
         <button
           class:viewer-sidebar__button--active={showCompare}
           class="viewer-sidebar__button"
           type="button"
-          title={iconOnly ? 'Compare' : undefined}
+          title={iconOnly ? $t('workspace.sidebar.compare') : undefined}
           aria-pressed={showCompare}
           onclick={() => oncomparetoggle?.()}
         >
-          <Columns2 aria-hidden="true" />
-          <span>Compare</span>
+          <SquareSplitHorizontal aria-hidden="true" />
+          <span>{$t('workspace.sidebar.compare')}</span>
         </button>
         <button
           class="viewer-sidebar__button"
           type="button"
-          title={iconOnly ? 'Download' : undefined}
+          title={iconOnly ? $t('workspace.sidebar.download') : undefined}
           disabled
         >
           <Download aria-hidden="true" />
-          <span>Download</span>
+          <span>{$t('workspace.sidebar.download')}</span>
         </button>
         <button
           class="viewer-sidebar__button"
           type="button"
-          title={iconOnly ? 'Share' : undefined}
+          title={iconOnly ? $t('workspace.sidebar.share') : undefined}
           disabled
         >
           <Share2 aria-hidden="true" />
-          <span>Share</span>
+          <span>{$t('workspace.sidebar.share')}</span>
         </button>
         <button
           class="viewer-sidebar__button"
           type="button"
-          title={iconOnly ? 'Cite' : undefined}
+          title={iconOnly ? $t('workspace.sidebar.cite') : undefined}
           disabled
         >
           <Quote aria-hidden="true" />
-          <span>Cite</span>
+          <span>{$t('workspace.sidebar.cite')}</span>
         </button>
       </div>
+    </div>
     </div>
 
     <button
       class="viewer-sidebar__collapse"
       type="button"
-      title={iconOnly ? 'Collapse sidebar' : undefined}
+      title={iconOnly ? $t('workspace.sidebar.collapse') : undefined}
       onclick={() => oncollapse?.()}
     >
       <ChevronsLeft aria-hidden="true" />
-      <span>Collapse sidebar</span>
+      <span>{$t('workspace.sidebar.collapse')}</span>
     </button>
   </nav>
 {:else if variant === 'sidebar' && mobile}
-  <nav class="viewer-mobile-nav" aria-label="Viewer navigation">
-    <div class="viewer-mobile-nav__group" aria-label="Browse">
+  <nav class="viewer-mobile-nav" aria-label={$t('workspace.sidebar.navigation')}>
+    <div class="viewer-mobile-nav__group" aria-label={$t('workspace.sidebar.browse')}>
       {#if allowThumbnails}
         <button
           class:viewer-mobile-nav__button--active={galleryActive}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label="Pages"
-          title="Pages"
+          aria-label={$t('workspace.sidebar.gallery')}
+          title={$t('workspace.sidebar.gallery')}
           aria-pressed={galleryActive}
           onclick={() => ongalleryopen?.()}
         >
@@ -304,9 +329,10 @@
           class:viewer-mobile-nav__button--active={showMetadata}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label="Metadata"
-          title="Metadata"
+          aria-label={$t('workspace.sidebar.metadata')}
+          title={$t('workspace.sidebar.metadata')}
           aria-pressed={showMetadata}
+          disabled={multiView}
           onclick={() => onpanelToggle?.({ panel: 'metadata', open: !showMetadata })}
         >
           <Info aria-hidden="true" />
@@ -317,9 +343,10 @@
           class:viewer-mobile-nav__button--active={showSearch}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label="Search"
-          title="Search"
+          aria-label={$t('workspace.sidebar.search')}
+          title={$t('workspace.sidebar.search')}
           aria-pressed={showSearch}
+          disabled={multiView}
           onclick={() => onpanelToggle?.({ panel: 'search', open: !showSearch })}
         >
           <Search aria-hidden="true" />
@@ -330,9 +357,10 @@
           class:viewer-mobile-nav__button--active={showAnnotations}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label="Annotations"
-          title="Annotations"
+          aria-label={$t('workspace.sidebar.annotations')}
+          title={$t('workspace.sidebar.annotations')}
           aria-pressed={showAnnotations}
+          disabled={multiView}
           onclick={() => onpanelToggle?.({ panel: 'annotations', open: !showAnnotations })}
         >
           <MessageSquare aria-hidden="true" />
@@ -343,8 +371,8 @@
           class:viewer-mobile-nav__button--active={showContents && contentsTab === 'toc'}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label="Collections"
-          title="Collections"
+          aria-label={$t('workspace.sidebar.collections')}
+          title={$t('workspace.sidebar.collections')}
           aria-pressed={showContents && contentsTab === 'toc'}
           onclick={() => oncontentsopen?.('toc')}
         >
@@ -356,8 +384,8 @@
           class:viewer-mobile-nav__button--active={showContents && contentsTab === 'transcript'}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label="Transcription"
-          title="Transcription"
+          aria-label={$t('workspace.sidebar.transcription')}
+          title={$t('workspace.sidebar.transcription')}
           aria-pressed={showContents && contentsTab === 'transcript'}
           onclick={() => oncontentsopen?.('transcript')}
         >
@@ -367,13 +395,13 @@
     </div>
 
     {#if allowLayers}
-      <div class="viewer-mobile-nav__group" aria-label="Explore">
+      <div class="viewer-mobile-nav__group" aria-label={$t('workspace.sidebar.explore')}>
         <button
           class:viewer-mobile-nav__button--active={showLayers}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label="Image layers"
-          title="Image layers"
+          aria-label={$t('workspace.sidebar.imageLayers')}
+          title={$t('workspace.sidebar.imageLayers')}
           aria-pressed={showLayers}
           onclick={() => onpanelToggle?.({ panel: 'layers', open: !showLayers })}
         >
@@ -382,15 +410,27 @@
       </div>
     {/if}
 
-    <div class="viewer-mobile-nav__group" aria-label="Tools">
+    <div class="viewer-mobile-nav__group" aria-label={$t('workspace.sidebar.tools')}>
+      <button
+        class:viewer-mobile-nav__button--active={showManifestManager}
+        class="viewer-mobile-nav__button viewer-mobile-nav__button--iiif"
+        type="button"
+        aria-label={$t('workspace.sidebar.iiifManifests')}
+        title={$t('workspace.sidebar.iiifManifests')}
+        aria-pressed={showManifestManager}
+        onclick={() => onmanifesttoggle?.()}
+      >
+        <img src={iiifIcon} alt="" />
+      </button>
       {#if allowTools}
         <button
           class:viewer-mobile-nav__button--active={showTools}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label="Tools"
-          title="Tools"
+          aria-label={$t('workspace.sidebar.tools')}
+          title={$t('workspace.sidebar.tools')}
           aria-pressed={showTools}
+          disabled={multiView}
           onclick={() => onpanelToggle?.({ panel: 'tools', open: !showTools })}
         >
           <Hammer aria-hidden="true" />
@@ -401,8 +441,8 @@
           class:viewer-mobile-nav__button--active={showSettings}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label="View settings"
-          title="View settings"
+          aria-label={$t('workspace.sidebar.viewSettings')}
+          title={$t('workspace.sidebar.viewSettings')}
           aria-pressed={showSettings}
           onclick={() => onpanelToggle?.({ panel: 'settings', open: !showSettings })}
         >
@@ -413,20 +453,20 @@
         class:viewer-mobile-nav__button--active={showCompare}
         class="viewer-mobile-nav__button"
         type="button"
-        aria-label="Compare"
-        title="Compare"
+        aria-label={$t('workspace.sidebar.compare')}
+        title={$t('workspace.sidebar.compare')}
         aria-pressed={showCompare}
         onclick={() => oncomparetoggle?.()}
       >
-        <Columns2 aria-hidden="true" />
+        <SquareSplitHorizontal aria-hidden="true" />
       </button>
-      <button class="viewer-mobile-nav__button" type="button" aria-label="Download" title="Download" disabled>
+      <button class="viewer-mobile-nav__button" type="button" aria-label={$t('workspace.sidebar.download')} title={$t('workspace.sidebar.download')} disabled>
         <Download aria-hidden="true" />
       </button>
-      <button class="viewer-mobile-nav__button" type="button" aria-label="Share" title="Share" disabled>
+      <button class="viewer-mobile-nav__button" type="button" aria-label={$t('workspace.sidebar.share')} title={$t('workspace.sidebar.share')} disabled>
         <Share2 aria-hidden="true" />
       </button>
-      <button class="viewer-mobile-nav__button" type="button" aria-label="Cite" title="Cite" disabled>
+      <button class="viewer-mobile-nav__button" type="button" aria-label={$t('workspace.sidebar.cite')} title={$t('workspace.sidebar.cite')} disabled>
         <Quote aria-hidden="true" />
       </button>
     </div>
@@ -562,6 +602,7 @@
       type="button"
       aria-pressed={showTools}
       aria-label={$t('viewer.stage.controls.toggleTools')}
+      disabled={multiView}
       onclick={() => onpanelToggle?.( { panel: 'tools', open: !showTools })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
@@ -602,10 +643,10 @@
     <button
       class:viewer__dock-button--active={showSettings}
       class="viewer__dock-button"
-      data-label={showSettings ? 'Hide settings' : 'Show settings'}
+      data-label={showSettings ? $t('workspace.hideSettings') : $t('workspace.showSettings')}
       type="button"
       aria-pressed={showSettings}
-      aria-label="Toggle settings"
+      aria-label={$t('workspace.toggleSettings')}
       onclick={() => onpanelToggle?.( { panel: 'settings', open: !showSettings })}
     >
       <span class="viewer__dock-icon" aria-hidden="true">
@@ -616,7 +657,7 @@
           ></path>
         </svg>
       </span>
-      <span class="viewer__dock-label">Settings</span>
+      <span class="viewer__dock-label">{$t('workspace.settings')}</span>
     </button>
   {/if}
 </div>
@@ -696,12 +737,37 @@
   .viewer-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 34px;
+    gap: 10px;
     width: 100%;
     height: 100%;
     min-height: 0;
     box-sizing: border-box;
     transition: gap 220ms ease;
+  }
+
+  .viewer-sidebar__scroll {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 34px;
+    min-height: 0;
+    padding: 0 4px 8px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(151, 165, 179, 0.42) transparent;
+    transition: gap 220ms ease;
+  }
+
+  .viewer-sidebar__scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .viewer-sidebar__scroll::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(151, 165, 179, 0.42);
   }
 
   .viewer-sidebar__section,
@@ -781,6 +847,19 @@
     stroke-width: 1.8;
   }
 
+  .viewer-sidebar__button--iiif img,
+  .viewer-mobile-nav__button--iiif img {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    filter: invert(1);
+  }
+
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .viewer-sidebar__button--iiif img,
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .viewer-mobile-nav__button--iiif img {
+    filter: none;
+  }
+
   .viewer-sidebar__button:hover:not(:disabled),
   .viewer-sidebar__collapse:hover {
     background: rgba(255, 255, 255, 0.06);
@@ -799,14 +878,15 @@
   }
 
   .viewer-sidebar__collapse {
-    margin-top: auto;
+    flex: 0 0 auto;
     min-height: 38px;
+    margin-top: 0;
     border-color: transparent;
     background: transparent;
     color: var(--viewer-muted);
   }
 
-  .viewer-sidebar--icon-only {
+  .viewer-sidebar--icon-only .viewer-sidebar__scroll {
     gap: 22px;
   }
 
@@ -841,6 +921,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .viewer-sidebar,
+    .viewer-sidebar__scroll,
     .viewer-sidebar__section,
     .viewer-sidebar__heading,
     .viewer-sidebar__button,
@@ -974,16 +1055,16 @@
   }
 
   .viewer__dock-button--active {
-    color: var(--viewer-accent-3);
-    border-color: var(--viewer-dock-active-border, rgba(255, 209, 102, 0.42));
+    color: var(--viewer-accent-2);
+    border-color: var(--viewer-dock-active-border, rgba(42, 199, 255, 0.58));
     box-shadow:
-      0 0 0 1px var(--viewer-dock-active-ring, rgba(255, 209, 102, 0.24)),
+      0 0 0 1px var(--viewer-dock-active-ring, rgba(42, 199, 255, 0.22)),
       var(--viewer-dock-active-shadow-base, 0 12px 24px rgba(0, 0, 0, 0.35));
   }
 
   .viewer__dock-button--active .viewer__dock-info-chip {
-    background: var(--viewer-accent-3);
-    border-color: var(--viewer-accent-3);
+    background: var(--viewer-accent-2);
+    border-color: var(--viewer-accent-2);
     color: var(--viewer-dock-active-chip-text, #0b0f14);
   }
 

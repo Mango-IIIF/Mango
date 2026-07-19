@@ -3,7 +3,8 @@ import type { ViewerDerivedStores } from "./state/viewerDerived";
 import type { ViewerStateStores } from "./state/viewerState";
 import type { ViewerController } from "./state/viewerController";
 
-export type ViewerSettingsLayout = "1x1" | "1x2" | "2x1" | "2x2";
+export type ViewerSettingsLayout = "1x1" | "1x2" | "2x1" | "1x2-panel" | "2x2";
+export type ViewerSettingsTheme = "dark" | "light" | "sepia" | "midnight";
 
 export type ViewerContext = {
   state: ViewerStateStores;
@@ -11,7 +12,7 @@ export type ViewerContext = {
   controller: ViewerController;
   settings: {
     layout: ViewerSettingsLayout;
-    theme: "dark" | "light";
+    theme: ViewerSettingsTheme;
     locale: string;
     layoutMode: "single" | "two-page" | "continuous" | "gallery";
   };

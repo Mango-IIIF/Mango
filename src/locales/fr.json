@@ -266,6 +266,12 @@
     "theme": "Thème",
     "themeDark": "Sombre",
     "themeLight": "Clair",
+    "themeSepia": "Sépia",
+    "themeMidnight": "Minuit",
+    "closeSettings": "Fermer les paramètres",
+    "showSettings": "Afficher les paramètres",
+    "hideSettings": "Masquer les paramètres",
+    "toggleSettings": "Afficher ou masquer les paramètres",
     "language": "Langue",
     "viewMode": "Mise en page",
     "viewModeSingle": "Simple",
@@ -276,7 +282,36 @@
     "activeViewportHint": "Le contexte du manifeste suit le focus de la fenêtre active.",
     "canvasPosition": "Canevas {current} sur {total}",
     "searchHint": "Le panneau de recherche est lié au manifeste de la fenêtre active.",
-    "annotationsHint": "Le contexte d'annotation est lié à la fenêtre active."
+    "annotationsHint": "Le contexte d'annotation est lié à la fenêtre active.",
+    "resizeRows": "Redimensionner les lignes de l'espace de travail",
+    "resizeColumns": "Redimensionner les colonnes de l'espace de travail",
+    "unavailableMultiView": "Indisponible en vue multiple",
+    "details": "Détails de l'espace de travail",
+    "eyebrow": "Espace de travail",
+    "selectedWindow": "Fenêtre sélectionnée",
+    "none": "Aucune",
+    "singleViewOnly": "Les métadonnées, la recherche et les annotations sont disponibles en vue unique.",
+    "manifest": "Manifeste",
+    "pageLayout": { "group": "Mise en page", "singleAria": "Mise en page unique", "sideBySideAria": "Mise en page côte à côte", "continuousAria": "Mise en page à défilement continu", "galleryAria": "Mise en page galerie" },
+    "window": { "canvasNavigation": "Navigation entre les canevas", "pageNumber": "Numéro de page", "replaceManifest": "Remplacer le manifeste de cette fenêtre", "previousCanvas": "Canevas précédent", "nextCanvas": "Canevas suivant" },
+    "emptySlot": { "dropZone": "Fenêtre vide", "dragOrPaste": "Faites glisser un manifeste ici ou collez son URL", "empty": "Vide", "placeholder": "URL du manifeste", "load": "Charger le manifeste", "chooseLibrary": "Choisir dans la bibliothèque de manifestes" },
+    "compare": {
+      "title": "Comparer", "close": "Fermer la comparaison", "description": "Choisissez la disposition des vues de comparaison.", "group": "Disposition de comparaison",
+      "single": "Vue unique", "singleAria": "Disposition en vue unique, 1 par 1", "singleAnnouncement": "Disposition en vue unique sélectionnée",
+      "sideBySide": "Côte à côte", "sideBySideAria": "Disposition côte à côte, 1 par 2", "sideBySideAnnouncement": "Disposition côte à côte sélectionnée",
+      "stacked": "Empilées", "stackedAria": "Disposition empilée, 2 par 1", "stackedAnnouncement": "Disposition empilée sélectionnée",
+      "oneByTwo": "Un et deux", "oneByTwoAria": "Disposition un et deux, une grande vue et deux vues empilées", "oneByTwoAnnouncement": "Disposition un et deux sélectionnée. Trois vues sont ouvertes",
+      "grid": "Grille", "gridAria": "Disposition en grille, 2 par 2", "gridAnnouncement": "Disposition en grille sélectionnée"
+    },
+    "manifestManager": {
+      "ariaLabel": "Gestionnaire de manifestes IIIF", "eyebrow": "Espace de travail IIIF", "title": "Charger un manifeste", "close": "Fermer le gestionnaire de manifestes",
+      "url": "URL du manifeste", "urlPlaceholder": "https://exemple.org/iiif/manifest.json", "targetWindow": "Fenêtre cible", "window": "Fenêtre {number}", "active": "active",
+      "loading": "Chargement…", "loadSelected": "Charger dans la fenêtre sélectionnée", "load": "Charger le manifeste", "replaceAll": "Remplacer tous les manifestes",
+      "library": "Bibliothèque de manifestes", "resourceCount": "{count} ressources", "loadError": "Impossible de charger le manifeste : {error}", "remove": "Retirer de la bibliothèque", "removeAria": "Retirer {label} de la bibliothèque de manifestes"
+    },
+    "sidebar": {
+      "navigation": "Navigation de la visionneuse", "browse": "Parcourir", "gallery": "Galerie", "metadata": "Métadonnées", "search": "Rechercher", "annotations": "Annotations", "collections": "Collections", "transcription": "Transcription", "explore": "Explorer", "imageLayers": "Calques d'image", "tools": "Outils", "viewSettings": "Paramètres d'affichage", "compare": "Comparer", "download": "Télécharger", "share": "Partager", "cite": "Citer", "iiifManifests": "Manifestes IIIF", "collapse": "Réduire la barre latérale", "workspaceTools": "Outils de l'espace de travail", "manageIiif": "Gérer les manifestes IIIF"
+    }
   },
   "media": {
     "type": {
