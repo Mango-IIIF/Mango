@@ -9,6 +9,7 @@
     height?: number;
     activeAnnotationId?: string | null;
     hoverAnnotationId?: string | null;
+    highlightIds?: string[];
     onannotationHover?: (payload: { id: string | null }) => void;
     onannotationSelect?: (payload: { id: string }) => void;
     onannotationClear?: () => void;
@@ -21,6 +22,7 @@
     height = 0,
     activeAnnotationId = null,
     hoverAnnotationId = null,
+    highlightIds = [],
     onannotationHover = undefined,
     onannotationSelect = undefined,
     onannotationClear: _onannotationClear = undefined,
@@ -37,7 +39,7 @@
     points.map((p) => `${projectX(p.x)},${projectY(p.y)}`).join(' ');
 
   const LAYER_COLORS: Record<string, string> = {
-    research: '#facc15',
+    research: '#fb7185',
     transcription: '#60a5fa',
     highlights: '#34d399',
     mine: '#a78bfa',
@@ -95,6 +97,7 @@
       {#if annotation.rect}
         <rect
           class="annotation-layer__shape"
+          class:annotation-layer__shape--hit={highlightIds.includes(annotation.id)}
           class:annotation-layer__shape--active={annotation.id === activeAnnotationId}
           class:annotation-layer__shape--hover={annotation.id === hoverAnnotationId}
           x={projectX(annotation.rect.x)}
@@ -124,6 +127,7 @@
         {#if annotation.polygon.svg && (annotation.polygon.svg.includes('<polyline') || annotation.polygon.svg.includes('<line'))}
           <polyline
             class="annotation-layer__shape annotation-layer__shape--polyline"
+            class:annotation-layer__shape--hit={highlightIds.includes(annotation.id)}
             class:annotation-layer__shape--active={annotation.id === activeAnnotationId}
             class:annotation-layer__shape--hover={annotation.id === hoverAnnotationId}
             points={pointsToPolyline(annotation.polygon.points)}
@@ -146,6 +150,7 @@
         {:else}
           <polygon
             class="annotation-layer__shape"
+            class:annotation-layer__shape--hit={highlightIds.includes(annotation.id)}
             class:annotation-layer__shape--active={annotation.id === activeAnnotationId}
             class:annotation-layer__shape--hover={annotation.id === hoverAnnotationId}
             points={pointsToPolyline(annotation.polygon.points)}
@@ -169,6 +174,7 @@
       {:else if annotation.point}
         <circle
           class="annotation-layer__shape"
+          class:annotation-layer__shape--hit={highlightIds.includes(annotation.id)}
           class:annotation-layer__shape--active={annotation.id === activeAnnotationId}
           class:annotation-layer__shape--hover={annotation.id === hoverAnnotationId}
           cx={projectX(annotation.point.x)}
@@ -215,6 +221,11 @@
 
   .annotation-layer__shape--polyline {
     fill: none !important;
+  }
+
+  .annotation-layer__shape--hit {
+    fill: var(--viewer-search-hit-fill, rgba(42, 199, 255, 0.25)) !important;
+    stroke: var(--viewer-search-hit-border, rgba(42, 199, 255, 0.95)) !important;
   }
 
   .annotation-layer__shape--hover {

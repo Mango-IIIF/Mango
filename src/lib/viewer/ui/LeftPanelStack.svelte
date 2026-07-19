@@ -308,7 +308,7 @@
   }
 
   .panel-stack--left :global(a) {
-    color: var(--story-sidebar-link, var(--viewer-accent-3, #ffbf4d));
+    color: var(--story-sidebar-link, var(--viewer-accent-2, #2ac7ff));
     font-weight: 600;
     text-decoration: underline;
     text-decoration-thickness: 2px;
@@ -316,7 +316,7 @@
   }
 
   .panel-stack--left :global(a:visited) {
-    color: var(--story-sidebar-link, var(--viewer-accent-3, #ffbf4d));
+    color: var(--story-sidebar-link, var(--viewer-accent-2, #2ac7ff));
   }
 
   .panel-stack--left :global(a:hover),

@@ -399,6 +399,7 @@
         height={stageHeight}
         {activeAnnotationId}
         {hoverAnnotationId}
+        {highlightIds}
         onannotationHover={(detail) => rendererHandlers?.onAnnotationHover?.(detail)}
         onannotationSelect={(detail) => rendererHandlers?.onAnnotationSelect?.(detail)}
         onannotationClear={() => rendererHandlers?.onAnnotationClear?.()}

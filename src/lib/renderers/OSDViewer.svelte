@@ -117,7 +117,7 @@
   };
 
   const LAYER_COLORS: Record<string, string> = {
-    research: '#facc15',
+    research: '#fb7185',
     transcription: '#60a5fa',
     highlights: '#34d399',
     mine: '#a78bfa',
@@ -1116,8 +1116,8 @@
   }
 
   .annotation-shape.annotation--hit {
-    fill: rgba(42, 199, 255, 0.25);
-    stroke: rgba(42, 199, 255, 0.95);
+    fill: var(--viewer-search-hit-fill, rgba(42, 199, 255, 0.25)) !important;
+    stroke: var(--viewer-search-hit-border, rgba(42, 199, 255, 0.95)) !important;
   }
 
   .annotation-shape.annotation--active {
@@ -1145,8 +1145,14 @@
   }
 
   .annotation--hit {
-    border-color: rgba(42, 199, 255, 0.95);
-    background: rgba(42, 199, 255, 0.25);
+    border-color: var(
+      --viewer-search-hit-border,
+      rgba(42, 199, 255, 0.95)
+    ) !important;
+    background: var(
+      --viewer-search-hit-fill,
+      rgba(42, 199, 255, 0.25)
+    ) !important;
     animation: pulse 1.6s ease-in-out infinite;
   }
 

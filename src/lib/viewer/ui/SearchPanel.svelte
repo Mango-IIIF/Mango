@@ -165,7 +165,10 @@
   }
 
   .search-list__item--selected {
-    border-color: var(--viewer-accent-3, #ff8c00);
+    border-color: var(
+      --viewer-search-selected-border,
+      var(--viewer-accent-2, #2ac7ff)
+    );
   }
 
   .search-list__button {

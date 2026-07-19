@@ -100,13 +100,13 @@
 
   .layers__value {
     font-weight: 600;
-    color: var(--viewer-accent-3, #ffbf4d);
+    color: var(--viewer-muted, #9aa6b2);
     font-variant-numeric: tabular-nums;
   }
 
   .layers__slider {
     width: 100%;
-    accent-color: var(--viewer-accent-3, #ffbf4d);
+    accent-color: var(--viewer-layer-accent, var(--viewer-accent-2, #2ac7ff));
     cursor: pointer;
     background: rgba(255, 255, 255, 0.1);
     height: 4px;

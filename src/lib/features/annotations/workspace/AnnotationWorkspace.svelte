@@ -32,7 +32,7 @@
     draftAnnotation = null,
     activeTool = 'rectangle',
     layers = [
-      { id: 'research', name: 'Research Notes', color: '#facc15', visible: true },
+      { id: 'research', name: 'Research Notes', color: '#fb7185', visible: true },
       { id: 'transcription', name: 'Transcription', color: '#60a5fa', visible: true },
       { id: 'highlights', name: 'Highlights', color: '#34d399', visible: true },
       { id: 'mine', name: 'My Annotations', color: '#a78bfa', visible: true },

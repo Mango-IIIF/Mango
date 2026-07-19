@@ -62,15 +62,17 @@
 
   const DEFAULT_LAYER_COLOR = '#a78bfa';
   const LAYER_FILL_OPACITY = 0.18;
-  const NEW_LAYER_COLORS = ['#fb7185', '#f59e0b', '#22c55e', '#06b6d4', '#818cf8', '#ec4899'];
+  const NEW_LAYER_COLORS = [
+    '#fb7185',
+    '#2ac7ff',
+    '#22c55e',
+    '#06b6d4',
+    '#818cf8',
+    '#ec4899',
+  ];
   const DEFAULT_ANNOTATION_LAYERS: LayerItem[] = [
-    { id: 'research', name: 'Research Notes', color: '#facc15', visible: true },
-    {
-      id: 'transcription',
-      name: 'Transcription',
-      color: '#60a5fa',
-      visible: true,
-    },
+    { id: 'research', name: 'Research Notes', color: '#fb7185', visible: true },
+    { id: 'transcription', name: 'Transcription', color: '#60a5fa', visible: true },
     { id: 'highlights', name: 'Highlights', color: '#34d399', visible: true },
     { id: 'mine', name: 'My Annotations', color: '#a78bfa', visible: true },
   ];
@@ -2186,7 +2188,6 @@
     --viewer-muted: #9aa6b2;
     --viewer-accent: #ff4fa2;
     --viewer-accent-2: #2ac7ff;
-    --viewer-accent-3: #ffd166;
     --viewer-accent-tools: #a3e635;
     --viewer-stage: #111720;
     --viewer-stage-glow: rgba(42, 199, 255, 0.12);
@@ -2321,7 +2322,6 @@
     --viewer-muted: #69788b;
     --viewer-accent: #7c96be;
     --viewer-accent-2: #6caec7;
-    --viewer-accent-3: #c5a264;
     --viewer-stage: #f3f5f8;
     --viewer-stage-glow: rgba(108, 174, 199, 0.16);
     --viewer-stage-tail: #ffffff;
@@ -2378,7 +2378,6 @@
     --viewer-muted: #776650;
     --viewer-accent: #a86f46;
     --viewer-accent-2: #2f858b;
-    --viewer-accent-3: #b88645;
     --viewer-accent-tools: #66864a;
     --viewer-stage: #f4ecde;
     --viewer-stage-glow: rgba(47, 133, 139, 0.13);
@@ -2441,7 +2440,6 @@
     --viewer-muted: #91a7bf;
     --viewer-accent: #a78bfa;
     --viewer-accent-2: #38bdf8;
-    --viewer-accent-3: #e879f9;
     --viewer-accent-tools: #5eead4;
     --viewer-stage: #050d18;
     --viewer-stage-glow: rgba(56, 189, 248, 0.15);

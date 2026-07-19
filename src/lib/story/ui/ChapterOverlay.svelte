@@ -1775,13 +1775,13 @@
 
   .chapter-overlay__layer-value {
     font-weight: 600;
-    color: #ffbf4d;
+    color: var(--viewer-muted, #9aa6b2);
     font-variant-numeric: tabular-nums;
   }
 
   .chapter-overlay__layer-slider {
     width: 100%;
-    accent-color: #ffbf4d;
+    accent-color: var(--viewer-layer-accent, var(--viewer-accent-2, #2ac7ff));
     cursor: pointer;
     background: rgba(255, 255, 255, 0.1);
     height: 4px;

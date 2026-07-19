@@ -547,7 +547,7 @@
     border: none;
     border-radius: 10px;
     padding: 6px 10px;
-    background: var(--viewer-accent-3, #ffbf4d);
+    background: var(--viewer-accent, #ff4fa2);
     color: #1b1f24;
     font-size: 12px;
     font-weight: 600;
