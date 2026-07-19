@@ -54,10 +54,28 @@
 
   const viewer = getViewerContext();
   const mediaType = viewer.derived.mediaType;
-  let loadedCollection = $state(false);
+  let loaded = $state({
+    collection: false,
+    contents: false,
+    settings: false,
+    compare: false,
+    annotations: false,
+    tools: false,
+    search: false,
+    metadata: false,
+    layers: false,
+  });
 
   $effect(() => {
-    if (showCollection) loadedCollection = true;
+    if (showCollection) loaded.collection = true;
+    if (showContents) loaded.contents = true;
+    if (showSettings) loaded.settings = true;
+    if (showCompare) loaded.compare = true;
+    if (showAnnotations) loaded.annotations = true;
+    if (showTools) loaded.tools = true;
+    if (showSearch) loaded.search = true;
+    if (showMetadata) loaded.metadata = true;
+    if (showLayers) loaded.layers = true;
   });
 </script>
 
@@ -67,7 +85,7 @@
   hidden={!visible}
   aria-label={$t('viewer.panels.leftLabel')}
 >
-  {#if loadedCollection}
+  {#if loaded.collection}
     <div hidden={!showCollection}>
       <CollectionPanel
         onclose={() => onpanelToggle?.('collection', false)}
@@ -76,58 +94,74 @@
     </div>
   {/if}
 
-  {#if showContents && ($mediaType === 'audio' || $mediaType === 'video')}
-    <ContentsPanel
-      {redesigned}
-      selectedTab={contentsTab}
-      onclose={() => onpanelToggle?.('contents', false)}
-    />
+  {#if loaded.contents}
+    <div hidden={!showContents || !($mediaType === 'audio' || $mediaType === 'video')}>
+      <ContentsPanel
+        {redesigned}
+        selectedTab={contentsTab}
+        onclose={() => onpanelToggle?.('contents', false)}
+      />
+    </div>
   {/if}
 
-  {#if showSettings}
-    <SettingsPanel
-      {redesigned}
-      onclose={() => onpanelToggle?.('settings', false)}
-    />
+  {#if loaded.settings}
+    <div hidden={!showSettings}>
+      <SettingsPanel
+        {redesigned}
+        onclose={() => onpanelToggle?.('settings', false)}
+      />
+    </div>
   {/if}
 
-  {#if showCompare}
-    <ComparePanel onclose={() => onpanelToggle?.('compare', false)} />
+  {#if loaded.compare}
+    <div hidden={!showCompare}>
+      <ComparePanel onclose={() => onpanelToggle?.('compare', false)} />
+    </div>
   {/if}
 
-  {#if showAnnotations}
-    <AnnotationsPanel
-      {redesigned}
-      onclose={() => onpanelToggle?.('annotations', false)}
-    />
+  {#if loaded.annotations}
+    <div hidden={!showAnnotations}>
+      <AnnotationsPanel
+        {redesigned}
+        onclose={() => onpanelToggle?.('annotations', false)}
+      />
+    </div>
   {/if}
 
-  {#if showTools}
-    <ToolsPanel
-      {redesigned}
-      onclose={() => onpanelToggle?.('tools', false)}
-    />
+  {#if loaded.tools}
+    <div hidden={!showTools}>
+      <ToolsPanel
+        {redesigned}
+        onclose={() => onpanelToggle?.('tools', false)}
+      />
+    </div>
   {/if}
 
-  {#if showSearch}
-    <SearchPanel
-      {redesigned}
-      onclose={() => onpanelToggle?.('search', false)}
-    />
+  {#if loaded.search}
+    <div hidden={!showSearch}>
+      <SearchPanel
+        {redesigned}
+        onclose={() => onpanelToggle?.('search', false)}
+      />
+    </div>
   {/if}
 
-  {#if showMetadata}
-    <MetadataPanel
-      {redesigned}
-      onclose={() => onpanelToggle?.('metadata', false)}
-    />
+  {#if loaded.metadata}
+    <div hidden={!showMetadata}>
+      <MetadataPanel
+        {redesigned}
+        onclose={() => onpanelToggle?.('metadata', false)}
+      />
+    </div>
   {/if}
 
-  {#if showLayers}
-    <LayersPanel
-      {redesigned}
-      onclose={() => onpanelToggle?.('layers', false)}
-    />
+  {#if loaded.layers}
+    <div hidden={!showLayers}>
+      <LayersPanel
+        {redesigned}
+        onclose={() => onpanelToggle?.('layers', false)}
+      />
+    </div>
   {/if}
 
   {#if leftPlugins.length > 0}

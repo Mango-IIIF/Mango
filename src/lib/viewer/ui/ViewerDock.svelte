@@ -147,6 +147,7 @@
           <button
             class:viewer-sidebar__button--active={showMetadata}
             class="viewer-sidebar__button"
+            data-tone="info"
             type="button"
             title={iconOnly ? $t('workspace.sidebar.metadata') : undefined}
             aria-pressed={showMetadata}
@@ -361,6 +362,7 @@
         <button
           class:viewer-mobile-nav__button--active={showMetadata}
           class="viewer-mobile-nav__button"
+          data-tone="info"
           type="button"
           aria-label={$t('workspace.sidebar.metadata')}
           title={$t('workspace.sidebar.metadata')}

@@ -1509,7 +1509,7 @@
       </div>
     {/if}
 
-    {#if (leftVisibleEffective || Boolean($collectionEntry?.json)) && !isAnnotationEditor}
+    {#if !isStoryViewer && !isAnnotationEditor && sidebarEnabled}
       <LeftPanelStack
         visible={leftVisibleEffective}
         redesigned={isPlainViewerMode}

@@ -174,10 +174,6 @@
     return api.getCanvasCount();
   }
 
-  export function getCanvasCount(): number {
-    return viewerInstance?.getCanvasCount?.() ?? 0;
-  }
-
   export function setCanvasByIndex(index: number): void {
     api.setCanvasByIndex(index);
   }

@@ -71,14 +71,14 @@ describe('Viewer config', () => {
     mounted.push(mount(Viewer, { target }));
     await tick();
 
-    const toggle = target.querySelector<HTMLButtonElement>('[aria-label="Toggle metadata"]');
+    const toggle = target.querySelector<HTMLButtonElement>('[data-tone="info"]');
     expect(toggle).toBeTruthy();
     if (toggle?.getAttribute('aria-pressed') !== 'true') {
       toggle!.click();
       await tick();
     }
 
-    const panel = target.querySelector('[aria-label="Metadata panel"]');
+    const panel = target.querySelector('.panel--metadata');
     expect(panel).toBeTruthy();
     expect(toggle?.getAttribute('aria-pressed')).toBe('true');
 
@@ -89,6 +89,6 @@ describe('Viewer config', () => {
 
     toggle!.click();
     await tick();
-    expect(target.querySelector('[aria-label="Metadata panel"]')).toBe(panel);
+    expect(target.querySelector('.panel--metadata')).toBe(panel);
   });
 });
