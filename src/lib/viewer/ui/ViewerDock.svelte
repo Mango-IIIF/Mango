@@ -133,6 +133,7 @@
           <button
             class:viewer-sidebar__button--active={showCollection}
             class="viewer-sidebar__button"
+            data-tone="collection"
             type="button"
             title={iconOnly ? $t('viewer.panels.collection.title') : undefined}
             aria-pressed={showCollection}
@@ -340,6 +341,20 @@
           onclick={() => ongalleryopen?.()}
         >
           <Image aria-hidden="true" />
+        </button>
+      {/if}
+      {#if allowCollection}
+        <button
+          class:viewer-mobile-nav__button--active={showCollection}
+          class="viewer-mobile-nav__button"
+          data-tone="collection"
+          type="button"
+          aria-label={$t('viewer.panels.collection.title')}
+          title={$t('viewer.panels.collection.title')}
+          aria-pressed={showCollection}
+          onclick={() => onpanelToggle?.({ panel: 'collection', open: !showCollection })}
+        >
+          <ListTree aria-hidden="true" />
         </button>
       {/if}
       {#if allowMetadata}

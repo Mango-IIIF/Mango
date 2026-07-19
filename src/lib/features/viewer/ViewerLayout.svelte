@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, setContext } from 'svelte';
   import { get, writable } from 'svelte/store';
   import { t } from '../../i18n';
   import { normaliseViewerConfig } from '../../config/normalise';

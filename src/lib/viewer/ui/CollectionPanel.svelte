@@ -5,9 +5,8 @@
     CollectionTreeElement,
     CollectionTreeMessages,
   } from '@mango-iiif/collection-navigator';
-  import { getContext } from 'svelte';
   import { t } from '../../i18n';
-  import type { ViewerDerivedStores } from '../state/viewerDerived';
+  import { getViewerContext } from '../context';
 
   interface Props {
     onclose?: () => void;
@@ -15,9 +14,7 @@
   }
 
   let { onclose, onselect }: Props = $props();
-  const viewer = getContext<{
-    derived: Pick<ViewerDerivedStores, 'collectionEntry' | 'uiLocale'>;
-  }>('viewer-context');
+  const viewer = getViewerContext();
   const collectionEntry = viewer.derived.collectionEntry;
   const uiLocale = viewer.derived.uiLocale;
   let tree: CollectionTreeElement | undefined = $state();
