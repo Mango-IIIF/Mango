@@ -48,7 +48,7 @@
   import type { ViewBox } from '../core/types/viewer';
   import type { MediaType, MediaSource } from '../iiif/mediaResolver';
   import type { ViewerPlugin } from '../core/types/plugin';
-  import type { Story } from '../core/types/story';
+  import type { StoryState } from '../core/types/story';
   import { normaliseStoryInput } from '../story/viewer/storyLoader';
   import { ViewerApiAdapter } from '../viewer/api/ViewerApiAdapter';
 
@@ -96,8 +96,9 @@
         void import('../plugins/storyBuilder').then(({ createStoryBuilderPlugins }) => {
           if (requestId !== storyBuilderPluginRequest) return;
           modePlugins = createStoryBuilderPlugins({
-            initialStory: loadedStory as Story | undefined,
-            languages: normalisedConfig.story?.languages
+            initialStory: loadedStory ?? undefined,
+            languages: normalisedConfig.story?.languages,
+            annotationPageId: normalisedConfig.story?.annotationPageId
           });
         });
       });
@@ -108,7 +109,7 @@
   }
   $: resolvedPlugins = [...modePlugins, ...plugins];
 
-  async function loadStoryForBuilder(): Promise<Story | Record<string, unknown> | null> {
+  async function loadStoryForBuilder(): Promise<StoryState | null> {
     let source: unknown = undefined;
     if (story !== undefined && story !== null && `${story}` !== '') {
       source = story;
@@ -140,15 +141,8 @@
     if (normalised.ok && normalised.story) {
       return normalised.story;
     }
-
-    // Extract story data from envelope if needed
-    if (parsed && typeof parsed === 'object' && 'data' in parsed) {
-      return parsed.data as Record<string, unknown>;
-    }
-
-    return parsed && typeof parsed === 'object'
-      ? parsed as Record<string, unknown>
-      : null;
+    console.error(normalised.error ?? 'Invalid Mango story AnnotationPage');
+    return null;
   }
 
   export function getViewBox(): ViewBox | null {

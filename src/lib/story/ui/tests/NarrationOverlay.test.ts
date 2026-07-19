@@ -48,8 +48,6 @@ describe('NarrationOverlay', () => {
 
   it('preserves URLs per language when switching', async () => {
     const store = createStoryStoreForTest({
-      version: '1.0',
-      type: 'story',
       narration: {
         tracks: {
           en: { src: 'https://example.org/en.mp3' },

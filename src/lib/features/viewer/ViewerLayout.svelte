@@ -422,8 +422,6 @@
   );
   const storyViewBoxStore = writable<ViewBox | null>(null);
   const EMPTY_STORY: StoryWithDefaults = Object.freeze({
-    version: '1.0',
-    type: 'story',
     chapters: Object.freeze([]),
   }) as StoryWithDefaults;
   const storyDataStore = writable<StoryWithDefaults>(EMPTY_STORY);
@@ -1291,7 +1289,7 @@
       ($mediaType === 'audio' || $mediaType === 'video') &&
       $avTranscriptAvailable,
   );
-  // Story annotation overlay reactive variables
+  // StoryState annotation overlay reactive variables
   $effect(() => {
     storyDataStore.set(storyData ?? EMPTY_STORY);
   });

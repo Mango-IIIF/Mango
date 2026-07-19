@@ -14,8 +14,6 @@ const createTarget = (): HTMLDivElement => {
 describe('ChapterOverlay', () => {
   it('updates manifest and triggers reload', async () => {
     const store = createStoryStoreForTest({
-      version: '1.0',
-      type: 'story',
       chapters: [
         {
           id: 'chapter-1',
@@ -73,8 +71,6 @@ describe('ChapterOverlay', () => {
 
   it('edits annotations with language-specific text and shared placement', async () => {
     const store = createStoryStoreForTest({
-      version: '1.0',
-      type: 'story',
       chapters: [
         {
           id: 'chapter-1',
@@ -130,8 +126,6 @@ describe('ChapterOverlay', () => {
 
   it('stores advance mode and delay', async () => {
     const store = createStoryStoreForTest({
-      version: '1.0',
-      type: 'story',
       chapters: [
         {
           id: 'chapter-1',
@@ -176,8 +170,6 @@ describe('ChapterOverlay', () => {
 
   it('stores chapter title and description for active language', async () => {
     const store = createStoryStoreForTest({
-      version: '1.0',
-      type: 'story',
       chapters: [
         {
           id: 'chapter-1',
@@ -231,8 +223,6 @@ describe('ChapterOverlay', () => {
 
   it('collapses and expands metadata section', async () => {
     const store = createStoryStoreForTest({
-      version: '1.0',
-      type: 'story',
       chapters: [
         {
           id: 'chapter-1',

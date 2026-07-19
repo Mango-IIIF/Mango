@@ -1,12 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { writable, readable, get } from 'svelte/store';
 import { createChapterManager, type ChapterManagerDeps } from '../chapterManager';
-import type { Story, Chapter } from '../../../core/types/story';
+import type { StoryState, Chapter } from '../../../core/types/story';
 
 describe('Chapter Manager', () => {
-  const createMockStory = (): Story => ({
-    version: '1.0',
-    type: 'story',
+  const createMockStory = (): StoryState => ({
     chapters: [
       { id: 'chapter-1', manifest: 'manifest-1', canvasIndex: 0 } as Chapter,
       { id: 'chapter-2', manifest: 'manifest-2', canvasIndex: 1 } as Chapter,

@@ -32,7 +32,10 @@ export const createTransitionGuard = (
     layoutStabilityFrameCount = 5,
   } = deps;
 
-  const waitForManifestChange = async (runId: string, expectedManifestId: string): Promise<GateResult> => {
+  const waitForManifestChange = async (
+    runId: string,
+    expectedManifestId: string,
+  ): Promise<GateResult> => {
     return new Promise((resolve) => {
       let resolved = false;
       let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
@@ -53,11 +56,14 @@ export const createTransitionGuard = (
         return;
       }
 
-      const unsubscribe = viewer.on?.('manifestChange', (payload: { manifestId: string }) => {
-        if (checkResolved() && payload.manifestId === expectedManifestId) {
-          resolveOnce({ ok: true, degraded: false });
-        }
-      });
+      const unsubscribe = viewer.on?.(
+        'manifestChange',
+        (payload: { manifestId: string }) => {
+          if (checkResolved() && payload.manifestId === expectedManifestId) {
+            resolveOnce({ ok: true, degraded: false });
+          }
+        },
+      );
       if (unsubscribe) ctx.registerCleanup(unsubscribe);
 
       timeoutHandle = setTimeoutFn(() => {
@@ -66,13 +72,17 @@ export const createTransitionGuard = (
     });
   };
 
-  const waitForCanvasesAvailable = async (runId: string, expectedCanvasIndex: number): Promise<GateResult> => {
+  const waitForCanvasesAvailable = async (
+    runId: string,
+    expectedCanvasIndex: number,
+  ): Promise<GateResult> => {
     return new Promise((resolve) => {
       let resolved = false;
       let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
       let unsubscribe: (() => void) | null = null;
       const checkResolved = () => runId === ctx.currentRunId() && !resolved;
-      const checkCanvases = () => (viewer.getCanvasCount?.() ?? 0) > expectedCanvasIndex;
+      const checkCanvases = () =>
+        (viewer.getCanvasCount?.() ?? 0) > expectedCanvasIndex;
       const cleanup = () => {
         if (timeoutHandle) clearTimeoutFn(timeoutHandle);
         unsubscribe?.();
@@ -90,9 +100,11 @@ export const createTransitionGuard = (
         return;
       }
 
-      unsubscribe = viewer.on?.('stateChange', () => {
-        if (checkResolved() && checkCanvases()) resolveOnce({ ok: true, degraded: false });
-      }) ?? null;
+      unsubscribe =
+        viewer.on?.('stateChange', () => {
+          if (checkResolved() && checkCanvases())
+            resolveOnce({ ok: true, degraded: false });
+        }) ?? null;
 
       timeoutHandle = setTimeoutFn(() => {
         if (checkResolved()) resolveOnce({ ok: true, degraded: true });
@@ -104,6 +116,7 @@ export const createTransitionGuard = (
     runId: string,
     expectedCanvasIndex: number,
     _manifestJustChanged = false,
+    expectedCanvasId?: string,
   ): Promise<GateResult> => {
     return new Promise((resolve) => {
       let resolved = false;
@@ -139,14 +152,29 @@ export const createTransitionGuard = (
       };
 
       ctx.registerCleanup(cleanup);
-      if (viewer.getCanvasIndex?.() === expectedCanvasIndex) {
+      const isExpectedCanvas = (
+        canvasId = viewer.getCanvasId?.(),
+        index = viewer.getCanvasIndex?.(),
+      ) =>
+        expectedCanvasId
+          ? canvasId === expectedCanvasId
+          : index === expectedCanvasIndex;
+
+      if (isExpectedCanvas()) {
         waitFrames(2);
         return;
       }
 
-      const unsubscribe = viewer.on?.('pageChange', (payload: { index: number }) => {
-        if (checkResolved() && payload.index === expectedCanvasIndex) waitFrames(3);
-      });
+      const unsubscribe = viewer.on?.(
+        'pageChange',
+        (payload: { canvasId: string; index: number }) => {
+          if (
+            checkResolved() &&
+            isExpectedCanvas(payload.canvasId, payload.index)
+          )
+            waitFrames(3);
+        },
+      );
       if (unsubscribe) ctx.registerCleanup(unsubscribe);
 
       timeoutHandle = setTimeoutFn(() => {
@@ -197,7 +225,8 @@ export const createTransitionGuard = (
         rafHandle = rAF(() => {
           if (!checkResolved() || paintEventReceived || !rAF) return;
           const second = rAF(() => {
-            if (checkResolved() && !paintEventReceived) resolveOnce({ ok: true, degraded: true });
+            if (checkResolved() && !paintEventReceived)
+              resolveOnce({ ok: true, degraded: true });
           });
           if (cAF) ctx.registerCleanup(() => cAF(second));
         });

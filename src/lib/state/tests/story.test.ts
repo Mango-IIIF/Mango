@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Story } from '../../core/types/story';
+import type { StoryState } from '../../core/types/story';
 import type { ViewBox } from '../../core/types/viewer';
 import {
   addChapterFromCapture,
@@ -20,9 +20,7 @@ import {
 const viewBox = (w = 100, h = 80): ViewBox => ({ x: 0, y: 0, w, h });
 const placement = (x: number, y: number, w: number, h: number) => ({ x, y, w, h });
 
-const createStoryWithChapters = (): Story => ({
-  version: '1.0',
-  type: 'story',
+const createStoryWithChapters = (): StoryState => ({
   narration: {
     tracks: {
       en: { src: 'https://example.org/en.mp3' },

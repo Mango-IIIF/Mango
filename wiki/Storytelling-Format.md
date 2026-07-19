@@ -27,8 +27,9 @@ viewer.mode = "story-viewer";
 viewer.story = storyObject;
 ```
 
-Mango accepts its native story object, the versioned envelope produced by the
-builder, and a supported IIIF Presentation 3 `AnnotationPage` representation.
+The builder's source-of-record and export format is a IIIF Presentation 3
+`AnnotationPage`. The viewer and builder accept the Mango story AnnotationPage
+profile directly; native story objects and versioned wrappers are not supported.
 
 ## Author or edit a story
 
@@ -50,126 +51,126 @@ preview transitions, reorder chapters, and export the result.
 By default, export opens a JSON dialog for copying. Configure a save endpoint to
 persist directly; see [configuration](Configuration#story-builder-options).
 
-## Native story model
+## AnnotationPage story format
 
-The TypeScript types are exported from the main package, `/story-viewer`, and
-`/story-builder` entry points.
+The builder exports and saves a IIIF Presentation 3 `AnnotationPage`. Chapter
+annotations retain their order in `items`; text overlays are linked companion
+annotations. Standard IIIF and Web Annotation fields carry the portable parts
+of a story:
 
-```ts
-type Story = {
-  version: "1.0";
-  type: "story";
-  title?: Record<string, string>;
-  narration?: {
-    tracks: Record<string, { src: string }>;
-  };
-  chapters: Chapter[];
-};
+| Story feature                 | Annotation representation                                     |
+| ----------------------------- | ------------------------------------------------------------- |
+| Story title                   | AnnotationPage `label`                                        |
+| Chapter order                 | Order of chapter annotations in `items`                       |
+| Chapter title and description | Annotation `label` and `summary`                              |
+| Canvas                        | `target.source`                                               |
+| Image viewport                | `FragmentSelector` with `xywh`                                |
+| Media segment                 | Media Fragment `t=start,end`                                  |
+| Narration                     | `Sound` body with a temporal fragment                         |
+| Text overlay                  | Describing Annotation with a `TextualBody` and spatial target |
 
-type Chapter = {
-  id: string;
-  title?: Record<string, string>;
-  description?: Record<string, string>;
-  manifest: string;
-  canvasIndex: number;
-  canvasId?: string;
-  transitionTimeMs?: number;
-  viewBox?: { x: number; y: number; w: number; h: number };
-  media?: { start: number; end: number };
-  model?: ModelPose;
-  narrationSegment?: Record<string, { start: number; end: number }>;
-  annotations?: Record<
-    string,
+Model poses, layer opacity, exact viewport values, and playback behaviour are
+viewer state rather than standard IIIF semantics. Mango stores them in a
+versioned, namespaced `mango:ViewerState` body. Other IIIF clients can still use
+the standard chapter target and bodies while ignoring the Mango extension.
+The machine-readable profile is in
+[`schemas/story-annotation-page.schema.json`](https://github.com/Mango-IIIF/Mango/blob/main/schemas/story-annotation-page.schema.json).
+Overlay annotations carry `mango:role: "overlay"` and a `mango:chapterId`
+link. Mango excludes them from sequencing while annotation clients can process
+their standard body and target.
+
+```json
+{
+  "@context": [
+    "http://iiif.io/api/presentation/3/context.json",
     {
-      text?: string;
-      placement?: { x: number; y: number; w: number; h: number };
+      "mango": "https://mango-iiif.github.io/ns/story#",
+      "mangoState": {
+        "@id": "mango:state",
+        "@type": "@json"
+      }
     }
-  >;
-  advance?: {
-    mode: "manual" | "auto" | "both";
-    delayMs?: number;
-  };
-  layerOpacities?: Record<string, number>;
-};
-```
-
-Language maps use language codes as keys, for example:
-
-```json
-{
-  "title": {
-    "en": "Highlights tour",
-    "cy": "Taith uchafbwyntiau"
-  }
-}
-```
-
-## Minimal native story
-
-```json
-{
-  "version": "1.0",
-  "type": "story",
-  "title": { "en": "Highlights tour" },
-  "chapters": [
+  ],
+  "id": "https://museum.example/stories/object-42/chapters",
+  "type": "AnnotationPage",
+  "mango:storyVersion": "1.0",
+  "label": { "en": ["Object 42 highlights"] },
+  "items": [
     {
-      "id": "introduction",
-      "title": { "en": "Welcome" },
-      "description": { "en": "Begin with the complete object." },
-      "manifest": "https://example.org/iiif/manifest.json",
-      "canvasIndex": 0,
-      "canvasId": "https://example.org/iiif/canvas/1",
-      "transitionTimeMs": 1500,
-      "viewBox": { "x": 0, "y": 0, "w": 4000, "h": 3000 },
-      "advance": { "mode": "manual" }
+      "id": "https://museum.example/stories/object-42/chapters/annotation/detail",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": { "en": ["Examine the inscription"] },
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://museum.example/iiif/object-42/canvas/1",
+        "partOf": {
+          "id": "https://museum.example/iiif/object-42/manifest",
+          "type": "Manifest"
+        }
+      },
+      "body": {
+        "type": "mango:ViewerState",
+        "format": "application/vnd.mango.story-state+json",
+        "mango:storyVersion": "1.0",
+        "mangoState": {
+          "chapterId": "detail",
+          "canvasIndex": 0,
+          "canvasId": "https://museum.example/iiif/object-42/canvas/1",
+          "modelPose": {
+            "cameraOrbit": "45deg 30deg 2m",
+            "cameraTarget": "0m 1m 0m",
+            "fieldOfView": "45deg",
+            "orientation": "0deg 0deg 0deg"
+          },
+          "modelOptions": {
+            "transition": "interpolate",
+            "interpolationDecay": 180
+          },
+          "layerOpacities": {
+            "https://museum.example/iiif/object-42/annotation/infrared": 0.65
+          },
+          "playback": {
+            "advance": "auto",
+            "delayMs": 5000,
+            "transitionMs": 2000
+          }
+        }
+      }
     }
   ]
 }
 ```
 
-Use stable chapter IDs, real Canvas IDs, and stable Manifest URLs. Mango can
-derive a fallback Canvas URL when `canvasId` is omitted, but explicit source IDs
-are more portable.
+Use stable HTTP(S) identifiers for the AnnotationPage, chapters, Manifests,
+Canvases, and layers. Layer opacity values must be between `0` and `1`. Mango
+leaves unlisted layers unchanged and ignores stored layer IDs that are not
+available in the active Canvas.
 
-## Builder export envelope
+When calling the low-level authoring serializer directly, provide the public
+AnnotationPage ID:
 
-The current builder exports and saves a versioned Mango envelope around the
-native story:
+```ts
+import { serializeStoryToIiif } from "@mango-iiif/iiif-viewer/story-builder";
 
-```json
-{
-  "version": 1,
-  "exportedAt": "2026-07-19T12:00:00.000Z",
-  "meta": {
-    "source": "storybuilder"
-  },
-  "data": {
-    "version": "1.0",
-    "type": "story",
-    "chapters": []
-  }
-}
+const page = serializeStoryToIiif(story, {
+  id: "https://museum.example/stories/object-42/chapters",
+});
 ```
 
-The envelope gives storage systems a format version, export timestamp, and
-source while retaining the native `Story` object in `data`.
+For the web component story builder, set the same value through configuration:
 
-## IIIF AnnotationPage import
-
-The story viewer also recognises a Presentation 3 `AnnotationPage` profile in
-which chapter annotations target canvases and media fragments. It maps labels,
-summaries, viewport and temporal selectors, narration `Sound` bodies, and
-`TextualBody` overlays into the native story model.
-
-This import is a Mango interpretation of an AnnotationPage, not a claim that
-generic IIIF clients understand Mango's sequencing, camera transitions, layer
-opacity, or chapter-advance behaviour. Test round trips before adopting an
-AnnotationPage as the editable source of record.
+```html
+<mango-viewer
+  mode="story-builder"
+  config='{"story":{"annotationPageId":"https://museum.example/stories/object-42/chapters"}}'
+></mango-viewer>
+```
 
 ## Save endpoint contract
 
-When `config.story.save.endpoint` is enabled, Mango sends the versioned builder
-envelope as JSON using the configured `POST` or `PUT` method.
+When `config.story.save.endpoint` is enabled, Mango sends the AnnotationPage as
+JSON using the configured `POST` or `PUT` method.
 
 A successful endpoint should return JSON such as:
 

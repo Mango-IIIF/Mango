@@ -1,519 +1,1038 @@
 {
-  "version": 1,
-  "exportedAt": "2026-02-12T11:56:02.683Z",
-  "meta": {
-    "source": "storybuilder"
+  "@context": [
+    "http://iiif.io/api/presentation/3/context.json",
+    {
+      "mango": "https://mango-iiif.github.io/ns/story#",
+      "mangoState": {
+        "@id": "mango:state",
+        "@type": "@json"
+      }
+    }
+  ],
+  "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters",
+  "type": "AnnotationPage",
+  "mango:storyVersion": "1.0",
+  "label": {
+    "en": [
+      "Story Annotation Track"
+    ]
   },
-  "data": {
-    "version": "1.0",
-    "type": "story",
-    "chapters": [
-      {
-        "id": "chapter_1",
-        "manifest": "https://manifests.collections.yale.edu/ycba/obj/34",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 0,
-            "end": 16
-          }
-        },
-        "viewBox": {
-          "x": -2514.511146496816,
-          "y": 0,
-          "w": 19513.02229299363,
-          "h": 9741
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 1",
-          "cy": "Pennod 1"
-        },
-        "description": {
-          "en": "Description for chapter 1.",
-          "cy": "Disgrifiad ar gyfer pennod 1."
-        }
+  "items": [
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_1",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 1"
+        ],
+        "cy": [
+          "Pennod 1"
+        ]
       },
-      {
-        "id": "chapter_2",
-        "manifest": "https://manifests.collections.yale.edu/ycba/obj/34",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 16,
-            "end": 23
-          }
-        },
-        "viewBox": {
-          "x": 1166.1556742097316,
-          "y": 4507.597644411982,
-          "w": 7841.846021811359,
-          "h": 3914.6894290123473
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 2",
-          "cy": "Pennod 2"
-        },
-        "description": {
-          "en": "Description for chapter 2.",
-          "cy": "Disgrifiad ar gyfer pennod 2."
-        }
+      "summary": {
+        "en": [
+          "Description for chapter 1."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 1."
+        ]
       },
-      {
-        "id": "chapter_3",
-        "manifest": "https://manifests.collections.yale.edu/ycba/obj/34",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 23,
-            "end": 30
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=0,16",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_1",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": -2514.511146496816,
+              "y": 0,
+              "w": 19513.02229299363,
+              "h": 9741
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
           }
-        },
-        "viewBox": {
-          "x": 1166.1556742097316,
-          "y": 4507.597644411982,
-          "w": 7841.846021811359,
-          "h": 3914.6894290123473
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 3",
-          "cy": "Pennod 3"
-        },
-        "description": {
-          "en": "Description for chapter 3.",
-          "cy": "Disgrifiad ar gyfer pennod 3."
         }
-      },
-      {
-        "id": "chapter_4",
-        "manifest": "https://manifests.collections.yale.edu/ycba/obj/34",
-        "canvasIndex": 0,
-        "viewBox": {
-          "x": 4099.799654133859,
-          "y": 6709.220716028746,
-          "w": 1143.6363636363635,
-          "h": 570.9090909090908
+      ],
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://manifests.collections.yale.edu/ycba/obj/34",
+          "type": "Manifest"
         },
-        "annotations": {
-          "_default": {
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 4",
-          "cy": "Pennod 4"
-        },
-        "description": {
-          "en": "Description for chapter 4.",
-          "cy": "Disgrifiad ar gyfer pennod 4."
-        }
-      },
-      {
-        "id": "chapter_5",
-        "manifest": "https://manifests.collections.yale.edu/ycba/obj/34",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 30,
-            "end": 36
-          }
-        },
-        "viewBox": {
-          "x": 3451.919530723998,
-          "y": 6482.514498394447,
-          "w": 2493.969001980678,
-          "h": 1245.0020137073654
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 5",
-          "cy": "Pennod 5"
-        },
-        "description": {
-          "en": "Description for chapter 5.",
-          "cy": "Disgrifiad ar gyfer pennod 5."
-        }
-      },
-      {
-        "id": "chapter_6",
-        "manifest": "https://manifests.collections.yale.edu/ycba/obj/34",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 36,
-            "end": 49
-          }
-        },
-        "viewBox": {
-          "x": 4333.421274303441,
-          "y": 6392.553393457975,
-          "w": 2493.969001980678,
-          "h": 1245.0020137073654
-        },
-        "annotations": {
-          "en": {
-            "text": "Annotations appear in context, helping explain objects, people, and moments without interrupting the story.",
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 6",
-          "cy": "Pennod 6"
-        },
-        "description": {
-          "en": "Description for chapter 6.",
-          "cy": "Disgrifiad ar gyfer pennod 6."
-        }
-      },
-      {
-        "id": "chapter_7",
-        "manifest": "https://manifests.collections.yale.edu/ycba/obj/34",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 49,
-            "end": 53
-          }
-        },
-        "viewBox": {
-          "x": 2263.7615687976686,
-          "y": 6990.9851924563845,
-          "w": 2493.969001980678,
-          "h": 1245.0020137073654
-        },
-        "annotations": {
-          "en": {
-            "text": "Place annotations exactly where they are needed.",
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 7",
-          "cy": "Pennod 7"
-        },
-        "description": {
-          "en": "Description for chapter 7.",
-          "cy": "Disgrifiad ar gyfer pennod 7."
-        }
-      },
-      {
-        "id": "chapter_8",
-        "manifest": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 53,
-            "end": 64
-          }
-        },
-        "viewBox": {
-          "x": -2264.1417197452233,
-          "y": 0,
-          "w": 7097.283439490447,
-          "h": 3543.0000000000005
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 8",
-          "cy": "Pennod 8"
-        },
-        "description": {
-          "en": "Description for chapter 8.",
-          "cy": "Disgrifiad ar gyfer pennod 8."
-        }
-      },
-      {
-        "id": "chapter_9",
-        "manifest": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
-        "canvasIndex": 1,
-        "viewBox": {
-          "x": -2171.8694267515925,
-          "y": 0,
-          "w": 6754.738853503185,
-          "h": 3372.0000000000005
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 9",
-          "cy": "Pennod 9"
-        },
-        "description": {
-          "en": "Description for chapter 9.",
-          "cy": "Disgrifiad ar gyfer pennod 9."
-        }
-      },
-      {
-        "id": "chapter_10",
-        "manifest": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
-        "canvasIndex": 1,
-        "viewBox": {
-          "x": 328.656764034382,
-          "y": 582.0648376077411,
-          "w": 1885.1236458688288,
-          "h": 941.0633144718795
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 10",
-          "cy": "Pennod 10"
-        },
-        "description": {
-          "en": "Description for chapter 10.",
-          "cy": "Disgrifiad ar gyfer pennod 10."
-        }
-      },
-      {
-        "id": "chapter_11",
-        "manifest": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 64,
-            "end": 72
-          }
-        },
-        "media": {
-          "start": 170,
-          "end": 183
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 11",
-          "cy": "Pennod 11"
-        },
-        "description": {
-          "en": "Description for chapter 11.",
-          "cy": "Disgrifiad ar gyfer pennod 11."
-        }
-      },
-      {
-        "id": "chapter_12",
-        "manifest": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 72,
-            "end": 79
-          }
-        },
-        "media": {
-          "start": 670,
-          "end": 676
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 12",
-          "cy": "Pennod 12"
-        },
-        "description": {
-          "en": "Description for chapter 12.",
-          "cy": "Disgrifiad ar gyfer pennod 12."
-        }
-      },
-      {
-        "id": "chapter_13",
-        "manifest": "https://iiif.io/api/cookbook/recipe/0219-using-caption-file/manifest.json",
-        "canvasIndex": 0,
-        "media": {
-          "start": 65,
-          "end": 72
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 13",
-          "cy": "Pennod 13"
-        },
-        "description": {
-          "en": "Description for chapter 13.",
-          "cy": "Disgrifiad ar gyfer pennod 13."
-        }
-      },
-      {
-        "id": "chapter_14",
-        "manifest": "https://api.artic.edu/api/v1/artworks/80607/manifest.json",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 80,
-            "end": 100
-          }
-        },
-        "viewBox": {
-          "x": -4748.410828025477,
-          "y": 0,
-          "w": 15612.821656050954,
-          "h": 7793.999999999999
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 14",
-          "cy": "Pennod 14"
-        },
-        "description": {
-          "en": "Description for chapter 14.",
-          "cy": "Disgrifiad ar gyfer pennod 14."
-        }
-      },
-      {
-        "id": "chapter_15",
-        "manifest": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 100,
-            "end": 108
-          }
-        },
-        "viewBox": {
-          "x": 2565.0428361445292,
-          "y": 1344.807109855023,
-          "w": 1143.6772639020908,
-          "h": 570.9295085298195
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 15",
-          "cy": "Pennod 15"
-        },
-        "description": {
-          "en": "Description for chapter 15.",
-          "cy": "Disgrifiad ar gyfer pennod 15."
-        }
-      },
-      {
-        "id": "chapter_16",
-        "manifest": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 108,
-            "end": 116
-          }
-        },
-        "viewBox": {
-          "x": 1894.7163728764324,
-          "y": 1075.6004173983094,
-          "w": 2371.4443636363635,
-          "h": 1183.8370909090906
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 16",
-          "cy": "Pennod 16"
-        },
-        "description": {
-          "en": "Description for chapter 16.",
-          "cy": "Disgrifiad ar gyfer pennod 16."
-        }
-      },
-      {
-        "id": "chapter_17",
-        "manifest": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json",
-        "canvasIndex": 0,
-        "narrationSegment": {
-          "en": {
-            "start": 116,
-            "end": 123
-          }
-        },
-        "viewBox": {
-          "x": 0,
-          "y": 768.9209796549962,
-          "w": 5900.912438923634,
-          "h": 2945.765510050908
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre-left"
-          }
-        },
-        "transitionTimeMs": 2000,
-        "title": {
-          "en": "Chapter 17",
-          "cy": "Pennod 17"
-        },
-        "description": {
-          "en": "Description for chapter 17.",
-          "cy": "Disgrifiad ar gyfer pennod 17."
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,19513,9741"
         }
       }
-    ],
-    "narration": {
-      "tracks": {
-        "en": {
-          "src": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3"
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_2",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 2"
+        ],
+        "cy": [
+          "Pennod 2"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 2."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 2."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=16,23",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_2",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": 1166.1556742097316,
+              "y": 4507.597644411982,
+              "w": 7841.846021811359,
+              "h": 3914.6894290123473
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://manifests.collections.yale.edu/ycba/obj/34",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1166,4508,7842,3915"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_3",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 3"
+        ],
+        "cy": [
+          "Pennod 3"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 3."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 3."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=23,30",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_3",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": 1166.1556742097316,
+              "y": 4507.597644411982,
+              "w": 7841.846021811359,
+              "h": 3914.6894290123473
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://manifests.collections.yale.edu/ycba/obj/34",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1166,4508,7842,3915"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_4",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 4"
+        ],
+        "cy": [
+          "Pennod 4"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 4."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 4."
+        ]
+      },
+      "body": {
+        "type": "mango:ViewerState",
+        "format": "application/vnd.mango.story-state+json",
+        "mango:storyVersion": "1.0",
+        "mangoState": {
+          "chapterId": "chapter_4",
+          "canvasIndex": 0,
+          "viewBox": {
+            "x": 4099.799654133859,
+            "y": 6709.220716028746,
+            "w": 1143.6363636363635,
+            "h": 570.9090909090908
+          },
+          "playback": {
+            "transitionMs": 2000
+          }
+        }
+      },
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://manifests.collections.yale.edu/ycba/obj/34",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=4100,6709,1144,571"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_5",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 5"
+        ],
+        "cy": [
+          "Pennod 5"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 5."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 5."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=30,36",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_5",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": 3451.919530723998,
+              "y": 6482.514498394447,
+              "w": 2493.969001980678,
+              "h": 1245.0020137073654
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://manifests.collections.yale.edu/ycba/obj/34",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=3452,6483,2494,1245"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_6",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 6"
+        ],
+        "cy": [
+          "Pennod 6"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 6."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 6."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=36,49",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_6",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": 4333.421274303441,
+              "y": 6392.553393457975,
+              "w": 2493.969001980678,
+              "h": 1245.0020137073654
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://manifests.collections.yale.edu/ycba/obj/34",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=4333,6393,2494,1245"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_6/overlay/en",
+      "type": "Annotation",
+      "motivation": "describing",
+      "mango:role": "overlay",
+      "mango:chapterId": "chapter_6",
+      "body": {
+        "type": "TextualBody",
+        "value": "Annotations appear in context, helping explain objects, people, and moments without interrupting the story.",
+        "format": "text/plain",
+        "purpose": "describing",
+        "language": "en"
+      },
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=4500,6500,800,300"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_7",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 7"
+        ],
+        "cy": [
+          "Pennod 7"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 7."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 7."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=49,53",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_7",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": 2263.7615687976686,
+              "y": 6990.9851924563845,
+              "w": 2493.969001980678,
+              "h": 1245.0020137073654
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://manifests.collections.yale.edu/ycba/obj/34",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=2264,6991,2494,1245"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_7/overlay/en",
+      "type": "Annotation",
+      "motivation": "describing",
+      "mango:role": "overlay",
+      "mango:chapterId": "chapter_7",
+      "body": {
+        "type": "TextualBody",
+        "value": "Place annotations exactly where they are needed.",
+        "format": "text/plain",
+        "purpose": "describing",
+        "language": "en"
+      },
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=4500,6500,800,300"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_8",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 8"
+        ],
+        "cy": [
+          "Pennod 8"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 8."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 8."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=53,64",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_8",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": -2264.1417197452233,
+              "y": 0,
+              "w": 7097.283439490447,
+              "h": 3543.0000000000005
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://iiif.wellcomecollection.org/presentation/v2/b18035723/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,7097,3543"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_9",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 9"
+        ],
+        "cy": [
+          "Pennod 9"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 9."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 9."
+        ]
+      },
+      "body": {
+        "type": "mango:ViewerState",
+        "format": "application/vnd.mango.story-state+json",
+        "mango:storyVersion": "1.0",
+        "mangoState": {
+          "chapterId": "chapter_9",
+          "canvasIndex": 1,
+          "viewBox": {
+            "x": -2171.8694267515925,
+            "y": 0,
+            "w": 6754.738853503185,
+            "h": 3372.0000000000005
+          },
+          "playback": {
+            "transitionMs": 2000
+          }
+        }
+      },
+      "target": {
+        "source": "https://iiif.wellcomecollection.org/presentation/v2/b18035723/canvas/1",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,6755,3372"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_10",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 10"
+        ],
+        "cy": [
+          "Pennod 10"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 10."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 10."
+        ]
+      },
+      "body": {
+        "type": "mango:ViewerState",
+        "format": "application/vnd.mango.story-state+json",
+        "mango:storyVersion": "1.0",
+        "mangoState": {
+          "chapterId": "chapter_10",
+          "canvasIndex": 1,
+          "viewBox": {
+            "x": 328.656764034382,
+            "y": 582.0648376077411,
+            "w": 1885.1236458688288,
+            "h": 941.0633144718795
+          },
+          "playback": {
+            "transitionMs": 2000
+          }
+        }
+      },
+      "target": {
+        "source": "https://iiif.wellcomecollection.org/presentation/v2/b18035723/canvas/1",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.wellcomecollection.org/presentation/v2/b18035723",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=329,582,1885,941"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_11",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 11"
+        ],
+        "cy": [
+          "Pennod 11"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 11."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 11."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=64,72",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_11",
+            "canvasIndex": 0,
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json/canvas/0#t=170,183",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=170,183"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_12",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 12"
+        ],
+        "cy": [
+          "Pennod 12"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 12."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 12."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=72,79",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_12",
+            "canvasIndex": 0,
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json/canvas/0#t=670,676",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=670,676"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_13",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 13"
+        ],
+        "cy": [
+          "Pennod 13"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 13."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 13."
+        ]
+      },
+      "body": {
+        "type": "mango:ViewerState",
+        "format": "application/vnd.mango.story-state+json",
+        "mango:storyVersion": "1.0",
+        "mangoState": {
+          "chapterId": "chapter_13",
+          "canvasIndex": 0,
+          "playback": {
+            "transitionMs": 2000
+          }
+        }
+      },
+      "target": {
+        "source": "https://iiif.io/api/cookbook/recipe/0219-using-caption-file/manifest.json/canvas/0#t=65,72",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.io/api/cookbook/recipe/0219-using-caption-file/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=65,72"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_14",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 14"
+        ],
+        "cy": [
+          "Pennod 14"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 14."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 14."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=80,100",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_14",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": -4748.410828025477,
+              "y": 0,
+              "w": 15612.821656050954,
+              "h": 7793.999999999999
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://api.artic.edu/api/v1/artworks/80607/manifest.json/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/80607/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,15613,7794"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_15",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 15"
+        ],
+        "cy": [
+          "Pennod 15"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 15."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 15."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=100,108",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_15",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": 2565.0428361445292,
+              "y": 1344.807109855023,
+              "w": 1143.6772639020908,
+              "h": 570.9295085298195
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=2565,1345,1144,571"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_16",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 16"
+        ],
+        "cy": [
+          "Pennod 16"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 16."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 16."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=108,116",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_16",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": 1894.7163728764324,
+              "y": 1075.6004173983094,
+              "w": 2371.4443636363635,
+              "h": 1183.8370909090906
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1895,1076,2371,1184"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/vue-demo/chapters/annotation/chapter_17",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Chapter 17"
+        ],
+        "cy": [
+          "Pennod 17"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Description for chapter 17."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 17."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/narration_test_3.mp3#t=116,123",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_17",
+            "canvasIndex": 0,
+            "viewBox": {
+              "x": 0,
+              "y": 768.9209796549962,
+              "w": 5900.912438923634,
+              "h": 2945.765510050908
+            },
+            "playback": {
+              "transitionMs": 2000
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,769,5901,2946"
         }
       }
     }
-  }
+  ]
 }

@@ -1,19 +1,23 @@
 import type {
   LanguageMap,
   AnnotationPlacement,
-  Story,
+  StoryState,
   Chapter,
 } from "../../core/types/story";
 import type { ViewBox } from "../../core/types/viewer";
+import {
+  MANGO_STORY_VERSION,
+  parseMangoViewerStateBody,
+} from "../storyAnnotationProfile";
 
-export type StoryWithDefaults = Story & {
+export type StoryWithDefaults = StoryState & {
   chapters: Array<Chapter & { transitionTimeMs: number }>;
 };
 
 type IiifStoryTarget = {
-  source?: string;
+  source?: string | { id?: string };
   partOf?: { id?: string };
-  selector?: { value?: string };
+  selector?: { value?: string } | Array<{ value?: string }>;
 };
 
 type IiifStoryBody = {
@@ -22,19 +26,24 @@ type IiifStoryBody = {
   language?: string;
   value?: string;
   target?: IiifStoryTarget;
+  [key: string]: unknown;
 };
 
 type IiifStoryItem = {
   id?: string;
+  motivation?: string;
+  "mango:role"?: string;
+  "mango:chapterId"?: string;
   label?: Record<string, unknown>;
   summary?: Record<string, unknown>;
-  transitionTimeMs?: number;
   target?: string | IiifStoryTarget;
   body?: IiifStoryBody | IiifStoryBody[];
 };
 
 type IiifStoryPage = {
+  id?: string;
   type: "AnnotationPage";
+  "mango:storyVersion"?: string;
   label?: Record<string, unknown>;
   items?: IiifStoryItem[];
 };
@@ -52,7 +61,7 @@ const isIiifStoryPage = (value: unknown): value is IiifStoryPage => {
   );
 };
 
-const parseIiifStory = (input: IiifStoryPage): Story => {
+const parseIiifStory = (input: IiifStoryPage): StoryState => {
   const titleMap: LanguageMap = {};
   if (input.label) {
     for (const [lang, arr] of Object.entries(input.label)) {
@@ -64,8 +73,31 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
 
   const narrationTracks: Record<string, { src: string }> = {};
 
-  const chapters = (input.items || []).map((item, index) => {
-    const chapterId = item.id?.split("/").pop() || `chapter_${index + 1}`;
+  const pageItems = input.items || [];
+  const overlayItems = pageItems.filter(
+    (item) => item["mango:role"] === "overlay",
+  );
+  const chapterItems = pageItems.filter(
+    (item) => item["mango:role"] !== "overlay",
+  );
+
+  const chapters = chapterItems.map((item, index) => {
+    const bodies = item.body
+      ? Array.isArray(item.body)
+        ? item.body
+        : [item.body]
+      : [];
+    const viewerState = bodies
+      .map((body) => parseMangoViewerStateBody(body))
+      .find((state) => state !== undefined);
+    const encodedChapterId = item.id?.split("/").pop();
+    let fallbackChapterId = encodedChapterId || `chapter_${index + 1}`;
+    try {
+      fallbackChapterId = decodeURIComponent(fallbackChapterId);
+    } catch {
+      // Keep malformed external IDs usable instead of rejecting the story.
+    }
+    const chapterId = viewerState?.chapterId || fallbackChapterId;
     const title: LanguageMap = {};
     if (item.label) {
       for (const [lang, arr] of Object.entries(item.label)) {
@@ -84,17 +116,16 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
       }
     }
 
-    const transitionTimeMs = item.transitionTimeMs ?? 2000;
+    const transitionTimeMs = viewerState?.playback?.transitionMs ?? 2000;
 
     // Parse target (canvas and viewBox)
-    let canvasId = "";
+    let targetCanvasId = "";
     let manifest = "";
-    let canvasIndex = 0;
+    let canvasIndex = viewerState?.canvasIndex ?? 0;
     let viewBox: ViewBox | undefined;
 
     let targetSource = item.target;
     if (!targetSource && item.body) {
-      const bodies = Array.isArray(item.body) ? item.body : [item.body];
       const bodyWithTarget = bodies.find((body) => body.target);
       if (bodyWithTarget) {
         targetSource = bodyWithTarget.target;
@@ -104,13 +135,14 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
     let media: { start: number; end: number } | undefined;
 
     if (targetSource) {
-      const source =
+      const rawSource =
         typeof targetSource === "string" ? targetSource : targetSource.source;
-      canvasId = source || "";
+      const source = typeof rawSource === "string" ? rawSource : rawSource?.id;
+      targetCanvasId = source || "";
 
-      if (canvasId.includes("#")) {
-        const parts = canvasId.split("#");
-        canvasId = parts[0];
+      if (targetCanvasId.includes("#")) {
+        const parts = targetCanvasId.split("#");
+        targetCanvasId = parts[0];
         const fragment = parts[1];
         const tMatch = fragment.match(/t=(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/);
         if (tMatch) {
@@ -127,15 +159,20 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
       // Resolve manifest ID and canvasIndex
       if (targetObj && targetObj.partOf && targetObj.partOf.id) {
         manifest = targetObj.partOf.id;
-      } else if (canvasId && canvasId.includes("/canvas/")) {
-        const parts = canvasId.split("/canvas/");
+      } else if (targetCanvasId && targetCanvasId.includes("/canvas/")) {
+        const parts = targetCanvasId.split("/canvas/");
         manifest = parts[0];
         const idxVal = parseInt(parts[1], 10);
         canvasIndex = Number.isNaN(idxVal) ? 0 : idxVal;
       }
 
-      const selector = targetObj?.selector;
-      if (selector && selector.value) {
+      const selectors = targetObj?.selector
+        ? Array.isArray(targetObj.selector)
+          ? targetObj.selector
+          : [targetObj.selector]
+        : [];
+      for (const selector of selectors) {
+        if (!selector.value) continue;
         const val = selector.value;
         const match = val.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
         if (match) {
@@ -158,6 +195,11 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
       }
     }
 
+    if (viewerState?.viewBox) viewBox = viewerState.viewBox;
+    const canvasId = viewerState
+      ? (viewerState.canvasId ?? "")
+      : targetCanvasId;
+
     // Parse body for narration segment and annotations
     const narrationSegment: Record<string, { start: number; end: number }> = {};
     const annotations: Record<
@@ -165,7 +207,10 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
       { text: string; placement: AnnotationPlacement }
     > = {};
 
-    const processBodyItem = (bodyItem: IiifStoryBody) => {
+    const processBodyItem = (
+      bodyItem: IiifStoryBody,
+      annotationTarget?: string | IiifStoryTarget,
+    ) => {
       if (bodyItem.type === "Sound") {
         const urlWithFragment = bodyItem.id || "";
         const lang = bodyItem.language || "en";
@@ -192,20 +237,26 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
           h: 0.34,
         };
 
+        const placementTarget = bodyItem.target ?? annotationTarget;
         if (
-          bodyItem.target &&
-          bodyItem.target.selector &&
-          bodyItem.target.selector.value
+          placementTarget &&
+          typeof placementTarget === "object" &&
+          placementTarget.selector
         ) {
-          const val = bodyItem.target.selector.value;
-          const match = val.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
-          if (match) {
-            placement = {
-              x: parseInt(match[1], 10),
-              y: parseInt(match[2], 10),
-              w: parseInt(match[3], 10),
-              h: parseInt(match[4], 10),
-            };
+          const selectors = Array.isArray(placementTarget.selector)
+            ? placementTarget.selector
+            : [placementTarget.selector];
+          for (const selector of selectors) {
+            const match = selector.value?.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
+            if (match) {
+              placement = {
+                x: parseInt(match[1], 10),
+                y: parseInt(match[2], 10),
+                w: parseInt(match[3], 10),
+                h: parseInt(match[4], 10),
+              };
+              break;
+            }
           }
         }
 
@@ -213,13 +264,23 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
       }
     };
 
-    if (item.body) {
-      if (Array.isArray(item.body)) {
-        item.body.forEach(processBodyItem);
-      } else {
-        processBodyItem(item.body);
-      }
+    bodies.forEach((body) => processBodyItem(body));
+    for (const overlay of overlayItems) {
+      if (overlay["mango:chapterId"] !== chapterId || !overlay.body) continue;
+      const overlayBodies = Array.isArray(overlay.body)
+        ? overlay.body
+        : [overlay.body];
+      overlayBodies.forEach((body) => processBodyItem(body, overlay.target));
     }
+
+    const advance = viewerState?.playback?.advance
+      ? {
+          mode: viewerState.playback.advance,
+          ...(viewerState.playback.delayMs !== undefined
+            ? { delayMs: viewerState.playback.delayMs }
+            : {}),
+        }
+      : undefined;
 
     return {
       id: chapterId,
@@ -231,6 +292,11 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
       transitionTimeMs,
       viewBox,
       media,
+      model: viewerState?.modelPose,
+      modelOptions: viewerState?.modelOptions,
+      layerOpacities: viewerState?.layerOpacities,
+      annotationPlacement: viewerState?.annotationPlacement,
+      advance,
       narrationSegment:
         Object.keys(narrationSegment).length > 0 ? narrationSegment : undefined,
       annotations:
@@ -239,8 +305,7 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
   });
 
   return {
-    version: "1.0",
-    type: "story",
+    id: input.id,
     title: titleMap,
     narration:
       Object.keys(narrationTracks).length > 0
@@ -250,26 +315,7 @@ const parseIiifStory = (input: IiifStoryPage): Story => {
   };
 };
 
-const extractStoryObject = (input: unknown): Story | null => {
-  const record = asRecord(input);
-  if (!record) return null;
-  if (isIiifStoryPage(input)) {
-    return parseIiifStory(input);
-  }
-  const maybeWrapped = asRecord(record.data);
-  if (maybeWrapped?.type === "story") {
-    return maybeWrapped as Story;
-  }
-  if (isIiifStoryPage(maybeWrapped)) {
-    return parseIiifStory(maybeWrapped);
-  }
-  if (record.type === "story") {
-    return input as Story;
-  }
-  return null;
-};
-
-const withChapterDefaults = (story: Story): StoryWithDefaults => ({
+const withChapterDefaults = (story: StoryState): StoryWithDefaults => ({
   ...story,
   chapters: (story.chapters ?? []).map((chapter) => ({
     ...chapter,
@@ -280,11 +326,38 @@ const withChapterDefaults = (story: Story): StoryWithDefaults => ({
 export const normaliseStoryInput = (
   input: unknown,
 ): { ok: boolean; story?: StoryWithDefaults; error?: string } => {
-  const story = extractStoryObject(input);
-  if (!story) {
-    return { ok: false, error: "Invalid story shape" };
+  if (!isIiifStoryPage(input)) {
+    return {
+      ok: false,
+      error: "Invalid story shape: expected a Mango story AnnotationPage",
+    };
   }
-  return { ok: true, story: withChapterDefaults(story) };
+  if (input["mango:storyVersion"] === undefined) {
+    return { ok: false, error: "Missing Mango story version" };
+  }
+  if (input["mango:storyVersion"] !== MANGO_STORY_VERSION) {
+    return {
+      ok: false,
+      error: `Unsupported Mango story version: ${input["mango:storyVersion"]}`,
+    };
+  }
+
+  const chapterItems = (input.items ?? []).filter(
+    (item) => item["mango:role"] !== "overlay",
+  );
+  const hasInvalidChapterState = chapterItems.some((item) => {
+    const bodies = item.body
+      ? Array.isArray(item.body)
+        ? item.body
+        : [item.body]
+      : [];
+    return !bodies.some((body) => parseMangoViewerStateBody(body));
+  });
+  if (hasInvalidChapterState) {
+    return { ok: false, error: "Invalid Mango story chapter state" };
+  }
+
+  return { ok: true, story: withChapterDefaults(parseIiifStory(input)) };
 };
 
 export const validateStoryViewer = (
@@ -292,9 +365,6 @@ export const validateStoryViewer = (
 ): { ok: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  if (!story || story.type !== "story") {
-    errors.push("Story: invalid type");
-  }
   if (!Array.isArray(story.chapters) || story.chapters.length === 0) {
     errors.push("Story: must have at least one chapter");
   }

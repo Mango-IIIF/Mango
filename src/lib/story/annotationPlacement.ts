@@ -1,29 +1,5 @@
 import type { AnnotationPlacement } from '../core/types/story';
 
-type LegacyAnnotationPlacement =
-  | 'top-left'
-  | 'top-centre'
-  | 'top-right'
-  | 'centre-left'
-  | 'centre'
-  | 'centre-right'
-  | 'bottom-left'
-  | 'bottom-centre'
-  | 'bottom-right';
-
-const LEGACY_ANCHORS: Record<LegacyAnnotationPlacement, { x: number; y: number }> = {
-  'top-left': { x: 1 / 6, y: 1 / 6 },
-  'top-centre': { x: 0.5, y: 1 / 6 },
-  'top-right': { x: 5 / 6, y: 1 / 6 },
-  'centre-left': { x: 1 / 6, y: 0.5 },
-  centre: { x: 0.5, y: 0.5 },
-  'centre-right': { x: 5 / 6, y: 0.5 },
-  'bottom-left': { x: 1 / 6, y: 5 / 6 },
-  'bottom-centre': { x: 0.5, y: 5 / 6 },
-  'bottom-right': { x: 5 / 6, y: 5 / 6 },
-};
-
-const LEGACY_RECT_SIZE = 0.28;
 const DEFAULT_RECT_SIZE = 0.34;
 const MIN_RECT_SIZE = 0.01;
 
@@ -84,13 +60,6 @@ export const coerceAnnotationPlacement = (
 ): AnnotationPlacement | null => {
   if (isAnnotationPlacement(value)) {
     return cloneAnnotationPlacement(value);
-  }
-
-  if (typeof value === 'string') {
-    const anchor = LEGACY_ANCHORS[value as LegacyAnnotationPlacement];
-    if (anchor) {
-      return rectFromAnchor(anchor, LEGACY_RECT_SIZE);
-    }
   }
 
   if (value && typeof value === 'object') {

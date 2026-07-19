@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { readable, type Readable } from 'svelte/store';
-  import type { AnnotationPlacement, ChapterAdvance, Story } from '../../core/types/story';
+  import type { AnnotationPlacement, ChapterAdvance, StoryState } from '../../core/types/story';
   import type { MediaType, MediaSource } from '../../iiif/mediaResolver';
   import type { MediaMarksState } from '../mediaMarks';
   import {
@@ -13,7 +13,7 @@
   import ChapterTextForm from './ChapterTextForm.svelte';
   import ChapterCameraConfig from './ChapterCameraConfig.svelte';
 
-  export let story: Readable<Story>;
+  export let story: Readable<StoryState>;
   export let layers: MediaSource[] = [];
   export let layerOpacities: Record<string, number> = {};
   export let onUpdateLayerOpacity: ((id: string, opacity: number) => void) | undefined = undefined;
@@ -77,7 +77,7 @@
 
   let activeLanguage = language;
   let lastLanguageProp = language;
-  let chapter: Story['chapters'][number] | null = null;
+  let chapter: StoryState['chapters'][number] | null = null;
   let chapterTitleDraft = '';
 
   const handleSetPositionClick = () => {

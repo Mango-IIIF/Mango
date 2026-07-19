@@ -57,11 +57,15 @@
     };
   };
 
+  let previewRect: PlacementRect | null = $state(null);
+
+  const previewStyle = (rect: PlacementRect): string =>
+    `left: ${(rect.x * 100).toFixed(3)}%; top: ${(rect.y * 100).toFixed(3)}%; width: ${(rect.w * 100).toFixed(3)}%; height: ${(rect.h * 100).toFixed(3)}%;`;
+
   const toShape = (rect: PlacementRect): RectAnnotation => ({
     id: annotationId,
     type: 'rect',
     geometry: normalize(rect),
-    label: text || undefined,
   });
 
   const sourceForUpdate = (next: PlacementRect): InteractionSource =>
@@ -88,6 +92,7 @@
         if (shape.type !== 'rect') return;
         const rect = normalize(shape.geometry);
         lastRect = rect;
+        previewRect = rect;
         onrectchange?.({ rect, source: 'create' });
         if (commitOnPointerUp) onrectcommit?.({ rect });
       },
@@ -96,11 +101,23 @@
         const rect = normalize(shape.geometry);
         const source = sourceForUpdate(rect);
         lastRect = rect;
+        previewRect = rect;
         onrectchange?.({ rect, source });
       },
     });
+    const syncPreviewFromEditor = () => {
+      const shape = editor
+        ?.getAnnotations()
+        .find((annotation) => annotation.id === annotationId);
+      if (shape?.type === 'rect') previewRect = normalize(shape.geometry);
+    };
+    const schedulePreviewSync = () => queueMicrotask(syncPreviewFromEditor);
+    container.addEventListener('pointermove', schedulePreviewSync, true);
+    container.addEventListener('pointerup', schedulePreviewSync, true);
     if (value && showHandles) editor.select(annotationId);
     return () => {
+      container?.removeEventListener('pointermove', schedulePreviewSync, true);
+      container?.removeEventListener('pointerup', schedulePreviewSync, true);
       editor?.destroy();
       editor = null;
     };
@@ -109,6 +126,7 @@
   $effect(() => {
     if (!editor) return;
     lastRect = value ? normalize(value) : null;
+    previewRect = lastRect;
     editor.setAnnotations(value ? [toShape(value)] : []);
     editor.select(value && showHandles ? annotationId : null);
   });
@@ -128,6 +146,16 @@
   aria-label="Rectangle placement editor"
 ></div>
 
+{#if text && previewRect}
+  <div
+    class="rect-placement-editor__label"
+    data-testid="rect-placement-editor-label"
+    style={previewStyle(previewRect)}
+  >
+    {text}
+  </div>
+{/if}
+
 <style>
   .rect-placement-editor {
     position: absolute;
@@ -136,6 +164,26 @@
   }
 
   .rect-placement-editor--passthrough {
+    pointer-events: none;
+  }
+
+  .rect-placement-editor__label {
+    position: absolute;
+    z-index: 4;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink, #2b2520);
+    font-size: 13px;
+    line-height: 1.4;
+    text-align: center;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
     pointer-events: none;
   }
 </style>

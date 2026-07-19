@@ -8,10 +8,10 @@
 
 import { get } from 'svelte/store';
 import type { Readable, Writable } from 'svelte/store';
-import type { Chapter, Story } from '../../core/types/story';
+import type { Chapter, StoryState } from '../../core/types/story';
 
 export type ChapterManagerDeps = {
-  storyStore: Readable<Story>;
+  storyStore: Readable<StoryState>;
   selectedChapterId: Writable<string | null>;
   storyStoreWrapper: {
     deleteChapter: (payload: { chapterId: string }) => void;

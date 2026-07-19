@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Readable, Writable } from 'svelte/store';
-  import type { Story } from '../../core/types/story';
+  import type { StoryState } from '../../core/types/story';
   import StoryNarrationOverlay from './NarrationOverlay.svelte';
   import StoryChapterOverlay from './ChapterOverlay.svelte';
   import StoryAnnotationOverlay from './StoryAnnotationOverlay.svelte';
@@ -13,7 +13,7 @@
   import type { MediaMarksState } from '../mediaMarks';
   import type { ExportEnvelope } from '../storySerializer';
  
-  export let story: Readable<Story>;
+  export let story: Readable<StoryState>;
   export let layers: Readable<MediaSource[]>;
   export let layerOpacities: Readable<Record<string, number>>;
   export let onUpdateLayerOpacity: (id: string, opacity: number) => void;

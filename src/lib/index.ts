@@ -250,5 +250,8 @@ export type {
   LanguageMap,
   NarrationSegment,
   NarrationTrack,
-  Story,
 } from './core/types/story';
+export type {
+  StoryAnnotation,
+  StoryAnnotationPage,
+} from './story/storySerializer';

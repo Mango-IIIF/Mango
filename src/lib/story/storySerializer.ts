@@ -1,11 +1,18 @@
 import { validateStory } from "./validation";
-import type { Story } from "../core/types/story";
+import type { StoryState } from "../core/types/story";
 import type { CapturePayload } from "../core/state/story.svelte";
 import {
   W3CParser,
   type RectGeometry,
   type TemporalFragment,
 } from "@mango-iiif/w3c-parser";
+import {
+  createMangoViewerStateBody,
+  IIIF_PRESENTATION_3_CONTEXT,
+  MANGO_STORY_CONTEXT,
+  MANGO_STORY_VERSION,
+  type MangoViewerStateBody,
+} from "./storyAnnotationProfile";
 
 export type SaveConfig = {
   endpoint?: string;
@@ -34,20 +41,30 @@ export type StoryTarget = {
 export type StoryAnnotation = {
   id: string;
   type: "Annotation";
-  motivation: "supplementing";
+  motivation: "supplementing" | "describing";
+  "mango:role"?: "overlay";
+  "mango:chapterId"?: string;
   label?: Record<string, string[]>;
   summary?: Record<string, string[]>;
-  transitionTimeMs: number;
-  body?: Record<string, unknown> | Record<string, unknown>[];
-  target: StoryTarget;
+  body?:
+    | Record<string, unknown>
+    | MangoViewerStateBody
+    | Array<Record<string, unknown> | MangoViewerStateBody>;
+  target: StoryTarget | string;
 };
 
 export type StoryAnnotationPage = {
-  "@context": "http://iiif.io/api/presentation/3/context.json";
+  "@context": [typeof IIIF_PRESENTATION_3_CONTEXT, typeof MANGO_STORY_CONTEXT];
   id: string;
   type: "AnnotationPage";
+  "mango:storyVersion": typeof MANGO_STORY_VERSION;
   label: Record<string, string[]>;
   items: StoryAnnotation[];
+};
+
+export type SerializeStoryOptions = {
+  /** Public HTTP(S) identifier for the exported AnnotationPage. */
+  id?: string;
 };
 
 export type ExportEnvelope = StoryAnnotationPage;
@@ -113,7 +130,10 @@ const normaliseStoryTarget = (target: unknown): StoryTarget | string => {
   };
 };
 
-export const serializeStoryToIiif = (raw: Story): StoryAnnotationPage => {
+export const serializeStoryToIiif = (
+  raw: StoryState,
+  options: SerializeStoryOptions = {},
+): StoryAnnotationPage => {
   const label: Record<string, string[]> = {};
   if (raw.title) {
     for (const [lang, val] of Object.entries(raw.title)) {
@@ -121,9 +141,15 @@ export const serializeStoryToIiif = (raw: Story): StoryAnnotationPage => {
     }
   }
 
-  const items: StoryAnnotation[] = raw.chapters.map((chapter, index) => {
+  const pageId =
+    options.id ??
+    raw.id ??
+    "https://mango-iiif.github.io/examples/stories/untitled/chapters";
+  const annotationBase = pageId.replace(/\/$/, "");
+
+  const items: StoryAnnotation[] = raw.chapters.flatMap((chapter, index) => {
     const chapterId = chapter.id || `chapter_${index + 1}`;
-    const annotationId = `https://example.org/stories/story-2/annotation/${chapterId}`;
+    const annotationId = `${annotationBase}/annotation/${encodeURIComponent(chapterId)}`;
 
     const labelMap: Record<string, string[]> = {};
     if (chapter.title) {
@@ -143,7 +169,7 @@ export const serializeStoryToIiif = (raw: Story): StoryAnnotationPage => {
     const canvasId =
       chapter.canvasId || `${chapter.manifest}/canvas/${chapter.canvasIndex}`;
 
-    let viewBoxValue = "xywh=0,0,0,0";
+    let viewBoxValue: string | undefined;
     if (chapter.viewBox) {
       const vx = Math.round(Math.max(0, chapter.viewBox.x));
       const vy = Math.round(Math.max(0, chapter.viewBox.y));
@@ -176,15 +202,19 @@ export const serializeStoryToIiif = (raw: Story): StoryAnnotationPage => {
         id: chapter.manifest,
         type: "Manifest",
       },
-      selector: {
-        type: "FragmentSelector",
-        conformsTo: "http://www.w3.org/TR/media-frags/",
-        value: selectorValue,
-      },
+      ...(selectorValue
+        ? {
+            selector: {
+              type: "FragmentSelector",
+              conformsTo: "http://www.w3.org/TR/media-frags/",
+              value: selectorValue,
+            },
+          }
+        : {}),
     };
 
     // Build body list
-    const bodyItems: Record<string, unknown>[] = [];
+    const bodyItems: Array<Record<string, unknown> | MangoViewerStateBody> = [];
 
     // Add narration segment
     if (chapter.narrationSegment) {
@@ -201,7 +231,10 @@ export const serializeStoryToIiif = (raw: Story): StoryAnnotationPage => {
       }
     }
 
-    // Add annotations
+    const overlayAnnotations: StoryAnnotation[] = [];
+
+    // Text overlays are independent Web Annotations because each one has its
+    // own spatial target. The Mango chapter link keeps them out of sequencing.
     if (chapter.annotations) {
       for (const [lang, annotation] of Object.entries(chapter.annotations)) {
         if (annotation.text) {
@@ -234,23 +267,31 @@ export const serializeStoryToIiif = (raw: Story): StoryAnnotationPage => {
               geometry: { x: px, y: py, w: pw, h: ph },
             },
           });
-          bodyItems.push({
-            ...serializedText.body[0],
-            purpose: "describing",
-            language: lang,
+          overlayAnnotations.push({
+            id: `${annotationId}/overlay/${encodeURIComponent(lang)}`,
+            type: "Annotation",
+            motivation: "describing",
+            "mango:role": "overlay",
+            "mango:chapterId": chapterId,
+            body: {
+              ...serializedText.body[0],
+              purpose: "describing",
+              language: lang,
+            },
             target: normaliseStoryTarget(serializedText.target),
           });
         }
       }
     }
 
-    return {
+    bodyItems.push(createMangoViewerStateBody({ ...chapter, id: chapterId }));
+
+    const chapterAnnotation: StoryAnnotation = {
       id: annotationId,
       type: "Annotation",
       motivation: "supplementing",
       label: Object.keys(labelMap).length > 0 ? labelMap : undefined,
       summary: Object.keys(summaryMap).length > 0 ? summaryMap : undefined,
-      transitionTimeMs: chapter.transitionTimeMs ?? 2000,
       body:
         bodyItems.length === 1
           ? bodyItems[0]
@@ -259,12 +300,14 @@ export const serializeStoryToIiif = (raw: Story): StoryAnnotationPage => {
             : undefined,
       target,
     };
+    return [chapterAnnotation, ...overlayAnnotations];
   });
 
   return {
-    "@context": "http://iiif.io/api/presentation/3/context.json",
-    id: "https://404mike.github.io/uv4-manifest/annotationList.json",
+    "@context": [IIIF_PRESENTATION_3_CONTEXT, MANGO_STORY_CONTEXT],
+    id: pageId,
     type: "AnnotationPage",
+    "mango:storyVersion": MANGO_STORY_VERSION,
     label:
       Object.keys(label).length > 0
         ? label
@@ -273,7 +316,7 @@ export const serializeStoryToIiif = (raw: Story): StoryAnnotationPage => {
   };
 };
 
-export const buildExportEnvelope = (raw: Story): ExportEnvelope => {
+export const buildExportEnvelope = (raw: StoryState): ExportEnvelope => {
   return serializeStoryToIiif(raw);
 };
 
@@ -348,10 +391,10 @@ export const performFetchWithTimeout = async (
   }
 };
 
-export const validateStoryForExport = (story: Story) => validateStory(story);
+export const validateStoryForExport = (story: StoryState) => validateStory(story);
 
 export type StoryStoreWrapper = {
-  loadStory: (next: Story) => void;
+  loadStory: (next: StoryState) => void;
   addChapterFromCapture: (payload: {
     capture: CapturePayload;
     id?: string;
@@ -391,12 +434,11 @@ export type StoryStoreWrapper = {
 };
 
 export const loadStoryIntoStore = (
-  storyToLoad: Story,
+  storyToLoad: StoryState,
   storyStoreWrapper: StoryStoreWrapper,
 ): void => {
   storyStoreWrapper.loadStory({
-    version: "1.0",
-    type: "story",
+    id: storyToLoad.id,
     title: storyToLoad.title,
     chapters: [],
   });
@@ -416,6 +458,7 @@ export const loadStoryIntoStore = (
       canvasId: chapter.canvasId,
       viewBox: chapter.viewBox,
       model: chapter.model,
+      modelOptions: chapter.modelOptions,
       media: chapter.media,
       layerOpacities: chapter.layerOpacities,
     };
@@ -479,10 +522,11 @@ export const loadStoryIntoStore = (
       });
     }
 
-    if (chapter.transitionTimeMs !== undefined) {
+    const delayMs = chapter.advance?.delayMs ?? chapter.transitionTimeMs;
+    if (delayMs !== undefined) {
       storyStoreWrapper.setDelay({
         chapterId: chapter.id,
-        delayMs: chapter.transitionTimeMs,
+        delayMs,
       });
     }
   }

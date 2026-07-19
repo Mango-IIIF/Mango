@@ -1,4 +1,4 @@
-import type { Chapter, Story } from '../core/types/story';
+import type { Chapter, StoryState } from '../core/types/story';
 import { isAnnotationPlacement } from './annotationPlacement';
 
 const hasSingleCapture = (chapter: Chapter): boolean => {
@@ -74,15 +74,9 @@ const validateChapter = (chapter: Chapter, index: number): string[] => {
   return errors;
 };
 
-export const validateStory = (story: Story): { ok: boolean; errors: string[] } => {
+export const validateStory = (story: StoryState): { ok: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  if (!story || story.type !== 'story') {
-    errors.push('Story: invalid type');
-  }
-  if (story.version !== '1.0') {
-    errors.push('Story: invalid version');
-  }
   if (!Array.isArray(story.chapters) || story.chapters.length === 0) {
     errors.push('Story: must have at least one chapter');
   }
