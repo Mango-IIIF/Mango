@@ -103,7 +103,7 @@ export const createTransitionGuard = (
   const waitForPageChange = async (
     runId: string,
     expectedCanvasIndex: number,
-    manifestJustChanged = false,
+    _manifestJustChanged = false,
   ): Promise<GateResult> => {
     return new Promise((resolve) => {
       let resolved = false;

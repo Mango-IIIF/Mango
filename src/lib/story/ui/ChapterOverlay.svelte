@@ -110,10 +110,6 @@
   let mediaTypeValue: MediaType | null = null;
 
   let fallbackPlacement: AnnotationPlacement | undefined;
-  let placementValue: AnnotationPlacement | null = cloneAnnotationPlacement(
-    DEFAULT_ANNOTATION_PLACEMENT,
-  );
-  let advanceMode: ChapterAdvance['mode'] = 'manual';
   let delayMs: number | undefined;
 
   let narrationUrls: Record<string, string> = {};
@@ -124,8 +120,6 @@
   let currentNarrationAudioRef: HTMLAudioElement | null = null;
   let lastNarrationChapterId: string | null = null;
   let lastActiveLanguage = activeLanguage;
-  let hasAnyNarration = false;
-
   let narrationWaveforms: Record<string, number[]> = {};
   let narrationWaveformUrls: Record<string, string> = {};
   let narrationDurations: Record<string, number> = {};
@@ -444,20 +438,21 @@
         [lang]: url,
       };
     } finally {
-      if (token !== narrationWaveRequestToken) return;
-      narrationWaveLoading = {
-        ...narrationWaveLoading,
-        [lang]: false,
-      };
+      if (token === narrationWaveRequestToken) {
+        narrationWaveLoading = {
+          ...narrationWaveLoading,
+          [lang]: false,
+        };
+      }
     }
   };
 
   const drawNarrationWaveform = (
     canvas: HTMLCanvasElement | null,
     wave: number[],
-    duration: number,
-    start: number,
-    end: number,
+    _duration: number,
+    _start: number,
+    _end: number,
   ) => {
     if (!canvas) return;
 
@@ -578,10 +573,6 @@
     };
 
     void ref.play();
-  };
-
-  const previewNarrationSegment = (lang: string) => () => {
-    startNarrationSegmentPlayback(lang);
   };
 
   const toggleNarrationSegmentPlayback = (lang: string) => () => {
@@ -843,8 +834,6 @@
   $: fallbackPlacement = Object.values(chapter?.annotations ?? {})
     .map((entry) => coerceAnnotationPlacement(entry?.placement))
     .find((entry): entry is AnnotationPlacement => Boolean(entry));
-  $: placementValue = cloneAnnotationPlacement(placementDraft);
-  $: advanceMode = advanceModeDraft;
   $: delayMs = delayDraft;
   $: saveDisabled = !chapterId || !chapter;
 
@@ -892,16 +881,6 @@
     }
   };
 
-  const handlePlacementChange = (value: AnnotationPlacement) => {
-    placementDraft = value;
-  };
-
-  const handlePlacementCommit = (value: AnnotationPlacement) => {
-    placementDraft = value;
-    if (!chapterId) return;
-    onUpdateAnnotationPlacement?.(chapterId, activeLanguage, value);
-  };
-
   const handleDelaySecondsChange = (event: Event) => {
     const value = (event.target as HTMLInputElement).value;
     const seconds = value === '' ? undefined : Number(value);
@@ -934,8 +913,6 @@
   ) {
     applyMarkDrafts(currentMarks.markIn, currentMarks.markOut);
   }
-
-  $: hasAnyNarration = Object.values(narrationUrls).some((url) => url && url !== '');
 
   $: activeNarrationUrl = narrationUrls[activeLanguage] ?? '';
   $: activeNarrationStartDraft = narrationStartDrafts[activeLanguage] ?? '';

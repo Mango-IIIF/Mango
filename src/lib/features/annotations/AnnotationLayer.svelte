@@ -23,7 +23,7 @@
     hoverAnnotationId = null,
     onannotationHover = undefined,
     onannotationSelect = undefined,
-    onannotationClear = undefined,
+    onannotationClear: _onannotationClear = undefined,
   }: Props = $props();
 
   const projectX = (canvasX: number) =>

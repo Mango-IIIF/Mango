@@ -7,7 +7,6 @@ import {
   canStop,
   canLoadChapter,
   type StoryStateMachine,
-  type StateChangeEvent,
 } from '../storyStateMachine';
 
 describe('StoryStateMachine', () => {

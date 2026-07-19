@@ -1,4 +1,4 @@
-import type { AnnotationPlacement, ChapterAdvance, Story } from '../core/types/story';
+import type { AnnotationPlacement, ChapterAdvance } from '../core/types/story';
 
 export type ChapterActionsDeps = {
   getSelectedChapterId: () => string | null;

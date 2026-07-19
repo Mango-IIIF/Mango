@@ -1455,7 +1455,6 @@
       >
         <ManifestManager
           {workspace}
-          singleManifestId={manifestId}
           onclose={() => (showManifestManager = false)}
           onsingleload={(id) => (manifestId = id)}
         />

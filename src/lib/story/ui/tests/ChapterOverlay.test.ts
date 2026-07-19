@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mount, unmount } from 'svelte';
 import { tick } from 'svelte';
-import type { AnnotationPlacement, ChapterAdvance } from '../../../core/types/story';
+import type { ChapterAdvance } from '../../../core/types/story';
 import ChapterOverlay from '../ChapterOverlay.svelte';
 import { createStoryStoreForTest } from './testHelpers';
 

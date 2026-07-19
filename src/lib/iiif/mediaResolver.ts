@@ -1,4 +1,3 @@
-import * as manifesto from 'manifesto.js';
 import type { IIIFIdentifiable } from '../core/types/iiif';
 
 export type MediaType = 'image' | 'video' | 'audio' | 'pdf' | 'model';
@@ -314,7 +313,7 @@ const toMediaSource = (body: unknown, canvas: unknown): MediaSource | null => {
   if (!duration && typeof canvasObj.getDuration === 'function') {
     try {
       duration = canvasObj.getDuration();
-    } catch (error) {
+    } catch {
       // getDuration may not be supported, use undefined
     }
   }
