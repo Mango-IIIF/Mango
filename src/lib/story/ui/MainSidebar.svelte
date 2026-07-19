@@ -1,13 +1,11 @@
 <script lang="ts">
   import { readable, type Readable } from 'svelte/store';
-  import type { Chapter, Story } from '../../core/types/story';
+  import type { Chapter, StoryState } from '../../core/types/story';
   import { t } from '../../i18n';
   import { fetchManifest, manifestsStore } from '../../state/manifests';
   import { resolveCanvasThumbnail } from '../../viewer/iiif/thumbnails';
 
-  export let story: Readable<Story> = readable({
-    version: '1.0',
-    type: 'story',
+  export let story: Readable<StoryState> = readable({
     chapters: [],
   });
   export let selectedChapterId: Readable<string | null> = readable(null);

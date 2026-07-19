@@ -114,11 +114,12 @@ or probe services may fail as ordinary browser requests. See
 
 ## Story interoperability
 
-The story viewer can interpret a defined IIIF AnnotationPage profile, but the
-current story builder saves a versioned Mango envelope around the native story
-model. Camera transitions, chapter sequencing, layer opacities, and automatic
-advance are Mango behaviours rather than generally portable Presentation API
-semantics. See [story format](Storytelling-Format).
+The story builder and viewer use a defined IIIF AnnotationPage profile. Standard
+targets, selectors, labels, summaries, textual bodies, and sound bodies remain
+usable as Web Annotations. Mango stores camera poses, exact viewport state,
+layer opacities, sequencing fallbacks, and automatic-advance settings in a
+versioned namespaced extension body; those remain Mango behaviours rather than
+generally portable Presentation API semantics. See [story format](Storytelling-Format).
 
 ## How to assess or improve support
 

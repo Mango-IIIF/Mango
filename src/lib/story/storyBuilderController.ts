@@ -35,13 +35,13 @@ import type {
   Chapter,
   ChapterAdvance,
   ChapterModel,
-  Story,
+  StoryState,
 } from "../core/types/story";
 import type { ViewBox } from "../core/types/viewer";
 import type { ViewerConfig } from "../core/types/config";
 
 export type StoryBuilderController = {
-  story: Readable<Story>;
+  story: Readable<StoryState>;
   currentManifest: Readable<string | null>;
   selectedChapterId: Writable<string | null>;
   uiMode: Writable<UIMode>;
@@ -70,7 +70,7 @@ export type StoryBuilderController = {
   layerOpacities: Readable<Record<string, number>>;
   updateLayerOpacity: (id: string, opacity: number) => void;
   attach: (ctx: PluginContext) => () => void;
-  loadStory: (storyToLoad: Story) => void;
+  loadStory: (storyToLoad: StoryState) => void;
   setAnnotationLanguage: (lang: string) => void;
   addChapter: () => void;
   updateChapter: () => void;
@@ -123,17 +123,22 @@ export type UIMode =
 export type StoryBuilderOptions = {
   language?: string;
   languages?: string[];
-  initialStory?: Story;
+  annotationPageId?: string;
+  initialStory?: StoryState;
 };
 
 export const createStoryBuilderController = (
   options: StoryBuilderOptions = {},
 ): StoryBuilderController => {
-  const initialStoryData = options.initialStory || {
-    version: "1.0",
-    type: "story",
-    chapters: [],
-  };
+  const initialStoryData: StoryState = options.initialStory
+    ? {
+        ...options.initialStory,
+        id: options.annotationPageId ?? options.initialStory.id,
+      }
+    : {
+        id: options.annotationPageId,
+        chapters: [],
+      };
 
   const runesStore = createStoryStore(initialStoryData);
 
@@ -166,7 +171,7 @@ export const createStoryBuilderController = (
     setChapterDescription: wrapMutation(runesStore.setChapterDescription),
     setLayerOpacities: wrapMutation(runesStore.setLayerOpacities),
     exportStory: () => runesStore.exportStory(),
-    loadStory: (next: Story) => {
+    loadStory: (next: StoryState) => {
       runesStore.loadStory(next);
       storyStore.set(runesStore.story);
     },
@@ -1141,7 +1146,7 @@ export const createStoryBuilderController = (
     return validation;
   };
 
-  const loadStory = (storyToLoad: Story) => {
+  const loadStory = (storyToLoad: StoryState) => {
     pushHistorySnapshot();
     loadStoryIntoStore(storyToLoad, storyStoreWrapper);
 

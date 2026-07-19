@@ -1,121 +1,204 @@
 {
-  "version": 1,
-  "exportedAt": "2026-05-30T08:26:23.132Z",
-  "meta": {
-    "source": "storybuilder"
-  },
-  "data": {
-    "version": "1.0",
-    "type": "story",
-    "chapters": [
-      {
-        "id": "chapter_1",
-        "manifest": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json",
-        "canvasIndex": 0,
-        "title": {
-          "en": "One"
-        },
-        "description": {
-          "en": "Something one?"
-        },
-        "viewBox": {
-          "x": 0,
-          "y": -83.62350597609559,
-          "w": 2000,
-          "h": 1438.2470119521913
-        },
-        "layerOpacities": {
-          "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-xray/full/max/0/default.jpg": 0,
-          "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 1
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000
-      },
-      {
-        "id": "chapter_2",
-        "manifest": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json",
-        "canvasIndex": 0,
-        "title": {
-          "en": "Two?"
-        },
-        "description": {
-          "en": "More showing"
-        },
-        "viewBox": {
-          "x": 0,
-          "y": -83.62350597609569,
-          "w": 2000,
-          "h": 1438.2470119521913
-        },
-        "layerOpacities": {
-          "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-xray/full/max/0/default.jpg": 0.3,
-          "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 0.59
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000
-      },
-      {
-        "id": "chapter_3",
-        "manifest": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json",
-        "canvasIndex": 0,
-        "title": {
-          "en": "more more"
-        },
-        "description": {
-          "en": "more?"
-        },
-        "viewBox": {
-          "x": 0,
-          "y": -83.62350597609569,
-          "w": 2000,
-          "h": 1438.2470119521913
-        },
-        "layerOpacities": {
-          "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-xray/full/max/0/default.jpg": 0.49,
-          "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 0.29
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000
-      },
-      {
-        "id": "chapter_4",
-        "manifest": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json",
-        "canvasIndex": 0,
-        "title": {
-          "en": "Final form"
-        },
-        "description": {
-          "en": "Winning"
-        },
-        "viewBox": {
-          "x": 0,
-          "y": -83.62350597609569,
-          "w": 2000,
-          "h": 1438.2470119521913
-        },
-        "layerOpacities": {
-          "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-xray/full/max/0/default.jpg": 1,
-          "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 0
-        },
-        "annotations": {
-          "_default": {
-            "placement": "centre"
-          }
-        },
-        "transitionTimeMs": 2000
+  "@context": [
+    "http://iiif.io/api/presentation/3/context.json",
+    {
+      "mango": "https://mango-iiif.github.io/ns/story#",
+      "mangoState": {
+        "@id": "mango:state",
+        "@type": "@json"
       }
-    ]
-  }
+    }
+  ],
+  "id": "https://mango-iiif.github.io/examples/stories/layers/chapters",
+  "type": "AnnotationPage",
+  "mango:storyVersion": "1.0",
+  "label": {
+    "en": ["Story Annotation Track"]
+  },
+  "items": [
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/layers/chapters/annotation/chapter_1",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": ["One"]
+      },
+      "summary": {
+        "en": ["Something one?"]
+      },
+      "body": {
+        "type": "mango:ViewerState",
+        "format": "application/vnd.mango.story-state+json",
+        "mango:storyVersion": "1.0",
+        "mangoState": {
+          "chapterId": "chapter_1",
+          "canvasIndex": 0,
+          "viewBox": {
+            "x": 0,
+            "y": -83.62350597609559,
+            "w": 2000,
+            "h": 1438.2470119521913
+          },
+          "layerOpacities": {
+            "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-xray/full/max/0/default.jpg": 0,
+            "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 1
+          },
+          "playback": {
+            "transitionMs": 2000
+          }
+        }
+      },
+      "target": {
+        "source": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,2000,1438"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/layers/chapters/annotation/chapter_2",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": ["Two?"]
+      },
+      "summary": {
+        "en": ["More showing"]
+      },
+      "body": {
+        "type": "mango:ViewerState",
+        "format": "application/vnd.mango.story-state+json",
+        "mango:storyVersion": "1.0",
+        "mangoState": {
+          "chapterId": "chapter_2",
+          "canvasIndex": 0,
+          "viewBox": {
+            "x": 0,
+            "y": -83.62350597609569,
+            "w": 2000,
+            "h": 1438.2470119521913
+          },
+          "layerOpacities": {
+            "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-xray/full/max/0/default.jpg": 0.3,
+            "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 0.59
+          },
+          "playback": {
+            "transitionMs": 2000
+          }
+        }
+      },
+      "target": {
+        "source": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,2000,1438"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/layers/chapters/annotation/chapter_3",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": ["more more"]
+      },
+      "summary": {
+        "en": ["more?"]
+      },
+      "body": {
+        "type": "mango:ViewerState",
+        "format": "application/vnd.mango.story-state+json",
+        "mango:storyVersion": "1.0",
+        "mangoState": {
+          "chapterId": "chapter_3",
+          "canvasIndex": 0,
+          "viewBox": {
+            "x": 0,
+            "y": -83.62350597609569,
+            "w": 2000,
+            "h": 1438.2470119521913
+          },
+          "layerOpacities": {
+            "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-xray/full/max/0/default.jpg": 0.49,
+            "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 0.29
+          },
+          "playback": {
+            "transitionMs": 2000
+          }
+        }
+      },
+      "target": {
+        "source": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,2000,1438"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/examples/stories/layers/chapters/annotation/chapter_4",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": ["Final form"]
+      },
+      "summary": {
+        "en": ["Winning"]
+      },
+      "body": {
+        "type": "mango:ViewerState",
+        "format": "application/vnd.mango.story-state+json",
+        "mango:storyVersion": "1.0",
+        "mangoState": {
+          "chapterId": "chapter_4",
+          "canvasIndex": 0,
+          "viewBox": {
+            "x": 0,
+            "y": -83.62350597609569,
+            "w": 2000,
+            "h": 1438.2470119521913
+          },
+          "layerOpacities": {
+            "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-xray/full/max/0/default.jpg": 1,
+            "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 0
+          },
+          "playback": {
+            "transitionMs": 2000
+          }
+        }
+      },
+      "target": {
+        "source": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://iiif.io/api/cookbook/recipe/0033-choice/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,2000,1438"
+        }
+      }
+    }
+  ]
 }

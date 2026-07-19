@@ -10,6 +10,10 @@ export {
   type StoryWithDefaults,
 } from './story/viewer/storyLoader';
 export type {
+  StoryAnnotation,
+  StoryAnnotationPage,
+} from './story/storySerializer';
+export type {
   AnnotationPlacement,
   Chapter,
   ChapterAdvance,
@@ -19,5 +23,4 @@ export type {
   LanguageMap,
   NarrationSegment,
   NarrationTrack,
-  Story,
 } from './core/types/story';

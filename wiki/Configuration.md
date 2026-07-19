@@ -208,6 +208,7 @@ make Mango a complete IIIF Authentication client.
 ```js
 {
   story: {
+    annotationPageId: 'https://museum.example/stories/object-42/chapters',
     languages: ['en', 'cy'],
     showDebug: false,
     save: {
@@ -222,10 +223,13 @@ make Mango a complete IIIF Authentication client.
 }
 ```
 
-`languages` controls the languages offered by the story builder. `save` enables
-server persistence; without a usable endpoint, Mango presents the exported JSON
-for the author to copy. The save endpoint must accept Mango's versioned story
-envelope and return JSON containing `{ "success": true }` for a successful save.
+`annotationPageId` supplies the stable public HTTP(S) identifier used when a new
+story is exported. An ID already present in a loaded story is retained unless
+this setting overrides it. `languages` controls the languages offered by the
+story builder. `save` enables server persistence; without a usable endpoint,
+Mango presents the exported JSON for the author to copy. The save endpoint must
+accept Mango's IIIF AnnotationPage story and return JSON containing
+`{ "success": true }` for a successful save.
 
 Do not put long-lived secrets into browser configuration. Use same-origin
 sessions or short-lived credentials provided by your application.

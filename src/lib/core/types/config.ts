@@ -46,6 +46,8 @@ export type ViewerConfig = {
     enabled?: boolean;
     showDebug?: boolean;
     languages?: string[];
+    /** Public HTTP(S) identifier used for new story AnnotationPage exports. */
+    annotationPageId?: string;
     save?: {
       endpoint?: string;
       method?: 'POST' | 'PUT';

@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Readable } from 'svelte/store';
-  import type { Story } from '../../core/types/story';
+  import type { StoryState } from '../../core/types/story';
   import StoryMainSidebar from './MainSidebar.svelte';
 
-  export let story: Readable<Story>;
+  export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
   export let error: Readable<string | null>;
   export let modelPoseDebug: Readable<string | null>;

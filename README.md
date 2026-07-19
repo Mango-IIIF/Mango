@@ -195,7 +195,7 @@ complete user and contributor documentation:
 | [Events](https://github.com/Mango-IIIF/Mango/wiki/Event-Handling)                                     | DOM and class events, payloads, persistence, and analytics examples               |
 | [Theming and languages](https://github.com/Mango-IIIF/Mango/wiki/Theming-and-Languages)               | Built-in themes, CSS variables, language selection, and translation contributions |
 | [Plugins](https://github.com/Mango-IIIF/Mango/wiki/Plugin-System)                                     | Plugin contract, slots, lifecycle, registration, and a complete example           |
-| [Story viewer and builder](https://github.com/Mango-IIIF/Mango/wiki/Storytelling-Format)              | Native story model, builder envelope, IIIF import, and save endpoints             |
+| [Story viewer and builder](https://github.com/Mango-IIIF/Mango/wiki/Storytelling-Format)              | IIIF AnnotationPage stories, model/layer state, authoring, and saving              |
 | [IIIF and W3C support](https://github.com/Mango-IIIF/Mango/wiki/IIIF-Conformance)                     | Supported standards, evidence boundaries, and current limitations                 |
 | [Deployment and accessibility](https://github.com/Mango-IIIF/Mango/wiki/Deployment-and-Accessibility) | CORS, CSP, accessibility, privacy, authentication, and production checks          |
 | [Developer guide](https://github.com/Mango-IIIF/Mango/wiki/Developer-Guide)                           | Architecture, local development, testing, builds, and contribution workflow       |

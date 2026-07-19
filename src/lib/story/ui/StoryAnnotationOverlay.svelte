@@ -1,13 +1,13 @@
 <script lang="ts">
   import { readable, type Readable } from 'svelte/store';
-  import type { Story } from '../../core/types/story';
+  import type { StoryState } from '../../core/types/story';
   import type { ViewBox } from '../../core/types/viewer';
   import {
     coerceAnnotationPlacement,
     DEFAULT_ANNOTATION_PLACEMENT,
   } from '../annotationPlacement';
 
-  export let story: Readable<Story>;
+  export let story: Readable<StoryState>;
   export let viewBox: Readable<ViewBox | null> = readable(null);
   export let chapterId: string | null = null;
   export let language = 'en';

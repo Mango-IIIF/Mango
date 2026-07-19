@@ -11,13 +11,13 @@ import {
   type ChapterMetadataPayload,
   type NarrationTrackPayload,
 } from '../../../state/story.svelte';
-import type { Story } from '../../../core/types/story';
+import type { StoryState } from '../../../core/types/story';
 
 /**
- * Test helper that wraps the runes store to provide a Readable<Story>
+ * Test helper that wraps the runes store to provide a Readable<StoryState>
  * for components that expect the old store API.
  */
-export function createStoryStoreForTest(initial?: Story) {
+export function createStoryStoreForTest(initial?: StoryState) {
   const runesStore = createStoryStore(initial);
   const storyWritable = writable(runesStore.story);
 

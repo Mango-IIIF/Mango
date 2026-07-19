@@ -17,8 +17,6 @@ describe('MainSidebar', () => {
     manifestsStore.set({});
 
     const store = createStoryStoreForTest({
-      version: '1.0',
-      type: 'story',
       chapters: [
         {
           id: 'chapter-thumb',
@@ -128,8 +126,6 @@ describe('MainSidebar', () => {
 
   it('deletes chapters from the list', async () => {
     const store = createStoryStoreForTest({
-      version: '1.0',
-      type: 'story',
       chapters: [
         {
           id: 'chapter-delete',
@@ -185,8 +181,6 @@ describe('MainSidebar', () => {
       target,
       props: {
         story: createStoryStoreForTest({
-          version: '1.0',
-          type: 'story',
           chapters: [
             {
               id: 'chapter-a',

@@ -1,4 +1,4 @@
-import type { ModelPose } from './model';
+import type { ModelPose, ModelPoseOptions } from './model';
 import type { ViewBox } from './viewer';
 
 export type LanguageMap = Record<string, string>;
@@ -47,6 +47,7 @@ export type Chapter = {
   viewBox?: ViewBox;
   media?: ChapterMedia;
   model?: ChapterModel;
+  modelOptions?: ModelPoseOptions;
   narrationSegment?: Record<string, NarrationSegment>;
   annotations?: Record<string, ChapterAnnotation>;
   annotationPlacement?: AnnotationPlacement;
@@ -54,9 +55,9 @@ export type Chapter = {
   layerOpacities?: Record<string, number>;
 };
 
-export type Story = {
-  version: '1.0';
-  type: 'story';
+export type StoryState = {
+  /** Stable identifier used as the exported AnnotationPage ID when provided. */
+  id?: string;
   title?: LanguageMap;
   narration?: {
     tracks: Record<string, NarrationTrack>;

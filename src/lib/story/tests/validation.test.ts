@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Story } from '../../core/types/story';
+import type { StoryState } from '../../core/types/story';
 import { validateStory } from '../validation';
 
-const baseStory = (): Story => ({
-  version: '1.0',
-  type: 'story',
+const baseStory = (): StoryState => ({
   chapters: [
     {
       id: 'chapter-1',
@@ -24,9 +22,7 @@ describe('validateStory', () => {
   });
 
   it('requires at least one chapter', () => {
-    const story: Story = {
-      version: '1.0',
-      type: 'story',
+    const story: StoryState = {
       chapters: [],
     };
     const result = validateStory(story);

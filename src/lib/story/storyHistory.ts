@@ -1,15 +1,15 @@
-import type { Story } from '../core/types/story';
+import type { StoryState } from '../core/types/story';
 
 export type StoryHistory = {
-  push: (story: Story) => void;
-  undo: (current: Story) => Story | null;
-  redo: (current: Story) => Story | null;
-  reset: (story: Story) => void;
+  push: (story: StoryState) => void;
+  undo: (current: StoryState) => StoryState | null;
+  redo: (current: StoryState) => StoryState | null;
+  reset: (story: StoryState) => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
 };
 
-const cloneStory = (story: Story): Story => {
+const cloneStory = (story: StoryState): StoryState => {
   try {
     if (typeof structuredClone === 'function') {
       return structuredClone(story);
@@ -20,13 +20,13 @@ const cloneStory = (story: Story): Story => {
   return JSON.parse(JSON.stringify(story));
 };
 
-export const createStoryHistory = (initial: Story, maxEntries = 100): StoryHistory => {
-  const past: Story[] = [];
-  const future: Story[] = [];
+export const createStoryHistory = (initial: StoryState, maxEntries = 100): StoryHistory => {
+  const past: StoryState[] = [];
+  const future: StoryState[] = [];
   let current = cloneStory(initial);
 
   return {
-    push: (story: Story) => {
+    push: (story: StoryState) => {
       past.push(cloneStory(current));
       if (past.length > maxEntries) {
         past.shift();
@@ -34,19 +34,19 @@ export const createStoryHistory = (initial: Story, maxEntries = 100): StoryHisto
       current = cloneStory(story);
       future.length = 0;
     },
-    undo: (latest: Story) => {
+    undo: (latest: StoryState) => {
       if (past.length === 0) return null;
       future.push(cloneStory(latest));
-      current = past.pop() as Story;
+      current = past.pop() as StoryState;
       return cloneStory(current);
     },
-    redo: (latest: Story) => {
+    redo: (latest: StoryState) => {
       if (future.length === 0) return null;
       past.push(cloneStory(latest));
-      current = future.pop() as Story;
+      current = future.pop() as StoryState;
       return cloneStory(current);
     },
-    reset: (story: Story) => {
+    reset: (story: StoryState) => {
       past.length = 0;
       future.length = 0;
       current = cloneStory(story);

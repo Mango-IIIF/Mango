@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Readable } from 'svelte/store';
-  import type { Story } from '../../core/types/story';
+  import type { StoryState } from '../../core/types/story';
 
-  export let story: Readable<Story>;
+  export let story: Readable<StoryState>;
   export let open = false;
   export let language = 'en';
   export let languages: string[] = ['en'];
@@ -16,7 +16,7 @@
   let lastLanguageProp = language;
   let url = '';
   
-  const getTrackSrc = (value: Story, lang: string): string => {
+  const getTrackSrc = (value: StoryState, lang: string): string => {
     return value.narration?.tracks?.[lang]?.src ?? '';
   };
 

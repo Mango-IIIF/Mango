@@ -1,5 +1,5 @@
 import { get, writable, type Readable } from 'svelte/store';
-import type { Chapter, Story } from '../core/types/story';
+import type { Chapter, StoryState } from '../core/types/story';
 
 export type StoryPreviewOrchestrator = {
   isPreviewing: Readable<boolean>;
@@ -31,7 +31,7 @@ export const createStoryPreviewOrchestrator = ({
   stopPlayback,
   wait = (durationMs) => new Promise((resolve) => setTimeout(resolve, durationMs)),
 }: {
-  getStory: () => Story;
+  getStory: () => StoryState;
   selectChapter: (chapterId: string) => void;
   applyChapter: (chapter: Chapter) => void;
   getNarrationSegment: (chapter: Chapter) => { start: number; end: number } | null;

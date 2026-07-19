@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mango-iiif.github.io/schemas/story-annotation-page/1/schema.json",
+  "title": "Mango Story AnnotationPage 1.0",
+  "type": "object",
+  "required": ["@context", "id", "type", "mango:storyVersion", "items"],
+  "properties": {
+    "@context": {
+      "type": "array",
+      "contains": { "const": "http://iiif.io/api/presentation/3/context.json" }
+    },
+    "id": { "type": "string", "format": "uri" },
+    "type": { "const": "AnnotationPage" },
+    "mango:storyVersion": { "const": "1.0" },
+    "label": { "$ref": "#/$defs/languageMap" },
+    "items": {
+      "type": "array",
+      "items": {
+        "oneOf": [{ "$ref": "#/$defs/chapter" }, { "$ref": "#/$defs/overlay" }]
+      }
+    }
+  },
+  "$defs": {
+    "languageMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" },
+        "minItems": 1
+      }
+    },
+    "chapter": {
+      "type": "object",
+      "required": ["id", "type", "motivation", "target", "body"],
+      "properties": {
+        "id": { "type": "string", "format": "uri" },
+        "type": { "const": "Annotation" },
+        "motivation": { "const": "supplementing" },
+        "label": { "$ref": "#/$defs/languageMap" },
+        "summary": { "$ref": "#/$defs/languageMap" },
+        "target": { "type": ["object", "string"] },
+        "body": {
+          "oneOf": [
+            { "$ref": "#/$defs/viewerStateBody" },
+            {
+              "type": "array",
+              "contains": { "$ref": "#/$defs/viewerStateBody" }
+            }
+          ]
+        }
+      }
+    },
+    "viewerStateBody": {
+      "type": "object",
+      "required": ["type", "format", "mango:storyVersion", "mangoState"],
+      "properties": {
+        "type": { "const": "mango:ViewerState" },
+        "format": { "const": "application/vnd.mango.story-state+json" },
+        "mango:storyVersion": { "const": "1.0" },
+        "mangoState": { "$ref": "#/$defs/viewerState" }
+      }
+    },
+    "overlay": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "motivation",
+        "mango:role",
+        "mango:chapterId",
+        "body",
+        "target"
+      ],
+      "properties": {
+        "id": { "type": "string", "format": "uri" },
+        "type": { "const": "Annotation" },
+        "motivation": { "const": "describing" },
+        "mango:role": { "const": "overlay" },
+        "mango:chapterId": { "type": "string", "minLength": 1 },
+        "body": {
+          "oneOf": [
+            { "type": "object" },
+            { "type": "array", "items": { "type": "object" } }
+          ]
+        },
+        "target": { "type": ["object", "string"] }
+      }
+    },
+    "viewerState": {
+      "type": "object",
+      "required": ["chapterId", "canvasIndex", "playback"],
+      "properties": {
+        "chapterId": { "type": "string", "minLength": 1 },
+        "canvasIndex": { "type": "integer", "minimum": 0 },
+        "canvasId": { "type": "string", "format": "uri" },
+        "viewBox": { "$ref": "#/$defs/rectangle" },
+        "modelPose": {
+          "type": "object",
+          "properties": {
+            "cameraOrbit": { "type": "string" },
+            "cameraTarget": { "type": "string" },
+            "fieldOfView": { "type": "string" },
+            "orientation": { "type": "string" }
+          },
+          "minProperties": 1
+        },
+        "modelOptions": {
+          "type": "object",
+          "properties": {
+            "transition": { "enum": ["interpolate", "jump"] },
+            "interpolationDecay": { "type": "number", "minimum": 0 }
+          },
+          "minProperties": 1
+        },
+        "layerOpacities": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "annotationPlacement": { "$ref": "#/$defs/rectangle" },
+        "playback": {
+          "type": "object",
+          "required": ["transitionMs"],
+          "properties": {
+            "advance": { "enum": ["manual", "auto", "both"] },
+            "delayMs": { "type": "number", "minimum": 0 },
+            "transitionMs": { "type": "number", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "rectangle": {
+      "type": "object",
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number", "exclusiveMinimum": 0 },
+        "h": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

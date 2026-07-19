@@ -13,8 +13,6 @@ const createTarget = (): HTMLDivElement => {
 describe('StoryAnnotationOverlay', () => {
   it('positions annotation based on placement', async () => {
     const store = createStoryStoreForTest({
-      version: '1.0',
-      type: 'story',
       chapters: [
         {
           id: 'chapter-1',
