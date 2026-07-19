@@ -40,19 +40,14 @@
   let segment: { start: number; end: number } | null = null;
   let segmentEnded = false;
 
-  const HIDDEN_NAVIGATION_STYLE_ID = 'mango-av-hidden-navigation';
+  const VIEWER_STYLE_ID = 'mango-av-viewer-styles';
 
-  const hidePackageNavigation = (element: MangoAVPlayerElement): void => {
+  const applyViewerStyles = (element: MangoAVPlayerElement): void => {
     const root = element.shadowRoot;
-    if (!root || root.getElementById(HIDDEN_NAVIGATION_STYLE_ID)) return;
+    if (!root || root.getElementById(VIEWER_STYLE_ID)) return;
     const style = document.createElement('style');
-    style.id = HIDDEN_NAVIGATION_STYLE_ID;
+    style.id = VIEWER_STYLE_ID;
     style.textContent = `
-      button[data-action='previous'],
-      button[data-action='next'],
-      label:has(input[data-action='auto-advance']) {
-        display: none !important;
-      }
       .audio-art.visualizer--pulse {
         background: radial-gradient(
           ellipse 140% 72% at 50% calc(100% + var(--mango-av-wave-rise)),
@@ -86,9 +81,9 @@
     const element = playerElement;
     if (!element) return;
     element.controller = controller;
-    hidePackageNavigation(element);
+    applyViewerStyles(element);
 
-    const observer = new MutationObserver(() => hidePackageNavigation(element));
+    const observer = new MutationObserver(() => applyViewerStyles(element));
     if (element.shadowRoot) {
       observer.observe(element.shadowRoot, { childList: true, subtree: true });
     }
@@ -165,7 +160,7 @@
     height: 100%;
     min-height: 0;
     width: 100%;
-    place-items: center;
+    place-items: start center;
     padding: 12px;
   }
 

@@ -90,7 +90,7 @@
       "name": "Internationalization and Multi-language Values (label, summary, metadata, requiredStatement)",
       "url": "https://iiif.io/api/cookbook/recipe/0006-text-language/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0006-text-language/manifest.json",
-      "support": "No",
+      "support": "Yes",
       "github": "https://github.com/Mango-IIIF/Mango/issues/11",
       "notes": "Fully supported. Handles IIIF language maps, selecting the active locale (English, French, Spanish, Welsh) dynamically."
     },
@@ -137,8 +137,8 @@
       "name": "CSS in an Annotation",
       "url": "https://iiif.io/api/cookbook/recipe/0045-css/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0045-css/manifest.json",
-      "support": "Yes",
-      "notes": "Fully supported. CSS rules and classes embedded in stylesheets are respected when rendering HTML annotations."
+      "support": "Partial",
+      "notes": "CSS rules and classes can be applied to HTML annotations, but the Cookbook's external stylesheet cannot currently be loaded through Mango's fetch-based path because it does not provide a CORS header."
     },
     {
       "categoryIds": [
@@ -151,7 +151,7 @@
       "manifest": "https://iiif.io/api/cookbook/recipe/0283-missing-image/manifest.json",
       "support": "Partial",
       "github": "https://github.com/Mango-IIIF/Mango/issues/13",
-      "notes": "Contains a bug where the selecting the missing image breaks the viewer."
+      "notes": "The missing canvas displays a placeholder, but selecting it hides the image toolbar and prevents toolbar navigation to the following canvas."
     },
     {
       "categoryIds": [
@@ -376,9 +376,9 @@
       "name": "Acknowledge Content Contributors (provider)",
       "url": "https://iiif.io/api/cookbook/recipe/0234-provider/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0234-provider/manifest.json",
-      "support": "No",
+      "support": "Yes",
       "github": "https://github.com/Mango-IIIF/Mango/issues/41",
-      "notes": "Not yet supported."
+      "notes": "Fully supported. Displays provider labels, logos, homepage links, and associated data links in the manifest information interface."
     },
     {
       "categoryIds": [
@@ -424,9 +424,9 @@
       "name": "Multi-volume Work with Individually-bound Volumes",
       "url": "https://iiif.io/api/cookbook/recipe/0030-multi-volume/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0030-multi-volume/collection.json",
-      "support": "No",
+      "support": "Yes",
       "github": "https://github.com/Mango-IIIF/Mango/issues/26",
-      "notes": "Collections are currently not supported; only individual manifests can be loaded."
+      "notes": "Fully supported. Loads the nested Collection and provides collection navigation for selecting and viewing its individual volume Manifests."
     },
     {
       "categoryIds": [
@@ -436,8 +436,8 @@
       "name": "Multiple Volumes in a Single Bound Volume",
       "url": "https://iiif.io/api/cookbook/recipe/0031-bound-multivolume/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0031-bound-multivolume/manifest.json",
-      "support": "Yes",
-      "notes": "Fully supported. Handled via chapter/ranges pointing to canvases within the same manifest."
+      "support": "Partial",
+      "notes": "The canvases render and can be navigated sequentially, but Mango does not yet expose the image-based Range hierarchy as the volume index required by this recipe."
     },
     {
       "categoryIds": [
@@ -483,8 +483,8 @@
       "name": "Adding Thumbnail Navigation and no-nav to a Video Resource",
       "url": "https://iiif.io/api/cookbook/recipe/0229-behavior-ranges/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0229-behavior-ranges/manifest.json",
-      "support": "Yes",
-      "notes": "Fully supported. Video thumbnail tracks are fully displayed, and controls obey behaviors."
+      "support": "Partial",
+      "notes": "The no-nav behavior is honored, but Mango does not yet provide the visual thumbnail navigation interface required for thumbnail-nav Ranges."
     },
     {
       "categoryIds": [
@@ -707,7 +707,7 @@
       "url": "https://iiif.io/api/cookbook/recipe/0466-link-for-loading-manifest/",
       "manifest": "",
       "support": "No",
-      "notes": "Not yet supported."
+      "notes": "IIIF Content State JSON is not yet decoded at the viewer entry point, so a content-state link cannot resolve and open its referenced Manifest."
     },
     {
       "categoryIds": [
@@ -718,7 +718,7 @@
       "url": "https://iiif.io/api/cookbook/recipe/0485-contentstate-canvas-region/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0485-contentstate-canvas-region/annotation.json",
       "support": "No",
-      "notes": "Example manifest not working."
+      "notes": "IIIF Content State JSON is currently treated as a Manifest instead of being decoded, so Mango does not open the target Canvas and spatial region."
     },
     {
       "categoryIds": [
@@ -728,9 +728,9 @@
       "name": "Sharing a link for opening two or more Canvases",
       "url": "https://iiif.io/api/cookbook/recipe/0540-link-for-opening-multiple-canvases/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0540-link-for-opening-multiple-canvases/annotation.json",
-      "support": "Partial",
+      "support": "No",
       "github": "https://github.com/Mango-IIIF/Mango/issues/43",
-      "notes": "Opens the target canvases, but custom dual-panel layout setups are basic."
+      "notes": "IIIF Content State JSON is not yet decoded at the viewer entry point, so the requested canvases and layout are not opened."
     },
     {
       "categoryIds": [
@@ -740,8 +740,8 @@
       "name": "Drag and Drop",
       "url": "https://iiif.io/api/cookbook/recipe/0599-drag-and-drop/",
       "manifest": "",
-      "support": "Yes",
-      "notes": "Fully supported. Users can drag and drop IIIF manifest URLs/files directly to load them."
+      "support": "Partial",
+      "notes": "Raw IIIF manifest URLs and JSON files can be dropped, but the text/plain IIIF Content State JSON used by this recipe is not yet decoded."
     },
     {
       "categoryIds": [

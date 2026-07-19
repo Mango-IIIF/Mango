@@ -158,6 +158,25 @@ describe('viewer AV integration', () => {
     });
   });
 
+  it('seeks between chapters on the active canvas without rebuilding the media player', async () => {
+    const state = createViewerState();
+    integration = createViewerAV(state);
+    await integration.load(manifest);
+
+    let canvasChanges = 0;
+    const unsubscribe = integration.controller.on('av-canvaschange', () => {
+      canvasChanges += 1;
+    });
+
+    const activeCanvas = integration.controller.canvas;
+    integration.controller.selectCanvas(activeCanvas!.id, { time: 12 });
+
+    expect(integration.controller.canvas).toBe(activeCanvas);
+    expect(integration.controller.state.currentTime).toBe(12);
+    expect(canvasChanges).toBe(0);
+    unsubscribe();
+  });
+
   it('keeps Mango canvas and source selection synchronized with the package controller', async () => {
     const state = createViewerState();
     integration = createViewerAV(state);
@@ -181,6 +200,10 @@ describe('viewer AV integration', () => {
   it('configures default audioArt properties and allows overrides', () => {
     const state = createViewerState();
     integration = createViewerAV(state);
+    expect(integration.controller.config.controls).toMatchObject({
+      navigation: false,
+      autoAdvance: false,
+    });
     expect(integration.controller.config.audioArt).toEqual({
       transcript: true,
       visualizer: 'pulse',

@@ -33,6 +33,11 @@ const preferredLanguages = (config?: ViewerConfig): string[] => {
 
 const avConfig = (config?: ViewerConfig): AVPlayerConfig => ({
   ...config?.av,
+  controls: {
+    navigation: false,
+    autoAdvance: false,
+    ...config?.av?.controls,
+  },
   audioArt: {
     transcript: true,
     visualizer: 'pulse',
