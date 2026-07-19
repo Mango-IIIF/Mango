@@ -177,6 +177,10 @@
     min-height: 0;
   }
 
+  .panel-stack[hidden] {
+    display: none !important;
+  }
+
   .panel-stack--left {
     box-sizing: border-box;
     padding: 16px 16px 36px;
