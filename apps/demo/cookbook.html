@@ -65,7 +65,7 @@
           </div>
 
           <p class="cookbook-viewer__manifest">
-            Cookbook:
+            <span data-active-source-label>Cookbook:</span>
             <a
               href="#"
               target="_blank"
@@ -85,7 +85,7 @@
         >
           <div class="cookbook-recipes__heading">
             <div>
-              <h2 id="recipe-list-heading">All recipes.</h2>
+              <h2 id="recipe-list-heading">All recipes and test manifests.</h2>
               <p class="cookbook-pass-rate">
                 <span data-pass-rate>0% of cookbook recipes supported</span>
                 <a
@@ -114,7 +114,7 @@
               <input
                 id="cookbook-search"
                 type="search"
-                placeholder="Recipe number, name or notes"
+                placeholder="Recipe number, manifest name or notes"
                 data-search
               />
             </div>
@@ -170,6 +170,7 @@
         ?.trim();
       const state = {
         recipes: [],
+        cookbookRecipes: [],
         categories: [],
         activeRecipe: null,
       };
@@ -178,6 +179,7 @@
         viewer: document.querySelector('mango-viewer'),
         activeTitle: document.querySelector('[data-active-title]'),
         activeStatus: document.querySelector('[data-active-status]'),
+        activeSourceLabel: document.querySelector('[data-active-source-label]'),
         activeUrl: document.querySelector('[data-active-url]'),
         totals: {
           Yes: document.querySelector('[data-total-yes]'),
@@ -219,16 +221,26 @@
         element.className = `cookbook-status cookbook-status--${support.toLowerCase()}`;
       }
 
-      function activateRecipe(recipe, shouldFocus = false) {
+      function setManifestQueryParameter(manifest) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('iiif-content', manifest);
+        window.history.replaceState({}, '', url);
+      }
+
+      function activateRecipe(recipe, shouldFocus = false, shouldUpdateUrl = false) {
         if (!recipe?.manifest) return;
 
         state.activeRecipe = recipe;
         elements.viewer.setAttribute('manifest-id', recipe.manifest);
-        elements.activeTitle.textContent = `Recipe ${recipe.id}: ${recipe.name}`;
+        elements.activeTitle.textContent = recipe.kind === 'test-manifest'
+          ? recipe.name
+          : `Recipe ${recipe.id}: ${recipe.name}`;
+        elements.activeSourceLabel.textContent = recipe.kind === 'test-manifest' ? 'Manifest:' : 'Cookbook:';
         elements.activeUrl.href = recipe.url;
         elements.activeUrl.textContent = recipe.url;
         elements.activeStatus.textContent = supportDetails[recipe.support].label;
         setStatusClass(elements.activeStatus, recipe.support);
+        if (shouldUpdateUrl) setManifestQueryParameter(recipe.manifest);
         renderRecipes();
 
         if (shouldFocus) {
@@ -239,16 +251,16 @@
 
       function renderSummary() {
         const totals = {
-          Yes: state.recipes.filter((recipe) => recipe.support === 'Yes').length,
-          Partial: state.recipes.filter((recipe) => recipe.support === 'Partial').length,
-          No: state.recipes.filter((recipe) => recipe.support === 'No').length,
+          Yes: state.cookbookRecipes.filter((recipe) => recipe.support === 'Yes').length,
+          Partial: state.cookbookRecipes.filter((recipe) => recipe.support === 'Partial').length,
+          No: state.cookbookRecipes.filter((recipe) => recipe.support === 'No').length,
         };
         elements.totals.Yes.textContent = totals.Yes;
         elements.totals.Partial.textContent = totals.Partial;
         elements.totals.No.textContent = totals.No;
-        elements.totals.recipes.textContent = state.recipes.length;
+        elements.totals.recipes.textContent = state.cookbookRecipes.length;
 
-        const passPercentage = Math.round((totals.Yes / state.recipes.length) * 100);
+        const passPercentage = Math.round((totals.Yes / state.cookbookRecipes.length) * 100);
         elements.passRate.textContent = `${passPercentage}% of cookbook recipes supported`;
       }
 
@@ -267,7 +279,7 @@
 
       function renderRecipes() {
         const filteredRecipes = getFilteredRecipes();
-        elements.resultCount.textContent = `Showing ${filteredRecipes.length} recipes`;
+        elements.resultCount.textContent = `Showing ${filteredRecipes.length} entries`;
         elements.emptyState.hidden = filteredRecipes.length > 0;
 
         elements.recipeList.replaceChildren(
@@ -284,7 +296,9 @@
                 <div class="cookbook-recipe__categories" aria-label="Recipe categories"></div>
               </div>
             `;
-            identity.querySelector('.cookbook-recipe__number').textContent = recipe.id;
+            identity.querySelector('.cookbook-recipe__number').textContent = recipe.kind === 'test-manifest'
+              ? 'Test'
+              : recipe.id;
             identity.querySelector('h3').textContent = recipe.name;
             const categories = identity.querySelector('.cookbook-recipe__categories');
             getRecipeCategories(recipe).forEach((category) => {
@@ -318,7 +332,7 @@
             details.href = recipe.url;
             details.target = '_blank';
             details.rel = 'noreferrer';
-            details.textContent = 'Recipe details';
+            details.textContent = recipe.kind === 'test-manifest' ? 'Manifest source' : 'Recipe details';
             const button = document.createElement('button');
             button.className = 'manifest-form__button';
             button.type = 'button';
@@ -328,7 +342,7 @@
               : state.activeRecipe === recipe
                 ? 'Viewing now'
                 : 'Check manifest';
-            button.addEventListener('click', () => activateRecipe(recipe, true));
+            button.addEventListener('click', () => activateRecipe(recipe, true, true));
             actions.append(details, button);
 
             article.append(identity, support, notes, actions);
@@ -341,18 +355,27 @@
         const response = await fetch('iiif_cookbook_support.json');
         if (!response.ok) throw new Error(`Unable to load cookbook support: ${response.status}`);
         const cookbookSupport = await response.json();
-        state.recipes = cookbookSupport.recipes;
+        state.cookbookRecipes = cookbookSupport.recipes;
+        state.recipes = [...cookbookSupport.recipes, ...(cookbookSupport.testManifests || [])];
         state.categories = cookbookSupport.categories;
 
         renderSummary();
         renderFilters();
         if (requestedManifest) {
-          elements.activeTitle.textContent = 'Custom IIIF manifest';
-          elements.activeUrl.href = requestedManifest;
-          elements.activeUrl.textContent = requestedManifest;
-          elements.activeStatus.textContent = 'Custom';
-          elements.activeStatus.className = 'cookbook-status';
-          renderRecipes();
+          const matchingRecipe = state.recipes.find((recipe) => recipe.manifest === requestedManifest);
+          if (matchingRecipe) {
+            activateRecipe(matchingRecipe);
+          } else {
+            state.activeRecipe = null;
+            elements.viewer.setAttribute('manifest-id', requestedManifest);
+            elements.activeTitle.textContent = 'Custom IIIF manifest';
+            elements.activeSourceLabel.textContent = 'Manifest:';
+            elements.activeUrl.href = requestedManifest;
+            elements.activeUrl.textContent = requestedManifest;
+            elements.activeStatus.textContent = 'Custom';
+            elements.activeStatus.className = 'cookbook-status';
+            renderRecipes();
+          }
         } else {
           activateRecipe(state.recipes.find((recipe) => recipe.manifest));
         }

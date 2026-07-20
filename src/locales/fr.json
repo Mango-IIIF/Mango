@@ -221,6 +221,8 @@
       "loading": "Chargement du manifeste...",
       "error": "Impossible de charger le manifeste.",
       "empty": "Aucune source média résolue pour ce canevas pour le moment.",
+      "missingMedia": "Aucun média n'est disponible pour ce canevas.",
+      "mediaError": "Un problème est survenu lors de l'affichage de ce média.",
       "nav": {
         "label": "Navigation dans les canevas",
         "prev": "Canevas précédent",
@@ -277,6 +279,7 @@
       "title": "Galerie",
       "hide": "Masquer la galerie",
       "empty": "Aucun canevas disponible.",
+      "unavailable": "Média indisponible",
       "canvasAlt": "Canevas {index}"
     },
     "dock": {

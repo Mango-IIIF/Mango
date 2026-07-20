@@ -16,6 +16,7 @@ export type ViewerAV = {
   manifest: Readable<AVManifest | undefined>;
   error: Readable<Error | undefined>;
   load: (input: JsonObject | string) => Promise<AVManifest | undefined>;
+  reset: () => void;
   destroy: () => void;
 };
 
@@ -150,6 +151,10 @@ export const createViewerAV = (state: ViewerStateStores): ViewerAV => {
 
   const load = async (input: JsonObject | string): Promise<AVManifest | undefined> => {
     const token = ++loadToken;
+    // AV data is scoped to a single manifest. Clear it before normalization so
+    // chapters, transcripts, and sources from the previous manifest cannot
+    // remain visible while the next manifest loads or if that load fails.
+    manifestStore.set(undefined);
     errorStore.set(undefined);
     try {
       const manifest = await controller.load(input);
@@ -181,11 +186,22 @@ export const createViewerAV = (state: ViewerStateStores): ViewerAV => {
     controller.destroy();
   };
 
+  const reset = () => {
+    // Invalidate in-flight normalization and stop media owned by the resource
+    // being left. This also covers transitions to Collections, which never call
+    // the AV loader themselves.
+    loadToken += 1;
+    controller.stop();
+    manifestStore.set(undefined);
+    errorStore.set(undefined);
+  };
+
   return {
     controller,
     manifest: manifestStore,
     error: errorStore,
     load,
+    reset,
     destroy,
   };
 };

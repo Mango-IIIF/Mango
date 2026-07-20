@@ -48,7 +48,10 @@
     viewportState?.selectedCanvasIndex ?? selectedCanvasIndex,
   );
 
-  let isVisible = $derived(mediaType === 'image');
+  // Keep canvas navigation available when an image sequence contains an
+  // intentionally missing canvas (for example IIIF Cookbook recipe 0283).
+  // Image-only controls remain disabled through hasSource/canZoom.
+  let isVisible = $derived(mediaType === 'image' || (mediaType === null && totalCanvases > 0));
   let canPrevCanvas = $derived(totalCanvases > 0 && effectiveSelectedCanvasIndex > 0);
   let canNextCanvas = $derived(
     totalCanvases > 0 && effectiveSelectedCanvasIndex < totalCanvases - 1,
@@ -543,12 +546,12 @@
 
   @container (max-width: 500px) {
     .stage__toolbar--below {
-      --stage-toolbar-gap: clamp(3px, 1.1cqw, 5px);
-      --stage-toolbar-button-width: clamp(26px, 10.2cqw, 34px);
-      --stage-toolbar-button-height: clamp(30px, 11cqw, 36px);
+      --stage-toolbar-gap: 4px;
+      --stage-toolbar-button-width: 40px;
+      --stage-toolbar-button-height: 40px;
       --stage-toolbar-group-height: calc(var(--stage-toolbar-button-height) + 2px);
-      --stage-toolbar-value-width: clamp(40px, 16cqw, 58px);
-      --stage-toolbar-zoom-width: clamp(38px, 14.5cqw, 52px);
+      --stage-toolbar-value-width: 58px;
+      --stage-toolbar-zoom-width: 54px;
       --stage-toolbar-zoom-input-width: 3.6ch;
       --stage-toolbar-value-font-size: clamp(10px, 3.4cqw, 12px);
       --stage-toolbar-value-gap: clamp(2px, .8cqw, 4px);
@@ -562,7 +565,13 @@
       transform: translateX(-50%);
       margin-inline: auto;
       padding: 0;
-      overflow: hidden;
+      justify-content: flex-start;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
+      touch-action: pan-x;
+      -webkit-overflow-scrolling: touch;
     }
 
     .stage__toolbar--below .stage__toolbar-separator {

@@ -193,15 +193,21 @@ const hasManifestAnnotations = (
   });
 };
 
-const countImageCanvases = (
+const supportsImageGallery = (
   manifestoObject: ManifestoManifest | undefined,
   canvases: CanvasSummary[],
-): number => {
-  if (!manifestoObject || canvases.length === 0) return 0;
-  return canvases.filter((canvas) => {
+): boolean => {
+  if (!manifestoObject || canvases.length < 2) return false;
+  let imageCount = 0;
+  for (const canvas of canvases) {
     const resolved = resolveMedia(manifestoObject, canvas.id, canvas.index);
-    return resolved.primary?.type === "image";
-  }).length;
+    if (!resolved.primary) continue;
+    if (resolved.primary.type !== "image") return false;
+    imageCount += 1;
+  }
+  // Missing canvases are valid members of an image sequence and must not make
+  // its thumbnail navigation disappear.
+  return imageCount > 0;
 };
 
 export const createViewerDerived = (
@@ -384,13 +390,9 @@ export const createViewerDerived = (
     ([entry, list]) => hasManifestAnnotations(entry?.manifesto, list),
   );
 
-  const imageCanvasCount = derived([manifestEntry, canvases], ([entry, list]) =>
-    countImageCanvases(entry?.manifesto, list),
-  );
-
   const galleryAvailable = derived(
-    [mediaType, imageCanvasCount],
-    ([type, count]) => type === "image" && count > 1,
+    [manifestEntry, canvases],
+    ([entry, list]) => supportsImageGallery(entry?.manifesto, list),
   );
 
   const allowThumbnails = derived(

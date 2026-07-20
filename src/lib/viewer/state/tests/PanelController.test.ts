@@ -122,4 +122,38 @@ describe('PanelController', () => {
     expect(get(state.showCollection)).toBe(true);
     expect(get(state.showMetadata)).toBe(false);
   });
+
+  it('closes collection and layer panels when the new manifest makes them unavailable', () => {
+    const state = createViewerState({ config: {} });
+    const allowCollection = writable(true);
+    const allowLayers = writable(true);
+    const derived = {
+      ...createViewerDerived(state),
+      allowCollection,
+      allowLayers,
+    };
+    const controller = createPanelController({
+      state,
+      derived,
+      emitEvent: vi.fn(),
+      emitStateChange: vi.fn(),
+    });
+    const unsubscribers = controller.setupPanelEffects();
+
+    try {
+      controller.setPanelOpen('collection', true);
+      expect(get(state.showCollection)).toBe(true);
+
+      allowCollection.set(false);
+      expect(get(state.showCollection)).toBe(false);
+
+      controller.setPanelOpen('layers', true);
+      expect(get(state.showLayers)).toBe(true);
+
+      allowLayers.set(false);
+      expect(get(state.showLayers)).toBe(false);
+    } finally {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    }
+  });
 });

@@ -763,9 +763,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 38px;
-    width: 38px;
-    height: 38px;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     border: 1px solid transparent;
     border-radius: 9px;

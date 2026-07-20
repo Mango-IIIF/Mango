@@ -221,6 +221,8 @@
       "loading": "Wrthi'n llwytho maniffest...",
       "error": "Methu llwytho maniffest.",
       "empty": "Dim ffynhonnell cyfryngau wedi'i datrys ar gyfer y cynfas hwn eto.",
+      "missingMedia": "Nid oes cyfryngau ar gael i'w dangos ar gyfer y cynfas hwn.",
+      "mediaError": "Aeth rhywbeth o'i le wrth ddangos y cyfryngau hyn.",
       "nav": {
         "label": "Llywio cynfas",
         "prev": "Cynfas blaenorol",
@@ -277,6 +279,7 @@
       "title": "Galeri",
       "hide": "Cuddio galeri",
       "empty": "Dim cynfasau ar gael.",
+      "unavailable": "Cyfryngau ddim ar gael",
       "canvasAlt": "Cynfas {index}"
     },
     "dock": {

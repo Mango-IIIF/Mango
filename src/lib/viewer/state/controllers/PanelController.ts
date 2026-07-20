@@ -199,11 +199,13 @@ export const createPanelController = ({
     // Enforce single left panel when permissions change
     const leftPanelGuard = derived(
       [
+        derivedStores.allowCollection,
         derivedStores.allowAnnotations,
         derivedStores.allowSearch,
         derivedStores.allowMetadata,
         derivedStores.allowTools,
         derivedStores.contentsAvailable,
+        derivedStores.allowLayers,
       ],
       () => {
         if (awaitingInitialPanel && leftPanelAllowed(configuredInitialPanel)) {

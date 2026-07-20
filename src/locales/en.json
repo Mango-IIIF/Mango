@@ -221,6 +221,8 @@
       "loading": "Loading manifest...",
       "error": "Unable to load manifest.",
       "empty": "No media source resolved for this canvas yet.",
+      "missingMedia": "This canvas has no media available to display.",
+      "mediaError": "Something went wrong while displaying this media.",
       "nav": {
         "label": "Canvas navigation",
         "prev": "Previous canvas",
@@ -277,6 +279,7 @@
       "title": "Gallery",
       "hide": "Hide gallery",
       "empty": "No canvases available.",
+      "unavailable": "Media unavailable",
       "canvasAlt": "Canvas {index}"
     },
     "dock": {

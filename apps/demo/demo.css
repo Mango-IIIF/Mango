@@ -188,6 +188,11 @@ body {
     min-height: auto;
   }
 
+  .viewer-shell mango-viewer:not([mode='workspace']) {
+    flex: 0 0 auto;
+    height: auto;
+  }
+
   .manifest-form__row {
     grid-template-columns: 1fr;
   }
@@ -631,7 +636,12 @@ body {
   }
 
   .cookbook-viewer__frame {
-    height: 820px;
+    height: auto;
+    min-height: 0;
+  }
+
+  .cookbook-viewer__frame mango-viewer {
+    height: auto;
   }
 
   .cookbook-filters {

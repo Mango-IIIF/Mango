@@ -212,4 +212,46 @@ describe('viewerDerived - activeLayoutImages', () => {
     expect(value.length).toBe(5);
     expect(value.map(v => v.id)).toEqual(['c0', 'c1', 'c2', 'c3', 'c4']);
   });
+
+  it('keeps thumbnail navigation available on a missing image canvas', () => {
+    const canvasesWithMissing = mockCanvases.map((canvas, index) =>
+      index === 1 ? { ...canvas, getImages: () => [] } : canvas,
+    );
+    const manifestoWithMissing = {
+      getSequences: () => [
+        {
+          getCanvases: () => canvasesWithMissing,
+        },
+      ],
+    };
+
+    manifestsStore.set({
+      'missing-image-manifest': {
+        id: 'missing-image-manifest',
+        manifesto: manifestoWithMissing as any,
+        canvases: canvasesWithMissing as any,
+        isFetching: false,
+        error: '',
+      },
+    });
+
+    const state = createViewerState({ manifestId: 'missing-image-manifest' });
+    const derivedStore = createViewerDerived(state);
+    state.selectedCanvasIndex.set(1);
+
+    let mediaType: string | null = 'image';
+    let allowThumbnails = false;
+    const unsubscribeMedia = derivedStore.mediaType.subscribe((value) => {
+      mediaType = value;
+    });
+    const unsubscribeThumbnails = derivedStore.allowThumbnails.subscribe((value) => {
+      allowThumbnails = value;
+    });
+
+    expect(mediaType).toBeNull();
+    expect(allowThumbnails).toBe(true);
+
+    unsubscribeMedia();
+    unsubscribeThumbnails();
+  });
 });

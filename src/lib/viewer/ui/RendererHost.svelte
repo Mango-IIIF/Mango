@@ -29,6 +29,7 @@
       | undefined;
     onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
     onviewerready?: ((payload: { viewer: unknown }) => void) | undefined;
+    onrenderererror?: ((payload: { message: string }) => void) | undefined;
     layers?: MediaSource[];
     layerOpacities?: Record<string, number>;
     layoutMode?: 'single' | 'two-page' | 'continuous';
@@ -54,6 +55,7 @@
     onzoomchange = undefined,
     onrotationchange = undefined,
     onviewerready = undefined,
+    onrenderererror = undefined,
     layers = [],
     layerOpacities = {},
     layoutMode = 'single',
@@ -141,6 +143,7 @@
     onrotationchange={onrotationchange}
     onrotationChange={onrotationchange}
     onviewerready={onviewerready}
+    onloaderror={onrenderererror}
     onmediaplay={handleMediaPlay}
     onmediapause={handleMediaPause}
     onmediatimeupdate={handleMediaTimeUpdate}

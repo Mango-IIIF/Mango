@@ -4,7 +4,7 @@
   import type { CanvasSummary } from '../../state/manifests';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
   import { VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
-  import { ArrowRight } from '@lucide/svelte';
+  import { ArrowRight, ImageOff } from '@lucide/svelte';
 
   interface Props {
     canvases?: CanvasSummary[];
@@ -116,8 +116,12 @@
                   loading="lazy"
                 />
               {:else}
-                <span class="gallery__index">
-                  {canvas.index + 1}
+                <span
+                  class="gallery__missing"
+                  aria-label={$t('viewer.gallery.unavailable')}
+                >
+                  <ImageOff aria-hidden="true" />
+                  <span>{canvas.index + 1}</span>
                 </span>
               {/if}
             </span>
@@ -233,6 +237,20 @@
     list-style: none;
   }
 
+  .gallery__missing {
+    display: grid;
+    place-items: center;
+    gap: 6px;
+    color: var(--viewer-muted);
+    font-size: 12px;
+  }
+
+  .gallery__missing :global(svg) {
+    width: 24px;
+    height: 24px;
+    opacity: 0.75;
+  }
+
   .gallery__button {
     display: grid;
     gap: 8px;
@@ -269,7 +287,7 @@
     object-fit: contain;
   }
 
-  .gallery__index {
+  .gallery__missing span {
     font-weight: 600;
   }
 

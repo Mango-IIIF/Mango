@@ -26,6 +26,7 @@ describe('Viewer collection navigation', () => {
   it('opens the first Manifest and preserves the Collection panel', async () => {
     const collectionId = 'https://example.org/collection';
     const manifestId = 'https://example.org/manifest';
+    const externalManifestId = 'https://example.org/external-manifest';
     const firstCanvasId = 'https://example.org/canvas/1';
     const secondCanvasId = 'https://example.org/canvas/2';
     const collection = {
@@ -51,7 +52,12 @@ describe('Viewer collection navigation', () => {
     };
     const fetchMock = vi.fn(async (url: string) => ({
       ok: true,
-      json: async () => (url === collectionId ? collection : manifest),
+      json: async () =>
+        url === collectionId
+          ? collection
+          : url === externalManifestId
+            ? { ...manifest, id: externalManifestId }
+            : manifest,
     }));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -86,5 +92,13 @@ describe('Viewer collection navigation', () => {
     toggle!.click();
     await tick();
     expect(target.querySelector('mango-collection-tree')).toBe(tree);
+
+    // A manifest selected outside the Collection must clear its navigation
+    // context, while member-to-member navigation above preserves it.
+    (instance as { setManifest: (id: string) => void }).setManifest(externalManifestId);
+    await waitFor(() => fetchMock.mock.calls.some(([url]) => url === externalManifestId));
+    await tick();
+    expect(target.querySelector('[data-tone="collection"]')).toBeNull();
+    expect(tree.closest('[hidden]')).not.toBeNull();
   });
 });

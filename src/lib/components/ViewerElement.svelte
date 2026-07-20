@@ -292,7 +292,11 @@
   }
 </script>
 
-<div class="element-root" bind:this={hostElement}>
+<div
+  class="element-root"
+  class:element-root--workspace={mode === 'workspace'}
+  bind:this={hostElement}
+>
   <Viewer
     bind:this={viewerInstance}
     {manifestId}
@@ -308,12 +312,30 @@
   :host {
     display: block;
     width: 100%;
-    height: 100%;
+    height: auto;
+    min-height: 0;
   }
 
   .element-root {
     width: 100%;
     height: 100%;
+    min-height: 0;
     box-sizing: border-box;
+  }
+
+  @media (max-width: 820px) {
+    :host([mode='workspace']) {
+      height: 100vh;
+      height: 100dvh;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    .element-root--workspace {
+      height: 100vh;
+      height: 100dvh;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
   }
 </style>

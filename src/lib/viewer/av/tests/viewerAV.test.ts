@@ -158,6 +158,42 @@ describe('viewer AV integration', () => {
     });
   });
 
+  it('clears manifest-scoped AV state as soon as a replacement load starts', async () => {
+    const state = createViewerState();
+    integration = createViewerAV(state);
+    await integration.load(manifest);
+
+    expect(get(integration.manifest)?.chapters).toHaveLength(1);
+
+    const replacement = integration.load({
+      ...manifest,
+      id: 'https://example.org/replacement-manifest',
+      structures: [],
+    });
+
+    expect(get(integration.manifest)).toBeUndefined();
+
+    await replacement;
+    expect(get(integration.manifest)?.id).toBe(
+      'https://example.org/replacement-manifest',
+    );
+    expect(get(integration.manifest)?.chapters).toHaveLength(0);
+  });
+
+  it('clears AV state when the next IIIF resource does not use the AV loader', async () => {
+    const state = createViewerState();
+    integration = createViewerAV(state);
+    await integration.load(manifest);
+
+    expect(get(integration.manifest)?.chapters).toHaveLength(1);
+
+    integration.reset();
+
+    expect(get(integration.manifest)).toBeUndefined();
+    expect(get(integration.error)).toBeUndefined();
+    expect(integration.controller.state.status).not.toBe('playing');
+  });
+
   it('seeks between chapters on the active canvas without rebuilding the media player', async () => {
     const state = createViewerState();
     integration = createViewerAV(state);
