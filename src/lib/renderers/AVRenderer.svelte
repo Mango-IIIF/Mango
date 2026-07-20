@@ -73,6 +73,29 @@
         min-height: var(--mango-viewer-audio-art-min-height, 0);
         box-sizing: border-box;
       }
+      @media (max-width: 480px) {
+        media-controller {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+        }
+        media-control-bar {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          overflow: hidden;
+        }
+        media-time-range {
+          flex: 1 1 48px;
+          min-width: 48px;
+        }
+        media-seek-backward-button,
+        media-seek-forward-button,
+        media-volume-range,
+        media-playback-rate-menu-button {
+          display: none;
+        }
+      }
     `;
     root.append(style);
   };

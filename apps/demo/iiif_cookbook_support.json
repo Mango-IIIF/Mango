@@ -31,6 +31,25 @@
     {
       "id": "geo-recipes",
       "name": "Geo Recipes"
+    },
+    {
+      "id": "test-manifests",
+      "name": "Additional Test Manifests"
+    }
+  ],
+  "testManifests": [
+    {
+      "categoryIds": [
+        "test-manifests",
+        "audiovisual-recipes"
+      ],
+      "id": "mango-narration",
+      "kind": "test-manifest",
+      "name": "Mango Narration — Audio with Transcription",
+      "url": "https://404mike.github.io/Mango-Narration/manifest.json",
+      "manifest": "https://404mike.github.io/Mango-Narration/manifest.json",
+      "support": "Yes",
+      "notes": "Additional regression manifest containing MP3 audio and a WebVTT transcription supplied as a supplementing annotation."
     }
   ],
   "recipes": [
@@ -149,9 +168,9 @@
       "name": "Missing Images in a Sequence",
       "url": "https://iiif.io/api/cookbook/recipe/0283-missing-image/",
       "manifest": "https://iiif.io/api/cookbook/recipe/0283-missing-image/manifest.json",
-      "support": "Partial",
+      "support": "Yes",
       "github": "https://github.com/Mango-IIIF/Mango/issues/13",
-      "notes": "The missing canvas displays a placeholder, but selecting it hides the image toolbar and prevents toolbar navigation to the following canvas."
+      "notes": "Fully supported. A missing canvas displays a user-facing unavailable-media message while canvas navigation remains available."
     },
     {
       "categoryIds": [

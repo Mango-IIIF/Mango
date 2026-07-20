@@ -122,6 +122,42 @@ export type ViewerController = {
 
 export { type ViewerPanel };
 
+/**
+ * Clear data that belongs to the previously active manifest.
+ *
+ * Panel visibility is intentionally not changed here. Panels derive their
+ * availability from the newly selected resource and the PanelController closes
+ * any panel that is no longer valid. This keeps the reset independent of media
+ * type: structures, annotations, search, layers, and media can occur on many
+ * kinds of IIIF manifests.
+ */
+export const resetManifestScopedState = (
+  state: ViewerStateStores,
+  { resetViewport }: { resetViewport: boolean },
+): void => {
+  if (resetViewport) {
+    state.selectedCanvasIndex.set(0);
+    state.viewBox.set(null);
+    state.zoom.set(0);
+    state.rotation.set(0);
+    state.layoutMode.set("single");
+  }
+
+  state.selectedMediaIndex.set(0);
+  state.layerOpacities.set({});
+  state.searchQuery.set("");
+  state.selectedSearchResultId.set(null);
+  state.iiifSearchResults.set([]);
+  state.imageFilters.set({ ...DEFAULT_IMAGE_FILTERS });
+  state.annotationMode.set("edit");
+  state.activeAnnotationId.set(null);
+  state.hoverAnnotationId.set(null);
+  state.mediaTime.set(0);
+  state.mediaDuration.set(undefined);
+  state.externalAnnotations.set({});
+  state.userAnnotations.set({});
+};
+
 export const createViewerController = ({
   state,
   derived: derivedStores,
@@ -256,10 +292,6 @@ export const createViewerController = ({
   };
 
   const getManifestId = () => get(state.manifestId) || null;
-  const clearPersistedAnnotations = () => {
-    state.userAnnotations.set({});
-  };
-
   // Setup effects from sub-controllers
   unsubscribers.push(...canvasController.setupCanvasEffects());
   unsubscribers.push(...mediaController.setupMediaEffects());
@@ -284,21 +316,12 @@ export const createViewerController = ({
       if (manifestId && manifestId !== lastManifestId) {
         const isInitialManifest = !lastManifestId;
         lastManifestId = manifestId;
-        if (!isInitialManifest) {
-          state.selectedCanvasIndex.set(0);
-          state.viewBox.set(null);
-          state.zoom.set(0);
-          state.rotation.set(0);
-        }
-        state.selectedMediaIndex.set(0);
-        state.searchQuery.set("");
-        state.imageFilters.set({ ...DEFAULT_IMAGE_FILTERS });
-        state.activeAnnotationId.set(null);
-        state.hoverAnnotationId.set(null);
-        state.mediaTime.set(0);
-        state.mediaDuration.set(undefined);
-        state.externalAnnotations.set({});
-        clearPersistedAnnotations();
+        lastErrorMessage = "";
+        resetManifestScopedState(state, { resetViewport: !isInitialManifest });
+        // Resource adapters own additional derived state that is not held in
+        // ViewerStateStores. Reset them on every transition, regardless of the
+        // type of the incoming IIIF resource.
+        derivedStores.av.reset();
         annotationEffects.reset();
         emitEvent("manifestChange", { manifestId });
         emitStateChange();

@@ -221,6 +221,8 @@
       "loading": "Cargando manifiesto...",
       "error": "No se pudo cargar el manifiesto.",
       "empty": "No se resolvió una fuente multimedia para este lienzo.",
+      "missingMedia": "Este lienzo no tiene contenido multimedia disponible.",
+      "mediaError": "Se produjo un error al mostrar este contenido multimedia.",
       "nav": {
         "label": "Navegación de lienzos",
         "prev": "Lienzo anterior",
@@ -277,6 +279,7 @@
       "title": "Galería",
       "hide": "Ocultar galería",
       "empty": "No hay lienzos disponibles.",
+      "unavailable": "Contenido multimedia no disponible",
       "canvasAlt": "Lienzo {index}"
     },
     "dock": {

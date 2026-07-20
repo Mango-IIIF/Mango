@@ -169,6 +169,7 @@
   let stageViewBox = $state<ViewBox | null>(null);
   let pendingModelPose: ModelPose | null = $state(null);
   let pendingModelPoseOptions: ModelPoseOptions = $state({});
+  let rendererError = $state('');
   export const getViewBox = (): ViewBox | null =>
     rendererInstance?.getViewBox?.() ?? null;
 
@@ -288,9 +289,22 @@
   };
 
   const handleRendererViewerReady = (payload: { viewer: OpenSeadragon.Viewer }) => {
+    rendererError = '';
     annotationViewer = payload.viewer;
     syncAnnotationCanvasSize(payload.viewer);
   };
+
+  const handleRendererError = (payload: { message: string }) => {
+    rendererError = payload.message || $t('viewer.stage.mediaError');
+  };
+
+  $effect(() => {
+    // A renderer error belongs only to the active source. Changing canvas or
+    // manifest must not carry that error into the next item.
+    void mediaSource?.id;
+    void mediaSource?.src;
+    rendererError = '';
+  });
 
   $effect(() => {
     canZoom = Boolean(rendererInstance?.zoomBy);
@@ -352,6 +366,8 @@
     class:stage__media--fixed={isFixedStage}
     class:stage__media--constrained={useConstrainedMedia}
     class:stage__media--fill={fillHeight}
+    class:stage__media--audio={mediaType === 'audio'}
+    class:stage__media--video={mediaType === 'video'}
     class="stage__media"
     role="application"
     aria-label={$t('viewer.stage.label') ?? 'Viewer stage'}
@@ -360,6 +376,13 @@
       <div class="stage__placeholder">{$t('viewer.stage.loading')}</div>
     {:else if error}
       <div class="stage__placeholder">{$t('viewer.stage.error')}</div>
+    {:else if rendererError}
+      <div class="stage__placeholder" role="alert">
+        <strong>{$t('viewer.stage.mediaError')}</strong>
+        {#if rendererError !== $t('viewer.stage.mediaError')}
+          <span>{rendererError}</span>
+        {/if}
+      </div>
     {:else if rendererComponent && mediaSource}
       <RendererHost
         bind:rendererInstance
@@ -384,10 +407,11 @@
         onzoomchange={handleRendererZoomChange}
         onrotationchange={(payload) => onrotationchange?.(payload)}
         onviewerready={handleRendererViewerReady}
+        onrenderererror={handleRendererError}
       />
     {:else}
-      <div class="stage__placeholder">
-        {$t('viewer.stage.empty')}
+      <div class="stage__placeholder" role="status">
+        {$t('viewer.stage.missingMedia')}
       </div>
     {/if}
 
@@ -508,6 +532,13 @@
     letter-spacing: 0.16em;
   }
 
+  .stage__placeholder span {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.85em;
+    opacity: 0.8;
+  }
+
   .stage__overlay {
     position: absolute;
     inset: 12px;
@@ -540,6 +571,34 @@
       grid-auto-flow: column;
       grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
       gap: 4px;
+    }
+
+    .stage__media--fixed,
+    .stage__media--constrained:not(.stage__media--audio) {
+      height: clamp(260px, 50svh, 440px);
+    }
+
+    .stage__media--audio {
+      height: clamp(220px, 38svh, 360px);
+    }
+
+    .stage__media--video {
+      height: clamp(220px, 42svh, 420px);
+    }
+  }
+
+  @container mango-viewer (max-width: 480px) {
+    .stage__media--fixed,
+    .stage__media--constrained:not(.stage__media--audio) {
+      height: clamp(230px, 44svh, 340px);
+    }
+
+    .stage__media--audio {
+      height: clamp(200px, 26svh, 240px);
+    }
+
+    .stage__media--video {
+      height: clamp(200px, 26svh, 240px);
     }
   }
 </style>

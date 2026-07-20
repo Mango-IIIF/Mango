@@ -47,6 +47,7 @@
     onannotationClear?: () => void;
     onrotationChange?: (payload: { rotation: number }) => void;
     onviewerready?: (payload: { viewer: OpenSeadragon.Viewer }) => void;
+    onloaderror?: (payload: { message: string }) => void;
   }
 
   let {
@@ -70,6 +71,7 @@
     onannotationClear = undefined,
     onrotationChange = undefined,
     onviewerready = undefined,
+    onloaderror = undefined,
   }: Props = $props();
 
   let osd: ReturnType<typeof OSDViewer> | null = $state(null);
@@ -134,6 +136,7 @@
     onannotationselect={(detail) => onannotationSelect?.(detail)}
     onannotationclear={() => onannotationClear?.()}
     {onviewerready}
+    {onloaderror}
   />
 {:else}
   <div class="image-placeholder">{$t('renderers.image.noSource')}</div>

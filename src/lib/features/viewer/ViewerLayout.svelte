@@ -39,7 +39,7 @@
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
-  import { ChevronsRight, Expand, Shrink } from '@lucide/svelte';
+  import { ChevronsRight, Expand, ImageOff, Shrink } from '@lucide/svelte';
   import { setViewerContext } from '../../viewer/context';
   import { createViewerFullscreenController } from '../../viewer/lifecycle/fullscreen';
   import { observeResponsiveLayout } from '../../viewer/lifecycle/responsiveLayout';
@@ -298,6 +298,8 @@
   let contentsPanelTab = $state<'toc' | 'transcript'>('toc');
   let showComparePanel = $state(false);
   let showManifestManager = $state(false);
+  let collectionNavigationManifestId = '';
+  let lastUiManifestId = '';
   let workspace = $state<WorkspaceStore | null>(null);
   let isMultiView = $derived(viewerSettingsLayout !== '1x1' && !!workspace);
   const closeLeftPanelStores = () => {
@@ -311,6 +313,13 @@
     viewerState.showLayers.set(false);
     showComparePanel = false;
     showManifestManager = false;
+  };
+
+  const enterMobileLayout = () => {
+    closeLeftPanelStores();
+    // The inline thumbnail strip can push primary controls below a short
+    // handheld viewport. Keep it available in the dock, but closed initially.
+    viewerState.showThumbnails.set(false);
   };
 
   const openContentsPanel = (tab: 'toc' | 'transcript') => {
@@ -348,7 +357,7 @@
   };
 
   if (initialMobileLayout) {
-    closeLeftPanelStores();
+    enterMobileLayout();
   }
 
   let viewerSettingsTheme = $state<'dark' | 'light' | 'sepia' | 'midnight'>('dark');
@@ -625,7 +634,7 @@
       onChange: (value) => {
         isMobileLayout = value;
       },
-      onEnterMobile: closeLeftPanelStores,
+      onEnterMobile: enterMobileLayout,
     });
     return () => {
       detachResponsiveLayout();
@@ -1047,6 +1056,7 @@
   export function setManifest(id: string): void {
     viewerState.collectionId.set('');
     viewerState.showCollection.set(false);
+    collectionNavigationManifestId = '';
     manifestId = id;
   }
 
@@ -1057,6 +1067,9 @@
           getManifestId,
           getCanvasCount,
           setManifest: (id: string) => {
+            // Moving between members of the active collection must preserve
+            // its navigation context. Other manifest changes clear it below.
+            collectionNavigationManifestId = id;
             manifestId = id;
           },
           setCanvasById,
@@ -1190,7 +1203,27 @@
     normalisedConfig = normaliseConfigForMode(config);
   });
   $effect.pre(() => {
-    viewerState.manifestId.set(manifestId);
+    const nextManifestId = manifestId ?? '';
+    if (nextManifestId !== lastUiManifestId) {
+      const isInitialManifest = !lastUiManifestId;
+      const preserveCollection =
+        Boolean(nextManifestId) && nextManifestId === collectionNavigationManifestId;
+
+      if (!isInitialManifest && !preserveCollection) {
+        viewerState.collectionId.set('');
+        viewerState.showCollection.set(false);
+      }
+
+      collectionNavigationManifestId = '';
+      lastUiManifestId = nextManifestId;
+      contentsPanelTab = 'toc';
+      showComparePanel = false;
+      showManifestManager = false;
+      draftAnno = null;
+      annotationLayers = [...DEFAULT_ANNOTATION_LAYERS];
+      if (isAnnotationEditor) annotationEditorTool = 'select';
+    }
+    viewerState.manifestId.set(nextManifestId);
   });
   $effect(() => {
     const requestedIndex = canvasIndex;
@@ -1209,7 +1242,10 @@
     if (!collection?.json || manifestId !== collection.id) return;
 
     const firstManifestId = findFirstManifestId(collection.json);
-    if (firstManifestId) manifestId = firstManifestId;
+    if (firstManifestId) {
+      collectionNavigationManifestId = firstManifestId;
+      manifestId = firstManifestId;
+    }
   });
   $effect.pre(() => {
     const configWithModeDefaults = {
@@ -1218,7 +1254,7 @@
     };
     viewerState.config.set(configWithModeDefaults);
     if (isMobileLayout) {
-      closeLeftPanelStores();
+      enterMobileLayout();
     }
   });
   $effect.pre(() => {
@@ -1811,7 +1847,11 @@
                           loading="lazy"
                         />
                       {:else}
-                        <div class="stage-gallery-view__placeholder">
+                        <div
+                          class="stage-gallery-view__placeholder"
+                          aria-label={$t('viewer.gallery.unavailable')}
+                        >
+                          <ImageOff aria-hidden="true" />
                           <span class="stage-gallery-view__index">{canvas.index + 1}</span>
                         </div>
                       {/if}
@@ -2045,6 +2085,13 @@
     width: 100%;
     height: 100%;
     color: var(--viewer-muted, #9aa6b2);
+    gap: 8px;
+  }
+
+  .stage-gallery-view__placeholder :global(svg) {
+    width: 32px;
+    height: 32px;
+    opacity: 0.75;
   }
 
   .stage-gallery-view__index {
@@ -2721,30 +2768,31 @@
 
   @media (max-width: 768px) {
     .viewer {
-      min-height: 100dvh;
-      max-height: 100dvh;
-      height: 100dvh;
-      overflow: hidden;
-      padding: 16px;
+      min-height: 0;
+      max-height: none;
+      height: 100%;
+      overflow: visible;
+      padding: 10px;
+      border-radius: 16px;
     }
   }
 
   @container mango-viewer (max-width: 768px) {
     .viewer {
-      min-height: 100vh;
-      max-height: 100vh;
+      min-height: 0;
+      max-height: none;
       height: 100%;
-      overflow: hidden;
-      padding: 16px;
+      overflow: visible;
+      padding: 10px;
     }
 
     .viewer__grid {
       grid-template-columns: 1fr;
-      grid-template-rows: 1fr auto;
-      height: 100%;
-      max-height: 100vh;
+      grid-template-rows: auto minmax(0, 1fr);
+      height: auto;
+      max-height: none;
       min-height: 0;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .viewer__grid.viewer__grid--left.viewer__grid--right,
@@ -2819,18 +2867,23 @@
     }
 
     .viewer__control-rail {
-      grid-row: 2;
+      grid-row: 1;
       grid-column: 1;
 
       width: 100%;
       height: auto;
       box-sizing: border-box;
-      padding: 4px 6px;
+      padding: 4px 6px max(4px, env(safe-area-inset-bottom));
       border: 1px solid var(--viewer-panel-border);
       border-radius: 12px;
       background: var(--viewer-panel);
       display: grid;
       align-items: center;
+    }
+
+    .viewer__grid > .stage {
+      grid-row: 2;
+      grid-column: 1;
     }
 
     .viewer__control-rail :global(.viewer__dock) {
@@ -2845,8 +2898,8 @@
 
     .viewer__control-rail :global(.viewer__dock-button) {
       width: 100%;
-      max-width: 34px;
-      height: 34px;
+      max-width: 44px;
+      height: 44px;
       border-radius: 9px;
       justify-self: center;
     }
@@ -2875,9 +2928,9 @@
     }
 
     .stage--viewer {
-      --mango-viewer-av-player-aspect-ratio: 3 / 4;
-      --mango-viewer-audio-art-aspect-ratio: auto;
-      --mango-viewer-audio-art-min-height: clamp(280px, 44vh, 380px);
+      --mango-viewer-av-player-aspect-ratio: 16 / 9;
+      --mango-viewer-audio-art-aspect-ratio: 16 / 7;
+      --mango-viewer-audio-art-min-height: 0;
     }
   }
 

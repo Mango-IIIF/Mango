@@ -35,6 +35,7 @@
     onannotationclear?: (() => void) | undefined;
     onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
     onviewerready?: ((payload: { viewer: OpenSeadragon.Viewer }) => void) | undefined;
+    onloaderror?: ((payload: { message: string }) => void) | undefined;
   }
 
   let {
@@ -58,6 +59,7 @@
     onannotationclear = undefined,
     onrotationchange = undefined,
     onviewerready = undefined,
+    onloaderror = undefined,
   }: Props = $props();
 
   type Bounds = { x: number; y: number; width: number; height: number };
@@ -603,10 +605,15 @@
       viewer.addHandler('animation', handleAnimation);
       viewer.addHandler('animation-finish', handleViewportChange);
       viewer.addHandler('resize', handleViewportChange);
-      viewer.addHandler('open-failed', () => {
+      viewer.addHandler('open-failed', (event) => {
         openingBaseCustomId = '';
         baseImageLoaded = false;
-        openPendingBaseTarget();
+        if (!openPendingBaseTarget()) {
+          const detail = event as { message?: string };
+          onloaderror?.({
+            message: detail.message || $t('viewer.stage.mediaError'),
+          });
+        }
       });
 
       // The editor needs the viewer instance before the first image-open event.
@@ -614,7 +621,10 @@
       onviewerready?.({ viewer });
     };
 
-    init();
+    void init().catch((cause: unknown) => {
+      const message = cause instanceof Error ? cause.message : String(cause);
+      onloaderror?.({ message });
+    });
 
     return () => {
       if (renderFrameId !== null) {
