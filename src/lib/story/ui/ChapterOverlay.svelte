@@ -1039,13 +1039,19 @@
     class="chapter-overlay__scrim"
     role="button"
     tabindex="0"
+    aria-label="Close chapter metadata"
     on:click={() => onClose?.()}
     on:keydown={(event) => {
       if (event.key === 'Enter' || event.key === ' ') onClose?.();
     }}
   ></div>
 
-  <div class="chapter-overlay__panel" role="dialog" aria-modal="false">
+  <div
+    class="chapter-overlay__panel"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="chapter-overlay-title"
+  >
     <div class="chapter-overlay__header">
       <button
         class="chapter-overlay__back"
@@ -1057,7 +1063,7 @@
       </button>
       <div>
         <div class="chapter-overlay__eyebrow">Story Editor</div>
-        <div class="chapter-overlay__title">Chapter Metadata</div>
+        <div class="chapter-overlay__title" id="chapter-overlay-title">Chapter Metadata</div>
       </div>
       <button
         class="chapter-overlay__close"

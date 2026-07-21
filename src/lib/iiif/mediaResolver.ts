@@ -155,16 +155,25 @@ const extractCanvasBodies = (canvas: unknown): unknown[] => {
     }
   }
 
-  // Handle renderings using getProperty
-  const canvasWithProp = canvasObj as { getProperty?: (prop: string) => unknown };
-  if (typeof canvasWithProp.getProperty === 'function') {
-    const renderings = canvasWithProp.getProperty('rendering');
-    if (renderings) {
-      bodies.push(...normaliseArray(renderings));
-    }
-  }
-
   return bodies;
+};
+
+/**
+ * Canvas renderings are downloadable or alternative representations, not
+ * painting layers. They are considered only when the Canvas has no playable
+ * painting body (for example, a rendering-only PDF Canvas).
+ */
+const extractCanvasRenderings = (canvas: unknown): unknown[] => {
+  if (!canvas || typeof canvas !== 'object') return [];
+  const canvasObj = canvas as {
+    getProperty?: (prop: string) => unknown;
+    rendering?: unknown | unknown[];
+  };
+  const renderings =
+    typeof canvasObj.getProperty === 'function'
+      ? canvasObj.getProperty('rendering')
+      : canvasObj.rendering;
+  return normaliseArray(renderings);
 };
 
 /**
@@ -373,10 +382,16 @@ const toMediaSource = (body: unknown, canvas: unknown): MediaSource | null => {
 export const resolveMediaFromCanvas = (canvas: unknown): ResolvedMedia => {
   if (!canvas) return { primary: null, alternates: [] };
 
-  const sources: MediaSource[] = [];
+  let sources: MediaSource[] = [];
   for (const body of extractCanvasBodies(canvas)) {
     const source = toMediaSource(body, canvas);
     if (source) sources.push(source);
+  }
+
+  if (sources.length === 0) {
+    sources = extractCanvasRenderings(canvas)
+      .map((rendering) => toMediaSource(rendering, canvas))
+      .filter((source): source is MediaSource => source !== null);
   }
 
   const primary = sources[0] ?? null;

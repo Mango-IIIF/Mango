@@ -34,6 +34,13 @@ const manifestJson = {
           ],
         },
       ],
+      rendering: [
+        {
+          id: 'https://example.org/download/image.tif',
+          type: 'Image',
+          format: 'image/tiff',
+        },
+      ],
     },
     {
       id: 'canvas-video',
@@ -122,6 +129,7 @@ describe('resolveMedia', () => {
     const resolved = resolveMedia(manifest, 'canvas-image');
     expect(resolved.primary?.type).toBe('image');
     expect(resolved.primary?.src).toBe('https://example.org/iiif/image/abc/info.json');
+    expect(resolved.alternates).toEqual([]);
   });
 
   it('resolves video bodies', () => {

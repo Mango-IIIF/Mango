@@ -257,6 +257,13 @@
     rendererInstance?.getModelPose?.() ?? pendingModelPose ?? null;
 
   const handleStageKeydown = (event: KeyboardEvent) => {
+    const target = event.target;
+    if (
+      target instanceof HTMLElement &&
+      (target.isContentEditable || target.matches('input, textarea, select'))
+    ) {
+      return;
+    }
     if (event.key === '+' || event.key === '=') {
       event.preventDefault();
       zoomBy(1.2);
@@ -522,7 +529,10 @@
   .stage__placeholder {
     display: grid;
     place-items: center;
+    box-sizing: border-box;
+    width: 100%;
     height: 100%;
+    min-height: 0;
     padding: 16px;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.04);
@@ -556,9 +566,9 @@
     pointer-events: auto;
   }
 
-  @container mango-viewer (max-width: 768px) {
+  @container mango-viewer (max-width: 1024px) {
     .stage__container {
-      gap: 10px;
+      gap: 6px;
     }
 
     .stage__dock {
@@ -575,15 +585,19 @@
 
     .stage__media--fixed,
     .stage__media--constrained:not(.stage__media--audio) {
-      height: clamp(260px, 50svh, 440px);
+      height: clamp(300px, 52svh, 560px);
     }
 
     .stage__media--audio {
-      height: clamp(220px, 38svh, 360px);
+      /* Audio is a 16:7 artwork area plus the player's compact control bar. */
+      height: min(calc(100cqw * 7 / 16 + 44px), 510px);
+      min-height: 0;
     }
 
     .stage__media--video {
-      height: clamp(220px, 42svh, 420px);
+      height: auto;
+      min-height: 0;
+      aspect-ratio: 16 / 9;
     }
   }
 

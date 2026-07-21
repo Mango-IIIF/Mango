@@ -41,9 +41,16 @@
 <div class="save-modal" hidden={!open} aria-hidden={!open}>
   {#if open}
     <div class="save-modal__scrim" role="presentation" onclick={close}></div>
-    <div class="save-modal__panel" role="dialog" aria-modal="true">
+    <div
+      class="save-modal__panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="save-modal-title"
+    >
       <div class="save-modal__header">
-        <div class="save-modal__title">{$t('storyBuilder.export.title')}</div>
+        <div class="save-modal__title" id="save-modal-title">
+          {$t('storyBuilder.export.title')}
+        </div>
         <button class="save-modal__close" type="button" aria-label="Close" onclick={close}>
           {$t('common.closeGlyph')}
         </button>

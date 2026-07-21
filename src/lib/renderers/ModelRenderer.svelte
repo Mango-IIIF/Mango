@@ -351,7 +351,7 @@
   .media__viewer {
     width: 100%;
     height: 100%;
-    border-radius: 18px;
+    border-radius: var(--mango-viewer-media-radius, 18px);
     background: var(--viewer-stage, #111720);
   }
 

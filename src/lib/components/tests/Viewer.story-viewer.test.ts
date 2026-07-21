@@ -32,6 +32,9 @@ describe('Viewer (story-viewer mode)', () => {
     await waitFor(() => Boolean(target.querySelector('[data-testid="story-controls-stage"]')));
 
     expect(target.querySelector('[data-testid="story-controls-stage"]')).toBeTruthy();
+    expect(target.querySelector('.viewer__top-row')).toBeTruthy();
+    expect(target.querySelector('.stage__media--fill')).toBeTruthy();
+    expect(target.querySelector('nav[aria-label="Story chapters"]')).toBeTruthy();
     expect(target.querySelector('.stage__toolbar')).toBeNull();
     expect(target.querySelector('.stage__counter')).toBeNull();
     expect(target.querySelector('.panel-stack')).toBeNull();

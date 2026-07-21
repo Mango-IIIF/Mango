@@ -196,6 +196,42 @@ describe('storyViewerController.loadChapter', () => {
     expect(viewer.setCanvasByIndex).not.toHaveBeenCalled();
   });
 
+  it('uses the canvas index when an authored canvas ID is stale', async () => {
+    const viewer = createMockViewer();
+    viewer.setCanvasById.mockImplementation(() => undefined);
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      posePaintedTimeoutMs: 100,
+      sourceOpenTimeoutMs: 100,
+    });
+    const canvasStory: StoryWithDefaults = {
+      chapters: [
+        {
+          id: 'first',
+          manifest: 'm1',
+          canvasIndex: 0,
+          canvasId: 'https://example.org/stale-canvas/0',
+          transitionTimeMs: 200,
+        },
+        {
+          id: 'second',
+          manifest: 'm1',
+          canvasIndex: 1,
+          canvasId: 'https://example.org/stale-canvas/1',
+          transitionTimeMs: 200,
+        },
+      ],
+    };
+
+    await runtime.loadStory(canvasStory);
+    await runtime.loadChapter(1);
+
+    expect(viewer.setCanvasById).toHaveBeenLastCalledWith(
+      'https://example.org/stale-canvas/1',
+    );
+    expect(viewer.setCanvasByIndex).toHaveBeenCalledWith(1);
+    expect(viewer.getCanvasIndex()).toBe(1);
+  });
+
   it('auto advances silent chapters after transitionTimeMs', async () => {
     vi.useFakeTimers();
     const viewer = createMockViewer();

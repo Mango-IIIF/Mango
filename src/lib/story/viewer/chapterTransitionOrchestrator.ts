@@ -240,6 +240,18 @@ export const createChapterTransitionOrchestrator = (
       if (chapter.canvasId || typeof chapter.canvasIndex === 'number') {
         if (chapter.canvasId) {
           viewer.setCanvasById?.(chapter.canvasId);
+          // Story documents can retain a stale canvas ID after a manifest is
+          // replaced while still carrying the correct authored canvas index.
+          // The viewer deliberately treats an unknown ID as a no-op, so use
+          // the index as the documented fallback instead of waiting for an
+          // event that cannot arrive.
+          if (
+            viewer.getCanvasId?.() !== chapter.canvasId &&
+            typeof chapter.canvasIndex === 'number' &&
+            viewer.getCanvasIndex?.() !== chapter.canvasIndex
+          ) {
+            viewer.setCanvasByIndex?.(chapter.canvasIndex);
+          }
         } else {
           viewer.setCanvasByIndex?.(chapter.canvasIndex);
         }

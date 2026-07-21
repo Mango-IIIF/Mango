@@ -233,7 +233,7 @@ describe('viewer AV integration', () => {
     );
   });
 
-  it('configures default audioArt properties and allows overrides', () => {
+  it('configures audio visualization defaults and allows overrides', () => {
     const state = createViewerState();
     integration = createViewerAV(state);
     expect(integration.controller.config.controls).toMatchObject({
@@ -241,12 +241,15 @@ describe('viewer AV integration', () => {
       autoAdvance: false,
     });
     expect(integration.controller.config.audioArt).toEqual({
+      title: '',
       transcript: true,
       visualizer: 'pulse',
     });
+    expect(integration.controller.config.crossorigin).toBe('');
 
     state.config.set({
       av: {
+        crossorigin: 'use-credentials',
         audioArt: {
           transcript: false,
           visualizer: 'waveform',
@@ -254,8 +257,10 @@ describe('viewer AV integration', () => {
       },
     });
     expect(integration.controller.config.audioArt).toEqual({
+      title: '',
       transcript: false,
       visualizer: 'waveform',
     });
+    expect(integration.controller.config.crossorigin).toBe('use-credentials');
   });
 });

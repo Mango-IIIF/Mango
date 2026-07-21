@@ -603,6 +603,19 @@ body {
     grid-template-columns: 1fr 190px;
     align-items: center;
   }
+
+  .cookbook-viewer {
+    padding-bottom: 36px;
+  }
+
+  .cookbook-viewer__frame {
+    height: auto;
+    min-height: 0;
+  }
+
+  .cookbook-viewer__frame mango-viewer {
+    height: auto;
+  }
 }
 
 @media (max-width: 760px) {

@@ -1076,7 +1076,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    border-radius: 18px;
+    border-radius: inherit;
     background: radial-gradient(
       120% 120% at 10% 0%,
       var(--viewer-stage-glow, rgba(42, 199, 255, 0.12)),
