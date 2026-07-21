@@ -184,8 +184,12 @@
 <style>
   .pdf {
     display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     gap: 12px;
+    width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 
   .pdf__controls {
@@ -213,7 +217,9 @@
   }
 
   .pdf__canvas-wrap {
-    flex: 1;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 0;
     overflow: auto;
     border-radius: 16px;
     background: rgba(10, 14, 19, 0.8);
@@ -222,8 +228,12 @@
 
   .pdf__placeholder {
     display: grid;
+    grid-row: 1 / -1;
     place-items: center;
+    box-sizing: border-box;
+    width: 100%;
     height: 100%;
+    min-height: 0;
     color: var(--viewer-muted, #9aa6b2);
     font-size: 12px;
     text-transform: uppercase;

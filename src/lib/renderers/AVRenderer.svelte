@@ -17,9 +17,11 @@
     AVPlayerController,
     MangoAVPlayerElement,
   } from '@mango-iiif/av';
+  import type { MediaSource } from '../iiif/mediaResolver';
 
   interface Props {
     controller: AVPlayerController;
+    source?: MediaSource;
     onmediaplay?: (payload: { time: number }) => void;
     onmediapause?: (payload: { time: number }) => void;
     onmediatimeupdate?: (payload: { time: number; duration?: number }) => void;
@@ -29,6 +31,7 @@
 
   let {
     controller,
+    source = undefined,
     onmediaplay,
     onmediapause,
     onmediatimeupdate,
@@ -67,11 +70,21 @@
           var(--mango-viewer-av-player-max-width, 100%)
         );
         margin-inline: auto;
+        height: 100%;
+      }
+      .player,
+      media-controller[audio] {
+        height: 100%;
+        min-height: 0;
       }
       .audio-art {
         aspect-ratio: var(--mango-viewer-audio-art-aspect-ratio, 16 / 7);
         min-height: var(--mango-viewer-audio-art-min-height, 0);
         box-sizing: border-box;
+      }
+      media-controller[audio] .audio-art {
+        aspect-ratio: auto;
+        height: calc(100% - 44px);
       }
       @media (max-width: 480px) {
         media-controller {
@@ -104,6 +117,10 @@
     const element = playerElement;
     if (!element) return;
     element.controller = controller;
+    // @mango-iiif/av 0.2.0 renders an already-loaded controller without
+    // resolving its media URL. A no-op configuration event runs the package's
+    // public source-resolution path until that lifecycle bug is fixed upstream.
+    if (controller.manifest) controller.configure({});
     applyViewerStyles(element);
 
     const observer = new MutationObserver(() => applyViewerStyles(element));
@@ -171,7 +188,7 @@
 
 </script>
 
-<div class="av-renderer">
+<div class:av-renderer--video={source?.type === 'video'} class="av-renderer">
   <mango-av-player bind:this={playerElement}></mango-av-player>
 </div>
 
@@ -184,12 +201,13 @@
     min-height: 0;
     width: 100%;
     place-items: start center;
-    padding: 12px;
   }
 
   mango-av-player {
     display: block;
-    width: min(100%, 1200px);
+    height: 100%;
+    min-height: 0;
+    width: 100%;
     --mango-av-accent: var(--viewer-accent, #e07a3f);
     --mango-av-accent-contrast: #fff;
     --mango-av-background: var(--viewer-stage, #111720);
@@ -197,8 +215,12 @@
     --mango-av-text: var(--viewer-text, #e8edf4);
     --mango-av-muted: var(--viewer-muted, #9aa6b2);
     --mango-av-border: var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
-    --mango-av-radius: 1rem;
+    --mango-av-radius: var(--mango-viewer-media-radius, 1rem);
     --media-primary-color: var(--viewer-text, #e8edf4);
     --media-secondary-color: var(--viewer-stage, #111720);
+  }
+
+  .av-renderer--video mango-av-player {
+    height: 100%;
   }
 </style>

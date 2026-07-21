@@ -157,7 +157,7 @@ export const createTransitionGuard = (
         index = viewer.getCanvasIndex?.(),
       ) =>
         expectedCanvasId
-          ? canvasId === expectedCanvasId
+          ? canvasId === expectedCanvasId || index === expectedCanvasIndex
           : index === expectedCanvasIndex;
 
       if (isExpectedCanvas()) {

@@ -76,7 +76,9 @@
     { id: 'highlights', name: 'Highlights', color: '#34d399', visible: true },
     { id: 'mine', name: 'My Annotations', color: '#a78bfa', visible: true },
   ];
-  const MOBILE_LAYOUT_WIDTH = 768;
+  // Portrait tablets need the same single-column treatment as phones. Keeping
+  // the desktop rail at iPad widths leaves a narrow stage inside a tall host.
+  const MOBILE_LAYOUT_WIDTH = 1024;
 
   const matchesInitialMobileLayout = (): boolean =>
     typeof window !== 'undefined' &&
@@ -1418,6 +1420,7 @@
 
 <div
   class="viewer"
+  class:viewer--story-viewer={isStoryViewer}
   class:viewer--story-builder={isStoryBuilder}
   class:viewer--fullscreen-fallback={isViewerFullscreenFallback}
   data-theme={viewerSettingsTheme}
@@ -1599,7 +1602,7 @@
                 <Stage
                   bind:this={stageRef}
                   bind:canZoom
-                  fillHeight={isStoryBuilder}
+                  fillHeight={true}
                   rendererComponent={$rendererComponent}
                   {avController}
                   mediaSource={$mediaSource}
@@ -1797,6 +1800,8 @@
       <main
         class="stage"
         class:stage--viewer={isPlainViewerMode}
+        class:stage--joined-sidebar-left={isPlainViewerMode && showControlRail && !leftVisibleEffective && !isMobileLayout && sidebarPosition === 'left'}
+        class:stage--joined-sidebar-right={isPlainViewerMode && showControlRail && !leftVisibleEffective && !isMobileLayout && sidebarPosition === 'right'}
         class:stage--story-builder={isStoryBuilder}
         class:stage--with-bottom-toolbar={!toolbarAboveMedia}
         class:stage--workspace={!!workspace && viewerSettingsLayout !== '1x1'}
@@ -2317,6 +2322,41 @@
     min-height: 0;
   }
 
+  .viewer.viewer--story-viewer {
+    --story-shell-radius: 18px;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--story-shell-radius);
+    background: var(--viewer-surface);
+  }
+
+  .viewer--story-viewer .viewer__top-row {
+    position: relative;
+    z-index: 12;
+    align-items: center;
+    min-height: 56px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    background: var(--viewer-surface);
+    border-bottom: 1px solid var(--viewer-panel-border);
+  }
+
+  .viewer--story-viewer .viewer__top-title {
+    display: block;
+  }
+
+  .viewer--story-viewer .viewer__fullscreen-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .viewer--story-viewer .viewer__grid {
+    height: auto;
+    min-height: 0;
+  }
+
   .viewer:-webkit-full-screen {
     width: 100vw;
     height: 100vh;
@@ -2341,6 +2381,12 @@
     border-radius: 0;
     overscroll-behavior: none;
     touch-action: none;
+  }
+
+  .viewer--story-viewer:fullscreen,
+  .viewer--story-viewer:-webkit-full-screen,
+  .viewer--story-viewer.viewer--fullscreen-fallback {
+    --story-shell-radius: 0;
   }
 
   .viewer:fullscreen .viewer__grid {
@@ -2541,6 +2587,7 @@
 
   .viewer__grid--controls {
     grid-template-columns: 220px 1fr;
+    column-gap: 0;
   }
 
   .viewer__grid--right {
@@ -2573,6 +2620,10 @@
     order: 1;
     margin-right: 18px;
     margin-left: 0 !important;
+  }
+
+  .viewer__grid--sidebar-right.viewer__grid--controls:not(.viewer__grid--left) > .stage {
+    margin-right: 0;
   }
 
   .viewer__grid--sidebar-right :global(.panel-stack--left) {
@@ -2687,25 +2738,10 @@
   .stage__viewer-frame {
     gap: 0;
     box-sizing: border-box;
-    padding: 0 10px 10px;
-    border: 1px solid var(--viewer-panel-border);
-    border-radius: 18px;
-    background: rgba(18, 25, 34, 0.52);
-  }
-
-  .viewer[data-theme='light'] .stage__viewer-frame {
-    border-color: rgba(34, 48, 65, 0.12);
-    background: rgba(247, 250, 253, 0.94);
-  }
-
-  .viewer[data-theme='sepia'] .stage__viewer-frame {
-    border-color: rgba(76, 58, 35, 0.16);
-    background: rgba(255, 250, 240, 0.94);
-  }
-
-  .viewer[data-theme='midnight'] .stage__viewer-frame {
-    border-color: rgba(126, 180, 235, 0.15);
-    background: rgba(3, 10, 20, 0.74);
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
   }
 
   .stage__viewer-frame :global(.stage__media) {
@@ -2715,7 +2751,34 @@
 
   .stage__viewer-frame :global(.stage__toolbar--below) {
     margin-top: 0;
-    padding-top: 8px;
+    padding: 8px;
+    border: 0;
+    border-radius: 0 0 16px 16px;
+    background: transparent;
+  }
+
+  .stage--joined-sidebar-left .stage__viewer-frame :global(.stage__media) {
+    border-radius: 0 16px 0 0;
+  }
+
+  .stage--joined-sidebar-right .stage__viewer-frame :global(.stage__media) {
+    border-radius: 16px 0 0 0;
+  }
+
+  .stage--joined-sidebar-left {
+    --mango-viewer-media-radius: 0 16px 16px 0;
+  }
+
+  .stage--joined-sidebar-right {
+    --mango-viewer-media-radius: 16px 0 0 16px;
+  }
+
+  .stage--joined-sidebar-left .stage-gallery-view {
+    border-radius: 0 18px 18px 0;
+  }
+
+  .stage--joined-sidebar-right .stage-gallery-view {
+    border-radius: 18px 0 0 18px;
   }
 
   .stage--story-builder :global(.stage__toolbar--below) {
@@ -2739,7 +2802,7 @@
     position: relative;
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
-    gap: 10px;
+    gap: 0;
     height: 100%;
     min-height: 0;
     overflow: hidden;
@@ -2766,29 +2829,36 @@
     display: none;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
     .viewer {
       min-height: 0;
       max-height: none;
-      height: 100%;
+      height: auto;
       overflow: visible;
-      padding: 10px;
+      padding: 12px;
       border-radius: 16px;
     }
   }
 
-  @container mango-viewer (max-width: 768px) {
+  @container mango-viewer (max-width: 1024px) {
     .viewer {
       min-height: 0;
       max-height: none;
-      height: 100%;
+      height: auto;
       overflow: visible;
-      padding: 10px;
+      padding: 12px;
+      gap: 10px;
+    }
+
+    .viewer.viewer--story-viewer {
+      gap: 0;
+      padding: 0;
     }
 
     .viewer__grid {
       grid-template-columns: 1fr;
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) auto;
+      row-gap: 8px;
       height: auto;
       max-height: none;
       min-height: 0;
@@ -2867,13 +2937,13 @@
     }
 
     .viewer__control-rail {
-      grid-row: 1;
+      grid-row: 2;
       grid-column: 1;
 
       width: 100%;
       height: auto;
       box-sizing: border-box;
-      padding: 4px 6px max(4px, env(safe-area-inset-bottom));
+      padding: 3px 6px max(3px, env(safe-area-inset-bottom));
       border: 1px solid var(--viewer-panel-border);
       border-radius: 12px;
       background: var(--viewer-panel);
@@ -2882,7 +2952,7 @@
     }
 
     .viewer__grid > .stage {
-      grid-row: 2;
+      grid-row: 1;
       grid-column: 1;
     }
 
@@ -2925,6 +2995,20 @@
       height: auto;
       min-height: 0;
       overflow: visible;
+    }
+
+    .stage--story {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .stage__viewer-frame :global(.stage__media) {
+      border-radius: 14px 14px 0 0;
+    }
+
+    .stage__viewer-frame :global(.stage__toolbar--below) {
+      padding: 6px;
+      border-radius: 0 0 14px 14px;
     }
 
     .stage--viewer {

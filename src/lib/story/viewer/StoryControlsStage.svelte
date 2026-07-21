@@ -222,7 +222,12 @@
     </aside>
   </div>
 
-  <footer bind:this={footerRef} class="story-shell__footer" data-testid="story-controls-pagination">
+  <nav
+    bind:this={footerRef}
+    class="story-shell__footer"
+    aria-label="Story chapters"
+    data-testid="story-controls-pagination"
+  >
     {#each chapterIndices as index}
       <button
         type="button"
@@ -259,7 +264,7 @@
         ></span>
       </button>
     {/each}
-  </footer>
+  </nav>
 
   {#if error}
     <div class="story-shell__error" data-testid="story-controls-error">
@@ -279,30 +284,32 @@
 
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto auto;
-    gap: 14px;
+    gap: 0;
     height: 100%;
-    min-height: 100%;
+    min-height: 0;
     min-width: 0;
-    padding: 10px;
-    border-radius: 18px;
+    padding: 0;
+    border-radius: var(--story-shell-radius, 18px);
     background: linear-gradient(180deg, #10161e 0%, #0b1118 100%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 0;
+    overflow: hidden;
   }
 
   .story-shell__body {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
-    gap: 14px;
+    gap: 0;
     min-height: 0;
     overflow: hidden;
   }
 
   .story-shell__sidebar {
-    padding: 8px 6px 8px 4px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
     min-height: 0;
     overflow: auto;
+    border-left: 1px solid var(--story-line);
   }
 
   .story-shell__chapter-label {
@@ -336,8 +343,8 @@
   }
 
   .story-shell__playback {
-    margin-top: 16px;
-    padding-top: 12px;
+    margin-top: auto;
+    padding-top: 24px;
     flex-shrink: 0;
   }
 
@@ -434,8 +441,8 @@
     position: relative;
     width: 100%;
     flex: 1 1 auto;
-    min-height: clamp(260px, 44vh, 620px);
-    border-radius: 20px;
+    min-height: 0;
+    border-radius: 0;
     overflow: hidden;
     background: transparent;
   }
@@ -445,6 +452,13 @@
     height: 100%;
     min-height: 100%;
     overflow: hidden;
+  }
+
+  .story-shell__stage-frame :global(.stage__media) {
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
   }
 
   .story-shell__chapter:hover:not(:disabled),
@@ -463,13 +477,13 @@
   .story-shell__footer {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: clamp(70px, 6.4vw, 87px);
-    gap: 12px;
+    grid-auto-columns: clamp(68px, 6vw, 82px);
+    gap: 10px;
     overflow-x: auto;
     align-items: start;
-    min-height: 112px;
-    padding: 12px 6px 14px;
-    border-top: 1px solid var(--story-line);
+    min-height: 0;
+    padding: 12px 12px 10px;
+    border-top: 0;
   }
 
   .story-shell__chapter {
@@ -566,7 +580,7 @@
     }
   }
 
-  @media (max-width: 1120px) {
+  @container mango-viewer (max-width: 1024px) {
     .story-shell {
       grid-template-rows: auto auto auto;
       overflow-y: auto;
@@ -580,11 +594,13 @@
 
     .story-shell__stage-wrap {
       flex: none;
-      min-height: clamp(320px, 56dvh, 620px);
+      min-height: clamp(240px, 56cqw, 520px);
     }
 
     .story-shell__sidebar {
       overflow: visible;
+      border-top: 1px solid var(--story-line);
+      border-left: 0;
     }
 
     .story-shell__title {
@@ -596,19 +612,20 @@
     }
   }
 
-  @media (max-width: 700px) {
+  @container mango-viewer (max-width: 700px) {
     .story-shell {
-      padding: 8px;
+      border-radius: min(var(--story-shell-radius, 18px), 14px);
     }
 
     .story-shell__footer {
       grid-auto-columns: 64px;
       gap: 10px;
-      min-height: 98px;
+      min-height: 0;
+      padding-inline: 10px;
     }
 
     .story-shell__stage-wrap {
-      min-height: clamp(300px, 58dvh, 520px);
+      min-height: clamp(220px, 60cqw, 420px);
     }
 
     .story-shell__transport {

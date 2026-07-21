@@ -51,7 +51,12 @@
   aria-hidden={!open}
   hidden={!open}
 >
-  <div class="narration-panel__panel" role="dialog" aria-modal="false">
+  <div
+    class="narration-panel__panel"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="narration-overlay-title"
+  >
     <div class="narration-overlay__header">
       <button
         class="narration-overlay__back"
@@ -63,7 +68,7 @@
       </button>
       <div>
         <div class="narration-overlay__eyebrow">Story Editor</div>
-        <div class="narration-overlay__title">Audio Narration</div>
+        <div class="narration-overlay__title" id="narration-overlay-title">Audio Narration</div>
       </div>
       <button
         class="narration-overlay__close"

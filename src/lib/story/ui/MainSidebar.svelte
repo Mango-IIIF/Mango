@@ -400,8 +400,16 @@
         }
       }}
     >
-      <div class="story-sidebar__modal" role="dialog" aria-modal="true" tabindex="-1">
-        <div class="story-sidebar__modal-text">{$t('storyBuilder.chapters.confirmDelete')}</div>
+      <div
+        class="story-sidebar__modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="chapter-delete-title"
+        tabindex="-1"
+      >
+        <div class="story-sidebar__modal-text" id="chapter-delete-title">
+          {$t('storyBuilder.chapters.confirmDelete')}
+        </div>
         <div class="story-sidebar__modal-actions">
           <button
             class="story-sidebar__modal-button story-sidebar__modal-button--cancel"
