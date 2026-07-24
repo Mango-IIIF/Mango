@@ -42,6 +42,7 @@ export {
   setAnnotationText,
   setDelay,
   setNarrationSegment,
+  removeNarrationSegment,
   setNarrationTrack,
   updateChapterFromCapture,
   type StoryStoreRunes,

@@ -35,6 +35,7 @@ import type {
   Chapter,
   ChapterAdvance,
   ChapterModel,
+  NarrationSegment,
   StoryState,
 } from "../core/types/story";
 import type { ViewBox } from "../core/types/viewer";
@@ -95,6 +96,7 @@ export type StoryBuilderController = {
   updateChapterTitle: (lang: string, value: string) => void;
   updateChapterDescription: (lang: string, value: string) => void;
   assignNarrationSegment: (lang: string, start: number, end: number) => void;
+  skipNarration: (lang: string) => void;
   updateAnnotationText: (lang: string, text: string) => void;
   updateAnnotationPlacement: (
     lang: string,
@@ -125,6 +127,24 @@ export type StoryBuilderOptions = {
   languages?: string[];
   annotationPageId?: string;
   initialStory?: StoryState;
+};
+
+export const collectLatestNarrationSegments = (
+  story: StoryState,
+): Record<string, NarrationSegment> => {
+  const latest: Record<string, NarrationSegment> = {};
+  for (const chapter of story.chapters) {
+    for (const [language, segment] of Object.entries(chapter.narrationSegment ?? {})) {
+      if (
+        Number.isFinite(segment.start) &&
+        Number.isFinite(segment.end) &&
+        segment.end > segment.start
+      ) {
+        latest[language] = { start: segment.start, end: segment.end };
+      }
+    }
+  }
+  return latest;
 };
 
 export const createStoryBuilderController = (
@@ -162,6 +182,7 @@ export const createStoryBuilderController = (
     reorderChapter: wrapMutation(runesStore.reorderChapter),
     setNarrationTrack: wrapMutation(runesStore.setNarrationTrack),
     setNarrationSegment: wrapMutation(runesStore.setNarrationSegment),
+    removeNarrationSegment: wrapMutation(runesStore.removeNarrationSegment),
     setAnnotationText: wrapMutation(runesStore.setAnnotationText),
     setAnnotationPlacement: wrapMutation(runesStore.setAnnotationPlacement),
     setAdvanceMode: wrapMutation(runesStore.setAdvanceMode),
@@ -206,6 +227,7 @@ export const createStoryBuilderController = (
   const language = options.language ?? "en";
   const languages = options.languages ?? ["en"];
   const history = createStoryHistory(initialStoryData);
+  let latestNarrationSegments = collectLatestNarrationSegments(initialStoryData);
 
   let viewer: PluginContext["viewer"] | null = null;
   let attachedCount = 0;
@@ -635,10 +657,20 @@ export const createStoryBuilderController = (
       return false;
     }
     setError(null);
+    const activeLanguage = get(annotationLanguage);
+    const latestNarrationSegment = latestNarrationSegments[activeLanguage];
     storyStoreWrapper.addChapterFromCapture({ capture: result.capture });
     const storyValue = get(storyStore);
     const lastId = storyValue.chapters[storyValue.chapters.length - 1]?.id;
     if (lastId) {
+      if (latestNarrationSegment) {
+        storyStoreWrapper.setNarrationSegment({
+          chapterId: lastId,
+          language: activeLanguage,
+          start: latestNarrationSegment.start,
+          end: latestNarrationSegment.end,
+        });
+      }
       selectedChapterId.set(lastId);
     }
     setTimeout(() => {
@@ -1051,6 +1083,17 @@ export const createStoryBuilderController = (
   const assignNarrationSegment = (lang: string, start: number, end: number) => {
     pushHistorySnapshot();
     chapterActions.assignNarrationSegment(lang, start, end);
+    if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
+      latestNarrationSegments = {
+        ...latestNarrationSegments,
+        [lang]: { start, end },
+      };
+    }
+  };
+
+  const skipNarration = (lang: string) => {
+    pushHistorySnapshot();
+    chapterActions.skipNarration(lang);
   };
 
   const updateAnnotationText = (lang: string, text: string) => {
@@ -1149,6 +1192,9 @@ export const createStoryBuilderController = (
   const loadStory = (storyToLoad: StoryState) => {
     pushHistorySnapshot();
     loadStoryIntoStore(storyToLoad, storyStoreWrapper);
+    latestNarrationSegments = collectLatestNarrationSegments(
+      storyStoreWrapper.exportStory(),
+    );
 
     // Load the first chapter's manifest if available
     const firstChapter = storyToLoad.chapters?.[0];
@@ -1204,6 +1250,7 @@ export const createStoryBuilderController = (
     updateChapterTitle,
     updateChapterDescription,
     assignNarrationSegment,
+    skipNarration,
     updateAnnotationText,
     updateAnnotationPlacement,
     updateAdvanceMode,

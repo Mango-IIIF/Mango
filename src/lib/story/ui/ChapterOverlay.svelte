@@ -45,6 +45,7 @@
   export let onAssignSegment:
     | ((lang: string, start: number, end: number) => void)
     | undefined;
+  export let onSkipNarration: ((lang: string) => void) | undefined;
   export let onSetAnnotationLanguage:
     | ((lang: string) => void)
     | undefined;
@@ -118,7 +119,7 @@
   let narrationLastTimes: Record<string, number> = {};
   let narrationAudioRefs: Record<string, HTMLAudioElement | null> = {};
   let currentNarrationAudioRef: HTMLAudioElement | null = null;
-  let lastNarrationChapterId: string | null = null;
+  let lastNarrationSyncKey = '';
   let lastActiveLanguage = activeLanguage;
   let narrationWaveforms: Record<string, number[]> = {};
   let narrationWaveformUrls: Record<string, string> = {};
@@ -323,12 +324,6 @@
       narrationEndDrafts[lang] = formatHms(time);
     }
     commitNarrationMarks(lang)();
-  };
-
-  const hasValidNarrationSegment = (lang: string): boolean => {
-    const start = parseHms(narrationStartDrafts[lang] ?? '');
-    const end = parseHms(narrationEndDrafts[lang] ?? '');
-    return start != null && end != null && end > start;
   };
 
   const createWaveformBins = (buffer: AudioBuffer, bins = 160): number[] => {
@@ -794,11 +789,18 @@
     annotationDraft = annotationDrafts[activeLanguage] ?? '';
   }
 
-  $: if (chapterId !== lastNarrationChapterId) {
-    lastNarrationChapterId = chapterId;
-    stopNarrationSegmentPlayback();
-    for (const lang of languages) {
-      updateNarrationFromState(lang);
+  $: {
+    const narrationSyncKey = JSON.stringify({
+      chapterId,
+      tracks: $story.narration?.tracks ?? {},
+      segments: chapter?.narrationSegment ?? {},
+    });
+    if (narrationSyncKey !== lastNarrationSyncKey) {
+      lastNarrationSyncKey = narrationSyncKey;
+      stopNarrationSegmentPlayback();
+      for (const lang of languages) {
+        updateNarrationFromState(lang);
+      }
     }
   }
 
@@ -914,7 +916,7 @@
     applyMarkDrafts(currentMarks.markIn, currentMarks.markOut);
   }
 
-  $: activeNarrationUrl = narrationUrls[activeLanguage] ?? '';
+  $: activeNarrationUrl = $story.narration?.tracks?.[activeLanguage]?.src ?? '';
   $: activeNarrationStartDraft = narrationStartDrafts[activeLanguage] ?? '';
   $: activeNarrationEndDraft = narrationEndDrafts[activeLanguage] ?? '';
 
@@ -1167,7 +1169,6 @@
           bind:currentNarrationAudioRef
           bind:narrationWaveCanvas
           {formatTimestamp}
-          {hasValidNarrationSegment}
           {parseHms}
           onToggleNarration={() => {
             narrationSectionCollapsed = !narrationSectionCollapsed;
@@ -1183,6 +1184,7 @@
           onNarrationMarksCommit={commitNarrationMarks(activeLanguage)}
           onUseNarrationStartCurrent={useNarrationCurrentTime(activeLanguage, 'start')}
           onUseNarrationEndCurrent={useNarrationCurrentTime(activeLanguage, 'end')}
+          onSkipNarration={() => onSkipNarration?.(activeLanguage)}
           onToggleAv={() => {
             avSectionCollapsed = !avSectionCollapsed;
           }}
@@ -1526,9 +1528,10 @@
 
   .chapter-overlay__wave-play {
     border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 999px;
-    width: 48px;
+    border-radius: 10px;
+    min-width: 132px;
     height: 48px;
+    padding: 0 14px;
     background: #102039;
     color: #f3f7ff;
     font-size: 11px;
@@ -1718,6 +1721,12 @@
 
   .chapter-overlay__input--time {
     width: 100%;
+  }
+
+  .chapter-overlay__timerow .chapter-overlay__input,
+  .chapter-overlay__timerow .chapter-overlay__button {
+    box-sizing: border-box;
+    height: 38px;
   }
 
   .chapter-overlay__placement-editor {

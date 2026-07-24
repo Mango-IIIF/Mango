@@ -12,7 +12,14 @@ const createTarget = (): HTMLDivElement => {
 
 describe('NarrationOverlay', () => {
   it('updates narration track at story level', async () => {
-    const store = createStoryStoreForTest();
+    const store = createStoryStoreForTest({
+      narration: {
+        tracks: {
+          en: { src: 'https://example.org/old.mp3' },
+        },
+      },
+      chapters: [],
+    });
     const target = createTarget();
 
     const instance = mount(NarrationOverlay, {
@@ -32,6 +39,10 @@ describe('NarrationOverlay', () => {
     ) as HTMLInputElement;
     input.value = 'https://example.org/audio.mp3';
     input.dispatchEvent(new Event('input'));
+    const save = target.querySelector(
+      '[data-testid="narration-assign"]',
+    ) as HTMLButtonElement;
+    save.click();
 
     await tick();
     const storyValue = await new Promise((resolve) => {

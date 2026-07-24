@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mount, unmount } from 'svelte';
 import { tick } from 'svelte';
-import type { ChapterAdvance } from '../../../core/types/story';
+import { writable } from 'svelte/store';
+import type { ChapterAdvance, StoryState } from '../../../core/types/story';
 import ChapterOverlay from '../ChapterOverlay.svelte';
 import { createStoryStoreForTest } from './testHelpers';
 
@@ -266,6 +267,118 @@ describe('ChapterOverlay', () => {
     expandButton.click();
     await tick();
     expect(sectionContent.hidden).toBe(false);
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it('previews narration only between the selected start and end times', async () => {
+    const story = writable<StoryState>({
+      narration: {
+        tracks: {
+          en: { src: 'https://example.org/narration.mp3' },
+        },
+      },
+      chapters: [
+        {
+          id: 'chapter-1',
+          manifest: 'https://example.org/manifest.json',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 10, h: 10 },
+          narrationSegment: { en: { start: 5, end: 10 } },
+        },
+      ],
+    });
+    const target = createTarget();
+
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story,
+        open: true,
+        chapterId: 'chapter-1',
+        language: 'en',
+      },
+    });
+    await tick();
+
+    story.update((value) => ({
+      ...value,
+      narration: {
+        tracks: {
+          en: { src: 'https://example.org/updated-narration.mp3' },
+        },
+      },
+    }));
+    await tick();
+
+    const audio = target.querySelector(
+      '.chapter-overlay__audio-source',
+    ) as HTMLAudioElement;
+    expect(target.textContent).toContain('Audio Narration');
+    expect(
+      (target.querySelector('[data-testid="chapter-narration-url"]') as HTMLInputElement).value,
+    ).toBe('https://example.org/updated-narration.mp3');
+    Object.defineProperty(audio, 'readyState', { configurable: true, value: 1 });
+    const play = vi.spyOn(audio, 'play').mockResolvedValue(undefined);
+    const pause = vi.spyOn(audio, 'pause').mockImplementation(() => undefined);
+    const preview = target.querySelector(
+      '[data-testid="chapter-narration-preview"]',
+    ) as HTMLButtonElement;
+
+    expect(preview.textContent?.trim()).toBe('Preview narration');
+    expect(preview.disabled).toBe(false);
+
+    preview.click();
+    await tick();
+
+    expect(audio.currentTime).toBe(5);
+    expect(play).toHaveBeenCalledOnce();
+    expect(preview.textContent?.trim()).toBe('Stop preview');
+
+    audio.currentTime = 10;
+    audio.dispatchEvent(new Event('timeupdate'));
+    await tick();
+
+    expect(pause).toHaveBeenCalledOnce();
+    expect(preview.textContent?.trim()).toBe('Preview narration');
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it('allows narration to be skipped for the current chapter', async () => {
+    const story = writable<StoryState>({
+      narration: { tracks: { en: { src: 'https://example.org/narration.mp3' } } },
+      chapters: [
+        {
+          id: 'chapter-1',
+          manifest: 'https://example.org/manifest.json',
+          canvasIndex: 0,
+          narrationSegment: { en: { start: 5, end: 10 } },
+        },
+      ],
+    });
+    const target = createTarget();
+    const onSkipNarration = vi.fn();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story,
+        open: true,
+        chapterId: 'chapter-1',
+        language: 'en',
+        onSkipNarration,
+      },
+    });
+    await tick();
+
+    const skip = target.querySelector(
+      '[data-testid="chapter-narration-skip"]',
+    ) as HTMLButtonElement;
+    skip.click();
+
+    expect(onSkipNarration).toHaveBeenCalledWith('en');
 
     unmount(instance);
     target.remove();

@@ -43,6 +43,7 @@
   export let onStopPreviewMediaSegment: () => void;
   export let onSetNarrationTrack: (lang: string, src: string) => void;
   export let onAssignSegment: (lang: string, start: number, end: number) => void;
+  export let onSkipNarration: (lang: string) => void;
   export let onUpdateManifest: (manifest: string) => void;
   export let onReloadManifest: (manifest: string, canvasIndex: number) => void;
   export let onLoadManifest: (manifest: string) => void;
@@ -246,6 +247,7 @@
     onClose={onCloseChapter}
     onSetNarrationTrack={onSetNarrationTrack}
     onAssignSegment={onAssignSegment}
+    onSkipNarration={onSkipNarration}
     onSetMediaMarks={onSetMediaMarks}
     onPreviewMediaSegment={onPreviewMediaSegment}
     onStopPreviewMediaSegment={onStopPreviewMediaSegment}

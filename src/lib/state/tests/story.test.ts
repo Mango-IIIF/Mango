@@ -6,6 +6,7 @@ import {
   createEmptyStory,
   createStoryStore,
   deleteChapter,
+  removeNarrationSegment,
   reorderChapter,
   setChapterManifest,
   setAdvanceMode,
@@ -198,6 +199,23 @@ describe('story reducers', () => {
     expect(next.chapters[0].narrationSegment?.en).toEqual(
       story.chapters[0].narrationSegment?.en,
     );
+  });
+
+  it('removes narration for one chapter and language only', () => {
+    const story = setNarrationSegment(createStoryWithChapters(), {
+      chapterId: 'chapter-a',
+      language: 'cy',
+      start: 8,
+      end: 11,
+    });
+    const next = removeNarrationSegment(story, {
+      chapterId: 'chapter-a',
+      language: 'en',
+    });
+
+    expect(next.chapters[0].narrationSegment?.en).toBeUndefined();
+    expect(next.chapters[0].narrationSegment?.cy).toEqual({ start: 8, end: 11 });
+    expect(next.narration).toEqual(story.narration);
   });
 
   it('updates chapter manifest immutably', () => {

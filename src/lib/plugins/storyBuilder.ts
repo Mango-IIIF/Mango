@@ -108,6 +108,7 @@ export const createStoryBuilderPlugins = (
           onStopPreviewMediaSegment: controller.stopPreviewMediaSegment,
           onSetNarrationTrack: controller.setNarrationTrack,
           onAssignSegment: controller.assignNarrationSegment,
+          onSkipNarration: controller.skipNarration,
           onUpdateManifest: controller.updateManifest,
           onReloadManifest: controller.reloadManifest,
           onLoadManifest: controller.loadManifest,

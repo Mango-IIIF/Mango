@@ -183,6 +183,12 @@ body {
   --viewer-frame-shadow: none;
 }
 
+@media (min-width: 701px) {
+  .page--story-viewer .viewer-shell mango-viewer[mode='story-viewer'] {
+    min-height: 580px;
+  }
+}
+
 @media (max-width: 700px) {
   .viewer-shell {
     min-height: auto;

@@ -1128,6 +1128,18 @@
     return controller.removeAnnotation(annotationId);
   }
 
+  export function updateLayerOpacity(id: string, opacity: number): void {
+    controller.updateLayerOpacity(id, opacity);
+  }
+
+  export function getLayerOpacities(): Record<string, number> {
+    return get(layerOpacities);
+  }
+
+  export function getMediaSources() {
+    return get(mediaSources);
+  }
+
   const setStoryError = (message: string) => {
     storyError = message;
     storyControlsDisabled = true;
