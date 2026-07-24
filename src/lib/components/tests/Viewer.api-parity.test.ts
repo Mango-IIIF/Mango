@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { mount, tick, unmount } from "svelte";
+import Viewer from "../Viewer.svelte";
 
 const exportedFunctions = (source: string): string[] =>
   [...source.matchAll(/export (?:async )?function\s+(\w+)/g)]
@@ -20,5 +22,21 @@ describe("viewer entrypoint API parity", () => {
     );
 
     expect(exportedFunctions(element)).toEqual(exportedFunctions(component));
+  });
+
+  it("forwards layer opacity methods through the viewer component", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const instance = mount(Viewer, { target });
+    await tick();
+
+    instance.updateLayerOpacity("https://example.org/layer", 0.4);
+
+    expect(instance.getLayerOpacities()).toEqual({
+      "https://example.org/layer": 0.4,
+    });
+
+    unmount(instance);
+    target.remove();
   });
 });

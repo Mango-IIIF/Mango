@@ -12,6 +12,7 @@ export type ChapterActionsDeps = {
       start: number;
       end: number;
     }) => void;
+    removeNarrationSegment: (payload: { chapterId: string; language: string }) => void;
     setAnnotationText: (payload: { chapterId: string; language: string; text: string }) => void;
     setAnnotationPlacement: (payload: {
       chapterId: string;
@@ -41,6 +42,7 @@ export type ChapterActions = {
   updateChapterTitle: (lang: string, value: string) => void;
   updateChapterDescription: (lang: string, value: string) => void;
   assignNarrationSegment: (lang: string, start: number, end: number) => void;
+  skipNarration: (lang: string) => void;
   updateAnnotationText: (lang: string, text: string) => void;
   updateAnnotationPlacement: (lang: string, placement: AnnotationPlacement) => void;
   updateAdvanceMode: (mode: ChapterAdvance['mode']) => void;
@@ -78,6 +80,11 @@ export const createChapterActions = (deps: ChapterActionsDeps): ChapterActions =
       const id = getId();
       if (!id) return;
       deps.storyStoreWrapper.setNarrationSegment({ chapterId: id, language: lang, start, end });
+    },
+    skipNarration: (lang) => {
+      const id = getId();
+      if (!id) return;
+      deps.storyStoreWrapper.removeNarrationSegment({ chapterId: id, language: lang });
     },
     updateAnnotationText: (lang, text) => {
       const id = getId();

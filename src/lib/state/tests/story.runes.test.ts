@@ -178,6 +178,15 @@ describe('story store (runes)', () => {
     expect(store.story.chapters[0].narrationSegment?.en).toEqual({ start: 2, end: 5 });
   });
 
+  it('removes narration segments reactively', () => {
+    const store = createStoryStore(createStoryWithChapters());
+
+    store.removeNarrationSegment({ chapterId: 'chapter-a', language: 'en' });
+
+    expect(store.story.chapters[0].narrationSegment).toBeUndefined();
+    expect(store.story.narration?.tracks.en.src).toBe('https://example.org/en.mp3');
+  });
+
   it('updates advance mode reactively', () => {
     const store = createStoryStore(createStoryWithChapters());
     

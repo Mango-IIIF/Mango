@@ -47,6 +47,11 @@ export type NarrationSegmentPayload = {
   end: number;
 };
 
+export type RemoveNarrationSegmentPayload = {
+  chapterId: string;
+  language: string;
+};
+
 export type AnnotationTextPayload = {
   chapterId: string;
   language: string;
@@ -235,6 +240,35 @@ export const setNarrationSegment = (
     ...current,
     narrationSegment: nextSegments,
   };
+
+  const nextChapters = [...story.chapters];
+  nextChapters[index] = updated;
+
+  return {
+    ...story,
+    chapters: nextChapters,
+  };
+};
+
+export const removeNarrationSegment = (
+  story: StoryState,
+  payload: RemoveNarrationSegmentPayload,
+): StoryState => {
+  const index = story.chapters.findIndex(
+    (chapter) => chapter.id === payload.chapterId,
+  );
+  if (index === -1) return story;
+
+  const current = story.chapters[index];
+  if (!current.narrationSegment?.[payload.language]) return story;
+
+  const { [payload.language]: _removed, ...remainingSegments } =
+    current.narrationSegment;
+  const { narrationSegment: _currentSegments, ...chapterWithoutSegments } = current;
+  const updated: Chapter =
+    Object.keys(remainingSegments).length > 0
+      ? { ...chapterWithoutSegments, narrationSegment: remainingSegments }
+      : chapterWithoutSegments;
 
   const nextChapters = [...story.chapters];
   nextChapters[index] = updated;
@@ -560,6 +594,10 @@ export function createStoryStore(initial?: StoryState) {
 
     setNarrationSegment(payload: NarrationSegmentPayload): void {
       story = setNarrationSegment(story, payload);
+    },
+
+    removeNarrationSegment(payload: RemoveNarrationSegmentPayload): void {
+      story = removeNarrationSegment(story, payload);
     },
 
     setAnnotationText(payload: AnnotationTextPayload): void {

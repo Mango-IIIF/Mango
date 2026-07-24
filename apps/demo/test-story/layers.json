@@ -90,7 +90,7 @@
             "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 0.59
           },
           "playback": {
-            "transitionMs": 2000
+            "transitionMs": 4000
           }
         }
       },
@@ -136,7 +136,7 @@
             "https://iiif.io/api/image/3.0/example/reference/421e65be2ce95439b3ad6ef1f2ab87a9-dee-natural/full/max/0/default.jpg": 0.29
           },
           "playback": {
-            "transitionMs": 2000
+            "transitionMs": 4000
           }
         }
       },

@@ -22,7 +22,6 @@
   export let narrationWaveCanvas: HTMLCanvasElement | null = null;
 
   export let formatTimestamp: (value: number, withFraction?: boolean) => string;
-  export let hasValidNarrationSegment: (lang: string) => boolean;
   export let parseHms: (value: string) => number | null;
   export let onToggleNarration: (() => void) | undefined;
   export let onNarrationTrackInput: ((event: Event) => void) | undefined;
@@ -38,6 +37,7 @@
   export let onNarrationMarksCommit: (() => void) | undefined;
   export let onUseNarrationStartCurrent: (() => void) | undefined;
   export let onUseNarrationEndCurrent: (() => void) | undefined;
+  export let onSkipNarration: (() => void) | undefined;
   export let onToggleAv: (() => void) | undefined;
   export let onCommitMediaMarks: (() => void) | undefined;
   export let onUseMarkInCurrent: (() => void) | undefined;
@@ -93,12 +93,14 @@
           type="button"
           data-testid="chapter-narration-preview"
           on:click={onToggleNarrationPlayback}
-          disabled={!hasValidNarrationSegment(activeLanguage)}
+          disabled={parseHms(narrationStartDraft) === null ||
+            parseHms(narrationEndDraft) === null ||
+            parseHms(narrationEndDraft) <= parseHms(narrationStartDraft)}
         >
           {#if narrationPreviewing && narrationPreviewLanguage === activeLanguage}
-            Pause
+            Stop preview
           {:else}
-            Play
+            Preview narration
           {/if}
         </button>
 
@@ -216,6 +218,15 @@
           </button>
         </div>
       </div>
+
+      <button
+        class="chapter-overlay__button chapter-overlay__button--subtle"
+        type="button"
+        data-testid="chapter-narration-skip"
+        on:click={onSkipNarration}
+      >
+        Skip narration for this chapter
+      </button>
     </div>
   </section>
 {/if}

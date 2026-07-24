@@ -15,6 +15,7 @@
   let activeLanguage = language;
   let lastLanguageProp = language;
   let url = '';
+  let lastTrackSyncKey = '';
   
   const getTrackSrc = (value: StoryState, lang: string): string => {
     return value.narration?.tracks?.[lang]?.src ?? '';
@@ -25,11 +26,17 @@
     activeLanguage = language;
   }
 
-  $: url = getTrackSrc($story, activeLanguage);
+  $: {
+    const trackSrc = getTrackSrc($story, activeLanguage);
+    const trackSyncKey = `${open ? '1' : '0'}:${activeLanguage}:${trackSrc}`;
+    if (trackSyncKey !== lastTrackSyncKey) {
+      lastTrackSyncKey = trackSyncKey;
+      url = trackSrc;
+    }
+  }
 
   const handleInput = (event: Event) => {
-    const value = (event.target as HTMLInputElement).value;
-    onSetNarrationTrack?.(activeLanguage, value);
+    url = (event.target as HTMLInputElement).value;
   };
 
   const handleSaveUrl = () => {
