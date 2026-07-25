@@ -235,4 +235,33 @@ describe('MainSidebar', () => {
     unmount(instance);
     target.remove();
   });
+
+  it('offers keyboard-accessible move actions in the chapter menu', async () => {
+    const target = createTarget();
+    const onReorderChapter = vi.fn();
+    const instance = mount(MainSidebar, {
+      target,
+      props: {
+        story: createStoryStoreForTest({
+          chapters: [
+            { id: 'chapter-a', manifest: 'https://example.org/a', canvasIndex: 0 },
+            { id: 'chapter-b', manifest: 'https://example.org/b', canvasIndex: 0 },
+          ],
+        }).story,
+        onReorderChapter,
+      },
+    });
+
+    (target.querySelector('[data-testid="chapter-menu-chapter-b"]') as HTMLButtonElement).click();
+    await tick();
+    const moveUp = Array.from(
+      target.querySelectorAll<HTMLButtonElement>('.story-sidebar__menu-action'),
+    ).find((button) => button.textContent?.trim() === 'Move up');
+    moveUp?.click();
+
+    expect(onReorderChapter).toHaveBeenCalledWith('chapter-b', 'chapter-a', 'before');
+
+    unmount(instance);
+    target.remove();
+  });
 });

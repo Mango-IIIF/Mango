@@ -24,6 +24,7 @@ export const getPreviewChapterDuration = (
 
 export const createStoryPreviewOrchestrator = ({
   getStory,
+  getSelectedChapterId,
   selectChapter,
   applyChapter,
   getNarrationSegment,
@@ -32,6 +33,7 @@ export const createStoryPreviewOrchestrator = ({
   wait = (durationMs) => new Promise((resolve) => setTimeout(resolve, durationMs)),
 }: {
   getStory: () => StoryState;
+  getSelectedChapterId: () => string | null;
   selectChapter: (chapterId: string) => void;
   applyChapter: (chapter: Chapter) => void;
   getNarrationSegment: (chapter: Chapter) => { start: number; end: number } | null;
@@ -41,16 +43,29 @@ export const createStoryPreviewOrchestrator = ({
 }): StoryPreviewOrchestrator => {
   const isPreviewing = writable(false);
   let token = 0;
+  let restoreChapterId: string | null = null;
+
+  const restoreEditorChapter = () => {
+    const chapterId = restoreChapterId;
+    restoreChapterId = null;
+    if (!chapterId) return;
+    const chapter = getStory().chapters.find((entry) => entry.id === chapterId);
+    if (!chapter) return;
+    selectChapter(chapter.id);
+    applyChapter(chapter);
+  };
 
   const stop = () => {
     token += 1;
     isPreviewing.set(false);
     stopPlayback();
+    restoreEditorChapter();
   };
 
   const start = async () => {
     if (get(isPreviewing) || getStory().chapters.length === 0) return;
     isPreviewing.set(true);
+    restoreChapterId = getSelectedChapterId();
     closeEditors();
     const activeToken = ++token;
     let chapterIndex = 0;
@@ -66,7 +81,10 @@ export const createStoryPreviewOrchestrator = ({
       chapterIndex += 1;
     }
 
-    if (activeToken === token) isPreviewing.set(false);
+    if (activeToken === token) {
+      isPreviewing.set(false);
+      restoreEditorChapter();
+    }
   };
 
   return { isPreviewing, start, stop };

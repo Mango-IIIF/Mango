@@ -61,6 +61,7 @@ const rendererLoaders: Record<MediaType, () => Promise<RendererModule>> = {
 };
 
 export type PluginSlots = {
+  top: ViewerPlugin[];
   left: ViewerPlugin[];
   right: ViewerPlugin[];
   bottom: ViewerPlugin[];
@@ -390,9 +391,8 @@ export const createViewerDerived = (
     ([entry, list]) => hasManifestAnnotations(entry?.manifesto, list),
   );
 
-  const galleryAvailable = derived(
-    [manifestEntry, canvases],
-    ([entry, list]) => supportsImageGallery(entry?.manifesto, list),
+  const galleryAvailable = derived([manifestEntry, canvases], ([entry, list]) =>
+    supportsImageGallery(entry?.manifesto, list),
   );
 
   const allowThumbnails = derived(
@@ -446,6 +446,7 @@ export const createViewerDerived = (
       }
       const allPlugins = Array.from(deduped.values());
       return {
+        top: allPlugins.filter((plugin) => plugin.slot === "top"),
         left: allPlugins.filter((plugin) => plugin.slot === "left"),
         right: allPlugins.filter((plugin) => plugin.slot === "right"),
         bottom: allPlugins.filter((plugin) => plugin.slot === "bottom"),

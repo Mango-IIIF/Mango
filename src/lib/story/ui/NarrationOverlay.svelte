@@ -1,22 +1,25 @@
 <script lang="ts">
+  import { Check, Link2, Volume2 } from '@lucide/svelte';
   import type { Readable } from 'svelte/store';
   import type { StoryState } from '../../core/types/story';
 
   export let story: Readable<StoryState>;
   export let open = false;
+  export let docked = false;
   export let language = 'en';
   export let languages: string[] = ['en'];
   export let onBack: (() => void) | undefined;
   export let onClose: (() => void) | undefined;
-  export let onSetNarrationTrack:
-    | ((lang: string, src: string) => void)
-    | undefined;
+  export let onSetNarrationTrack: ((lang: string, src: string) => void) | undefined;
+  export let onUpdateStoryTitle: ((lang: string, value: string) => void) | undefined;
 
   let activeLanguage = language;
   let lastLanguageProp = language;
   let url = '';
+  let title = '';
   let lastTrackSyncKey = '';
-  
+  let lastTitleSyncKey = '';
+
   const getTrackSrc = (value: StoryState, lang: string): string => {
     return value.narration?.tracks?.[lang]?.src ?? '';
   };
@@ -35,8 +38,22 @@
     }
   }
 
+  $: {
+    const titleValue = $story.title?.[activeLanguage] ?? '';
+    const titleSyncKey = `${open ? '1' : '0'}:${activeLanguage}:${titleValue}`;
+    if (titleSyncKey !== lastTitleSyncKey) {
+      lastTitleSyncKey = titleSyncKey;
+      title = titleValue;
+    }
+  }
+
   const handleInput = (event: Event) => {
     url = (event.target as HTMLInputElement).value;
+  };
+
+  const handleTitleInput = (event: Event) => {
+    title = (event.target as HTMLInputElement).value;
+    onUpdateStoryTitle?.(activeLanguage, title);
   };
 
   const handleSaveUrl = () => {
@@ -54,33 +71,36 @@
 
 <div
   class="narration-panel"
+  class:narration-panel--docked={docked}
   data-testid="narration-overlay"
   aria-hidden={!open}
   hidden={!open}
 >
   <div
     class="narration-panel__panel"
-    role="dialog"
+    role={docked ? 'region' : 'dialog'}
     aria-modal="false"
     aria-labelledby="narration-overlay-title"
   >
     <div class="narration-overlay__header">
-      <button
-        class="narration-overlay__back"
-        type="button"
-        data-testid="narration-back"
-        on:click={() => onBack?.()}
-      >
-        Back
-      </button>
+      {#if !docked}
+        <button
+          class="narration-overlay__back"
+          type="button"
+          data-testid="narration-back"
+          on:click={() => onBack?.()}
+        >
+          Back
+        </button>
+      {/if}
       <div>
-        <div class="narration-overlay__eyebrow">Story Editor</div>
-        <div class="narration-overlay__title" id="narration-overlay-title">Audio Narration</div>
+        <div class="narration-overlay__title" id="narration-overlay-title">Story settings</div>
+        <div class="narration-overlay__subtitle">Set the story title and narration audio</div>
       </div>
       <button
         class="narration-overlay__close"
         type="button"
-        aria-label="Close narration"
+        aria-label="Close story settings"
         data-testid="narration-close"
         on:click={() => onClose?.()}
       >
@@ -89,43 +109,89 @@
     </div>
 
     <div class="narration-overlay__form">
-      <section class="narration-overlay__section narration-overlay__section--card">
+      <section class="narration-overlay__section">
         <div class="narration-overlay__section-title">Language</div>
-        <label class="narration-overlay__label">
-          <select
-            class="narration-overlay__select"
-            data-testid="narration-language"
-            bind:value={activeLanguage}
-          >
-            {#each languages as lang}
-              <option value={lang}>{lang.toUpperCase()}</option>
-            {/each}
-          </select>
-        </label>
+        <div
+          class="narration-overlay__language-tabs"
+          role="tablist"
+          aria-label="Narration language"
+        >
+          {#each languages as lang}
+            <button
+              class="narration-overlay__language-tab"
+              class:narration-overlay__language-tab--active={lang === activeLanguage}
+              type="button"
+              role="tab"
+              aria-selected={lang === activeLanguage}
+              data-testid={lang === activeLanguage ? 'narration-language' : undefined}
+              on:click={() => (activeLanguage = lang)}
+            >
+              {lang.toUpperCase()}
+            </button>
+          {/each}
+        </div>
       </section>
 
       <section class="narration-overlay__section narration-overlay__section--card">
-        <div class="narration-overlay__section-title">
-          Narration Source ({activeLanguage.toUpperCase()})
+        <div class="narration-overlay__source-heading">
+          <span class="narration-overlay__source-icon narration-overlay__source-icon--title">T</span
+          >
+          <span>
+            <strong>Story title ({activeLanguage.toUpperCase()})</strong>
+            <small>Shown in the story viewer top bar</small>
+          </span>
         </div>
-        <label class="narration-overlay__label">
-          MP3 URL
+
+        <label class="narration-overlay__label" for="story-title">
+          Title
           <input
-            class="narration-overlay__input"
-            type="url"
-            data-testid="narration-url"
-            value={url}
-            on:input={handleInput}
-            placeholder="https://example.org/audio.mp3"
+            id="story-title"
+            class="narration-overlay__input narration-overlay__input--standalone"
+            type="text"
+            data-testid="story-title"
+            value={title}
+            on:input={handleTitleInput}
+            placeholder="Untitled story"
           />
         </label>
+        <p class="narration-overlay__hint">
+          Saved as the {activeLanguage.toUpperCase()} value in the AnnotationPage label.
+        </p>
+      </section>
 
-        <div class="narration-overlay__player-shell">
-          <audio
-            class="narration-overlay__player"
-            controls
-            src={url}
-          ></audio>
+      <section class="narration-overlay__section narration-overlay__section--card">
+        <div class="narration-overlay__source-heading">
+          <span class="narration-overlay__source-icon"><Volume2 aria-hidden="true" /></span>
+          <span>
+            <strong>{activeLanguage.toUpperCase()} audio source</strong>
+            <small>Used by every narrated chapter in this language</small>
+          </span>
+        </div>
+
+        <label class="narration-overlay__label" for="narration-audio-url">
+          Audio file URL
+          <span class="narration-overlay__input-shell">
+            <Link2 aria-hidden="true" />
+            <input
+              id="narration-audio-url"
+              class="narration-overlay__input"
+              type="url"
+              data-testid="narration-url"
+              value={url}
+              on:input={handleInput}
+              placeholder="https://example.org/audio.mp3"
+            />
+          </span>
+        </label>
+
+        <div class="narration-overlay__preview">
+          <div class="narration-overlay__preview-label">Audio preview</div>
+          <div class="narration-overlay__player-shell">
+            <audio class="narration-overlay__player" controls preload="metadata" src={url}></audio>
+          </div>
+          {#if !url}
+            <p class="narration-overlay__hint">Enter a URL to preview the narration track.</p>
+          {/if}
         </div>
 
         <div class="narration-overlay__row">
@@ -133,9 +199,11 @@
             class="narration-overlay__button narration-overlay__button--accent"
             type="button"
             data-testid="narration-assign"
+            disabled={!url.trim()}
             on:click={handleSaveUrl}
           >
-            Save narration audio
+            <Check aria-hidden="true" />
+            Save audio source
           </button>
         </div>
       </section>
@@ -157,6 +225,25 @@
     display: none;
   }
 
+  .narration-panel--docked {
+    position: relative;
+    inset: auto;
+    display: block;
+    height: 100%;
+    pointer-events: auto;
+  }
+
+  .narration-panel--docked .narration-panel__panel {
+    width: 100%;
+    max-width: none;
+    border-left: 0;
+    background: var(--viewer-panel, #121922);
+  }
+
+  .narration-panel--docked .narration-overlay__header {
+    grid-template-columns: 1fr auto;
+  }
+
   .narration-panel__panel {
     position: relative;
     pointer-events: auto;
@@ -166,9 +253,9 @@
     min-height: 100%;
     align-self: stretch;
     border-radius: 0;
-    border-left: 1px solid rgba(255, 255, 255, 0.14);
-    background: #071428;
-    color: #eaf1ff;
+    border-left: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    background: var(--viewer-panel, #121922);
+    color: var(--viewer-text, #e8edf4);
     box-shadow: none;
     overflow: auto;
     box-sizing: border-box;
@@ -182,31 +269,32 @@
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 12px;
+    min-height: 72px;
     padding: 16px 18px;
-    background: #08182d;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .narration-overlay__eyebrow {
-    font-size: 10px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: rgba(226, 232, 240, 0.62);
+    background: var(--viewer-panel, #121922);
+    border-bottom: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
   }
 
   .narration-overlay__title {
     font-size: 18px;
-    font-weight: 600;
-    color: #f3f8ff;
+    font-weight: 650;
+    color: var(--viewer-text, #e8edf4);
     letter-spacing: 0.01em;
   }
 
+  .narration-overlay__subtitle {
+    margin-top: 3px;
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
   .narration-overlay__back {
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
     border-radius: 10px;
     padding: 8px 10px;
-    background: #0b1b31;
-    color: rgba(232, 237, 246, 0.9);
+    background: var(--viewer-panel-strong, #1b242e);
+    color: var(--viewer-text, #e8edf4);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.12em;
@@ -255,48 +343,81 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: rgba(222, 229, 239, 0.72);
+    color: var(--viewer-muted, #9aa6b2);
   }
 
-  .narration-overlay__input,
-  .narration-overlay__select {
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 12px;
-    padding: 10px 12px;
-    background: #08192f;
-    color: #f0f6ff;
+  .narration-overlay__input-shell {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+    padding: 0 12px;
+    background: var(--viewer-panel, #121922);
+  }
+
+  .narration-overlay__input-shell:focus-within {
+    border-color: var(--accent, #e07a3f);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #e07a3f) 18%, transparent);
+  }
+
+  .narration-overlay__input-shell :global(svg) {
+    width: 16px;
+    height: 16px;
+    color: var(--viewer-muted, #9aa6b2);
+  }
+
+  .narration-overlay__input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    padding: 11px 0;
+    background: transparent;
+    color: var(--viewer-text, #e8edf4);
     font-size: 13px;
     outline: none;
+    box-sizing: border-box;
+  }
+
+  .narration-overlay__input--standalone {
+    min-height: 44px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--viewer-panel, #121922);
+  }
+
+  .narration-overlay__input--standalone:focus {
+    border-color: var(--accent, #e07a3f);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #e07a3f) 18%, transparent);
   }
 
   .narration-overlay__input::placeholder {
     color: rgba(213, 221, 234, 0.45);
   }
 
-  .narration-overlay__input:focus,
-  .narration-overlay__select:focus {
-    border-color: rgba(255, 255, 255, 0.34);
-    box-shadow: none;
-  }
-
-  .narration-overlay__input:disabled,
-  .narration-overlay__select:disabled {
+  .narration-overlay__input:disabled {
     opacity: 0.56;
     cursor: not-allowed;
   }
 
   .narration-overlay__player-shell {
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 12px;
-    background: #08192f;
-    padding: 8px;
+    display: flex;
+    align-items: center;
+    min-height: 72px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+    background: var(--viewer-panel, #121922);
+    padding: 12px;
   }
 
   .narration-overlay__player {
     width: 100%;
-    min-height: 40px;
-    color: rgba(230, 236, 246, 0.72);
-    accent-color: rgba(230, 236, 246, 0.72);
+    min-height: 48px;
+    color: var(--viewer-text, #e8edf4);
+    accent-color: var(--accent, #e07a3f);
   }
 
   .narration-overlay__player::-webkit-media-controls-enclosure,
@@ -319,8 +440,8 @@
   .narration-overlay__player::-webkit-media-controls-fullscreen-button,
   .narration-overlay__player::-webkit-media-controls-timeline,
   .narration-overlay__player::-webkit-media-controls-volume-slider {
-    filter: brightness(0) saturate(100%) invert(92%) sepia(8%) saturate(356%)
-      hue-rotate(184deg) brightness(98%) contrast(93%);
+    filter: brightness(0) saturate(100%) invert(92%) sepia(8%) saturate(356%) hue-rotate(184deg)
+      brightness(98%) contrast(93%);
   }
 
   .narration-overlay__row {
@@ -331,16 +452,19 @@
   }
 
   .narration-overlay__button {
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    min-height: 42px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
     border-radius: 11px;
     padding: 8px 12px;
-    background: #102039;
-    color: #e8edf6;
+    background: var(--viewer-panel-strong, #1b242e);
+    color: var(--viewer-text, #e8edf4);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     cursor: pointer;
-    transition: background 0.16s ease, border-color 0.16s ease;
+    transition:
+      background 0.16s ease,
+      border-color 0.16s ease;
     white-space: nowrap;
   }
 
@@ -350,43 +474,142 @@
   }
 
   .narration-overlay__button--accent {
-    background: #1d395c;
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #fafdff;
+    width: 100%;
+    background: var(--accent, #e07a3f);
+    border-color: transparent;
+    color: #fff;
   }
 
   .narration-overlay__button:not(:disabled):hover {
-    background: #173053;
-    border-color: rgba(255, 255, 255, 0.28);
+    background: color-mix(in srgb, var(--viewer-panel-strong, #1b242e) 82%, white);
   }
 
   .narration-overlay__button--accent:not(:disabled):hover {
-    background: #274974;
+    background: color-mix(in srgb, var(--accent, #e07a3f) 84%, white);
   }
 
   .narration-overlay__form {
     display: grid;
-    gap: 14px;
-    padding: 14px 18px 22px;
+    gap: 22px;
+    padding: 20px 18px 28px;
   }
 
   .narration-overlay__section {
     display: grid;
-    gap: 10px;
+    gap: 12px;
   }
 
   .narration-overlay__section--card {
-    padding: 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: #0a1a2f;
+    padding: 18px;
+    border-radius: 12px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    background: var(--viewer-surface, #151d26);
+    gap: 18px;
   }
 
   .narration-overlay__section-title {
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    color: rgba(230, 236, 246, 0.72);
+    color: var(--viewer-muted, #9aa6b2);
+    font-weight: 700;
+  }
+
+  .narration-overlay__language-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .narration-overlay__language-tab {
+    min-width: 54px;
+    min-height: 38px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    border-radius: 9px;
+    padding: 8px 13px;
+    background: var(--viewer-panel-strong, #1b242e);
+    color: var(--viewer-muted, #9aa6b2);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .narration-overlay__language-tab--active {
+    border-color: var(--accent, #e07a3f);
+    background: color-mix(in srgb, var(--accent, #e07a3f) 16%, transparent);
+    color: var(--viewer-text, #e8edf4);
+  }
+
+  .narration-overlay__source-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+  }
+
+  .narration-overlay__source-heading strong,
+  .narration-overlay__source-heading small {
+    display: block;
+  }
+
+  .narration-overlay__source-heading strong {
+    color: var(--viewer-text, #e8edf4);
+    font-size: 14px;
+  }
+
+  .narration-overlay__source-heading small {
+    margin-top: 3px;
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .narration-overlay__source-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--viewer-panel-strong, #1b242e);
+    color: var(--accent, #e07a3f);
+  }
+
+  .narration-overlay__source-icon :global(svg) {
+    width: 19px;
+    height: 19px;
+  }
+
+  .narration-overlay__source-icon--title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .narration-overlay__preview {
+    display: grid;
+    gap: 8px;
+  }
+
+  .narration-overlay__preview-label {
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .narration-overlay__hint {
+    margin: 0;
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .narration-overlay__button :global(svg) {
+    width: 16px;
+    height: 16px;
   }
 
   @media (max-width: 860px) {

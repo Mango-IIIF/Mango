@@ -86,7 +86,11 @@
       }
     }
   }
-  $: if (mode !== lastMode || (mode === 'story-builder' && (story !== lastStoryForBuilder || storyUrl !== lastStoryForBuilder))) {
+  $: if (
+    mode !== lastMode ||
+    (mode === 'story-builder' &&
+      (story !== lastStoryForBuilder || storyUrl !== lastStoryForBuilder))
+  ) {
     lastMode = mode;
     if (mode === 'story-builder') {
       lastStoryForBuilder = story || storyUrl;
@@ -98,7 +102,7 @@
           modePlugins = createStoryBuilderPlugins({
             initialStory: loadedStory ?? undefined,
             languages: normalisedConfig.story?.languages,
-            annotationPageId: normalisedConfig.story?.annotationPageId
+            annotationPageId: normalisedConfig.story?.annotationPageId,
           });
         });
       });
@@ -167,7 +171,6 @@
 
   export function getCanvasId(): string | null {
     return api.getCanvasId();
-
   }
 
   export function getCanvasCount(): number {
@@ -212,7 +215,6 @@
 
   export function seekTo(time: number): void {
     api.seekTo(time);
-
   }
 
   export function setMediaSegment(start: number, end: number): void {
@@ -253,7 +255,6 @@
 
   export function addAnnotation(annotation: unknown): Promise<void> {
     return api.addAnnotation(annotation);
-
   }
 
   export function removeAnnotation(annotationId: string): Promise<void> {
@@ -302,7 +303,7 @@
     {manifestId}
     config={normalisedConfig}
     {story}
-    storyUrl={storyUrl}
+    {storyUrl}
     plugins={resolvedPlugins}
     {mode}
   />
@@ -324,6 +325,11 @@
   }
 
   @media (max-width: 820px) {
+    :host([mode='story-builder']) {
+      height: auto;
+      min-height: min(1080px, 140dvh);
+    }
+
     :host([mode='workspace']) {
       height: 100vh;
       height: 100dvh;

@@ -18,19 +18,12 @@
   export let onAddChapter: (() => void) | undefined;
   export let onSelectChapter: ((chapterId: string) => void) | undefined;
   export let onDeleteChapter: ((chapterId: string) => void) | undefined;
+  export let onDuplicateChapter: ((chapterId: string) => void) | undefined;
   export let onReorderChapter:
     | ((chapterId: string, targetChapterId: string, position?: 'before' | 'after') => void)
     | undefined;
-  export let onSaveExport: (() => void) | undefined;
-  export let onOpenNarration: (() => void) | undefined;
-  export let onPreview: (() => void) | undefined;
-  export let onStopPreview: (() => void) | undefined;
-  export let isPreviewing: Readable<boolean> = readable(false);
-  export let saveState: Readable<{
-    status: 'idle' | 'saving' | 'success' | 'error';
-    message?: string;
-  }> = readable({ status: 'idle' });
   export let errorMessage: string | null = null;
+  export let validationErrors: Readable<string[]> = readable([]);
 
   const labelForChapter = (chapter: Chapter, index: number): string => {
     const title = chapter.title?.[language];
@@ -57,9 +50,7 @@
         : 0;
 
     const mediaDuration =
-      chapter.media &&
-      Number.isFinite(chapter.media.start) &&
-      Number.isFinite(chapter.media.end)
+      chapter.media && Number.isFinite(chapter.media.start) && Number.isFinite(chapter.media.end)
         ? Math.max(0, chapter.media.end - chapter.media.start)
         : 0;
 
@@ -86,6 +77,11 @@
   const chapterDurationLabel = (chapter: Chapter): string =>
     formatDuration(chapterDurationSeconds(chapter));
 
+  const errorsForChapter = (index: number): string[] => {
+    const prefix = `Chapter ${index + 1}:`;
+    return $validationErrors.filter((message) => message.startsWith(prefix));
+  };
+
   const resolveChapterThumbnail = (chapter: Chapter, manifestoObject: unknown): string | null => {
     if (!manifestoObject) return null;
     return resolveCanvasThumbnail(manifestoObject, undefined, chapter.canvasIndex);
@@ -95,10 +91,7 @@
   $: chapterThumbnails = Object.fromEntries(
     $story.chapters.map((chapter) => [
       chapter.id,
-      resolveChapterThumbnail(
-        chapter,
-        $manifestsStore[chapter.manifest]?.manifesto,
-      ),
+      resolveChapterThumbnail(chapter, $manifestsStore[chapter.manifest]?.manifesto),
     ]),
   );
 
@@ -107,11 +100,6 @@
 
   let poseDebugValue: string | null = null;
   $: poseDebugValue = $modelPoseDebug;
-
-  let saveStatus: 'idle' | 'saving' | 'success' | 'error' = 'idle';
-  let saveMessage: string | undefined;
-  $: saveStatus = $saveState?.status ?? 'idle';
-  $: saveMessage = $saveState?.message;
 
   let menuChapterId: string | null = null;
   let pendingDeleteChapterId: string | null = null;
@@ -145,6 +133,13 @@
 
   const toggleMenu = (chapterId: string) => {
     menuChapterId = menuChapterId === chapterId ? null : chapterId;
+  };
+
+  const moveChapter = (chapterId: string, index: number, direction: -1 | 1) => {
+    const target = $story.chapters[index + direction];
+    if (!target || !onReorderChapter) return;
+    onReorderChapter(chapterId, target.id, direction < 0 ? 'before' : 'after');
+    menuChapterId = null;
   };
 
   const openDeleteModal = (chapterId: string) => {
@@ -191,8 +186,7 @@
   const onDrop = (event: DragEvent, targetChapterId: string) => {
     if (!onReorderChapter) return;
     event.preventDefault();
-    const sourceChapterId =
-      draggedChapterId || event.dataTransfer?.getData('text/plain') || null;
+    const sourceChapterId = draggedChapterId || event.dataTransfer?.getData('text/plain') || null;
 
     if (!sourceChapterId || sourceChapterId === targetChapterId) {
       draggedChapterId = null;
@@ -226,31 +220,24 @@
     </div>
   {/if}
 
-  <div class="story-sidebar__narration" data-testid="narration-status">
-    <button
-      class="story-sidebar__narration-button story-sidebar__narration-button--full"
-      type="button"
-      data-testid="open-narration"
-      on:click={() => onOpenNarration?.()}
-    >
-      {$t('storyBuilder.narration.button')}
-    </button>
-  </div>
-
-  <div class="story-sidebar__divider" aria-hidden="true"></div>
-
   <section class="story-sidebar__chapters" data-testid="chapter-list">
     <div class="story-sidebar__header">
-      <span>{$t('storyBuilder.chapters.title')}</span>
+      <div>
+        <span>Story chapters</span>
+        <small
+          >{$story.chapters.length}
+          {$story.chapters.length === 1 ? 'chapter' : 'chapters'}</small
+        >
+      </div>
     </div>
 
     {#if $story.chapters.length === 0}
       <div class="story-sidebar__empty" data-testid="chapter-empty">
-        {$t('storyBuilder.chapters.empty')}
+        No chapters yet. Capture the current view to begin.
       </div>
     {/if}
 
-    <div class="story-sidebar__list">
+    <div class="story-sidebar__list" role="list">
       {#each $story.chapters as chapter, index (chapter.id)}
         {@const thumbnailSrc = chapterThumbnails[chapter.id]}
         <div
@@ -258,50 +245,49 @@
           class:story-sidebar__row--active={chapter.id === activeChapterId}
           class:story-sidebar__row--draggable={Boolean(onReorderChapter)}
           class:story-sidebar__row--dragging={chapter.id === draggedChapterId}
-          class:story-sidebar__row--drop-before={
-            chapter.id === dropTargetChapterId && dropPosition === 'before'
-          }
-          class:story-sidebar__row--drop-after={
-            chapter.id === dropTargetChapterId && dropPosition === 'after'
-          }
+          class:story-sidebar__row--drop-before={chapter.id === dropTargetChapterId &&
+            dropPosition === 'before'}
+          class:story-sidebar__row--drop-after={chapter.id === dropTargetChapterId &&
+            dropPosition === 'after'}
           data-testid="chapter-row-{chapter.id}"
-          role="button"
-          tabindex="0"
+          role="listitem"
           draggable={Boolean(onReorderChapter)}
-          on:click={() => handleSelectChapter(chapter.id)}
-          on:keydown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              handleSelectChapter(chapter.id);
-            }
-          }}
           on:dragstart={(event) => onDragStart(event, chapter.id)}
           on:dragover={(event) => onDragOver(event, chapter.id)}
           on:drop={(event) => onDrop(event, chapter.id)}
           on:dragend={onDragEnd}
         >
-          <div class="story-sidebar__thumbnail-wrap">
-            {#if thumbnailSrc}
-              <img
-                class="story-sidebar__thumbnail"
-                src={thumbnailSrc}
-                alt={labelForChapter(chapter, index)}
-                loading="lazy"
-              />
-            {:else}
-              <div class="story-sidebar__thumbnail story-sidebar__thumbnail--placeholder">
-                {index + 1}
-              </div>
-            {/if}
-          </div>
-
-          <div class="story-sidebar__row-content">
-            <div class="story-sidebar__row-index">{index + 1}</div>
-            <div class="story-sidebar__row-title" data-testid="chapter-title-{chapter.id}">
-              {labelForChapter(chapter, index)}
+          <button
+            class="story-sidebar__row-select"
+            type="button"
+            aria-current={chapter.id === activeChapterId ? 'step' : undefined}
+            on:click={() => handleSelectChapter(chapter.id)}
+          >
+            <div class="story-sidebar__thumbnail-wrap">
+              {#if thumbnailSrc}
+                <img class="story-sidebar__thumbnail" src={thumbnailSrc} alt="" loading="lazy" />
+              {:else}
+                <div class="story-sidebar__thumbnail story-sidebar__thumbnail--placeholder">
+                  {index + 1}
+                </div>
+              {/if}
             </div>
-            <div class="story-sidebar__row-duration">{chapterDurationLabel(chapter)}</div>
-          </div>
+
+            <div class="story-sidebar__row-content">
+              <div class="story-sidebar__row-index">Chapter {index + 1}</div>
+              <div class="story-sidebar__row-title" data-testid="chapter-title-{chapter.id}">
+                {labelForChapter(chapter, index)}
+              </div>
+              <div class="story-sidebar__row-duration">
+                {chapterDurationLabel(chapter)}
+              </div>
+              {#if errorsForChapter(index).length > 0}
+                <div class="story-sidebar__row-error" title={errorsForChapter(index).join('\n')}>
+                  Needs attention
+                </div>
+              {/if}
+            </div>
+          </button>
 
           <div class="story-sidebar__row-menu">
             <button
@@ -316,6 +302,32 @@
 
             {#if menuChapterId === chapter.id}
               <div class="story-sidebar__menu-popover">
+                <button
+                  class="story-sidebar__menu-action"
+                  type="button"
+                  on:click|stopPropagation={() => {
+                    menuChapterId = null;
+                    onDuplicateChapter?.(chapter.id);
+                  }}
+                >
+                  Duplicate
+                </button>
+                <button
+                  class="story-sidebar__menu-action"
+                  type="button"
+                  disabled={index === 0}
+                  on:click|stopPropagation={() => moveChapter(chapter.id, index, -1)}
+                >
+                  Move up
+                </button>
+                <button
+                  class="story-sidebar__menu-action"
+                  type="button"
+                  disabled={index === $story.chapters.length - 1}
+                  on:click|stopPropagation={() => moveChapter(chapter.id, index, 1)}
+                >
+                  Move down
+                </button>
                 <button
                   class="story-sidebar__menu-action story-sidebar__menu-action--danger"
                   type="button"
@@ -339,43 +351,9 @@
       data-testid="add-chapter"
       on:click={() => onAddChapter?.()}
     >
-      {$t('storyBuilder.actions.add')}
+      Capture current view
     </button>
-    <div class="story-sidebar__divider" aria-hidden="true"></div>
-    <button
-      class="story-sidebar__preview"
-      type="button"
-      data-testid="preview-story"
-      on:click={() => {
-        if ($isPreviewing) {
-          onStopPreview?.();
-        } else {
-          onPreview?.();
-        }
-      }}
-      disabled={$story.chapters.length === 0}
-    >
-      {$isPreviewing ? 'Stop' : 'Preview'}
-    </button>
-    <div class="story-sidebar__divider" aria-hidden="true"></div>
-    <button
-      class="story-sidebar__save"
-      type="button"
-      data-testid="save-export"
-      on:click={() => onSaveExport?.()}
-      disabled={saveStatus === 'saving'}
-    >
-      {saveStatus === 'saving' ? $t('storyBuilder.actions.saving') : $t('storyBuilder.actions.save')}
-    </button>
-    {#if saveStatus === 'error'}
-      <div class="story-sidebar__save-status story-sidebar__save-status--error">
-        {saveMessage ?? $t('storyBuilder.actions.saveFailed')}
-      </div>
-    {:else if saveStatus === 'success'}
-      <div class="story-sidebar__save-status story-sidebar__save-status--success">
-        {saveMessage ?? $t('storyBuilder.actions.saveSuccess')}
-      </div>
-    {/if}
+    <p>Pan or zoom the media, then capture that state as a new chapter.</p>
   </div>
 
   {#if showDebug}
@@ -517,30 +495,6 @@
     color: var(--story-sidebar-muted, var(--viewer-muted, rgba(255, 255, 255, 0.6)));
   }
 
-  .story-sidebar__narration {
-    display: grid;
-    gap: 8px;
-    font-size: 12px;
-  }
-
-  .story-sidebar__narration-button {
-    justify-self: stretch;
-    border: none;
-    padding: 10px 14px;
-    border-radius: 12px;
-    background: var(--accent, #e07a3f);
-    color: #fffaf6;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    cursor: pointer;
-  }
-
-  .story-sidebar__narration-button--full {
-    width: 100%;
-  }
-
   .story-sidebar__header {
     display: flex;
     align-items: center;
@@ -551,12 +505,24 @@
     color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.65));
   }
 
+  .story-sidebar__header > div {
+    display: grid;
+    gap: 4px;
+  }
+
+  .story-sidebar__header small {
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
   .story-sidebar__add {
     border: none;
     border-radius: 10px;
-    padding: 6px 10px;
-    background: var(--viewer-accent, #ff4fa2);
-    color: #1b1f24;
+    padding: 10px 12px;
+    background: var(--accent, #e07a3f);
+    color: #fff;
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
@@ -590,15 +556,28 @@
 
   .story-sidebar__row {
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px;
     align-items: start;
     padding: 10px;
     border: 1px solid transparent;
     border-radius: 12px;
     background: var(--story-sidebar-row-bg, rgba(255, 255, 255, 0.06));
-    cursor: pointer;
     position: relative;
+  }
+
+  .story-sidebar__row-select {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
   }
 
   .story-sidebar__row--draggable {
@@ -684,6 +663,13 @@
     background: rgba(255, 255, 255, 0.08);
   }
 
+  .story-sidebar__row-error {
+    justify-self: start;
+    color: #ffb8b8;
+    font-size: 11px;
+    font-weight: 650;
+  }
+
   .story-sidebar__row-menu {
     position: relative;
     align-self: start;
@@ -734,6 +720,11 @@
     background: rgba(255, 255, 255, 0.08);
   }
 
+  .story-sidebar__menu-action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   .story-sidebar__menu-action--danger {
     color: #ff9aa2;
   }
@@ -743,58 +734,11 @@
     gap: 10px;
   }
 
-  .story-sidebar__save {
-    border: none;
-    border-radius: 12px;
-    padding: 10px 14px;
-    background: var(--accent, #e07a3f);
-    color: #fffaf6;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    cursor: pointer;
-  }
-
-  .story-sidebar__save:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-  }
-
-  .story-sidebar__preview {
-    border: none;
-    border-radius: 12px;
-    padding: 10px 14px;
-    background: #4a90e2;
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    cursor: pointer;
-  }
-
-  .story-sidebar__preview:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-  }
-
-  .story-sidebar__divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.16);
-  }
-
-  .story-sidebar__save-status {
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  .story-sidebar__save-status--error {
-    color: #ff9aa2;
-  }
-
-  .story-sidebar__save-status--success {
-    color: #c2fbd7;
+  .story-sidebar__actions p {
+    margin: 0;
+    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
+    font-size: 11px;
+    line-height: 1.45;
   }
 
   .story-sidebar__debug {

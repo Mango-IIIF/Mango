@@ -36,6 +36,15 @@
     }
   };
 
+  const downloadJson = () => {
+    const blob = new Blob([pretty()], { type: 'application/ld+json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'mango-story.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 </script>
 
 <div class="save-modal" hidden={!open} aria-hidden={!open}>
@@ -65,8 +74,15 @@
       ></textarea>
 
       <div class="save-modal__actions">
-        <button class="save-modal__button save-modal__button--primary" type="button" onclick={copyJson}>
+        <button class="save-modal__button" type="button" onclick={copyJson}>
           {$t('storyBuilder.export.copy')}
+        </button>
+        <button
+          class="save-modal__button save-modal__button--primary"
+          type="button"
+          onclick={downloadJson}
+        >
+          Download IIIF story JSON
         </button>
       </div>
     </div>

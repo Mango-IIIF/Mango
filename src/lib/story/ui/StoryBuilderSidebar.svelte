@@ -6,21 +6,17 @@
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
   export let error: Readable<string | null>;
+  export let validationErrors: Readable<string[]>;
   export let modelPoseDebug: Readable<string | null>;
   export let showDebug = false;
   export let language = 'en';
   export let onAddChapter: () => void;
   export let onSelectChapter: (chapterId: string) => void;
   export let onDeleteChapter: (chapterId: string) => void;
+  export let onDuplicateChapter: (chapterId: string) => void;
   export let onReorderChapter:
     | ((chapterId: string, targetChapterId: string, position?: 'before' | 'after') => void)
     | undefined = undefined;
-  export let onSaveExport: () => void;
-  export let onOpenNarration: () => void;
-  export let onPreview: (() => void) | undefined = undefined;
-  export let onStopPreview: (() => void) | undefined = undefined;
-  export let isPreviewing: Readable<boolean>;
-  export let saveState: Readable<{ status: 'idle' | 'saving' | 'success' | 'error'; message?: string }>;
 
   let errorMessage: string | null = null;
   let isDisabled = false;
@@ -35,16 +31,12 @@
   {modelPoseDebug}
   {showDebug}
   {language}
-  errorMessage={errorMessage}
+  {errorMessage}
+  {validationErrors}
   disabled={isDisabled}
-  onAddChapter={onAddChapter}
-  onSelectChapter={onSelectChapter}
-  onDeleteChapter={onDeleteChapter}
-  onReorderChapter={onReorderChapter}
-  onSaveExport={onSaveExport}
-  onOpenNarration={onOpenNarration}
-  {onPreview}
-  {onStopPreview}
-  {isPreviewing}
-  {saveState}
+  {onAddChapter}
+  {onSelectChapter}
+  {onDeleteChapter}
+  {onDuplicateChapter}
+  {onReorderChapter}
 />

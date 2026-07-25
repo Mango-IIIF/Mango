@@ -18,31 +18,37 @@
 </script>
 
 <section class="chapter-overlay__section chapter-overlay__section--card">
-  <div class="chapter-overlay__section-title">Language</div>
-  <select
-    class="chapter-overlay__select"
-    data-testid="chapter-language"
-    value={activeLanguage}
-    on:change={(event) => {
-      const target = event.currentTarget as HTMLSelectElement;
-      onLanguageChange?.(target.value);
-    }}
-  >
+  <div class="chapter-overlay__section-title">Content language</div>
+  <div class="chapter-overlay__language-tabs" role="tablist" aria-label="Content language">
     {#each languages as lang}
-      <option value={lang}>{lang.toUpperCase()}</option>
+      <button
+        class="chapter-overlay__language-tab"
+        class:chapter-overlay__language-tab--active={lang === activeLanguage}
+        type="button"
+        role="tab"
+        aria-selected={lang === activeLanguage}
+        data-testid="chapter-language-{lang}"
+        on:click={() => onLanguageChange?.(lang)}
+      >
+        {lang.toUpperCase()}
+      </button>
     {/each}
-  </select>
+  </div>
 </section>
 
 <section class="chapter-overlay__section chapter-overlay__section--card">
   <div class="chapter-overlay__section-header">
-    <div class="chapter-overlay__section-title">Metadata ({activeLanguage.toUpperCase()})</div>
+    <div class="chapter-overlay__section-title">
+      Content ({activeLanguage.toUpperCase()})
+    </div>
     <button
       class="chapter-overlay__collapse-toggle"
       type="button"
       on:click={onToggleMetadata}
       aria-expanded={!metadataSectionCollapsed}
-      aria-label={metadataSectionCollapsed ? 'Expand metadata section' : 'Collapse metadata section'}
+      aria-label={metadataSectionCollapsed
+        ? 'Expand metadata section'
+        : 'Collapse metadata section'}
     >
       <span
         class="chapter-overlay__collapse-icon"
@@ -80,13 +86,17 @@
 
 <section class="chapter-overlay__section chapter-overlay__section--card">
   <div class="chapter-overlay__section-header">
-    <div class="chapter-overlay__section-title">Annotation ({activeLanguage.toUpperCase()})</div>
+    <div class="chapter-overlay__section-title">
+      On-canvas text ({activeLanguage.toUpperCase()})
+    </div>
     <button
       class="chapter-overlay__collapse-toggle"
       type="button"
       on:click={onToggleAnnotation}
       aria-expanded={!annotationSectionCollapsed}
-      aria-label={annotationSectionCollapsed ? 'Expand annotation section' : 'Collapse annotation section'}
+      aria-label={annotationSectionCollapsed
+        ? 'Expand annotation section'
+        : 'Collapse annotation section'}
     >
       <span
         class="chapter-overlay__collapse-icon"
@@ -113,12 +123,15 @@
         style="margin-top: 12px; width: 100%;"
         type="button"
         data-testid="set-annotation-position"
+        disabled={!annotationDraft.trim()}
         on:click={onSetPositionClick}
       >
-        Set Annotation Position on Screen
+        Position on canvas
       </button>
     {:else}
-      <div class="chapter-overlay__hint">Capture a chapter to edit annotation text and placement.</div>
+      <div class="chapter-overlay__hint">
+        Capture a chapter to edit annotation text and placement.
+      </div>
     {/if}
   </div>
 </section>

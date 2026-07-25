@@ -49,13 +49,17 @@
 {#if activeNarrationUrl}
   <section class="chapter-overlay__section chapter-overlay__section--card">
     <div class="chapter-overlay__section-header">
-      <div class="chapter-overlay__section-title">Audio Narration ({activeLanguage.toUpperCase()})</div>
+      <div class="chapter-overlay__section-title">
+        Chapter narration ({activeLanguage.toUpperCase()})
+      </div>
       <button
         class="chapter-overlay__collapse-toggle"
         type="button"
         on:click={onToggleNarration}
         aria-expanded={!narrationSectionCollapsed}
-        aria-label={narrationSectionCollapsed ? 'Expand audio narration section' : 'Collapse audio narration section'}
+        aria-label={narrationSectionCollapsed
+          ? 'Expand audio narration section'
+          : 'Collapse audio narration section'}
       >
         <span
           class="chapter-overlay__collapse-icon"
@@ -67,8 +71,11 @@
     </div>
 
     <div class="chapter-overlay__section-content" hidden={narrationSectionCollapsed}>
+      <div class="chapter-overlay__hint">
+        Choose the part of the story audio that should play with this chapter.
+      </div>
       <label class="chapter-overlay__label">
-        Narration URL
+        Story audio source
         <input
           class="chapter-overlay__input"
           type="url"
@@ -119,7 +126,11 @@
           <div class="chapter-overlay__wave-track">
             <canvas class="chapter-overlay__wave-canvas" bind:this={narrationWaveCanvas}></canvas>
             {#if activeNarrationDurationSec > 0}
-              <div class="chapter-overlay__wave-overlay" style={activeNarrationOverlayStyle} aria-hidden="true">
+              <div
+                class="chapter-overlay__wave-overlay"
+                style={activeNarrationOverlayStyle}
+                aria-hidden="true"
+              >
                 <div class="chapter-overlay__wave-selection"></div>
                 <div class="chapter-overlay__wave-marker chapter-overlay__wave-marker--start"></div>
                 <div class="chapter-overlay__wave-marker chapter-overlay__wave-marker--end"></div>
@@ -137,28 +148,36 @@
           </div>
 
           <div class="chapter-overlay__wave-sliders">
-            <input
-              class="chapter-overlay__range chapter-overlay__range--start"
-              type="range"
-              min="0"
-              max={Math.max(1, activeNarrationDurationSec)}
-              step="1"
-              data-testid="chapter-narration-start-range"
-              value={Math.min(activeNarrationStartSec, Math.max(1, activeNarrationDurationSec))}
-              on:input={onNarrationStartRangeInput}
-              disabled={activeNarrationDurationSec <= 0}
-            />
-            <input
-              class="chapter-overlay__range chapter-overlay__range--end"
-              type="range"
-              min="0"
-              max={Math.max(1, activeNarrationDurationSec)}
-              step="1"
-              data-testid="chapter-narration-end-range"
-              value={Math.min(activeNarrationEndSec, Math.max(1, activeNarrationDurationSec))}
-              on:input={onNarrationEndRangeInput}
-              disabled={activeNarrationDurationSec <= 0}
-            />
+            <label class="chapter-overlay__range-row">
+              <span>Start</span>
+              <input
+                class="chapter-overlay__range chapter-overlay__range--start"
+                type="range"
+                min="0"
+                max={Math.max(1, activeNarrationDurationSec)}
+                step="0.1"
+                aria-label="Narration start time"
+                data-testid="chapter-narration-start-range"
+                value={Math.min(activeNarrationStartSec, Math.max(1, activeNarrationDurationSec))}
+                on:input={onNarrationStartRangeInput}
+                disabled={activeNarrationDurationSec <= 0}
+              />
+            </label>
+            <label class="chapter-overlay__range-row">
+              <span>End</span>
+              <input
+                class="chapter-overlay__range chapter-overlay__range--end"
+                type="range"
+                min="0"
+                max={Math.max(1, activeNarrationDurationSec)}
+                step="0.1"
+                aria-label="Narration end time"
+                data-testid="chapter-narration-end-range"
+                value={Math.min(activeNarrationEndSec, Math.max(1, activeNarrationDurationSec))}
+                on:input={onNarrationEndRangeInput}
+                disabled={activeNarrationDurationSec <= 0}
+              />
+            </label>
           </div>
         </div>
       </div>
@@ -240,14 +259,21 @@
         type="button"
         on:click={onToggleAv}
         aria-expanded={!avSectionCollapsed}
-        aria-label={avSectionCollapsed ? 'Expand audio and video preview section' : 'Collapse audio and video preview section'}
+        aria-label={avSectionCollapsed
+          ? 'Expand audio and video preview section'
+          : 'Collapse audio and video preview section'}
       >
-        <span class="chapter-overlay__collapse-icon" class:chapter-overlay__collapse-icon--collapsed={avSectionCollapsed}>▾</span>
+        <span
+          class="chapter-overlay__collapse-icon"
+          class:chapter-overlay__collapse-icon--collapsed={avSectionCollapsed}>▾</span
+        >
       </button>
     </div>
 
     <div class="chapter-overlay__section-content" hidden={avSectionCollapsed}>
-      <div class="chapter-overlay__hint">Use the media controls in the viewer to set Mark In and Mark Out times.</div>
+      <div class="chapter-overlay__hint">
+        Use the media controls in the viewer to set Mark In and Mark Out times.
+      </div>
 
       <div class="chapter-overlay__timegrid">
         <div class="chapter-overlay__timerow">
@@ -270,7 +296,12 @@
               }}
             />
           </label>
-          <button class="chapter-overlay__button chapter-overlay__button--subtle" type="button" data-testid="chapter-mark-in-btn" on:click={onUseMarkInCurrent}>Use current</button>
+          <button
+            class="chapter-overlay__button chapter-overlay__button--subtle"
+            type="button"
+            data-testid="chapter-mark-in-btn"
+            on:click={onUseMarkInCurrent}>Use current</button
+          >
         </div>
 
         <div class="chapter-overlay__timerow">
@@ -293,12 +324,19 @@
               }}
             />
           </label>
-          <button class="chapter-overlay__button chapter-overlay__button--subtle" type="button" data-testid="chapter-mark-out-btn" on:click={onUseMarkOutCurrent}>Use current</button>
+          <button
+            class="chapter-overlay__button chapter-overlay__button--subtle"
+            type="button"
+            data-testid="chapter-mark-out-btn"
+            on:click={onUseMarkOutCurrent}>Use current</button
+          >
         </div>
       </div>
 
       {#if !marksValid}
-        <div class="chapter-overlay__hint" data-testid="chapter-av-hint">Mark Out must be greater than Mark In for audio / video.</div>
+        <div class="chapter-overlay__hint" data-testid="chapter-av-hint">
+          Mark Out must be greater than Mark In for audio / video.
+        </div>
       {/if}
 
       <div class="chapter-overlay__row chapter-overlay__row--tight">
@@ -307,11 +345,18 @@
           type="button"
           data-testid="chapter-media-preview"
           on:click={onPreviewMedia}
-          disabled={parseHms(markInDraft) === null || parseHms(markOutDraft) === null || parseHms(markOutDraft) <= parseHms(markInDraft)}
+          disabled={parseHms(markInDraft) === null ||
+            parseHms(markOutDraft) === null ||
+            parseHms(markOutDraft) <= parseHms(markInDraft)}
         >
           Preview segment
         </button>
-        <button class="chapter-overlay__button chapter-overlay__button--subtle" type="button" data-testid="chapter-media-stop" on:click={onStopPreviewMedia}>Stop</button>
+        <button
+          class="chapter-overlay__button chapter-overlay__button--subtle"
+          type="button"
+          data-testid="chapter-media-stop"
+          on:click={onStopPreviewMedia}>Stop</button
+        >
       </div>
     </div>
   </section>

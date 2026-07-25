@@ -22,7 +22,9 @@
   $: manifestSupportsLayers = layers.length > 1 && layers.every((src) => src.type === 'image');
 
   export let open = false;
+  export let docked = false;
   export let chapterId: string | null = null;
+  export let validationErrors: string[] = [];
   export let mediaType: Readable<MediaType | null>;
   export let mediaMarks: Readable<MediaMarksState> = readable({
     lastTime: 0,
@@ -34,51 +36,37 @@
   export let languages: string[] = ['en'];
   export let currentManifest: string | null = null;
   export let onClose: (() => void) | undefined;
-  export let onSetMediaMarks:
-    | ((start: number | null, end: number | null) => void)
-    | undefined;
+  export let onSetMediaMarks: ((start: number | null, end: number | null) => void) | undefined;
   export let onPreviewMediaSegment: (() => void) | undefined;
   export let onStopPreviewMediaSegment: (() => void) | undefined;
-  export let onSetNarrationTrack:
-    | ((lang: string, src: string) => void)
-    | undefined;
-  export let onAssignSegment:
-    | ((lang: string, start: number, end: number) => void)
-    | undefined;
+  export let onSetNarrationTrack: ((lang: string, src: string) => void) | undefined;
+  export let onAssignSegment: ((lang: string, start: number, end: number) => void) | undefined;
   export let onSkipNarration: ((lang: string) => void) | undefined;
-  export let onSetAnnotationLanguage:
-    | ((lang: string) => void)
-    | undefined;
-  export let onUpdateManifest:
-    | ((chapterId: string, manifest: string) => void)
-    | undefined;
+  export let onSetAnnotationLanguage: ((lang: string) => void) | undefined;
+  export let onUpdateManifest: ((chapterId: string, manifest: string) => void) | undefined;
   export let onLoadManifest: ((manifest: string) => void) | undefined;
   export let onReloadManifest:
-    | ((chapterId: string, manifest: string, canvasIndex: number) => void)
-    | undefined;
+    ((chapterId: string, manifest: string, canvasIndex: number) => void) | undefined;
   export let onUpdateChapterTitle:
-    | ((chapterId: string, lang: string, value: string) => void)
-    | undefined;
+    ((chapterId: string, lang: string, value: string) => void) | undefined;
   export let onUpdateChapterDescription:
-    | ((chapterId: string, lang: string, value: string) => void)
-    | undefined;
+    ((chapterId: string, lang: string, value: string) => void) | undefined;
   export let onUpdateAnnotationText:
-    | ((chapterId: string, lang: string, text: string) => void)
-    | undefined;
+    ((chapterId: string, lang: string, text: string) => void) | undefined;
   export let onUpdateAnnotationPlacement:
-    | ((chapterId: string, lang: string, placement: AnnotationPlacement) => void)
-    | undefined;
+    ((chapterId: string, lang: string, placement: AnnotationPlacement) => void) | undefined;
   export let onUpdateAdvanceMode:
-    | ((chapterId: string, mode: ChapterAdvance['mode']) => void)
-    | undefined;
+    ((chapterId: string, mode: ChapterAdvance['mode']) => void) | undefined;
   export let onUpdateDelay: ((chapterId: string, delayMs?: number) => void) | undefined;
   export let onUpdateChapterPosition: ((chapterId: string) => void) | undefined;
+  export let onRevertChapterPosition: ((chapterId: string) => void) | undefined;
   export let onSave: (() => void) | undefined;
   export let onSetAnnotationPositioning: ((lang: string) => void) | undefined = undefined;
 
   let activeLanguage = language;
   let lastLanguageProp = language;
   let chapter: StoryState['chapters'][number] | null = null;
+  let chapterValidationErrors: string[] = [];
   let chapterTitleDraft = '';
 
   const handleSetPositionClick = () => {
@@ -90,9 +78,7 @@
   let manifestDraft = '';
   let annotationDraft = '';
   let annotationDrafts: Record<string, string> = {};
-  let placementDraft: AnnotationPlacement = cloneAnnotationPlacement(
-    DEFAULT_ANNOTATION_PLACEMENT,
-  );
+  let placementDraft: AnnotationPlacement = cloneAnnotationPlacement(DEFAULT_ANNOTATION_PLACEMENT);
   let advanceModeDraft: ChapterAdvance['mode'] = 'manual';
   let delayDraft: number | undefined = 2000;
   let lastChapterId: string | null = null;
@@ -105,7 +91,11 @@
     markIn: null,
     markOut: null,
   };
-  let currentMarks: MediaMarksState = { lastTime: 0, markIn: null, markOut: null };
+  let currentMarks: MediaMarksState = {
+    lastTime: 0,
+    markIn: null,
+    markOut: null,
+  };
   let hasAvMedia = false;
   let marksValid = true;
   let mediaTypeValue: MediaType | null = null;
@@ -166,13 +156,9 @@
   $: if (activeLanguage !== lastActiveLanguage) {
     const activeChapter = $story.chapters.find((item) => item.id === chapterId);
     const nextAnnotation =
-      activeChapter?.annotations?.[activeLanguage]?.text ??
-      annotationDrafts[activeLanguage] ??
-      '';
+      activeChapter?.annotations?.[activeLanguage]?.text ?? annotationDrafts[activeLanguage] ?? '';
     const nextTitle =
-      activeChapter?.title?.[activeLanguage] ??
-      chapterTitleDrafts[activeLanguage] ??
-      '';
+      activeChapter?.title?.[activeLanguage] ?? chapterTitleDrafts[activeLanguage] ?? '';
     const nextDescription =
       activeChapter?.description?.[activeLanguage] ??
       chapterDescriptionDrafts[activeLanguage] ??
@@ -209,10 +195,6 @@
       parts.length === 3 ? parts : parts.length === 2 ? [0, parts[0], parts[1]] : [0, 0, parts[0]];
     const totalSeconds = a * 3600 + b * 60 + c;
     return Number.isFinite(totalSeconds) ? totalSeconds : null;
-  };
-
-  const hasTextValue = (value: string | null | undefined): boolean => {
-    return (value ?? '').trim().length > 0;
   };
 
   const hasValidRange = (startValue: string, endValue: string): boolean => {
@@ -284,8 +266,7 @@
 
   const updateNarrationFromState = (lang: string) => {
     narrationUrls[lang] = getNarrationTrack(lang);
-    const chapterSegment = $story.chapters
-      .find((item) => item.id === chapterId)
+    const chapterSegment = $story.chapters.find((item) => item.id === chapterId)
       ?.narrationSegment?.[lang];
     applyNarrationDrafts(lang, chapterSegment?.start ?? null, chapterSegment?.end ?? null);
   };
@@ -387,7 +368,8 @@
 
         const bytes = await response.arrayBuffer();
         const AudioContextCtor =
-          window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+          window.AudioContext ||
+          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
 
         if (AudioContextCtor) {
           const context = new AudioContextCtor();
@@ -478,7 +460,7 @@
       const x = i * barWidth;
       const barHeight = value * (height * 0.88);
       const y = centre - barHeight / 2;
-      ctx.fillStyle = 'rgba(87, 158, 255, 0.72)';
+      ctx.fillStyle = 'rgba(224, 122, 63, 0.72)';
       ctx.fillRect(x, y, Math.max(1, barWidth * 0.7), barHeight);
     }
 
@@ -513,13 +495,7 @@
     cancelNarrationWaveDraw();
     narrationWaveDrawRaf = window.requestAnimationFrame(() => {
       narrationWaveDrawRaf = 0;
-      drawNarrationWaveform(
-        canvas,
-        wave,
-        duration,
-        start,
-        end,
-      );
+      drawNarrationWaveform(canvas, wave, duration, start, end);
     });
   };
 
@@ -670,6 +646,16 @@
   }
 
   $: chapter = $story.chapters.find((item) => item.id === chapterId) ?? null;
+  $: {
+    const chapterIndex = $story.chapters.findIndex((item) => item.id === chapterId);
+    const prefix = `Chapter ${chapterIndex + 1}:`;
+    chapterValidationErrors =
+      chapterIndex >= 0
+        ? validationErrors
+            .filter((message) => message.startsWith(prefix))
+            .map((message) => message.slice(prefix.length).trim())
+        : validationErrors.filter((message) => message.startsWith('Story:'));
+  }
 
   $: if (chapterId !== lastChapterId) {
     lastChapterId = chapterId;
@@ -701,7 +687,9 @@
 
     annotationDraft = annotationDrafts[activeLanguage] ?? '';
 
-    const activePlacement = coerceAnnotationPlacement(chapter?.annotations?.[activeLanguage]?.placement);
+    const activePlacement = coerceAnnotationPlacement(
+      chapter?.annotations?.[activeLanguage]?.placement,
+    );
     const chapterPlacementFallback = Object.values(chapter?.annotations ?? {})
       .map((entry) => coerceAnnotationPlacement(entry?.placement))
       .find((entry): entry is AnnotationPlacement => Boolean(entry));
@@ -713,8 +701,7 @@
       cloneAnnotationPlacement(DEFAULT_ANNOTATION_PLACEMENT);
 
     advanceModeDraft = chapter?.advance?.mode ?? advanceModeDraft ?? 'manual';
-    delayDraft =
-      chapter?.advance?.delayMs ?? (delayDraft === undefined ? 2000 : delayDraft);
+    delayDraft = chapter?.advance?.delayMs ?? (delayDraft === undefined ? 2000 : delayDraft);
 
     if (!chapter && currentManifest && manifestDraft.trim() === '') {
       manifestDraft = currentManifest;
@@ -752,7 +739,9 @@
     }
     annotationDrafts[activeLanguage] = nextText;
 
-    const activePlacement = coerceAnnotationPlacement(chapter.annotations?.[activeLanguage]?.placement);
+    const activePlacement = coerceAnnotationPlacement(
+      chapter.annotations?.[activeLanguage]?.placement,
+    );
     const nextPlacement =
       activePlacement ??
       coerceAnnotationPlacement(chapter.annotationPlacement) ??
@@ -901,7 +890,11 @@
     commitMediaMarks();
     onUpdateChapterPosition?.(chapterId);
     applyDrafts(chapterId);
-    onSave?.();
+    if (!docked) onSave?.();
+  };
+
+  const handleRevertView = () => {
+    if (chapterId) onRevertChapterPosition?.(chapterId);
   };
 
   $: mediaTypeValue = $mediaType;
@@ -969,14 +962,9 @@
     if (nextSyncKey !== lastSectionSyncKey) {
       lastSectionSyncKey = nextSyncKey;
 
-      metadataSectionCollapsed =
-        !hasTextValue(chapterTitleDrafts[activeLanguage] ?? chapterTitleDraft) &&
-        !hasTextValue(chapterDescriptionDrafts[activeLanguage] ?? chapterDescriptionDraft);
+      metadataSectionCollapsed = false;
 
-      narrationSectionCollapsed = !hasValidRange(
-        narrationStartDrafts[activeLanguage] ?? '',
-        narrationEndDrafts[activeLanguage] ?? '',
-      );
+      narrationSectionCollapsed = false;
 
       avSectionCollapsed = !hasValidRange(markInDraft, markOutDraft);
 
@@ -1033,59 +1021,98 @@
 
 <div
   class="chapter-overlay"
+  class:chapter-overlay--docked={docked}
   data-testid="chapter-overlay"
   aria-hidden={!open}
   hidden={!open}
 >
-  <div
-    class="chapter-overlay__scrim"
-    role="button"
-    tabindex="0"
-    aria-label="Close chapter metadata"
-    on:click={() => onClose?.()}
-    on:keydown={(event) => {
-      if (event.key === 'Enter' || event.key === ' ') onClose?.();
-    }}
-  ></div>
+  {#if !docked}
+    <div
+      class="chapter-overlay__scrim"
+      role="button"
+      tabindex="0"
+      aria-label="Close chapter metadata"
+      on:click={() => onClose?.()}
+      on:keydown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') onClose?.();
+      }}
+    ></div>
+  {/if}
 
   <div
     class="chapter-overlay__panel"
-    role="dialog"
+    role={docked ? 'region' : 'dialog'}
     aria-modal="false"
     aria-labelledby="chapter-overlay-title"
   >
     <div class="chapter-overlay__header">
-      <button
-        class="chapter-overlay__back"
-        type="button"
-        data-testid="chapter-overlay-back"
-        on:click={() => onClose?.()}
-      >
-        Back
-      </button>
+      {#if !docked}
+        <button
+          class="chapter-overlay__back"
+          type="button"
+          data-testid="chapter-overlay-back"
+          on:click={() => onClose?.()}
+        >
+          Back
+        </button>
+      {/if}
       <div>
-        <div class="chapter-overlay__eyebrow">Story Editor</div>
-        <div class="chapter-overlay__title" id="chapter-overlay-title">Chapter Metadata</div>
+        <div class="chapter-overlay__eyebrow">Selected chapter</div>
+        <div class="chapter-overlay__title" id="chapter-overlay-title">Chapter inspector</div>
       </div>
-      <button
-        class="chapter-overlay__close"
-        type="button"
-        data-testid="chapter-overlay-close"
-        on:click={() => onClose?.()}
-        aria-label="Close"
-      >
-        ×
-      </button>
+      {#if !docked}
+        <button
+          class="chapter-overlay__close"
+          type="button"
+          data-testid="chapter-overlay-close"
+          on:click={() => onClose?.()}
+          aria-label="Close"
+        >
+          ×
+        </button>
+      {/if}
     </div>
 
     <form class="chapter-overlay__form" on:submit|preventDefault>
+      {#if chapterValidationErrors.length > 0}
+        <div class="chapter-overlay__validation" role="alert">
+          <strong>Needs attention</strong>
+          <ul>
+            {#each chapterValidationErrors as message}
+              <li>{message}</li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
       <div class="chapter-overlay__body">
+        <ChapterTextForm
+          {activeLanguage}
+          {languages}
+          {metadataSectionCollapsed}
+          {annotationSectionCollapsed}
+          {chapterTitleDraft}
+          {chapterDescriptionDraft}
+          {annotationDraft}
+          hasChapter={Boolean(chapter)}
+          onLanguageChange={handleLanguageChange}
+          onToggleMetadata={() => {
+            metadataSectionCollapsed = !metadataSectionCollapsed;
+          }}
+          onToggleAnnotation={() => {
+            annotationSectionCollapsed = !annotationSectionCollapsed;
+          }}
+          onChapterTitleInput={handleChapterTitleInput}
+          onChapterDescriptionInput={handleChapterDescriptionInput}
+          onAnnotationInput={handleAnnotationInput}
+          onSetPositionClick={handleSetPositionClick}
+        />
+
         <ChapterCameraConfig
           chapterExists={Boolean(chapter)}
           chapterCanvasIndex={chapter?.canvasIndex ?? 0}
-          manifestDraft={manifestDraft}
-          transitionSectionCollapsed={transitionSectionCollapsed}
-          delayMs={delayMs}
+          {manifestDraft}
+          {transitionSectionCollapsed}
+          {delayMs}
           onManifestInput={handleManifestInput}
           onReloadManifest={() => handleReload()}
           onToggleTransition={() => {
@@ -1101,7 +1128,12 @@
             </div>
             <div class="chapter-overlay__section-content">
               {#each layers as layer, index (layer.id)}
-                {@const opacity = layerOpacities[layer.id] !== undefined ? layerOpacities[layer.id] : (index === 0 ? 1.0 : 0.0)}
+                {@const opacity =
+                  layerOpacities[layer.id] !== undefined
+                    ? layerOpacities[layer.id]
+                    : index === 0
+                      ? 1.0
+                      : 0.0}
                 <div class="chapter-overlay__layer-item">
                   <div class="chapter-overlay__layer-info">
                     <span class="chapter-overlay__layer-name">
@@ -1126,30 +1158,8 @@
           </div>
         {/if}
 
-        <ChapterTextForm
-          activeLanguage={activeLanguage}
-          {languages}
-          {metadataSectionCollapsed}
-          {annotationSectionCollapsed}
-          {chapterTitleDraft}
-          {chapterDescriptionDraft}
-          {annotationDraft}
-          hasChapter={Boolean(chapter)}
-          onLanguageChange={handleLanguageChange}
-          onToggleMetadata={() => {
-            metadataSectionCollapsed = !metadataSectionCollapsed;
-          }}
-          onToggleAnnotation={() => {
-            annotationSectionCollapsed = !annotationSectionCollapsed;
-          }}
-          onChapterTitleInput={handleChapterTitleInput}
-          onChapterDescriptionInput={handleChapterDescriptionInput}
-          onAnnotationInput={handleAnnotationInput}
-          onSetPositionClick={handleSetPositionClick}
-        />
-
         <ChapterTimelineSection
-          activeLanguage={activeLanguage}
+          {activeLanguage}
           {hasAvMedia}
           {marksValid}
           {markInDraft}
@@ -1206,8 +1216,19 @@
             disabled={saveDisabled}
             on:click={handleSave}
           >
-            Save
+            {docked ? 'Update captured view' : 'Save'}
           </button>
+          {#if docked}
+            <button
+              class="chapter-overlay__button chapter-overlay__button--subtle"
+              type="button"
+              data-testid="chapter-revert-view"
+              disabled={saveDisabled}
+              on:click={handleRevertView}
+            >
+              Revert to captured view
+            </button>
+          {/if}
         </div>
         {#if saveDisabled}
           <div class="chapter-overlay__hint">Select a chapter to save settings.</div>
@@ -1219,612 +1240,701 @@
 
 <style>
   :global {
-  .chapter-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    display: flex;
-    justify-content: flex-end;
-    z-index: 12;
-    width: 100%;
-    height: 100%;
-  }
-
-  .chapter-overlay[hidden] {
-    display: none;
-  }
-
-  .chapter-overlay__scrim {
-    position: absolute;
-    inset: 0;
-    background: rgba(5, 10, 22, 0.18);
-    pointer-events: auto;
-  }
-
-  .chapter-overlay__panel {
-    position: relative;
-    pointer-events: auto;
-    width: clamp(360px, 42vw, 500px);
-    max-width: 92vw;
-    height: 100%;
-    min-height: 100%;
-    align-self: stretch;
-    border-radius: 0;
-    border-left: 1px solid rgba(255, 255, 255, 0.14);
-    background: #071428;
-    color: #eaf1ff;
-    box-shadow: none;
-    overflow: auto;
-    box-sizing: border-box;
-  }
-
-  .chapter-overlay__header {
-    position: sticky;
-    top: 0;
-    z-index: 3;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 12px;
-    align-items: center;
-    padding: 16px 18px;
-    background: #08182d;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .chapter-overlay__eyebrow {
-    font-size: 10px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: rgba(226, 232, 240, 0.62);
-  }
-
-  .chapter-overlay__title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #f3f8ff;
-    letter-spacing: 0.01em;
-  }
-
-  .chapter-overlay__back {
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 10px;
-    padding: 8px 10px;
-    background: #0b1b31;
-    color: rgba(232, 237, 246, 0.9);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    cursor: pointer;
-  }
-
-  .chapter-overlay__close {
-    width: var(--viewer-close-button-size, 28px);
-    height: var(--viewer-close-button-size, 28px);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--viewer-close-button-border, rgba(255, 255, 255, 0.18));
-    border-radius: var(--viewer-close-button-radius, 10px);
-    background: var(--viewer-close-button-bg, rgba(255, 255, 255, 0.1));
-    color: var(--viewer-close-button-color, rgba(232, 237, 246, 0.9));
-    font-size: var(--viewer-close-button-glyph-size, 15px);
-    line-height: 1;
-    text-transform: none;
-    letter-spacing: 0;
-    padding: 0;
-    cursor: pointer;
-    transition:
-      background-color 0.18s ease,
-      border-color 0.18s ease,
-      transform 0.08s ease;
-  }
-
-  .chapter-overlay__close:hover:not(:disabled) {
-    background: var(--viewer-close-button-hover-bg, rgba(255, 255, 255, 0.16));
-    border-color: var(--viewer-close-button-hover-border, rgba(255, 255, 255, 0.34));
-  }
-
-  .chapter-overlay__close:focus-visible {
-    outline: 2px solid var(--viewer-close-button-focus-ring, rgba(42, 199, 255, 0.55));
-    outline-offset: 2px;
-  }
-
-  .chapter-overlay__close:active:not(:disabled) {
-    transform: translateY(1px);
-  }
-
-  .chapter-overlay__form {
-    display: grid;
-    gap: 14px;
-    padding: 14px 18px 22px;
-  }
-
-  .chapter-overlay__body {
-    display: grid;
-    gap: 12px;
-  }
-
-  .chapter-overlay__section {
-    display: grid;
-    gap: 12px;
-  }
-
-  .chapter-overlay__section--card {
-    padding: 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: #0a1a2f;
-  }
-
-  .chapter-overlay__section-title {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: rgba(230, 236, 246, 0.72);
-  }
-
-  .chapter-overlay__section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .chapter-overlay__section-content {
-    display: grid;
-    gap: 10px;
-  }
-
-  .chapter-overlay__section-content[hidden] {
-    display: none;
-  }
-
-  .chapter-overlay__collapse-toggle {
-    width: 26px;
-    height: 26px;
-    border-radius: 9px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    background: #0d1d33;
-    color: rgba(230, 236, 246, 0.88);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: border-color 0.16s ease, background 0.16s ease;
-  }
-
-  .chapter-overlay__collapse-toggle:hover {
-    border-color: rgba(255, 255, 255, 0.3);
-    background: #13243c;
-  }
-
-  .chapter-overlay__collapse-icon {
-    font-size: 13px;
-    line-height: 1;
-    transform: rotate(0deg);
-    transition: transform 0.14s ease;
-  }
-
-  .chapter-overlay__collapse-icon--collapsed {
-    transform: rotate(-90deg);
-  }
-
-  .chapter-overlay__label {
-    display: grid;
-    gap: 6px;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: rgba(222, 229, 239, 0.72);
-  }
-
-  .chapter-overlay__label--inline {
-    width: 100%;
-  }
-
-  .chapter-overlay__hint {
-    font-size: 12px;
-    line-height: 1.45;
-    color: rgba(216, 224, 236, 0.72);
-  }
-
-  .chapter-overlay__input,
-  .chapter-overlay__select,
-  .chapter-overlay__textarea {
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 12px;
-    padding: 10px 12px;
-    background: #08192f;
-    color: #f0f6ff;
-    font-size: 13px;
-    outline: none;
-  }
-
-  .chapter-overlay__input::placeholder,
-  .chapter-overlay__textarea::placeholder {
-    color: rgba(213, 221, 234, 0.45);
-  }
-
-  .chapter-overlay__input:focus,
-  .chapter-overlay__select:focus,
-  .chapter-overlay__textarea:focus {
-    border-color: rgba(255, 255, 255, 0.34);
-    box-shadow: none;
-  }
-
-  .chapter-overlay__textarea {
-    resize: vertical;
-    min-height: 94px;
-  }
-
-  .chapter-overlay__input:disabled,
-  .chapter-overlay__select:disabled,
-  .chapter-overlay__textarea:disabled {
-    opacity: 0.56;
-    cursor: not-allowed;
-  }
-
-  .chapter-overlay__row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    align-items: end;
-  }
-
-  .chapter-overlay__row--tight {
-    align-items: center;
-  }
-
-  .chapter-overlay__button {
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 11px;
-    padding: 8px 12px;
-    background: #102039;
-    color: #e8edf6;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    cursor: pointer;
-    transition: background 0.16s ease, border-color 0.16s ease;
-    white-space: nowrap;
-  }
-
-  .chapter-overlay__button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .chapter-overlay__button--primary,
-  .chapter-overlay__button--accent {
-    background: #1d395c;
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #fafdff;
-  }
-
-  .chapter-overlay__button--subtle {
-    background: #102039;
-  }
-
-  .chapter-overlay__button:not(:disabled):hover {
-    background: #173053;
-    border-color: rgba(255, 255, 255, 0.28);
-  }
-
-  .chapter-overlay__button--primary:not(:disabled):hover,
-  .chapter-overlay__button--accent:not(:disabled):hover {
-    background: #274974;
-  }
-
-  .chapter-overlay__audio-source {
-    display: none;
-  }
-
-  .chapter-overlay__wave-shell {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .chapter-overlay__wave-play {
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 10px;
-    min-width: 132px;
-    height: 48px;
-    padding: 0 14px;
-    background: #102039;
-    color: #f3f7ff;
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    cursor: pointer;
-  }
-
-  .chapter-overlay__wave-play:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .chapter-overlay__wave-main {
-    display: grid;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .chapter-overlay__wave-summary {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    font-size: 12px;
-    color: rgba(226, 232, 241, 0.86);
-  }
-
-  .chapter-overlay__wave-summary strong {
-    display: block;
-    margin-top: 2px;
-    font-size: 16px;
-    color: #f3f8ff;
-    font-weight: 500;
-  }
-
-  .chapter-overlay__wave-summary-end {
-    text-align: right;
-  }
-
-  .chapter-overlay__wave-caption {
-    display: block;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-size: 10px;
-    color: rgba(205, 214, 228, 0.66);
-  }
-
-  .chapter-overlay__wave-track {
-    position: relative;
-    --wave-thumb-size: 14px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: #07172d;
-    overflow: hidden;
-  }
-
-  .chapter-overlay__wave-canvas {
-    width: 100%;
-    height: 108px;
-    display: block;
-  }
-
-  .chapter-overlay__wave-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .chapter-overlay__wave-selection {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(
-      (var(--start-ratio) * (100% - var(--wave-thumb-size))) + (var(--wave-thumb-size) / 2)
-    );
-    right: calc(
-      ((1 - var(--end-ratio)) * (100% - var(--wave-thumb-size))) + (var(--wave-thumb-size) / 2)
-    );
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .chapter-overlay__wave-marker {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    transform: translateX(-50%);
-    background: #d94b4b;
-  }
-
-  .chapter-overlay__wave-marker--start {
-    left: calc(
-      (var(--start-ratio) * (100% - var(--wave-thumb-size))) + (var(--wave-thumb-size) / 2)
-    );
-  }
-
-  .chapter-overlay__wave-marker--end {
-    left: calc(
-      (var(--end-ratio) * (100% - var(--wave-thumb-size))) + (var(--wave-thumb-size) / 2)
-    );
-  }
-
-  .chapter-overlay__wave-loading {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(222, 230, 241, 0.72);
-    background: rgba(7, 23, 45, 0.9);
-  }
-
-  .chapter-overlay__wave-axis {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: rgba(208, 217, 231, 0.72);
-  }
-
-  .chapter-overlay__wave-sliders {
-    position: relative;
-    height: 28px;
-    display: grid;
-  }
-
-  .chapter-overlay__range {
-    grid-area: 1 / 1;
-    width: 100%;
-    margin: 0;
-    background: transparent;
-    appearance: none;
-    pointer-events: none;
-  }
-
-  .chapter-overlay__range::-webkit-slider-thumb {
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    margin-top: -5px;
-    border-radius: 999px;
-    border: 2px solid rgba(236, 241, 248, 0.92);
-    background: #d3dae6;
-    box-shadow: none;
-    pointer-events: auto;
-    cursor: grab;
-  }
-
-  .chapter-overlay__range::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 999px;
-    border: 2px solid rgba(236, 241, 248, 0.92);
-    background: #d3dae6;
-    box-shadow: none;
-    pointer-events: auto;
-    cursor: grab;
-  }
-
-  .chapter-overlay__range:active::-webkit-slider-thumb {
-    cursor: grabbing;
-  }
-
-  .chapter-overlay__range:active::-moz-range-thumb {
-    cursor: grabbing;
-  }
-
-  .chapter-overlay__range::-webkit-slider-runnable-track,
-  .chapter-overlay__range::-moz-range-track {
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.16);
-  }
-
-  .chapter-overlay__timegrid {
-    display: grid;
-    gap: 10px;
-  }
-
-  .chapter-overlay__timerow {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    align-items: end;
-  }
-
-  .chapter-overlay__input--time {
-    width: 100%;
-  }
-
-  .chapter-overlay__timerow .chapter-overlay__input,
-  .chapter-overlay__timerow .chapter-overlay__button {
-    box-sizing: border-box;
-    height: 38px;
-  }
-
-  .chapter-overlay__placement-editor {
-    position: relative;
-    width: 100%;
-    height: 168px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background:
-      linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-      #08192f;
-    background-size: 16px 16px, 16px 16px, auto;
-    overflow: hidden;
-  }
-
-  .chapter-overlay__hint--placement {
-    margin-top: -2px;
-  }
-
-  .chapter-overlay__actions {
-    display: grid;
-    gap: 8px;
-    padding-top: 4px;
-  }
-
-  .chapter-overlay__actions-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .chapter-overlay__layer-item {
-    display: grid;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-  }
-
-  .chapter-overlay__layer-item:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.06);
-  }
-
-  .chapter-overlay__layer-info {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .chapter-overlay__layer-name {
-    font-weight: 700;
-    color: rgba(230, 236, 246, 0.9);
-  }
-
-  .chapter-overlay__layer-value {
-    font-weight: 600;
-    color: var(--viewer-muted, #9aa6b2);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .chapter-overlay__layer-slider {
-    width: 100%;
-    accent-color: var(--viewer-layer-accent, var(--viewer-accent-2, #2ac7ff));
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.1);
-    height: 4px;
-    border-radius: 2px;
-    outline: none;
-  }
-
-  @media (max-width: 860px) {
-    .chapter-overlay__panel {
+    .chapter-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      justify-content: flex-end;
+      z-index: 12;
       width: 100%;
-      max-width: 100%;
+      height: 100%;
+    }
+
+    .chapter-overlay[hidden] {
+      display: none;
+    }
+
+    .chapter-overlay--docked {
+      position: relative;
+      inset: auto;
+      display: block;
+      height: 100%;
+      pointer-events: auto;
+    }
+
+    .chapter-overlay--docked .chapter-overlay__panel {
+      width: 100%;
+      max-width: none;
+      border-left: 0;
+      background: var(--viewer-panel, #121922);
+    }
+
+    .chapter-overlay--docked .chapter-overlay__header {
+      grid-template-columns: 1fr;
+      padding: 16px;
+    }
+
+    .chapter-overlay--docked .chapter-overlay__form {
+      padding: 14px 14px 22px;
+    }
+
+    .chapter-overlay__scrim {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 10, 22, 0.18);
+      pointer-events: auto;
+    }
+
+    .chapter-overlay__panel {
+      position: relative;
+      pointer-events: auto;
+      width: clamp(360px, 42vw, 500px);
+      max-width: 92vw;
+      height: 100%;
+      min-height: 100%;
+      align-self: stretch;
       border-radius: 0;
+      border-left: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      background: var(--viewer-panel, #121922);
+      color: var(--viewer-text, #e8edf4);
+      box-shadow: none;
+      overflow: auto;
+      box-sizing: border-box;
+    }
+
+    .chapter-overlay__header {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      background: var(--viewer-panel, #121922);
+      border-bottom: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    }
+
+    .chapter-overlay__eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--viewer-muted, #9aa6b2);
+    }
+
+    .chapter-overlay__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--viewer-text, #e8edf4);
+      letter-spacing: 0.01em;
+    }
+
+    .chapter-overlay__back {
+      border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: var(--viewer-panel-strong, #1b242e);
+      color: var(--viewer-text, #e8edf4);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+    }
+
+    .chapter-overlay__close {
+      width: var(--viewer-close-button-size, 28px);
+      height: var(--viewer-close-button-size, 28px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--viewer-close-button-border, rgba(255, 255, 255, 0.18));
+      border-radius: var(--viewer-close-button-radius, 10px);
+      background: var(--viewer-close-button-bg, rgba(255, 255, 255, 0.1));
+      color: var(--viewer-close-button-color, rgba(232, 237, 246, 0.9));
+      font-size: var(--viewer-close-button-glyph-size, 15px);
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: 0;
+      padding: 0;
+      cursor: pointer;
+      transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.08s ease;
+    }
+
+    .chapter-overlay__close:hover:not(:disabled) {
+      background: var(--viewer-close-button-hover-bg, rgba(255, 255, 255, 0.16));
+      border-color: var(--viewer-close-button-hover-border, rgba(255, 255, 255, 0.34));
+    }
+
+    .chapter-overlay__close:focus-visible {
+      outline: 2px solid var(--viewer-close-button-focus-ring, rgba(42, 199, 255, 0.55));
+      outline-offset: 2px;
+    }
+
+    .chapter-overlay__close:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .chapter-overlay__form {
+      display: grid;
+      gap: 14px;
+      padding: 14px 18px 22px;
+    }
+
+    .chapter-overlay__body {
+      display: grid;
+      gap: 12px;
+    }
+
+    .chapter-overlay__section {
+      display: grid;
+      gap: 12px;
+    }
+
+    .chapter-overlay__section--card {
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      background: var(--viewer-surface, #151d26);
+    }
+
+    .chapter-overlay__section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--viewer-muted, #9aa6b2);
+      font-weight: 700;
+    }
+
+    .chapter-overlay__section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .chapter-overlay__section-content {
+      display: grid;
+      gap: 10px;
+    }
+
+    .chapter-overlay__section-content[hidden] {
+      display: none;
+    }
+
+    .chapter-overlay__language-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chapter-overlay__language-tab {
+      min-width: 48px;
+      border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      border-radius: 9px;
+      padding: 8px 10px;
+      background: var(--viewer-panel-strong, #1b242e);
+      color: var(--viewer-muted, #9aa6b2);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chapter-overlay__language-tab--active {
+      border-color: var(--accent, #e07a3f);
+      background: rgba(224, 122, 63, 0.16);
+      color: #fff;
+    }
+
+    .chapter-overlay__collapse-toggle {
+      width: 26px;
+      height: 26px;
+      border-radius: 9px;
+      border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      background: var(--viewer-panel-strong, #1b242e);
+      color: var(--viewer-text, #e8edf4);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition:
+        border-color 0.16s ease,
+        background 0.16s ease;
+    }
+
+    .chapter-overlay__collapse-toggle:hover {
+      border-color: color-mix(in srgb, var(--viewer-muted, #9aa6b2) 55%, transparent);
+      background: color-mix(in srgb, var(--viewer-panel-strong, #1b242e) 80%, white);
+    }
+
+    .chapter-overlay__collapse-icon {
+      font-size: 13px;
+      line-height: 1;
+      transform: rotate(0deg);
+      transition: transform 0.14s ease;
+    }
+
+    .chapter-overlay__collapse-icon--collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .chapter-overlay__label {
+      display: grid;
+      gap: 6px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--viewer-muted, #9aa6b2);
+    }
+
+    .chapter-overlay__label--inline {
+      width: 100%;
+    }
+
+    .chapter-overlay__hint {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--viewer-muted, #9aa6b2);
+    }
+
+    .chapter-overlay__validation {
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 120, 120, 0.35);
+      border-radius: 12px;
+      background: rgba(255, 90, 90, 0.1);
+      color: #ffd0d0;
+      font-size: 12px;
+    }
+
+    .chapter-overlay__validation ul {
+      margin: 6px 0 0;
+      padding-left: 18px;
+    }
+
+    .chapter-overlay__input,
+    .chapter-overlay__select,
+    .chapter-overlay__textarea {
+      border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: var(--viewer-panel, #121922);
+      color: var(--viewer-text, #e8edf4);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .chapter-overlay__input::placeholder,
+    .chapter-overlay__textarea::placeholder {
+      color: rgba(213, 221, 234, 0.45);
+    }
+
+    .chapter-overlay__input:focus,
+    .chapter-overlay__select:focus,
+    .chapter-overlay__textarea:focus {
+      border-color: var(--accent, #e07a3f);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #e07a3f) 18%, transparent);
+    }
+
+    .chapter-overlay__textarea {
+      resize: vertical;
+      min-height: 94px;
+    }
+
+    .chapter-overlay__input:disabled,
+    .chapter-overlay__select:disabled,
+    .chapter-overlay__textarea:disabled {
+      opacity: 0.56;
+      cursor: not-allowed;
+    }
+
+    .chapter-overlay__row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .chapter-overlay__row--tight {
+      align-items: center;
+    }
+
+    .chapter-overlay__button {
+      border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      border-radius: 11px;
+      padding: 8px 12px;
+      background: var(--viewer-panel-strong, #1b242e);
+      color: var(--viewer-text, #e8edf4);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      transition:
+        background 0.16s ease,
+        border-color 0.16s ease;
+      white-space: nowrap;
+    }
+
+    .chapter-overlay__button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .chapter-overlay__button--primary,
+    .chapter-overlay__button--accent {
+      background: var(--accent, #e07a3f);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .chapter-overlay__button--subtle {
+      background: var(--viewer-panel-strong, #1b242e);
+    }
+
+    .chapter-overlay__button:not(:disabled):hover {
+      background: color-mix(in srgb, var(--viewer-panel-strong, #1b242e) 82%, white);
+      border-color: color-mix(in srgb, var(--viewer-muted, #9aa6b2) 45%, transparent);
+    }
+
+    .chapter-overlay__button--primary:not(:disabled):hover,
+    .chapter-overlay__button--accent:not(:disabled):hover {
+      background: color-mix(in srgb, var(--accent, #e07a3f) 84%, white);
+    }
+
+    .chapter-overlay__audio-source {
+      display: none;
     }
 
     .chapter-overlay__wave-shell {
+      display: grid;
       grid-template-columns: 1fr;
+      gap: 14px;
     }
 
     .chapter-overlay__wave-play {
-      width: 100%;
+      border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
       border-radius: 10px;
-      height: 40px;
+      width: 100%;
+      min-width: 0;
+      height: 44px;
+      padding: 0 14px;
+      background: var(--viewer-panel-strong, #1b242e);
+      color: var(--viewer-text, #e8edf4);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
     }
 
-    .chapter-overlay__timerow,
-    .chapter-overlay__row {
-      grid-template-columns: 1fr;
+    .chapter-overlay__wave-play:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .chapter-overlay__wave-main {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .chapter-overlay__wave-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--viewer-muted, #9aa6b2);
+    }
+
+    .chapter-overlay__wave-summary strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 16px;
+      color: var(--viewer-text, #e8edf4);
+      font-weight: 500;
+    }
+
+    .chapter-overlay__wave-summary-end {
+      text-align: right;
+    }
+
+    .chapter-overlay__wave-caption {
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 10px;
+      color: var(--viewer-muted, #9aa6b2);
+    }
+
+    .chapter-overlay__wave-track {
+      position: relative;
+      --wave-thumb-size: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      background: var(--viewer-panel, #121922);
+      overflow: hidden;
+    }
+
+    .chapter-overlay__wave-canvas {
+      width: 100%;
+      height: 132px;
+      display: block;
+    }
+
+    .chapter-overlay__wave-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .chapter-overlay__wave-selection {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: calc(
+        (var(--start-ratio) * (100% - var(--wave-thumb-size))) + (var(--wave-thumb-size) / 2)
+      );
+      right: calc(
+        ((1 - var(--end-ratio)) * (100% - var(--wave-thumb-size))) + (var(--wave-thumb-size) / 2)
+      );
+      background: color-mix(in srgb, var(--accent, #e07a3f) 14%, transparent);
+    }
+
+    .chapter-overlay__wave-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      transform: translateX(-50%);
+      background: #d94b4b;
+    }
+
+    .chapter-overlay__wave-marker--start {
+      left: calc(
+        (var(--start-ratio) * (100% - var(--wave-thumb-size))) + (var(--wave-thumb-size) / 2)
+      );
+    }
+
+    .chapter-overlay__wave-marker--end {
+      left: calc(
+        (var(--end-ratio) * (100% - var(--wave-thumb-size))) + (var(--wave-thumb-size) / 2)
+      );
+    }
+
+    .chapter-overlay__wave-loading {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(222, 230, 241, 0.72);
+      background: color-mix(in srgb, var(--viewer-panel, #121922) 92%, transparent);
+    }
+
+    .chapter-overlay__wave-axis {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--viewer-muted, #9aa6b2);
+    }
+
+    .chapter-overlay__wave-sliders {
+      display: grid;
+      gap: 8px;
+    }
+
+    .chapter-overlay__range-row {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      color: var(--viewer-muted, #9aa6b2);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .chapter-overlay__range {
+      width: 100%;
+      margin: 0;
+      background: transparent;
+      appearance: none;
+    }
+
+    .chapter-overlay__range::-webkit-slider-thumb {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      margin-top: -5px;
+      border-radius: 999px;
+      border: 2px solid rgba(236, 241, 248, 0.92);
+      background: #d3dae6;
+      box-shadow: none;
+      cursor: grab;
+    }
+
+    .chapter-overlay__range::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 2px solid rgba(236, 241, 248, 0.92);
+      background: #d3dae6;
+      box-shadow: none;
+      cursor: grab;
+    }
+
+    .chapter-overlay__range:active::-webkit-slider-thumb {
+      cursor: grabbing;
+    }
+
+    .chapter-overlay__range:active::-moz-range-thumb {
+      cursor: grabbing;
+    }
+
+    .chapter-overlay__range::-webkit-slider-runnable-track,
+    .chapter-overlay__range::-moz-range-track {
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .chapter-overlay__timegrid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .chapter-overlay__timerow {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .chapter-overlay__input--time {
+      width: 100%;
+    }
+
+    .chapter-overlay__timerow .chapter-overlay__input,
+    .chapter-overlay__timerow .chapter-overlay__button {
+      box-sizing: border-box;
+      height: 38px;
+    }
+
+    .chapter-overlay__placement-editor {
+      position: relative;
+      width: 100%;
+      height: 168px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background:
+        linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+        var(--viewer-panel, #121922);
+      background-size:
+        16px 16px,
+        16px 16px,
+        auto;
+      overflow: hidden;
+    }
+
+    .chapter-overlay__hint--placement {
+      margin-top: -2px;
+    }
+
+    .chapter-overlay__actions {
+      position: sticky;
+      bottom: -22px;
+      z-index: 2;
+      display: grid;
+      gap: 8px;
+      margin: 0 -18px -22px;
+      padding: 12px 18px 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--viewer-panel, #121922);
+    }
+
+    .chapter-overlay__actions-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chapter-overlay__actions-group .chapter-overlay__button {
+      flex: 1 1 150px;
+    }
+
+    .chapter-overlay__layer-item {
+      display: grid;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+    }
+
+    .chapter-overlay__layer-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .chapter-overlay__layer-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .chapter-overlay__layer-name {
+      font-weight: 700;
+      color: rgba(230, 236, 246, 0.9);
+    }
+
+    .chapter-overlay__layer-value {
+      font-weight: 600;
+      color: var(--viewer-muted, #9aa6b2);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chapter-overlay__layer-slider {
+      width: 100%;
+      accent-color: var(--accent, #e07a3f);
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.1);
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    @media (max-width: 860px) {
+      .chapter-overlay__panel {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 0;
+      }
+
+      .chapter-overlay__wave-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .chapter-overlay__wave-play {
+        width: 100%;
+        border-radius: 10px;
+        height: 40px;
+      }
+
+      .chapter-overlay__timerow,
+      .chapter-overlay__row {
+        grid-template-columns: 1fr;
+      }
     }
   }
-}
 </style>

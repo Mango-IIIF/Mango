@@ -27,7 +27,7 @@ export const createStoryHistory = (initial: StoryState, maxEntries = 100): Story
 
   return {
     push: (story: StoryState) => {
-      past.push(cloneStory(current));
+      past.push(cloneStory(story));
       if (past.length > maxEntries) {
         past.shift();
       }

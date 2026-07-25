@@ -95,6 +95,11 @@ export type ChapterMetadataPayload = {
   value?: string;
 };
 
+export type StoryMetadataPayload = {
+  language: string;
+  value?: string;
+};
+
 export type ReorderChapterPayload = {
   chapterId: string;
   targetChapterId: string;
@@ -110,10 +115,7 @@ const createChapterId = (): string => {
 
 const clearCaptureFields = (
   chapter: Chapter,
-): Omit<
-  Chapter,
-  'viewBox' | 'media' | 'model' | 'modelOptions' | 'layerOpacities'
-> => {
+): Omit<Chapter, 'viewBox' | 'media' | 'model' | 'modelOptions' | 'layerOpacities'> => {
   const {
     viewBox: _viewBox,
     media: _media,
@@ -172,9 +174,7 @@ export const updateChapterFromCapture = (
   story: StoryState,
   payload: UpdateChapterPayload,
 ): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -188,13 +188,8 @@ export const updateChapterFromCapture = (
   };
 };
 
-export const deleteChapter = (
-  story: StoryState,
-  payload: DeleteChapterPayload,
-): StoryState => {
-  const nextChapters = story.chapters.filter(
-    (chapter) => chapter.id !== payload.chapterId,
-  );
+export const deleteChapter = (story: StoryState, payload: DeleteChapterPayload): StoryState => {
+  const nextChapters = story.chapters.filter((chapter) => chapter.id !== payload.chapterId);
   if (nextChapters.length === story.chapters.length) return story;
 
   return {
@@ -224,9 +219,7 @@ export const setNarrationSegment = (
   story: StoryState,
   payload: NarrationSegmentPayload,
 ): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -254,16 +247,13 @@ export const removeNarrationSegment = (
   story: StoryState,
   payload: RemoveNarrationSegmentPayload,
 ): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
   if (!current.narrationSegment?.[payload.language]) return story;
 
-  const { [payload.language]: _removed, ...remainingSegments } =
-    current.narrationSegment;
+  const { [payload.language]: _removed, ...remainingSegments } = current.narrationSegment;
   const { narrationSegment: _currentSegments, ...chapterWithoutSegments } = current;
   const updated: Chapter =
     Object.keys(remainingSegments).length > 0
@@ -283,9 +273,7 @@ export const setAnnotationText = (
   story: StoryState,
   payload: AnnotationTextPayload,
 ): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -317,9 +305,7 @@ export const setAnnotationPlacement = (
   story: StoryState,
   payload: AnnotationPlacementPayload,
 ): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -347,13 +333,8 @@ export const setAnnotationPlacement = (
   };
 };
 
-export const setAdvanceMode = (
-  story: StoryState,
-  payload: AdvanceModePayload,
-): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+export const setAdvanceMode = (story: StoryState, payload: AdvanceModePayload): StoryState => {
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -377,9 +358,7 @@ export const setAdvanceMode = (
 };
 
 export const setDelay = (story: StoryState, payload: AdvanceDelayPayload): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -406,9 +385,7 @@ export const setChapterManifest = (
   story: StoryState,
   payload: ChapterManifestPayload,
 ): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -428,13 +405,8 @@ export const setChapterManifest = (
   };
 };
 
-export const setChapterTitle = (
-  story: StoryState,
-  payload: ChapterMetadataPayload,
-): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+export const setChapterTitle = (story: StoryState, payload: ChapterMetadataPayload): StoryState => {
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -457,13 +429,23 @@ export const setChapterTitle = (
   };
 };
 
+export const setStoryTitle = (story: StoryState, payload: StoryMetadataPayload): StoryState => {
+  const nextTitle = {
+    ...(story.title ?? {}),
+    [payload.language]: payload.value ?? '',
+  };
+
+  return {
+    ...story,
+    title: nextTitle,
+  };
+};
+
 export const setChapterDescription = (
   story: StoryState,
   payload: ChapterMetadataPayload,
 ): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -491,13 +473,8 @@ export type ChapterLayersPayload = {
   layerOpacities: Record<string, number>;
 };
 
-export const setLayerOpacities = (
-  story: StoryState,
-  payload: ChapterLayersPayload,
-): StoryState => {
-  const index = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
+export const setLayerOpacities = (story: StoryState, payload: ChapterLayersPayload): StoryState => {
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
   if (index === -1) return story;
 
   const current = story.chapters[index];
@@ -515,27 +492,18 @@ export const setLayerOpacities = (
   };
 };
 
-export const reorderChapter = (
-  story: StoryState,
-  payload: ReorderChapterPayload,
-): StoryState => {
+export const reorderChapter = (story: StoryState, payload: ReorderChapterPayload): StoryState => {
   if (payload.chapterId === payload.targetChapterId) return story;
 
-  const sourceIndex = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.chapterId,
-  );
-  const targetIndex = story.chapters.findIndex(
-    (chapter) => chapter.id === payload.targetChapterId,
-  );
+  const sourceIndex = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
+  const targetIndex = story.chapters.findIndex((chapter) => chapter.id === payload.targetChapterId);
   if (sourceIndex === -1 || targetIndex === -1) return story;
 
   const nextChapters = [...story.chapters];
   const [moved] = nextChapters.splice(sourceIndex, 1);
   if (!moved) return story;
 
-  let insertAt = nextChapters.findIndex(
-    (chapter) => chapter.id === payload.targetChapterId,
-  );
+  let insertAt = nextChapters.findIndex((chapter) => chapter.id === payload.targetChapterId);
   if (insertAt === -1) return story;
   if (payload.position === 'after') {
     insertAt += 1;
@@ -622,6 +590,10 @@ export function createStoryStore(initial?: StoryState) {
 
     setChapterTitle(payload: ChapterMetadataPayload): void {
       story = setChapterTitle(story, payload);
+    },
+
+    setStoryTitle(payload: StoryMetadataPayload): void {
+      story = setStoryTitle(story, payload);
     },
 
     setChapterDescription(payload: ChapterMetadataPayload): void {

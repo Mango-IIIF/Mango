@@ -12,14 +12,16 @@
   import type { MediaType, MediaSource } from '../../iiif/mediaResolver';
   import type { MediaMarksState } from '../mediaMarks';
   import type { ExportEnvelope } from '../storySerializer';
- 
+
   export let story: Readable<StoryState>;
+  export let surface: 'overlay' | 'inspector' = 'overlay';
   export let layers: Readable<MediaSource[]>;
   export let layerOpacities: Readable<Record<string, number>>;
   export let onUpdateLayerOpacity: (id: string, opacity: number) => void;
   export let currentManifest: Readable<string | null>;
   export let viewBox: Readable<ViewBox | null>;
   export let selectedChapterId: Writable<string | null>;
+  export let validationErrors: Readable<string[]>;
   export let uiMode: Readable<UIMode>;
   export let mediaType: Readable<MediaType | null>;
   export let mediaMarks: Readable<MediaMarksState>;
@@ -42,6 +44,7 @@
   export let onPreviewMediaSegment: () => void;
   export let onStopPreviewMediaSegment: () => void;
   export let onSetNarrationTrack: (lang: string, src: string) => void;
+  export let onUpdateStoryTitle: (lang: string, value: string) => void;
   export let onAssignSegment: (lang: string, start: number, end: number) => void;
   export let onSkipNarration: (lang: string) => void;
   export let onUpdateManifest: (manifest: string) => void;
@@ -54,6 +57,7 @@
   export let onUpdateAdvanceMode: (mode: ChapterAdvance['mode']) => void;
   export let onUpdateDelay: (delayMs?: number) => void;
   export let onUpdateChapterPosition: () => void;
+  export let onRevertChapterPosition: () => void;
   export let onSaveChapterSettings: () => void;
 
   let chapterId: string | null = null;
@@ -65,7 +69,10 @@
   $: manifestValue = $currentManifest;
   $: currentMode = $uiMode;
   $: narrationOpen = currentMode === 'narrationPanel';
-  $: chapterOpen = currentMode === 'chapterEdit';
+  $: chapterOpen =
+    currentMode === 'chapterEdit' ||
+    (Boolean(chapterId) && currentMode !== 'narrationPanel') ||
+    (!manifestValue && currentMode !== 'narrationPanel');
   let overlayAnnotationLanguage = language;
   $: overlayAnnotationLanguage = $annotationLanguage ?? language;
   let exportPayload: ExportEnvelope | null = null;
@@ -78,7 +85,7 @@
 
   let positioningText = '';
   $: if (currentMode === 'annotationPositioning' && activePositioningLanguage && chapterId) {
-    const ch = $story.chapters.find(c => c.id === chapterId);
+    const ch = $story.chapters.find((c) => c.id === chapterId);
     const ann = ch?.annotations?.[activePositioningLanguage];
     positioningText = ann?.text ?? '';
   } else {
@@ -91,36 +98,59 @@
   let currentViewBox: ViewBox | null = null;
   $: currentViewBox = $viewBox;
 
-  let placementRectValue: { x: number; y: number; w: number; h: number } | null = null;
+  let placementRectValue: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null = null;
 
   const toScreenX = (canvasX: number): number =>
-    currentViewBox && overlayWidth > 0 ? ((canvasX - currentViewBox.x) / currentViewBox.w) * overlayWidth : 0;
+    currentViewBox && overlayWidth > 0
+      ? ((canvasX - currentViewBox.x) / currentViewBox.w) * overlayWidth
+      : 0;
   const toScreenY = (canvasY: number): number =>
-    currentViewBox && overlayHeight > 0 ? ((canvasY - currentViewBox.y) / currentViewBox.h) * overlayHeight : 0;
+    currentViewBox && overlayHeight > 0
+      ? ((canvasY - currentViewBox.y) / currentViewBox.h) * overlayHeight
+      : 0;
 
   const toCanvasX = (screenX: number): number =>
-    currentViewBox && overlayWidth > 0 ? currentViewBox.x + (screenX / overlayWidth) * currentViewBox.w : 0;
+    currentViewBox && overlayWidth > 0
+      ? currentViewBox.x + (screenX / overlayWidth) * currentViewBox.w
+      : 0;
   const toCanvasY = (screenY: number): number =>
-    currentViewBox && overlayHeight > 0 ? currentViewBox.y + (screenY / overlayHeight) * currentViewBox.h : 0;
+    currentViewBox && overlayHeight > 0
+      ? currentViewBox.y + (screenY / overlayHeight) * currentViewBox.h
+      : 0;
 
-  const normalizedFromCanvas = (rect: { x: number; y: number; w: number; h: number }): { x: number; y: number; w: number; h: number } | null => {
+  const normalizedFromCanvas = (rect: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }): { x: number; y: number; w: number; h: number } | null => {
     if (!currentViewBox || overlayWidth <= 0 || overlayHeight <= 0) return null;
     const x = toScreenX(rect.x) / overlayWidth;
     const y = toScreenY(rect.y) / overlayHeight;
     const w = rect.w / currentViewBox.w;
     const h = rect.h / currentViewBox.h;
-    
+
     const clampedW = Math.min(1, Math.max(0.0001, w));
     const clampedH = Math.min(1, Math.max(0.0001, h));
     return {
       x: Math.min(1 - clampedW, Math.max(0, x)),
       y: Math.min(1 - clampedH, Math.max(0, y)),
       w: clampedW,
-      h: clampedH
+      h: clampedH,
     };
   };
 
-  const canvasFromNormalized = (rect: { x: number; y: number; w: number; h: number }): { x: number; y: number; w: number; h: number } | null => {
+  const canvasFromNormalized = (rect: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }): { x: number; y: number; w: number; h: number } | null => {
     if (!currentViewBox || overlayWidth <= 0 || overlayHeight <= 0) return null;
     const sx1 = rect.x * overlayWidth;
     const sy1 = rect.y * overlayHeight;
@@ -136,25 +166,32 @@
       x: cx1,
       y: cy1,
       w: Math.max(1, cx2 - cx1),
-      h: Math.max(1, cy2 - cy1)
+      h: Math.max(1, cy2 - cy1),
     };
   };
 
   let editingCanvasRect: { x: number; y: number; w: number; h: number } | null = null;
   let lastMode: UIMode = 'idle';
 
-  $: if (currentMode === 'annotationPositioning' && lastMode !== 'annotationPositioning' && activePositioningLanguage && chapterId) {
+  $: if (
+    currentMode === 'annotationPositioning' &&
+    lastMode !== 'annotationPositioning' &&
+    activePositioningLanguage &&
+    chapterId
+  ) {
     lastMode = currentMode;
-    const ch = $story.chapters.find(c => c.id === chapterId);
+    const ch = $story.chapters.find((c) => c.id === chapterId);
     const ann = ch?.annotations?.[activePositioningLanguage];
     const cv = ch?.viewBox;
 
-    const defaultAbsRect = cv ? {
-      x: cv.x + cv.w * 0.33,
-      y: cv.y + cv.h * 0.33,
-      w: cv.w * 0.34,
-      h: cv.h * 0.34
-    } : { x: 4500, y: 6500, w: 800, h: 300 };
+    const defaultAbsRect = cv
+      ? {
+          x: cv.x + cv.w * 0.33,
+          y: cv.y + cv.h * 0.33,
+          w: cv.w * 0.34,
+          h: cv.h * 0.34,
+        }
+      : { x: 4500, y: 6500, w: 800, h: 300 };
 
     let initialAbsRect = defaultAbsRect;
 
@@ -166,7 +203,8 @@
       Number.isFinite(ann.placement.w) &&
       Number.isFinite(ann.placement.h)
     ) {
-      const isAbs = ann.placement.x > 1 || ann.placement.y > 1 || ann.placement.w > 1 || ann.placement.h > 1;
+      const isAbs =
+        ann.placement.x > 1 || ann.placement.y > 1 || ann.placement.w > 1 || ann.placement.h > 1;
       if (isAbs) {
         initialAbsRect = ann.placement;
       } else if (cv) {
@@ -174,7 +212,7 @@
           x: cv.x + cv.w * ann.placement.x,
           y: cv.y + cv.h * ann.placement.y,
           w: cv.w * ann.placement.w,
-          h: cv.h * ann.placement.h
+          h: cv.h * ann.placement.h,
         };
       }
     }
@@ -185,7 +223,13 @@
     placementRectValue = null;
   }
 
-  $: if (currentMode === 'annotationPositioning' && editingCanvasRect && currentViewBox && overlayWidth > 0 && overlayHeight > 0) {
+  $: if (
+    currentMode === 'annotationPositioning' &&
+    editingCanvasRect &&
+    currentViewBox &&
+    overlayWidth > 0 &&
+    overlayHeight > 0
+  ) {
     const normalized = normalizedFromCanvas(editingCanvasRect);
     if (
       normalized &&
@@ -221,117 +265,151 @@
   };
 </script>
 
-<div class="story-builder-overlay-root" bind:clientWidth={overlayWidth} bind:clientHeight={overlayHeight}>
-  <StoryNarrationOverlay
-    {story}
-    open={narrationOpen}
-    {chapterId}
-    {language}
-    {languages}
-    onBack={onBackNarration}
-    onClose={onCloseNarration}
-    onSetNarrationTrack={onSetNarrationTrack}
-    onAssignSegment={onAssignSegment}
-  />
-
-  <StoryChapterOverlay
-    {story}
-    open={chapterOpen}
-    {chapterId}
-    currentManifest={manifestValue}
-    {mediaType}
-    {mediaMarks}
-    {avMarksValid}
-    {language}
-    {languages}
-    onClose={onCloseChapter}
-    onSetNarrationTrack={onSetNarrationTrack}
-    onAssignSegment={onAssignSegment}
-    onSkipNarration={onSkipNarration}
-    onSetMediaMarks={onSetMediaMarks}
-    onPreviewMediaSegment={onPreviewMediaSegment}
-    onStopPreviewMediaSegment={onStopPreviewMediaSegment}
-    onUpdateManifest={(chapterId, manifest) => onUpdateManifest(manifest)}
-    onLoadManifest={onLoadManifest}
-    onReloadManifest={(chapterId, manifest, canvasIndex) =>
-      onReloadManifest(manifest, canvasIndex)}
-    onUpdateChapterTitle={(chapterId, lang, value) => onUpdateChapterTitle(lang, value)}
-    onUpdateChapterDescription={(chapterId, lang, value) =>
-      onUpdateChapterDescription(lang, value)}
-    onUpdateAnnotationText={(chapterId, lang, text) => onUpdateAnnotationText(lang, text)}
-    onUpdateAnnotationPlacement={(chapterId, lang, placement) =>
-      onUpdateAnnotationPlacement(lang, placement)}
-    onUpdateAdvanceMode={(chapterId, mode) => onUpdateAdvanceMode(mode)}
-    onUpdateDelay={(chapterId, delayMs) => onUpdateDelay(delayMs)}
-    onUpdateChapterPosition={() => onUpdateChapterPosition()}
-    onSave={onSaveChapterSettings}
-    onSetAnnotationLanguage={onSetAnnotationLanguage}
-    onSetAnnotationPositioning={(lang) => onStartAnnotationPositioning(lang)}
-    layers={$layers}
-    layerOpacities={$layerOpacities}
-    onUpdateLayerOpacity={onUpdateLayerOpacity}
-  />
-
-  {#if currentMode !== 'annotationPositioning'}
-    <StoryAnnotationOverlay
-      {story}
-      {viewBox}
-      {chapterId}
-      language={overlayAnnotationLanguage}
-    />
-  {/if}
-
-  <SaveExportModal
-    open={exportModalOpen}
-    payload={exportPayload}
-    onclose={onCloseSaveModal}
-  />
-
-  {#if currentMode === 'annotationPositioning'}
-    <div class="story-builder-positioning-container">
-      {#if placementRectValue}
-        <div class="story-builder-positioning-editor-wrapper">
-          <RectanglePlacementEditor
-            enabled={true}
-            value={placementRectValue}
-            minSize={0.001}
-            allowCreate={false}
-            allowMove={true}
-            allowResize={true}
-            showHandles={true}
-            passthrough={false}
-            text={positioningText}
-            onrectchange={({ rect }) => handleEditorChange(rect)}
-          />
-        </div>
-      {/if}
-
-      <div class="story-builder-positioning-toolbar">
-        <button
-          class="story-builder-positioning-button story-builder-positioning-button--cancel"
-          type="button"
-          on:click={handleCancel}
-        >
-          Cancel
-        </button>
-        <button
-          class="story-builder-positioning-button story-builder-positioning-button--confirm"
-          type="button"
-          on:click={handleConfirm}
-        >
-          Confirm Position
-        </button>
+{#if surface === 'inspector'}
+  <div class="story-builder-inspector-root" data-testid="story-builder-inspector">
+    {#if narrationOpen}
+      <StoryNarrationOverlay
+        {story}
+        open={true}
+        docked={true}
+        {chapterId}
+        {language}
+        {languages}
+        onBack={onBackNarration}
+        onClose={onCloseNarration}
+        {onSetNarrationTrack}
+        {onUpdateStoryTitle}
+        {onAssignSegment}
+      />
+    {:else if chapterId || currentMode === 'chapterEdit' || !manifestValue}
+      <StoryChapterOverlay
+        {story}
+        open={chapterOpen}
+        docked={true}
+        {chapterId}
+        validationErrors={$validationErrors}
+        currentManifest={manifestValue}
+        {mediaType}
+        {mediaMarks}
+        {avMarksValid}
+        {language}
+        {languages}
+        onClose={onCloseChapter}
+        {onSetNarrationTrack}
+        {onAssignSegment}
+        {onSkipNarration}
+        {onSetMediaMarks}
+        {onPreviewMediaSegment}
+        {onStopPreviewMediaSegment}
+        onUpdateManifest={(chapterId, manifest) => onUpdateManifest(manifest)}
+        {onLoadManifest}
+        onReloadManifest={(chapterId, manifest, canvasIndex) =>
+          onReloadManifest(manifest, canvasIndex)}
+        onUpdateChapterTitle={(chapterId, lang, value) => onUpdateChapterTitle(lang, value)}
+        onUpdateChapterDescription={(chapterId, lang, value) =>
+          onUpdateChapterDescription(lang, value)}
+        onUpdateAnnotationText={(chapterId, lang, text) => onUpdateAnnotationText(lang, text)}
+        onUpdateAnnotationPlacement={(chapterId, lang, placement) =>
+          onUpdateAnnotationPlacement(lang, placement)}
+        onUpdateAdvanceMode={(chapterId, mode) => onUpdateAdvanceMode(mode)}
+        onUpdateDelay={(chapterId, delayMs) => onUpdateDelay(delayMs)}
+        onUpdateChapterPosition={() => onUpdateChapterPosition()}
+        onRevertChapterPosition={() => onRevertChapterPosition()}
+        onSave={onSaveChapterSettings}
+        {onSetAnnotationLanguage}
+        onSetAnnotationPositioning={(lang) => onStartAnnotationPositioning(lang)}
+        layers={$layers}
+        layerOpacities={$layerOpacities}
+        {onUpdateLayerOpacity}
+      />
+    {:else}
+      <div class="story-builder-inspector-empty">
+        <strong>No chapter selected</strong>
+        <span>Capture a chapter or select one from the timeline to edit its content.</span>
       </div>
-    </div>
-  {/if}
+    {/if}
+  </div>
+{:else}
+  <div
+    class="story-builder-overlay-root"
+    bind:clientWidth={overlayWidth}
+    bind:clientHeight={overlayHeight}
+  >
+    {#if currentMode !== 'annotationPositioning'}
+      <StoryAnnotationOverlay {story} {viewBox} {chapterId} language={overlayAnnotationLanguage} />
+    {/if}
 
-</div>
+    <SaveExportModal open={exportModalOpen} payload={exportPayload} onclose={onCloseSaveModal} />
+
+    {#if currentMode === 'annotationPositioning'}
+      <div class="story-builder-positioning-container">
+        {#if placementRectValue}
+          <div class="story-builder-positioning-editor-wrapper">
+            <RectanglePlacementEditor
+              enabled={true}
+              value={placementRectValue}
+              minSize={0.001}
+              allowCreate={false}
+              allowMove={true}
+              allowResize={true}
+              showHandles={true}
+              passthrough={false}
+              text={positioningText}
+              onrectchange={({ rect }) => handleEditorChange(rect)}
+            />
+          </div>
+        {/if}
+
+        <div class="story-builder-positioning-toolbar">
+          <button
+            class="story-builder-positioning-button story-builder-positioning-button--cancel"
+            type="button"
+            on:click={handleCancel}
+          >
+            Cancel
+          </button>
+          <button
+            class="story-builder-positioning-button story-builder-positioning-button--confirm"
+            type="button"
+            on:click={handleConfirm}
+          >
+            Confirm Position
+          </button>
+        </div>
+      </div>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .story-builder-overlay-root {
     position: absolute;
     inset: 0;
     pointer-events: none;
+  }
+
+  .story-builder-inspector-root {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--viewer-panel, #121922);
+    color: var(--viewer-text, #e8edf4);
+  }
+
+  .story-builder-inspector-empty {
+    display: grid;
+    gap: 8px;
+    align-content: center;
+    min-height: 220px;
+    padding: 28px;
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .story-builder-inspector-empty strong {
+    color: var(--viewer-text, #e8edf4);
+    font-size: 16px;
   }
 
   .story-builder-positioning-container {
@@ -391,5 +469,4 @@
     background: var(--accent-hover, #ef8f56);
     box-shadow: 0 0 12px rgba(224, 122, 63, 0.4);
   }
-
 </style>

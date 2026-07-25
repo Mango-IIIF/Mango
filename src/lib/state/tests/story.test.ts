@@ -15,6 +15,7 @@ import {
   setDelay,
   setNarrationSegment,
   setNarrationTrack,
+  setStoryTitle,
   updateChapterFromCapture,
 } from '../story.svelte';
 
@@ -57,6 +58,17 @@ const createStoryWithChapters = (): StoryState => ({
 });
 
 describe('story reducers', () => {
+  it('stores the whole-story title by language', () => {
+    const story = createEmptyStory();
+    const english = setStoryTitle(story, { language: 'en', value: 'A painted life' });
+    const welsh = setStoryTitle(english, { language: 'cy', value: 'Bywyd wedi ei baentio' });
+
+    expect(welsh.title).toEqual({
+      en: 'A painted life',
+      cy: 'Bywyd wedi ei baentio',
+    });
+  });
+
   it('adds chapters immutably from capture', () => {
     const story = createEmptyStory();
     const next = addChapterFromCapture(story, {
@@ -181,9 +193,7 @@ describe('story reducers', () => {
 
     expect(next.chapters[0]).not.toBe(story.chapters[0]);
     expect(next.chapters[0].narrationSegment?.cy).toEqual({ start: 10, end: 12 });
-    expect(next.chapters[0].narrationSegment?.en).toEqual(
-      story.chapters[0].narrationSegment?.en,
-    );
+    expect(next.chapters[0].narrationSegment?.en).toEqual(story.chapters[0].narrationSegment?.en);
   });
 
   it('assigns narration segments to the selected chapter and language', () => {
@@ -196,9 +206,7 @@ describe('story reducers', () => {
     });
 
     expect(next.chapters[1].narrationSegment?.en).toEqual({ start: 4, end: 9 });
-    expect(next.chapters[0].narrationSegment?.en).toEqual(
-      story.chapters[0].narrationSegment?.en,
-    );
+    expect(next.chapters[0].narrationSegment?.en).toEqual(story.chapters[0].narrationSegment?.en);
   });
 
   it('removes narration for one chapter and language only', () => {
@@ -226,9 +234,7 @@ describe('story reducers', () => {
     });
 
     expect(next).not.toBe(story);
-    expect(next.chapters[1].manifest).toBe(
-      'https://example.org/updated-manifest.json',
-    );
+    expect(next.chapters[1].manifest).toBe('https://example.org/updated-manifest.json');
     expect(next.chapters[0].manifest).toBe(story.chapters[0].manifest);
   });
 
@@ -241,12 +247,8 @@ describe('story reducers', () => {
     const loaded = newStore.exportStory();
 
     expect(loaded.chapters).toHaveLength(2);
-    expect(loaded.chapters[0].annotations).toEqual(
-      exported.chapters[0].annotations,
-    );
-    expect(loaded.chapters[0].narrationSegment).toEqual(
-      exported.chapters[0].narrationSegment,
-    );
+    expect(loaded.chapters[0].annotations).toEqual(exported.chapters[0].annotations);
+    expect(loaded.chapters[0].narrationSegment).toEqual(exported.chapters[0].narrationSegment);
     expect(loaded.chapters[0].advance).toEqual(exported.chapters[0].advance);
     expect(loaded.chapters[0].manifest).toBe(exported.chapters[0].manifest);
   });
@@ -312,13 +314,7 @@ describe('story reducers', () => {
     });
 
     expect(next).not.toBe(story);
-    expect(next.chapters.map((chapter) => chapter.id)).toEqual([
-      'chapter-b',
-      'chapter-a',
-    ]);
-    expect(story.chapters.map((chapter) => chapter.id)).toEqual([
-      'chapter-a',
-      'chapter-b',
-    ]);
+    expect(next.chapters.map((chapter) => chapter.id)).toEqual(['chapter-b', 'chapter-a']);
+    expect(story.chapters.map((chapter) => chapter.id)).toEqual(['chapter-a', 'chapter-b']);
   });
 });

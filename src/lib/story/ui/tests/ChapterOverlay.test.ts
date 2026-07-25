@@ -42,9 +42,7 @@ describe('ChapterOverlay', () => {
       },
     });
 
-    const input = target.querySelector(
-      '[data-testid="chapter-manifest"]',
-    ) as HTMLInputElement;
+    const input = target.querySelector('[data-testid="chapter-manifest"]') as HTMLInputElement;
     input.value = 'https://example.org/updated.json';
     input.dispatchEvent(new Event('input'));
     await tick();
@@ -58,9 +56,7 @@ describe('ChapterOverlay', () => {
     const storyValue = await new Promise((resolve) => {
       store.story.subscribe((value) => resolve(value))();
     });
-    expect((storyValue as any).chapters[0].manifest).toBe(
-      'https://example.org/updated.json',
-    );
+    expect((storyValue as any).chapters[0].manifest).toBe('https://example.org/updated.json');
     expect(reloadPayload).toEqual({
       manifest: 'https://example.org/updated.json',
       canvasIndex: 2,
@@ -104,6 +100,7 @@ describe('ChapterOverlay', () => {
     ) as HTMLTextAreaElement;
     textarea.value = 'Note';
     textarea.dispatchEvent(new Event('input'));
+    await tick();
 
     const setPositionButton = target.querySelector(
       '[data-testid="set-annotation-position"]',
@@ -191,17 +188,12 @@ describe('ChapterOverlay', () => {
         language: 'en',
         onUpdateChapterTitle: (chapterId: string, lang: string, value: string) =>
           store.setChapterTitle({ chapterId, language: lang, value }),
-        onUpdateChapterDescription: (
-          chapterId: string,
-          lang: string,
-          value: string,
-        ) => store.setChapterDescription({ chapterId, language: lang, value }),
+        onUpdateChapterDescription: (chapterId: string, lang: string, value: string) =>
+          store.setChapterDescription({ chapterId, language: lang, value }),
       },
     });
 
-    const titleInput = target.querySelector(
-      '[data-testid="chapter-title"]',
-    ) as HTMLInputElement;
+    const titleInput = target.querySelector('[data-testid="chapter-title"]') as HTMLInputElement;
     titleInput.value = 'Chapter heading';
     titleInput.dispatchEvent(new Event('input'));
 
@@ -246,12 +238,8 @@ describe('ChapterOverlay', () => {
       },
     });
 
-    const titleInput = target.querySelector(
-      '[data-testid="chapter-title"]',
-    ) as HTMLInputElement;
-    const sectionContent = titleInput.closest(
-      '.chapter-overlay__section-content',
-    ) as HTMLElement;
+    const titleInput = target.querySelector('[data-testid="chapter-title"]') as HTMLInputElement;
+    const sectionContent = titleInput.closest('.chapter-overlay__section-content') as HTMLElement;
     expect(sectionContent.hidden).toBe(false);
 
     const collapseButton = target.querySelector(
@@ -312,14 +300,15 @@ describe('ChapterOverlay', () => {
     }));
     await tick();
 
-    const audio = target.querySelector(
-      '.chapter-overlay__audio-source',
-    ) as HTMLAudioElement;
-    expect(target.textContent).toContain('Audio Narration');
+    const audio = target.querySelector('.chapter-overlay__audio-source') as HTMLAudioElement;
+    expect(target.textContent).toContain('Chapter narration');
     expect(
       (target.querySelector('[data-testid="chapter-narration-url"]') as HTMLInputElement).value,
     ).toBe('https://example.org/updated-narration.mp3');
-    Object.defineProperty(audio, 'readyState', { configurable: true, value: 1 });
+    Object.defineProperty(audio, 'readyState', {
+      configurable: true,
+      value: 1,
+    });
     const play = vi.spyOn(audio, 'play').mockResolvedValue(undefined);
     const pause = vi.spyOn(audio, 'pause').mockImplementation(() => undefined);
     const preview = target.querySelector(
@@ -349,7 +338,9 @@ describe('ChapterOverlay', () => {
 
   it('allows narration to be skipped for the current chapter', async () => {
     const story = writable<StoryState>({
-      narration: { tracks: { en: { src: 'https://example.org/narration.mp3' } } },
+      narration: {
+        tracks: { en: { src: 'https://example.org/narration.mp3' } },
+      },
       chapters: [
         {
           id: 'chapter-1',

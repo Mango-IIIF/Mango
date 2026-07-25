@@ -9,6 +9,7 @@ import {
   type AdvanceModePayload,
   type AdvanceDelayPayload,
   type ChapterMetadataPayload,
+  type StoryMetadataPayload,
   type NarrationTrackPayload,
 } from '../../../state/story.svelte';
 import type { StoryState } from '../../../core/types/story';
@@ -24,18 +25,18 @@ export function createStoryStoreForTest(initial?: StoryState) {
   return {
     // Store that components can subscribe to
     story: storyWritable,
-    
+
     // Wrapped methods that update both runes and writable
     addChapterFromCapture(payload: AddChapterPayload) {
       runesStore.addChapterFromCapture(payload);
       storyWritable.set(runesStore.story);
     },
-    
+
     deleteChapter(payload: DeleteChapterPayload) {
       runesStore.deleteChapter(payload);
       storyWritable.set(runesStore.story);
     },
-    
+
     setChapterManifest(payload: ChapterManifestPayload) {
       runesStore.setChapterManifest(payload);
       storyWritable.set(runesStore.story);
@@ -66,6 +67,11 @@ export function createStoryStoreForTest(initial?: StoryState) {
       storyWritable.set(runesStore.story);
     },
 
+    setStoryTitle(payload: StoryMetadataPayload) {
+      runesStore.setStoryTitle(payload);
+      storyWritable.set(runesStore.story);
+    },
+
     setChapterDescription(payload: ChapterMetadataPayload) {
       runesStore.setChapterDescription(payload);
       storyWritable.set(runesStore.story);
@@ -75,7 +81,7 @@ export function createStoryStoreForTest(initial?: StoryState) {
       runesStore.setNarrationTrack(payload);
       storyWritable.set(runesStore.story);
     },
-    
+
     exportStory() {
       return runesStore.exportStory();
     },

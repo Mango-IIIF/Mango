@@ -62,17 +62,15 @@
 
   const DEFAULT_LAYER_COLOR = '#a78bfa';
   const LAYER_FILL_OPACITY = 0.18;
-  const NEW_LAYER_COLORS = [
-    '#fb7185',
-    '#2ac7ff',
-    '#22c55e',
-    '#06b6d4',
-    '#818cf8',
-    '#ec4899',
-  ];
+  const NEW_LAYER_COLORS = ['#fb7185', '#2ac7ff', '#22c55e', '#06b6d4', '#818cf8', '#ec4899'];
   const DEFAULT_ANNOTATION_LAYERS: LayerItem[] = [
     { id: 'research', name: 'Research Notes', color: '#fb7185', visible: true },
-    { id: 'transcription', name: 'Transcription', color: '#60a5fa', visible: true },
+    {
+      id: 'transcription',
+      name: 'Transcription',
+      color: '#60a5fa',
+      visible: true,
+    },
     { id: 'highlights', name: 'Highlights', color: '#34d399', visible: true },
     { id: 'mine', name: 'My Annotations', color: '#a78bfa', visible: true },
   ];
@@ -157,8 +155,7 @@
     });
   const viewerState = createInitialViewerState();
   const viewerDerived = createViewerDerived(viewerState);
-  const initialReportedCanvasIndex = () =>
-    canvasIndex ?? get(viewerState.selectedCanvasIndex);
+  const initialReportedCanvasIndex = () => canvasIndex ?? get(viewerState.selectedCanvasIndex);
   let lastReportedCanvasIndex = initialReportedCanvasIndex();
   let stageRef: ReturnType<typeof Stage> | null = $state(null);
   const controller = createViewerController({
@@ -222,8 +219,6 @@
     AnnotationWorkspaceComponent = workspace.default;
     annotationWorkspaceLoading = false;
   };
-
-  const enableRightPanel = false;
 
   const {
     selectedCanvasIndex,
@@ -335,7 +330,17 @@
   };
 
   const handleViewerPanelToggle = (
-    panel: 'collection' | 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers' | 'thumbnails' | 'compare',
+    panel:
+      | 'collection'
+      | 'annotations'
+      | 'tools'
+      | 'search'
+      | 'metadata'
+      | 'contents'
+      | 'settings'
+      | 'layers'
+      | 'thumbnails'
+      | 'compare',
     open: boolean,
   ) => {
     showManifestManager = false;
@@ -389,11 +394,7 @@
   let zoomPercent = $derived(
     $zoom > 0 && zoomBaseline > 0 ? Math.max(10, Math.round(($zoom / zoomBaseline) * 100)) : 100,
   );
-  const handleStageZoomChange = (detail: {
-    zoom: number;
-    viewBox: ViewBox;
-    homeZoom?: number;
-  }) => {
+  const handleStageZoomChange = (detail: { zoom: number; viewBox: ViewBox; homeZoom?: number }) => {
     if (detail.homeZoom && detail.homeZoom > 0) {
       zoomBaseline = detail.homeZoom;
       zoomBaselineCanvasIndex = $selectedCanvasIndex;
@@ -423,6 +424,10 @@
     const activeChapter = storyData?.chapters?.[storyCurrentChapterIndex];
     const resolvedTitle = resolveLanguageValue(activeChapter?.title, storyLanguage);
     return resolvedTitle || (storyChapters > 0 ? `Chapter ${storyCurrentChapterIndex + 1}` : '');
+  });
+  let storyTitle = $derived.by(() => {
+    const resolvedTitle = resolveLanguageValue(storyData?.title, storyLanguage);
+    return resolvedTitle || 'Untitled story';
   });
   let chapterDescription = $derived(
     resolveLanguageValue(
@@ -460,9 +465,7 @@
   $effect(() => {
     const configuredTheme = normalisedConfig.theme?.toLowerCase();
     viewerSettingsTheme =
-      configuredTheme === 'light' ||
-      configuredTheme === 'sepia' ||
-      configuredTheme === 'midnight'
+      configuredTheme === 'light' || configuredTheme === 'sepia' || configuredTheme === 'midnight'
         ? configuredTheme
         : 'dark';
   });
@@ -493,9 +496,7 @@
     ...args: TArgs
   ): TResult {
     const host = getShadowHost();
-    const method = host
-      ? (host as unknown as Record<string, unknown>)[name]
-      : undefined;
+    const method = host ? (host as unknown as Record<string, unknown>)[name] : undefined;
     if (typeof method === 'function') {
       return method.apply(host, args) as TResult;
     }
@@ -1340,7 +1341,7 @@
       ? false
       : $leftVisible || showComparePanel,
   );
-  let rightVisibleEffective = $derived(isStoryViewer ? false : enableRightPanel && $rightVisible);
+  let rightVisibleEffective = $derived(isStoryBuilder && $rightVisible);
   let showThumbnailsEffectiveStory = $derived(isStoryViewer ? false : showThumbnailsEffective);
   let showSearchEffectiveStory = $derived(isStoryViewer ? false : showSearchEffective);
   let showAnnotationsEffectiveStory = $derived(isStoryViewer ? false : showAnnotationsEffective);
@@ -1362,22 +1363,16 @@
   let allowLayersStory = $derived(isStoryViewer || isStoryBuilder ? false : $allowLayers);
   let allowContentsStory = $derived(isStoryViewer ? false : $contentsAvailable);
   let allowChaptersStory = $derived(
-    !isStoryViewer &&
-      ($mediaType === 'audio' || $mediaType === 'video') &&
-      $avChaptersAvailable,
+    !isStoryViewer && ($mediaType === 'audio' || $mediaType === 'video') && $avChaptersAvailable,
   );
   let allowTranscriptStory = $derived(
-    !isStoryViewer &&
-      ($mediaType === 'audio' || $mediaType === 'video') &&
-      $avTranscriptAvailable,
+    !isStoryViewer && ($mediaType === 'audio' || $mediaType === 'video') && $avTranscriptAvailable,
   );
   // StoryState annotation overlay reactive variables
   $effect(() => {
     storyDataStore.set(storyData ?? EMPTY_STORY);
   });
-  let storyCurrentChapterId = $derived(
-    storyData?.chapters[storyCurrentChapterIndex]?.id ?? null,
-  );
+  let storyCurrentChapterId = $derived(storyData?.chapters[storyCurrentChapterIndex]?.id ?? null);
   setViewerContext({
     state: viewerState,
     derived: viewerDerived,
@@ -1439,7 +1434,7 @@
   aria-live="polite"
   bind:this={viewerRoot}
 >
-  {#if leftVisibleEffective && !isStoryViewer}
+  {#if leftVisibleEffective && !isStoryViewer && !isStoryBuilder}
     <button
       type="button"
       class="viewer__backdrop viewer__backdrop--active"
@@ -1450,12 +1445,18 @@
 
   <div class="viewer__top-row">
     <div class="viewer__top-title">
-      {#if !isStoryViewer}
+      {#if isStoryViewer}
+        <span>{storyTitle}</span>
+      {:else if !isStoryBuilder}
         <ViewerHeader {manifestId} manifestEntry={$manifestEntry} />
       {/if}
     </div>
 
     <div class="viewer__top-actions">
+      {#if $pluginSlots.top.length > 0}
+        <PluginSlot slot="top" plugins={$pluginSlots.top} {pluginContext} />
+      {/if}
+
       {#if isAnnotationEditor}
         <button type="button" class="viewer__export-btn" onclick={handleExportAnnotations}>
           {$t('viewer.panels.annotations.export') || 'Export Annotations'}
@@ -1499,7 +1500,9 @@
   <div
     class="viewer__grid"
     class:viewer__grid--controls={showControlRail}
-    class:viewer__grid--nav-compact={showControlRail && (leftVisibleEffective || showManifestManager) && !isMobileLayout}
+    class:viewer__grid--nav-compact={showControlRail &&
+      (leftVisibleEffective || showManifestManager) &&
+      !isMobileLayout}
     class:viewer__grid--left={leftVisibleEffective}
     class:viewer__grid--right={rightVisibleEffective}
     class:viewer__grid--sidebar-right={sidebarPosition === 'right'}
@@ -1537,14 +1540,11 @@
           {showManifestManager}
           multiView={isMultiView}
           oncollapse={collapseViewerSidebar}
-          ongalleryopen={() =>
-            controller.setPanelOpen('thumbnails', !showThumbnailsEffectiveStory)}
+          ongalleryopen={() => controller.setPanelOpen('thumbnails', !showThumbnailsEffectiveStory)}
           oncontentsopen={openContentsPanel}
-          oncomparetoggle={() =>
-            handleViewerPanelToggle('compare', !showComparePanel)}
+          oncomparetoggle={() => handleViewerPanelToggle('compare', !showComparePanel)}
           onmanifesttoggle={toggleManifestManager}
-          onpanelToggle={(detail) =>
-            handleViewerPanelToggle(detail.panel, detail.open)}
+          onpanelToggle={(detail) => handleViewerPanelToggle(detail.panel, detail.open)}
         />
       </aside>
     {/if}
@@ -1812,8 +1812,16 @@
       <main
         class="stage"
         class:stage--viewer={isPlainViewerMode}
-        class:stage--joined-sidebar-left={isPlainViewerMode && showControlRail && !leftVisibleEffective && !isMobileLayout && sidebarPosition === 'left'}
-        class:stage--joined-sidebar-right={isPlainViewerMode && showControlRail && !leftVisibleEffective && !isMobileLayout && sidebarPosition === 'right'}
+        class:stage--joined-sidebar-left={isPlainViewerMode &&
+          showControlRail &&
+          !leftVisibleEffective &&
+          !isMobileLayout &&
+          sidebarPosition === 'left'}
+        class:stage--joined-sidebar-right={isPlainViewerMode &&
+          showControlRail &&
+          !leftVisibleEffective &&
+          !isMobileLayout &&
+          sidebarPosition === 'right'}
         class:stage--story-builder={isStoryBuilder}
         class:stage--with-bottom-toolbar={!toolbarAboveMedia}
         class:stage--workspace={!!workspace && viewerSettingsLayout !== '1x1'}
@@ -1821,138 +1829,138 @@
       >
         {#if viewerSettingsLayout === '1x1'}
           <div class:stage__viewer-frame={isPlainViewerMode} class="stage__primary">
-          {#if toolbarAboveMedia && $layoutMode !== 'gallery'}
-            <StageToolbar
-              {canZoom}
-              {hasSource}
-              placement="above"
-              mediaType={$mediaType}
-              selectedCanvasIndex={$selectedCanvasIndex}
-              totalCanvases={$canvases.length}
-              {zoomPercent}
-              rotation={$rotation}
-              onhome={handleHome}
-              onzoomIn={handleZoomIn}
-              onzoomOut={handleZoomOut}
-              onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
-              onrotate={handleRotate}
-              onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
-              onprevCanvas={handlePrevCanvas}
-              onnextCanvas={handleNextCanvas}
-            />
-          {/if}
+            {#if toolbarAboveMedia && $layoutMode !== 'gallery'}
+              <StageToolbar
+                {canZoom}
+                {hasSource}
+                placement="above"
+                mediaType={$mediaType}
+                selectedCanvasIndex={$selectedCanvasIndex}
+                totalCanvases={$canvases.length}
+                {zoomPercent}
+                rotation={$rotation}
+                onhome={handleHome}
+                onzoomIn={handleZoomIn}
+                onzoomOut={handleZoomOut}
+                onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
+                onrotate={handleRotate}
+                onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
+                onprevCanvas={handlePrevCanvas}
+                onnextCanvas={handleNextCanvas}
+              />
+            {/if}
 
-          {#if $layoutMode === 'gallery'}
-            <div class="stage-gallery-view">
-              <div class="stage-gallery-view__grid">
-                {#each $canvases as canvas (canvas.id)}
-                  <button
-                    class="stage-gallery-view__card"
-                    class:stage-gallery-view__card--active={canvas.index === $selectedCanvasIndex}
-                    type="button"
-                    onclick={() => {
-                      controller.setCanvasByIndex(canvas.index);
-                      controller.setLayoutMode('single');
-                    }}
-                  >
-                    <div class="stage-gallery-view__thumb-wrapper">
-                      {#if $canvasThumbnails[canvas.index]}
-                        <img
-                          class="stage-gallery-view__img"
-                          src={$canvasThumbnails[canvas.index]}
-                          alt={canvas.label || `Page ${canvas.index + 1}`}
-                          loading="lazy"
-                        />
-                      {:else}
-                        <div
-                          class="stage-gallery-view__placeholder"
-                          aria-label={$t('viewer.gallery.unavailable')}
-                        >
-                          <ImageOff aria-hidden="true" />
-                          <span class="stage-gallery-view__index">{canvas.index + 1}</span>
-                        </div>
-                      {/if}
-                    </div>
-                    <div class="stage-gallery-view__label">
-                      {canvas.label || `Page ${canvas.index + 1}`}
-                    </div>
-                  </button>
-                {/each}
+            {#if $layoutMode === 'gallery'}
+              <div class="stage-gallery-view">
+                <div class="stage-gallery-view__grid">
+                  {#each $canvases as canvas (canvas.id)}
+                    <button
+                      class="stage-gallery-view__card"
+                      class:stage-gallery-view__card--active={canvas.index === $selectedCanvasIndex}
+                      type="button"
+                      onclick={() => {
+                        controller.setCanvasByIndex(canvas.index);
+                        controller.setLayoutMode('single');
+                      }}
+                    >
+                      <div class="stage-gallery-view__thumb-wrapper">
+                        {#if $canvasThumbnails[canvas.index]}
+                          <img
+                            class="stage-gallery-view__img"
+                            src={$canvasThumbnails[canvas.index]}
+                            alt={canvas.label || `Page ${canvas.index + 1}`}
+                            loading="lazy"
+                          />
+                        {:else}
+                          <div
+                            class="stage-gallery-view__placeholder"
+                            aria-label={$t('viewer.gallery.unavailable')}
+                          >
+                            <ImageOff aria-hidden="true" />
+                            <span class="stage-gallery-view__index">{canvas.index + 1}</span>
+                          </div>
+                        {/if}
+                      </div>
+                      <div class="stage-gallery-view__label">
+                        {canvas.label || `Page ${canvas.index + 1}`}
+                      </div>
+                    </button>
+                  {/each}
+                </div>
               </div>
-            </div>
-          {:else}
-            <Stage
-              bind:this={stageRef}
-              bind:canZoom
-              fillHeight={isStoryBuilder}
-              rendererComponent={$rendererComponent}
-              {avController}
-              mediaSource={$mediaSource}
-              layoutMode={$layoutMode}
-              activeLayoutImages={$activeLayoutImages}
-              annotations={$overlayAnnotations}
-              highlightIds={$highlightIds}
-              activeAnnotationId={$activeAnnotationId}
-              hoverAnnotationId={$hoverAnnotationId}
-              overlayPlugins={$pluginSlots.overlay}
-              {pluginContext}
-              {rendererHandlers}
-              isFetching={$manifestEntry?.isFetching ?? false}
-              error={$manifestEntry?.error ?? ''}
-              imageFilters={$imageFilters}
-              mediaType={$mediaType}
-              viewerConfig={normalisedConfig}
-              rotation={$rotation}
-              initialViewBox={initialViewState.viewBox}
-              allowThumbnails={allowThumbnailsStory}
-              allowSearch={allowSearchStory}
-              allowMetadata={allowMetadataStory}
-              allowAnnotations={allowAnnotationsStory}
-              allowTools={allowToolsStory}
-              allowLayers={allowLayersStory}
-              allowContents={allowContentsStory}
-              showDock={stageDockVisible}
-              constrainMediaHeight={!toolbarAboveMedia}
-              showThumbnails={showThumbnailsEffectiveStory}
-              showSearch={showSearchEffectiveStory}
-              showMetadata={$showMetadata}
-              showAnnotations={showAnnotationsEffectiveStory}
-              showTools={showToolsEffectiveStory}
-              showContents={showContentsEffectiveStory}
-              showLayers={showLayersEffectiveStory}
-              layers={$mediaSources}
-              layerOpacities={$layerOpacities}
-              canvasId={activeCanvasId}
-              onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
-              onzoomchange={handleStageZoomChange}
-              onrotationchange={(detail) => controller.handleRotationChange(detail)}
-              onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
-              onannotationcreate={handleAnnotationCreate}
-              onannotationupdate={(payload) =>
-                handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
-            />
-          {/if}
+            {:else}
+              <Stage
+                bind:this={stageRef}
+                bind:canZoom
+                fillHeight={isStoryBuilder}
+                rendererComponent={$rendererComponent}
+                {avController}
+                mediaSource={$mediaSource}
+                layoutMode={$layoutMode}
+                activeLayoutImages={$activeLayoutImages}
+                annotations={$overlayAnnotations}
+                highlightIds={$highlightIds}
+                activeAnnotationId={$activeAnnotationId}
+                hoverAnnotationId={$hoverAnnotationId}
+                overlayPlugins={$pluginSlots.overlay}
+                {pluginContext}
+                {rendererHandlers}
+                isFetching={$manifestEntry?.isFetching ?? false}
+                error={$manifestEntry?.error ?? ''}
+                imageFilters={$imageFilters}
+                mediaType={$mediaType}
+                viewerConfig={normalisedConfig}
+                rotation={$rotation}
+                initialViewBox={initialViewState.viewBox}
+                allowThumbnails={allowThumbnailsStory}
+                allowSearch={allowSearchStory}
+                allowMetadata={allowMetadataStory}
+                allowAnnotations={allowAnnotationsStory}
+                allowTools={allowToolsStory}
+                allowLayers={allowLayersStory}
+                allowContents={allowContentsStory}
+                showDock={stageDockVisible}
+                constrainMediaHeight={!toolbarAboveMedia}
+                showThumbnails={showThumbnailsEffectiveStory}
+                showSearch={showSearchEffectiveStory}
+                showMetadata={$showMetadata}
+                showAnnotations={showAnnotationsEffectiveStory}
+                showTools={showToolsEffectiveStory}
+                showContents={showContentsEffectiveStory}
+                showLayers={showLayersEffectiveStory}
+                layers={$mediaSources}
+                layerOpacities={$layerOpacities}
+                canvasId={activeCanvasId}
+                onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
+                onzoomchange={handleStageZoomChange}
+                onrotationchange={(detail) => controller.handleRotationChange(detail)}
+                onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
+                onannotationcreate={handleAnnotationCreate}
+                onannotationupdate={(payload) =>
+                  handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
+              />
+            {/if}
 
-          {#if !toolbarAboveMedia && $layoutMode !== 'gallery'}
-            <StageToolbar
-              {canZoom}
-              {hasSource}
-              placement="below"
-              mediaType={$mediaType}
-              selectedCanvasIndex={$selectedCanvasIndex}
-              totalCanvases={$canvases.length}
-              {zoomPercent}
-              rotation={$rotation}
-              onhome={handleHome}
-              onzoomIn={handleZoomIn}
-              onzoomOut={handleZoomOut}
-              onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
-              onrotate={handleRotate}
-              onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
-              onprevCanvas={handlePrevCanvas}
-              onnextCanvas={handleNextCanvas}
-            />
-          {/if}
+            {#if !toolbarAboveMedia && $layoutMode !== 'gallery'}
+              <StageToolbar
+                {canZoom}
+                {hasSource}
+                placement="below"
+                mediaType={$mediaType}
+                selectedCanvasIndex={$selectedCanvasIndex}
+                totalCanvases={$canvases.length}
+                {zoomPercent}
+                rotation={$rotation}
+                onhome={handleHome}
+                onzoomIn={handleZoomIn}
+                onzoomOut={handleZoomOut}
+                onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
+                onrotate={handleRotate}
+                onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
+                onprevCanvas={handlePrevCanvas}
+                onnextCanvas={handleNextCanvas}
+              />
+            {/if}
           </div>
 
           {#if showThumbnailsEffectiveStory && $layoutMode !== 'gallery'}
@@ -1963,9 +1971,7 @@
               selectedCanvasIndex={$selectedCanvasIndex}
               onpanelToggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
               oncanvasSelect={(detail) => controller.setCanvasByIndex(detail.index)}
-              onviewall={isPlainViewerMode
-                ? () => controller.setLayoutMode('gallery')
-                : undefined}
+              onviewall={isPlainViewerMode ? () => controller.setLayoutMode('gallery') : undefined}
             />
           {/if}
 
@@ -1992,8 +1998,7 @@
             }}
             oncanvaschange={(detail) =>
               workspace?.setWindowCanvasIndex(detail.id, detail.canvasIndex)}
-            onresizesplit={(detail) =>
-              workspace?.updateSplitSizes(detail.targetId, detail.sizes)}
+            onresizesplit={(detail) => workspace?.updateSplitSizes(detail.targetId, detail.sizes)}
             onopenmanifestmanager={(id) => {
               workspace?.setActiveWindow(id);
               closeLeftPanelStores();
@@ -2334,6 +2339,32 @@
     min-height: 0;
   }
 
+  .viewer--story-builder .viewer__top-row {
+    align-items: center;
+  }
+
+  .viewer--story-builder .viewer__top-title {
+    display: none;
+  }
+
+  .viewer--story-builder .viewer__top-actions {
+    flex: 1 1 auto;
+  }
+
+  .viewer--story-builder .viewer__top-actions :global(.plugin-slot) {
+    flex: 1 1 auto;
+  }
+
+  .viewer--story-builder .viewer__top-actions :global(.plugin-panel__panel) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .viewer--story-builder .viewer__top-actions :global(.plugin-panel__title) {
+    display: none;
+  }
+
   .viewer.viewer--story-viewer {
     --story-shell-radius: 18px;
     grid-template-rows: auto minmax(0, 1fr);
@@ -2357,6 +2388,13 @@
 
   .viewer--story-viewer .viewer__top-title {
     display: block;
+    overflow: hidden;
+    color: var(--viewer-text);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .viewer--story-viewer .viewer__fullscreen-btn {
@@ -2527,12 +2565,7 @@
     );
     border-color: #d8c7aa;
     box-shadow: var(--viewer-frame-shadow, 0 24px 52px rgba(76, 58, 35, 0.16));
-    background: radial-gradient(
-      135% 135% at 10% 0%,
-      #f5ead7 0%,
-      #eee4d2 48%,
-      #e5d7bf 100%
-    );
+    background: radial-gradient(135% 135% at 10% 0%, #f5ead7 0%, #eee4d2 48%, #e5d7bf 100%);
   }
 
   .viewer[data-theme='midnight'] {
@@ -2558,12 +2591,7 @@
     );
     border-color: #142b46;
     box-shadow: var(--viewer-frame-shadow, 0 30px 76px rgba(0, 3, 10, 0.72));
-    background: radial-gradient(
-      130% 130% at 8% 0%,
-      #142a46 0%,
-      #07111f 50%,
-      #020711 100%
-    );
+    background: radial-gradient(130% 130% at 8% 0%, #142a46 0%, #07111f 50%, #020711 100%);
   }
 
   .viewer__grid {
@@ -2658,6 +2686,51 @@
 
   .viewer__grid.viewer__grid--left.viewer__grid--right {
     grid-template-columns: minmax(240px, 300px) 1fr minmax(220px, 280px);
+  }
+
+  .viewer--story-builder .viewer__grid.viewer__grid--left.viewer__grid--right {
+    grid-template-columns: minmax(240px, 280px) minmax(420px, 1fr) minmax(340px, 400px);
+    column-gap: 12px;
+  }
+
+  .viewer--story-builder .panel-stack--right {
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--viewer-panel-border);
+    border-radius: 18px;
+    background: var(--viewer-panel);
+  }
+
+  .viewer--story-builder .panel-stack--right :global(.plugin-slot),
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel),
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel__panel),
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel__body) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel__panel) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel__title) {
+    display: none;
+  }
+
+  :global(.viewer--story-preview) .viewer__grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :global(.viewer--story-preview) .viewer__grid :global(.panel-stack--left),
+  :global(.viewer--story-preview) .panel-stack--right {
+    display: none !important;
+  }
+
+  :global(.viewer--story-preview) .viewer__grid > .stage {
+    grid-column: 1 !important;
+    grid-row: 1 / -1 !important;
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--right {
@@ -2867,6 +2940,21 @@
       padding: 0;
     }
 
+    .viewer.viewer--story-builder {
+      height: min(900px, 100dvh);
+      min-height: 680px;
+      max-height: 100dvh;
+      overflow: hidden;
+    }
+
+    .viewer--story-builder .viewer__top-row {
+      flex-wrap: wrap;
+    }
+
+    .viewer--story-builder .viewer__top-actions {
+      width: 100%;
+    }
+
     .viewer__grid {
       grid-template-columns: 1fr;
       grid-template-rows: minmax(0, 1fr) auto;
@@ -2875,6 +2963,41 @@
       max-height: none;
       min-height: 0;
       overflow: visible;
+    }
+
+    .viewer--story-builder .viewer__grid {
+      grid-template-columns: minmax(220px, 36%) minmax(0, 1fr) !important;
+      grid-template-rows: minmax(320px, 1fr) minmax(260px, 42%);
+      gap: 8px;
+      height: 100%;
+      max-height: 100%;
+      overflow: hidden;
+    }
+
+    .viewer--story-builder .viewer__grid > .stage {
+      grid-row: 1;
+      grid-column: 1 / -1;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
+      position: relative;
+      inset: auto;
+      grid-row: 2;
+      grid-column: 1;
+      width: 100%;
+      max-width: none;
+      height: 100%;
+      transform: none;
+      animation: none;
+      box-shadow: none;
+    }
+
+    .viewer--story-builder .panel-stack--right {
+      grid-row: 2;
+      grid-column: 2;
+      height: 100%;
     }
 
     .viewer__grid.viewer__grid--left.viewer__grid--right,
@@ -3027,6 +3150,56 @@
       --mango-viewer-av-player-aspect-ratio: 16 / 9;
       --mango-viewer-audio-art-aspect-ratio: 16 / 7;
       --mango-viewer-audio-art-min-height: 0;
+    }
+  }
+
+  @container mango-viewer (max-width: 700px) {
+    .viewer.viewer--story-builder {
+      height: auto;
+      min-height: 1080px;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .viewer--story-builder .viewer__grid {
+      grid-template-columns: 1fr !important;
+      grid-template-rows: 360px 280px 440px;
+      height: auto;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .viewer--story-builder .viewer__grid > .stage {
+      grid-row: 1;
+      grid-column: 1;
+    }
+
+    .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
+      grid-row: 2;
+      grid-column: 1;
+    }
+
+    .viewer--story-builder .panel-stack--right {
+      grid-row: 3;
+      grid-column: 1;
+    }
+  }
+
+  @media (min-width: 701px) and (max-width: 1024px) {
+    .viewer.viewer--story-builder {
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
+      overflow: hidden;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .viewer.viewer--story-builder {
+      height: auto;
+      min-height: 1080px;
+      max-height: none;
+      overflow: visible;
     }
   }
 
