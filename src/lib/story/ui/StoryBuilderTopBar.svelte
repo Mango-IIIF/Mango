@@ -4,6 +4,7 @@
   import type { Readable } from 'svelte/store';
   import type { StoryState } from '../../core/types/story';
   import type { SaveState } from '../storySerializer';
+  import MangoFooterBrand from './MangoFooterBrand.svelte';
 
   export let story: Readable<StoryState>;
   export let isPreviewing: Readable<boolean>;
@@ -50,8 +51,12 @@
 </script>
 
 <div class="story-topbar" data-testid="story-builder-topbar" bind:this={root}>
-  <div class="story-topbar__title" data-testid="story-builder-title">
-    {storyTitle}
+  <div class="story-topbar__title">
+    <MangoFooterBrand position="inline" />
+    {#if storyTitle}
+      <span class="story-topbar__title-divider" aria-hidden="true">|</span>
+      <span data-testid="story-builder-title">{storyTitle}</span>
+    {/if}
   </div>
 
   <div class="story-topbar__status" aria-live="polite">
@@ -138,6 +143,9 @@
   }
 
   .story-topbar__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     min-width: 0;
     margin-right: auto;
     overflow: hidden;
@@ -147,6 +155,15 @@
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .story-topbar__title-divider {
+    color: var(--viewer-muted, rgba(255, 255, 255, 0.35));
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1;
+    user-select: none;
+    flex-shrink: 0;
   }
 
   .story-topbar__status-dot {

@@ -8,7 +8,6 @@
   import StoryBuilderWideNarration from "./StoryBuilderWideNarration.svelte";
   import StoryBuilderWideMediaTiming from "./StoryBuilderWideMediaTiming.svelte";
   import StoryBuilderWideAnnotations from "./StoryBuilderWideAnnotations.svelte";
-  import MangoFooterBrand from "./MangoFooterBrand.svelte";
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
@@ -165,31 +164,7 @@
   <div class="story-wide-authoring--empty" aria-hidden="true"></div>
 {/if}
 
-{#if chapter}
-  <footer class="story-builder-footer-section" aria-label="Application footer">
-    <div class="story-builder-footer-section__brand">
-      <MangoFooterBrand position="inline" />
-    </div>
-  </footer>
-{/if}
-
 <style>
-  .story-builder-footer-section {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 8px;
-    margin: 0;
-    height: 16px;
-    min-height: 16px;
-    line-height: 1;
-    background: transparent;
-    border-top: none;
-    font-size: 11px;
-    color: var(--viewer-muted, #9aa6b2);
-    width: 100%;
-    box-sizing: border-box;
-  }
 
   :global(.stage__bottom:has(.story-wide-authoring--empty)) {
     display: none;

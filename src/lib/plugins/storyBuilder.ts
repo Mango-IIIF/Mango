@@ -141,7 +141,7 @@ export const createStoryBuilderPlugins = (options: StoryBuilderOptions = {}): Vi
         onUpdateAnnotationPlacement: controller.updateAnnotationPlacement,
         onUpdateAdvanceMode: controller.updateAdvanceMode,
         onUpdateDelay: controller.updateDelay,
-        onUpdateChapterPosition: controller.updateChapter,
+        onUpdateChapterPosition: controller.updateChapterPosition,
         onRevertChapterPosition: () => {
           const chapterId = get(controller.selectedChapterId);
           if (chapterId) controller.selectChapter(chapterId);

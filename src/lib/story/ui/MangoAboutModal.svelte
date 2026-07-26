@@ -123,8 +123,13 @@
 
   .mango-about-modal {
     position: relative;
+    box-sizing: border-box;
     width: 100%;
     max-width: 480px;
+    max-height: calc(100dvh - 32px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     background: var(--viewer-card-bg, #18202c);
     border: 1px solid var(--viewer-border, rgba(255, 255, 255, 0.12));
     border-radius: 16px;
@@ -242,6 +247,7 @@
   .mango-about-modal__feature div {
     display: grid;
     gap: 2px;
+    min-width: 0;
   }
 
   .mango-about-modal__feature strong {
@@ -253,6 +259,7 @@
   .mango-about-modal__feature span {
     font-size: 12px;
     color: var(--viewer-muted, #9aa6b2);
+    overflow-wrap: anywhere;
   }
 
   .mango-about-modal__footer {
@@ -276,7 +283,34 @@
     font-weight: 700;
     font-size: 13px;
     text-decoration: none;
+    overflow-wrap: anywhere;
     transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  @media (max-width: 520px), (max-height: 700px) {
+    .mango-about-modal {
+      padding: 20px;
+    }
+
+    .mango-about-modal__header {
+      margin-bottom: 14px;
+    }
+
+    .mango-about-modal__badge {
+      width: 52px;
+      height: 52px;
+      margin-bottom: 8px;
+    }
+
+    .mango-about-modal__body {
+      gap: 12px;
+    }
+
+    .mango-about-modal__footer {
+      flex-wrap: wrap;
+      margin-top: 16px;
+      padding-top: 14px;
+    }
   }
 
   .mango-about-modal__link:hover {

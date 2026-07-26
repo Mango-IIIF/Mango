@@ -417,6 +417,12 @@
 </aside>
 
 <style>
+  .story-sidebar__footer {
+    margin-top: auto;
+    padding-top: 8px;
+    display: flex;
+    align-items: center;
+  }
   :global(.panel-stack--left:has(.story-sidebar)) {
     overflow: hidden !important;
     padding: 0 !important;

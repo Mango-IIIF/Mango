@@ -1500,7 +1500,11 @@
   <div class="viewer__top-row">
     <div class="viewer__top-title">
       {#if isStoryViewer}
-        <span>{storyTitle}</span>
+        <MangoFooterBrand position="inline" />
+        {#if storyTitle}
+          <span class="viewer__title-divider" aria-hidden="true">|</span>
+          <span>{storyTitle}</span>
+        {/if}
       {:else if !isStoryBuilder}
         <ViewerHeader {manifestId} manifestEntry={$manifestEntry} />
       {/if}
@@ -1519,22 +1523,17 @@
 
       <button
         type="button"
-        class="viewer__fullscreen-btn"
-        class:viewer__fullscreen-btn--labelled={isPlainViewerMode}
+        class="viewer__fullscreen-btn viewer__fullscreen-btn--labelled"
         onclick={handleStoryFullscreen}
         aria-label={isViewerFullscreen ? 'Close fullscreen' : 'Enter fullscreen'}
         title={isViewerFullscreen ? 'Close fullscreen' : 'Enter fullscreen'}
       >
-        {#if isPlainViewerMode}
-          {#if isViewerFullscreen}
-            <Shrink aria-hidden="true" />
-          {:else}
-            <Expand aria-hidden="true" />
-          {/if}
-          <span>{isViewerFullscreen ? 'Close fullscreen' : 'Fullscreen'}</span>
+        {#if isViewerFullscreen}
+          <Shrink aria-hidden="true" />
         {:else}
-          ⛶
+          <Expand aria-hidden="true" />
         {/if}
+        <span>{isViewerFullscreen ? 'Close fullscreen' : 'Fullscreen'}</span>
       </button>
     </div>
   </div>
@@ -2087,31 +2086,10 @@
       </aside>
     {/if}
 
-    <footer class="mango-app-footer-global" aria-label="Mango application footer">
-      <div class="mango-app-footer-global__brand">
-        <MangoFooterBrand position="inline" />
-      </div>
-    </footer>
   </div>
 </div>
 
 <style>
-  .mango-app-footer-global {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 8px;
-    margin: 0;
-    height: 16px;
-    min-height: 16px;
-    line-height: 1;
-    background: transparent;
-    border-top: none;
-    font-size: 11px;
-    color: var(--viewer-muted, #9aa6b2);
-    z-index: 900;
-  }
 
   .stage-gallery-view {
     width: 100%;
@@ -2234,8 +2212,20 @@
   }
 
   .viewer__top-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     flex: 1 1 auto;
     min-width: 0;
+  }
+
+  .viewer__title-divider {
+    color: var(--viewer-muted, rgba(255, 255, 255, 0.35));
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1;
+    user-select: none;
+    flex-shrink: 0;
   }
 
   .viewer__top-actions {
@@ -2493,7 +2483,7 @@
   }
 
   .viewer--story-viewer .viewer__fullscreen-btn {
-    width: 36px;
+    width: auto;
     height: 36px;
   }
 

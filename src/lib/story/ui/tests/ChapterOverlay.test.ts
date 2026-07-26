@@ -13,7 +13,7 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe("ChapterOverlay", () => {
-  it("acknowledges an updated captured view", async () => {
+  it("only offers to update a saved position after the viewer moves", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -21,6 +21,56 @@ describe("ChapterOverlay", () => {
           manifest: "https://example.org/image-manifest.json",
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 100, h: 100 },
+        },
+      ],
+    });
+    const viewBox = writable({ x: 0, y: 0, w: 100, h: 100 });
+    const target = createTarget();
+    const onUpdateChapterPosition = vi.fn();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        docked: true,
+        chapterId: "chapter-image",
+        viewBox,
+        onUpdateChapterPosition,
+      },
+    });
+
+    expect(
+      target.querySelector('[data-testid="chapter-update-view"]'),
+    ).toBeNull();
+
+    await new Promise((resolve) => setTimeout(resolve, 550));
+    viewBox.set({ x: 12, y: 18, w: 80, h: 80 });
+    await tick();
+
+    const updateView = target.querySelector(
+      '[data-testid="chapter-update-view"]',
+    ) as HTMLButtonElement;
+    expect(updateView.textContent).toContain("Update chapter position");
+    expect(updateView.textContent).toContain("The viewer has moved");
+    expect(onUpdateChapterPosition).not.toHaveBeenCalled();
+
+    updateView.click();
+    await tick();
+
+    expect(onUpdateChapterPosition).toHaveBeenCalledWith("chapter-image");
+    expect(updateView.textContent).toContain("Position updated");
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it("offers to set a position when the chapter does not have one", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-image",
+          manifest: "https://example.org/image-manifest.json",
+          canvasIndex: 0,
         },
       ],
     });
@@ -33,24 +83,17 @@ describe("ChapterOverlay", () => {
         open: true,
         docked: true,
         chapterId: "chapter-image",
+        viewBox: writable({ x: 5, y: 10, w: 90, h: 80 }),
         onUpdateChapterPosition,
       },
     });
 
-    const details = Array.from(target.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Details"),
-    ) as HTMLButtonElement;
-    details.click();
-    await tick();
-
-    const updateView = target.querySelector(
+    const setView = target.querySelector(
       '[data-testid="chapter-update-view"]',
     ) as HTMLButtonElement;
-    updateView.click();
-    await tick();
-
-    expect(onUpdateChapterPosition).toHaveBeenCalledWith("chapter-image");
-    expect(updateView.textContent).toContain("Captured view updated");
+    expect(setView.textContent).toContain("Set current viewer position");
+    expect(setView.textContent).toContain("No position is saved");
+    expect(onUpdateChapterPosition).not.toHaveBeenCalled();
 
     unmount(instance);
     target.remove();

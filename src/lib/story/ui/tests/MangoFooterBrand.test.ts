@@ -1,14 +1,19 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from 'svelte';
 import MangoFooterBrand from '../MangoFooterBrand.svelte';
 import MangoAboutModal from '../MangoAboutModal.svelte';
+import pkg from '../../../../../package.json';
 
 describe('MangoFooterBrand & MangoAboutModal', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
   it('renders the Mango footer brand button and opens modal when clicked', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    const instance = mount(MangoFooterBrand, {
+    mount(MangoFooterBrand, {
       target,
       props: {
         position: 'fixed',
@@ -30,7 +35,7 @@ describe('MangoFooterBrand & MangoAboutModal', () => {
     expect(title?.textContent).toBe('Mango Viewer');
 
     const versionBadge = document.querySelector('.mango-about-modal__version');
-    expect(versionBadge?.textContent).toBe('v0.0.4');
+    expect(versionBadge?.textContent).toBe(`v${pkg.version}`);
 
     const link = document.querySelector('.mango-about-modal__link') as HTMLAnchorElement;
     expect(link?.href).toBe('https://mangoviewer.dev/');

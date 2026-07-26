@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import MangoFooterBrand from '../ui/MangoFooterBrand.svelte';
 
   interface Props {
     currentChapterIndex?: number;
@@ -271,26 +270,9 @@
     </div>
   {/if}
 
-  <footer class="story-shell__brand-footer">
-    <MangoFooterBrand position="inline" />
-  </footer>
 </div>
 
 <style>
-  .story-shell__brand-footer {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 8px;
-    margin: 0;
-    height: 16px;
-    min-height: 16px;
-    line-height: 1;
-    background: transparent;
-    border-top: none;
-    font-size: 11px;
-    color: var(--story-muted, #d8dee9);
-  }
 
   .story-shell {
     --story-bg: #07101e;

@@ -77,6 +77,7 @@
     if (showMetadata) loaded.metadata = true;
     if (showLayers) loaded.layers = true;
   });
+  import MangoFooterBrand from '../../story/ui/MangoFooterBrand.svelte';
 </script>
 
 <aside
@@ -171,7 +172,8 @@
 
 <style>
   .panel-stack {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
     align-content: start;
     min-height: 0;
@@ -183,7 +185,7 @@
 
   .panel-stack--left {
     box-sizing: border-box;
-    padding: 16px 16px 36px;
+    padding: 16px 16px 16px;
     border-radius: 18px;
     background: var(--story-sidebar-bg, var(--viewer-panel, #121922));
     color: var(--story-sidebar-text, var(--viewer-text, #e8edf4));
@@ -193,8 +195,17 @@
     min-height: 0;
     max-height: 100%;
     overflow: auto;
+    display: flex;
+    flex-direction: column;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
     overscroll-behavior: contain;
+  }
+
+  .left-panel-stack__footer {
+    margin-top: auto;
+    padding-top: 12px;
+    display: flex;
+    align-items: center;
   }
 
   .panel-stack--left.panel-stack--redesigned {

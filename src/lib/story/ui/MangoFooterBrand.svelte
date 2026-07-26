@@ -26,7 +26,7 @@
     aria-label="About Mango Viewer"
     on:click={toggleModal}
   >
-    <MangoLogoIcon {size} color="#ffffff" />
+    <MangoLogoIcon {size} color="currentColor" />
     <span class="mango-footer-brand__label">Mango</span>
   </button>
 
@@ -55,7 +55,6 @@
 
   .mango-footer-brand--inline {
     display: inline-flex;
-    margin-left: auto;
   }
 
   .mango-footer-brand__button {
@@ -67,13 +66,13 @@
     border: none;
     background: transparent;
     backdrop-filter: none;
-    color: var(--viewer-text, #e8edf4);
+    color: currentColor;
     font-size: 11px;
     font-weight: 700;
     line-height: 1;
     cursor: pointer;
     box-shadow: none;
-    opacity: 0.8;
+    opacity: 0.75;
     transition: opacity 0.2s ease;
   }
 
@@ -86,7 +85,7 @@
 
   .mango-footer-brand__label {
     letter-spacing: -0.01em;
-    color: var(--viewer-text, #e8edf4);
+    color: currentColor;
     line-height: 1;
   }
 </style>

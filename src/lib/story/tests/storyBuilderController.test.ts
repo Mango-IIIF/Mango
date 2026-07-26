@@ -158,7 +158,7 @@ describe('story builder narration defaults', () => {
     const viewer = {
       getManifestId: () => 'https://example.org/manifest.json',
       getState: () => null,
-      getViewBox: () => ({ x: 0, y: 0, w: 100, h: 100 }),
+      getViewBox: vi.fn(() => ({ x: 0, y: 0, w: 100, h: 100 })),
       getCanvasIndex: () => 0,
       getCanvasCount: () => 1,
       getCanvasId: () => 'canvas-1',
@@ -238,6 +238,15 @@ describe('story builder narration defaults', () => {
     expect(viewer.updateLayerOpacity).toHaveBeenCalledWith('painting-layer', 0.35);
     expect(get(controller.story).chapters[0].layerOpacities).toEqual({
       'painting-layer': 0.35,
+    });
+
+    viewer.getViewBox.mockReturnValue({ x: 12, y: 18, w: 60, h: 55 });
+    controller.updateChapterPosition();
+    expect(get(controller.story).chapters[0]).toMatchObject({
+      manifest: 'https://example.org/manifest.json',
+      canvasIndex: 0,
+      viewBox: { x: 12, y: 18, w: 60, h: 55 },
+      layerOpacities: { 'painting-layer': 0.35 },
     });
     detach();
   });

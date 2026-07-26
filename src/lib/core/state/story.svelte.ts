@@ -117,6 +117,11 @@ export type ChapterCameraTrackPayload = {
   cameraTrack?: ChapterCameraTrack;
 };
 
+export type ChapterViewBoxPayload = {
+  chapterId: string;
+  viewBox: ViewBox;
+};
+
 export type ReorderChapterPayload = {
   chapterId: string;
   targetChapterId: string;
@@ -498,6 +503,17 @@ export const setChapterCameraTrack = (
   return { ...story, chapters: nextChapters };
 };
 
+export const setChapterViewBox = (
+  story: StoryState,
+  payload: ChapterViewBoxPayload,
+): StoryState => {
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
+  if (index === -1) return story;
+  const nextChapters = [...story.chapters];
+  nextChapters[index] = { ...nextChapters[index], viewBox: payload.viewBox };
+  return { ...story, chapters: nextChapters };
+};
+
 export const setChapterDescription = (
   story: StoryState,
   payload: ChapterMetadataPayload,
@@ -659,6 +675,10 @@ export function createStoryStore(initial?: StoryState) {
 
     setChapterCameraTrack(payload: ChapterCameraTrackPayload): void {
       story = setChapterCameraTrack(story, payload);
+    },
+
+    setChapterViewBox(payload: ChapterViewBoxPayload): void {
+      story = setChapterViewBox(story, payload);
     },
 
     setChapterDescription(payload: ChapterMetadataPayload): void {

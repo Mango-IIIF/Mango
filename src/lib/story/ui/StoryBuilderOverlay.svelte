@@ -6,7 +6,6 @@
   import StoryChapterOverlay from './ChapterOverlay.svelte';
   import StoryAnnotationOverlay from './StoryAnnotationOverlay.svelte';
   import SaveExportModal from './SaveExportModal.svelte';
-  import MangoFooterBrand from './MangoFooterBrand.svelte';
   import RectanglePlacementEditor from '../../features/annotations/RectanglePlacementEditor.svelte';
   import type {
     AnnotationPlacement,
@@ -450,6 +449,7 @@
         {activeChapterTask}
         validationErrors={$validationErrors}
         currentManifest={manifestValue}
+        {viewBox}
         canvasIndex={$viewerCanvasIndex}
         canvasCount={$viewerCanvasCount}
         {mediaType}

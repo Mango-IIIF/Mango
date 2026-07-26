@@ -172,6 +172,11 @@ body {
   min-height: 0;
 }
 
+.page--viewer .viewer-shell {
+  height: min(880px, calc(100dvh - 40px));
+  min-height: 680px;
+}
+
 .page--editor .viewer-shell {
   height: auto;
   min-height: 0;
@@ -212,6 +217,11 @@ body {
   }
 
   .viewer-shell {
+    min-height: auto;
+  }
+
+  .page--viewer .viewer-shell {
+    height: auto;
     min-height: auto;
   }
 

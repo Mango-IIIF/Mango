@@ -92,6 +92,7 @@ export type StoryBuilderController = {
   editChapterTextAnnotation: (lang: string) => void;
   addChapter: () => void;
   updateChapter: () => void;
+  updateChapterPosition: () => void;
   deleteChapter: (chapterId: string) => void;
   duplicateChapter: (chapterId: string) => void;
   reorderChapter: (
@@ -261,6 +262,7 @@ export const createStoryBuilderController = (
     setStoryTitle: wrapMutation(runesStore.setStoryTitle),
     setStoryIdentifiers: wrapMutation(runesStore.setStoryIdentifiers),
     setChapterCameraTrack: wrapMutation(runesStore.setChapterCameraTrack),
+    setChapterViewBox: wrapMutation(runesStore.setChapterViewBox),
     setChapterDescription: wrapMutation(runesStore.setChapterDescription),
     setLayerOpacities: wrapMutation(runesStore.setLayerOpacities),
     exportStory: () => runesStore.exportStory(),
@@ -1287,6 +1289,25 @@ export const createStoryBuilderController = (
     });
   };
 
+  const updateChapterPosition = () => {
+    const chapterId = get(selectedChapterId);
+    const viewBox = viewer?.getViewBox?.() ?? null;
+    if (!chapterId || !viewBox) return;
+    pushHistorySnapshot();
+    storyStoreWrapper.setChapterViewBox({ chapterId, viewBox });
+    const chapter = get(storyStore).chapters.find((entry) => entry.id === chapterId);
+    const track = chapter?.cameraTrack;
+    if (track?.preset && track.preset !== 'custom') {
+      storyStoreWrapper.setChapterCameraTrack({
+        chapterId,
+        cameraTrack: configureCameraTrackPreset(track, track.preset, viewBox, track.durationMs, {
+          preservePoints: true,
+        }),
+      });
+    }
+    setError(null);
+  };
+
   const deleteChapter = (chapterId: string) => {
     activeChapterTask.set(null);
     pushHistorySnapshot();
@@ -1947,6 +1968,7 @@ export const createStoryBuilderController = (
     attach,
     addChapter,
     updateChapter,
+    updateChapterPosition,
     deleteChapter,
     duplicateChapter,
     reorderChapter,

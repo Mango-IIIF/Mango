@@ -60,6 +60,7 @@
   export let language = "en";
   export let languages: string[] = ["en"];
   export let currentManifest: string | null = null;
+  export let viewBox: Readable<ViewBox | null> = readable(null);
   export let canvasIndex = 0;
   export let canvasCount = 0;
   export let onClose: (() => void) | undefined;
@@ -174,6 +175,50 @@
   let saveFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   let viewUpdateAcknowledged = false;
   let viewUpdateFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+  let chapterHasSavedPosition = false;
+  let chapterPositionNeedsConfirmation = false;
+  let positionBaseline: ViewBox | null = null;
+  let positionTrackingReady = false;
+  let trackedPositionChapterId: string | null = null;
+  let trackedSavedPositionSignature = "";
+  let observedPositionSignature = "";
+  let positionSettleTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const positionSignature = (value: ViewBox | null | undefined): string =>
+    value ? `${value.x}:${value.y}:${value.w}:${value.h}` : "";
+
+  const schedulePositionTracking = () => {
+    if (positionSettleTimeout) clearTimeout(positionSettleTimeout);
+    positionTrackingReady = false;
+    positionSettleTimeout = setTimeout(() => {
+      positionTrackingReady = true;
+      positionSettleTimeout = null;
+    }, 500);
+  };
+
+  const viewBoxesMatch = (
+    current: ViewBox | null,
+    saved: ViewBox | undefined,
+  ): boolean => {
+    if (!current || !saved) return false;
+    const currentCenterX = current.x + current.w / 2;
+    const currentCenterY = current.y + current.h / 2;
+    const savedCenterX = saved.x + saved.w / 2;
+    const savedCenterY = saved.y + saved.h / 2;
+    const centerTolerance = Math.max(0.5, Math.min(saved.w, saved.h) * 0.001);
+    const widthMatches =
+      Math.abs(current.w - saved.w) <= Math.max(0.5, saved.w * 0.001);
+    const heightMatches =
+      Math.abs(current.h - saved.h) <= Math.max(0.5, saved.h * 0.001);
+
+    // The renderer expands one axis to match the stage aspect ratio. Treat the
+    // position as unchanged when its centre and either captured axis still match.
+    return (
+      Math.abs(currentCenterX - savedCenterX) <= centerTolerance &&
+      Math.abs(currentCenterY - savedCenterY) <= centerTolerance &&
+      (widthMatches || heightMatches)
+    );
+  };
 
   const taskTitles: Record<ChapterTaskId, string> = {
     details: "Details",
@@ -495,6 +540,47 @@
   }
 
   $: chapter = $story.chapters.find((item) => item.id === chapterId) ?? null;
+  $: {
+    const currentPosition = $viewBox;
+    const currentSignature = positionSignature(currentPosition);
+    const savedSignature = positionSignature(chapter?.viewBox);
+    const positionContextChanged =
+      trackedPositionChapterId !== chapterId ||
+      trackedSavedPositionSignature !== savedSignature;
+    const hasSavedPosition = Boolean(chapter?.viewBox);
+
+    chapterHasSavedPosition = hasSavedPosition;
+
+    if (positionContextChanged) {
+      trackedPositionChapterId = chapterId;
+      trackedSavedPositionSignature = savedSignature;
+      observedPositionSignature = currentSignature;
+      positionBaseline = currentPosition ? { ...currentPosition } : null;
+      if (hasSavedPosition) schedulePositionTracking();
+    } else if (hasSavedPosition && !positionBaseline && currentPosition) {
+      observedPositionSignature = currentSignature;
+      positionBaseline = { ...currentPosition };
+      schedulePositionTracking();
+    } else if (
+      hasSavedPosition &&
+      !positionTrackingReady &&
+      observedPositionSignature !== currentSignature
+    ) {
+      observedPositionSignature = currentSignature;
+      positionBaseline = currentPosition ? { ...currentPosition } : null;
+    } else if (observedPositionSignature !== currentSignature) {
+      observedPositionSignature = currentSignature;
+    }
+
+    chapterPositionNeedsConfirmation = Boolean(
+      chapter &&
+        currentPosition &&
+        (!hasSavedPosition ||
+          (positionTrackingReady &&
+            positionBaseline &&
+            !viewBoxesMatch(currentPosition, positionBaseline))),
+    );
+  }
   $: {
     chapterIndex = $story.chapters.findIndex((item) => item.id === chapterId);
     const prefix = `Chapter ${chapterIndex + 1}:`;
@@ -822,6 +908,7 @@
   onDestroy(() => {
     if (saveFeedbackTimeout) clearTimeout(saveFeedbackTimeout);
     if (viewUpdateFeedbackTimeout) clearTimeout(viewUpdateFeedbackTimeout);
+    if (positionSettleTimeout) clearTimeout(positionSettleTimeout);
     clearNarrationPreviewListener();
   });
 
@@ -927,6 +1014,32 @@
               : "Load a source"}
         </div>
       </div>
+      {#if docked && chapter && (chapterPositionNeedsConfirmation || viewUpdateAcknowledged)}
+        <button
+          class="chapter-overlay__set-view"
+          type="button"
+          data-testid="chapter-update-view"
+          on:click={handleUpdateView}
+        >
+          <MousePointer2 aria-hidden="true" />
+          <span>
+            <strong aria-live="polite">
+              {viewUpdateAcknowledged
+                ? "Position updated"
+                : chapterHasSavedPosition
+                  ? "Update chapter position"
+                  : "Set current viewer position"}
+            </strong>
+            <small>
+              {viewUpdateAcknowledged
+                ? "This chapter now uses the confirmed position."
+                : chapterHasSavedPosition
+                  ? "The viewer has moved. Click to confirm this position and zoom."
+                  : "No position is saved. Click to use this position and zoom."}
+            </small>
+          </span>
+        </button>
+      {/if}
       {#if !docked}
         <button
           class="chapter-overlay__close"
@@ -1390,17 +1503,6 @@
             </button>
             {#if docked}
               <button
-                class="chapter-overlay__button chapter-overlay__button--secondary"
-                type="button"
-                data-testid="chapter-update-view"
-                disabled={saveDisabled}
-                on:click={handleUpdateView}
-              >
-                {viewUpdateAcknowledged
-                  ? "Captured view updated"
-                  : "Update captured view"}
-              </button>
-              <button
                 class="chapter-overlay__button chapter-overlay__button--subtle"
                 type="button"
                 data-testid="chapter-revert-view"
@@ -1526,6 +1628,48 @@
       font-weight: 600;
       color: var(--viewer-text, #e8edf4);
       letter-spacing: 0.01em;
+    }
+
+    .chapter-overlay__set-view {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      border: 1px solid color-mix(in srgb, var(--accent, #e07a3f) 48%, transparent);
+      border-radius: 11px;
+      padding: 10px 12px;
+      background: color-mix(in srgb, var(--accent, #e07a3f) 10%, transparent);
+      color: var(--viewer-text, #e8edf4);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .chapter-overlay__set-view:hover,
+    .chapter-overlay__set-view:focus-visible {
+      border-color: var(--accent, #e07a3f);
+      background: color-mix(in srgb, var(--accent, #e07a3f) 16%, transparent);
+    }
+
+    .chapter-overlay__set-view :global(svg) {
+      width: 17px;
+      height: 17px;
+      color: var(--accent, #e07a3f);
+    }
+
+    .chapter-overlay__set-view span {
+      display: grid;
+      gap: 2px;
+    }
+
+    .chapter-overlay__set-view strong {
+      font-size: 12px;
+    }
+
+    .chapter-overlay__set-view small {
+      color: var(--viewer-muted, #9aa6b2);
+      font-size: 10px;
+      line-height: 1.35;
     }
 
     .chapter-overlay__back {
