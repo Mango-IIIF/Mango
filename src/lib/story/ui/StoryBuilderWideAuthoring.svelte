@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MapPin, Plus, Play, Square } from "@lucide/svelte";
+  import { MapPin, Plus, Trash2 } from "@lucide/svelte";
   import type { Readable } from "svelte/store";
   import type { ChapterCameraTrack, StoryState } from "../../core/types/story";
   import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
@@ -8,11 +8,11 @@
   import StoryBuilderWideNarration from "./StoryBuilderWideNarration.svelte";
   import StoryBuilderWideMediaTiming from "./StoryBuilderWideMediaTiming.svelte";
   import StoryBuilderWideAnnotations from "./StoryBuilderWideAnnotations.svelte";
+  import MangoFooterBrand from "./MangoFooterBrand.svelte";
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
   export let activeTask: Readable<ChapterTaskId | null>;
-  export let previewing: Readable<boolean>;
   export let mediaType: Readable<MediaType | null>;
   export let mediaSources: Readable<MediaSource[]>;
   export let mediaMarks: Readable<MediaMarksState>;
@@ -33,9 +33,8 @@
   export let onEditDrawingAnnotation: (annotationId: string) => void;
   export let onEditTextAnnotation: (language: string) => void;
   export let onAddPoint: () => void;
+  export let onDeletePoint: (keyframeId: string) => void = () => {};
   export let onGoToPoint: (keyframeId: string) => void;
-  export let onPreview: () => void;
-  export let onStopPreview: () => void;
 
   $: chapter =
     $story.chapters.find((entry) => entry.id === $selectedChapterId) ?? null;
@@ -56,43 +55,21 @@
     const seconds = timeMs / 1000;
     return `${Number.isInteger(seconds) ? seconds.toFixed(0) : seconds.toFixed(1)}s`;
   };
+
+  const formatPointZoom = (
+    point: ChapterCameraTrack["keyframes"][number],
+  ): string | null => {
+    if (!chapter?.viewBox || !point.viewBox || point.viewBox.w <= 0) return null;
+    const zoom = chapter.viewBox.w / point.viewBox.w;
+    return `${zoom.toFixed(2)}× zoom`;
+  };
 </script>
 
 {#if chapter && $activeTask === "motion"}
   <section
     class="story-wide-authoring"
-    aria-labelledby="story-wide-motion-title"
+    aria-label="Chapter motion timeline"
   >
-    <div class="story-wide-authoring__summary">
-      <div class="story-wide-authoring__summary-title">
-        <span class="story-wide-authoring__summary-icon"
-          ><MapPin aria-hidden="true" /></span
-        >
-        <span>
-          <strong id="story-wide-motion-title">Chapter motion</strong>
-          <small
-            >{durationSeconds.toFixed(
-              durationSeconds % 1 === 0 ? 0 : 1,
-            )}s</small
-          >
-        </span>
-      </div>
-      <p>
-        Place camera points on the artwork. Their order is spaced across the
-        chapter duration.
-      </p>
-      <button
-        class="story-wide-authoring__preview"
-        type="button"
-        disabled={points.length < 2}
-        on:click={() => ($previewing ? onStopPreview() : onPreview())}
-      >
-        {#if $previewing}<Square aria-hidden="true" /> Stop{:else}<Play
-            aria-hidden="true"
-          /> Preview{/if}
-      </button>
-    </div>
-
     <div class="story-wide-authoring__timeline">
       <div class="story-wide-authoring__scale" aria-hidden="true">
         {#each [0, 0.25, 0.5, 0.75, 1] as ratio}
@@ -104,21 +81,37 @@
 
       <div class="story-wide-authoring__rail">
         {#each points as point, index (point.id)}
-          <button
-            class="story-wide-authoring__point"
-            type="button"
+          <div
+            class="story-wide-authoring__point-item"
             style={`--point-position:${pointPosition(point)}`}
-            aria-label={`Go to camera point ${index + 1}`}
-            on:click={() => onGoToPoint(point.id)}
           >
-            <span class="story-wide-authoring__pin"
-              ><MapPin aria-hidden="true" /><b>{index + 1}</b></span
+            <button
+              class="story-wide-authoring__point"
+              type="button"
+              aria-label={`Go to camera point ${index + 1}`}
+              on:click={() => onGoToPoint(point.id)}
             >
-            <span class="story-wide-authoring__point-label">
-              <strong>Point {index + 1}</strong>
-              <small>{formatTime(point.timeMs)}</small>
-            </span>
-          </button>
+              <span class="story-wide-authoring__pin"
+                ><MapPin aria-hidden="true" /><b>{index + 1}</b></span
+              >
+              <span class="story-wide-authoring__point-label">
+                <strong>Point {index + 1}</strong>
+                <small>
+                  {formatTime(point.timeMs)}
+                  {#if formatPointZoom(point)} · {formatPointZoom(point)}{/if}
+                </small>
+              </span>
+            </button>
+            <button
+              class="story-wide-authoring__point-delete"
+              type="button"
+              title="Delete camera point"
+              aria-label={`Delete camera point ${index + 1}`}
+              on:click={() => onDeletePoint(point.id)}
+            >
+              <Trash2 aria-hidden="true" />
+            </button>
+          </div>
         {/each}
       </div>
 
@@ -172,7 +165,32 @@
   <div class="story-wide-authoring--empty" aria-hidden="true"></div>
 {/if}
 
+{#if chapter}
+  <footer class="story-builder-footer-section" aria-label="Application footer">
+    <div class="story-builder-footer-section__brand">
+      <MangoFooterBrand position="inline" />
+    </div>
+  </footer>
+{/if}
+
 <style>
+  .story-builder-footer-section {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 8px;
+    margin: 0;
+    height: 16px;
+    min-height: 16px;
+    line-height: 1;
+    background: transparent;
+    border-top: none;
+    font-size: 11px;
+    color: var(--viewer-muted, #9aa6b2);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
   :global(.stage__bottom:has(.story-wide-authoring--empty)) {
     display: none;
   }
@@ -261,8 +279,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
-    min-height: 166px;
-    padding: 18px;
+    padding: 12px 14px;
     box-sizing: border-box;
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
     border-radius: 16px;
@@ -273,72 +290,6 @@
     );
     color: var(--viewer-text, #e8edf4);
   }
-  .story-wide-authoring__summary {
-    display: grid;
-    align-content: start;
-    gap: 8px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid
-      var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
-  }
-  .story-wide-authoring__summary-title {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-  }
-  .story-wide-authoring__summary-title > span:last-child {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-  }
-  .story-wide-authoring__summary-title strong {
-    font-size: 13px;
-  }
-  .story-wide-authoring__summary-title small {
-    padding: 3px 6px;
-    border-radius: 7px;
-    background: rgba(255, 255, 255, 0.07);
-    color: var(--viewer-muted, #9aa6b2);
-    font-size: 10px;
-  }
-  .story-wide-authoring__summary-icon {
-    width: 30px;
-    height: 30px;
-    display: grid;
-    place-items: center;
-    border-radius: 9px;
-    color: var(--accent, #e07a3f);
-    background: color-mix(in srgb, var(--accent, #e07a3f) 14%, transparent);
-  }
-  .story-wide-authoring__summary-icon :global(svg) {
-    width: 16px;
-    height: 16px;
-  }
-  .story-wide-authoring__summary p {
-    margin: 0;
-    color: var(--viewer-muted, #9aa6b2);
-    font-size: 11px;
-    line-height: 1.45;
-  }
-  .story-wide-authoring__preview {
-    justify-self: start;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    padding: 7px 9px;
-    background: transparent;
-    color: inherit;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .story-wide-authoring__preview:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-  .story-wide-authoring__preview :global(svg),
   .story-wide-authoring__add :global(svg) {
     width: 14px;
     height: 14px;
@@ -392,25 +343,54 @@
   .story-wide-authoring__rail::after {
     right: 0;
   }
-  .story-wide-authoring__point {
+  .story-wide-authoring__point-item {
     position: absolute;
     left: var(--point-position);
     top: 0;
-    width: 76px;
-    padding: 0;
     transform: translate(-50%, -14px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 76px;
+  }
+  .story-wide-authoring__point-item:first-child {
+    transform: translate(0, -14px);
+  }
+  .story-wide-authoring__point-item:last-child:not(:first-child) {
+    transform: translate(-100%, -14px);
+  }
+  .story-wide-authoring__point {
+    width: 100%;
+    padding: 0;
     border: 0;
     background: transparent;
     color: inherit;
     cursor: pointer;
   }
-  .story-wide-authoring__point:first-child {
-    transform: translate(0, -14px);
-    text-align: left;
+  .story-wide-authoring__point-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
+    border-radius: 5px;
+    background: var(--viewer-panel, #121922);
+    color: var(--viewer-muted, #9aa6b2);
+    cursor: pointer;
+    opacity: 0.65;
+    transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   }
-  .story-wide-authoring__point:last-child:not(:first-child) {
-    transform: translate(-100%, -14px);
-    text-align: right;
+  .story-wide-authoring__point-delete:hover {
+    opacity: 1;
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+  .story-wide-authoring__point-delete :global(svg) {
+    width: 10px;
+    height: 10px;
   }
   .story-wide-authoring__pin {
     position: relative;

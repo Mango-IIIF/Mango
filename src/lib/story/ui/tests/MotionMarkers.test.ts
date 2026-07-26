@@ -5,6 +5,86 @@ import { writable } from 'svelte/store';
 import StoryBuilderOverlay from '../StoryBuilderOverlay.svelte';
 
 describe('motion point viewer markers', () => {
+  it('forwards trajectory, dwell, and easing controls through the inspector surface', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const onUpdateMotionPathType = vi.fn();
+    const onUpdateMotionInitialDwell = vi.fn();
+    const onUpdateMotionEasing = vi.fn();
+    const story = writable({
+      chapters: [
+        {
+          id: 'chapter',
+          manifest: 'https://example.org/manifest',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          cameraTrack: {
+            durationMs: 5000,
+            preset: 'custom' as const,
+            keyframes: [
+              { id: 'one', timeMs: 0, viewBox: { x: 0, y: 0, w: 100, h: 100 } },
+              {
+                id: 'two',
+                timeMs: 2500,
+                viewBox: { x: 10, y: 10, w: 80, h: 80 },
+              },
+              {
+                id: 'three',
+                timeMs: 5000,
+                viewBox: { x: 20, y: 20, w: 60, h: 60 },
+              },
+            ],
+          },
+        },
+      ],
+    });
+    const instance = mount(StoryBuilderOverlay, {
+      target,
+      props: {
+        surface: 'inspector',
+        story,
+        layers: writable([]),
+        layerOpacities: writable({}),
+        currentManifest: writable('https://example.org/manifest'),
+        viewerCanvasIndex: writable(0),
+        viewerCanvasCount: writable(1),
+        viewBox: writable({ x: 0, y: 0, w: 100, h: 100 }),
+        selectedChapterId: writable('chapter'),
+        activeChapterTask: writable('motion'),
+        validationErrors: writable([]),
+        uiMode: writable('chapterEdit'),
+        mediaType: writable('image'),
+        mediaMarks: writable({ lastTime: 0, markIn: null, markOut: null }),
+        avMarksValid: writable(true),
+        transitionDelayDefault: writable(2000),
+        saveModalOpen: writable(false),
+        saveModalPayload: writable(null),
+        annotationLanguage: writable('en'),
+        positioningLanguage: writable(null),
+        motionPreviewing: writable(false),
+        motionPointDraft: writable(null),
+        onUpdateMotionPathType,
+        onUpdateMotionInitialDwell,
+        onUpdateMotionEasing,
+      } as never,
+    });
+    await tick();
+
+    const button = (label: string) =>
+      [...target.querySelectorAll('button')].find(
+        (entry) => entry.textContent === label,
+      ) as HTMLButtonElement;
+    button('Curved Spline').click();
+    button('1.0s').click();
+    button('Ease out').click();
+
+    expect(onUpdateMotionPathType).toHaveBeenCalledWith('spline');
+    expect(onUpdateMotionInitialDwell).toHaveBeenCalledWith(1000);
+    expect(onUpdateMotionEasing).toHaveBeenCalledWith('ease-out');
+    unmount(instance);
+    target.remove();
+  });
+
   it('shows movable pins only while the motion authoring tool is active', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
@@ -22,7 +102,11 @@ describe('motion point viewer markers', () => {
             durationMs: 5000,
             keyframes: [
               { id: 'one', timeMs: 0, viewBox: { x: 0, y: 0, w: 100, h: 100 } },
-              { id: 'two', timeMs: 5000, viewBox: { x: 25, y: 25, w: 50, h: 50 } },
+              {
+                id: 'two',
+                timeMs: 5000,
+                viewBox: { x: 25, y: 25, w: 50, h: 50 },
+              },
             ],
           },
         },
@@ -132,7 +216,10 @@ describe('motion point viewer markers', () => {
     ) as HTMLButtonElement;
     expect(confirm.disabled).toBe(false);
     confirm.click();
-    expect(onConfirmMotionPointPositioning).toHaveBeenCalledWith({ x: 350, y: 325 });
+    expect(onConfirmMotionPointPositioning).toHaveBeenCalledWith({
+      x: 350,
+      y: 325,
+    });
     unmount(instance);
     target.remove();
   });

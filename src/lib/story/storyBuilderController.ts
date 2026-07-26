@@ -13,6 +13,7 @@ import { createChapterActions } from './chapterActions';
 import { createStoryPreviewOrchestrator } from './previewOrchestrator';
 import {
   configureCameraTrackPreset,
+  generateCameraPreset,
   retimeCameraKeyframes,
   sampleCameraTrack,
 } from './cameraTrack';
@@ -29,6 +30,7 @@ import {
 import type {
   AnnotationPlacement,
   Chapter,
+  ChapterCameraTrack,
   ChapterAnnotationTool,
   ChapterDrawingAnnotation,
   ChapterAdvance,
@@ -115,6 +117,9 @@ export type StoryBuilderController = {
   captureMotionPoint: (keyframeId?: string, focus?: { x: number; y: number }) => void;
   deleteMotionPoint: (keyframeId: string) => void;
   updateMotionDuration: (durationMs: number) => void;
+  updateMotionPathType: (pathType: 'linear' | 'spline') => void;
+  updateMotionInitialDwell: (dwellMs: number) => void;
+  updateMotionEasing: (easing: NonNullable<ChapterCameraTrack['easing']>) => void;
   goToMotionPoint: (keyframeId: string) => void;
   applyMotionPreset: (preset: NonNullable<Chapter['cameraTrack']>['preset']) => void;
   motionPreviewing: Readable<boolean>;
@@ -571,10 +576,20 @@ export const createStoryBuilderController = (
       items.map((drawing) => {
         if (drawing.id !== annotationId) return drawing;
         if (patch.rect) {
-          return { id: drawing.id, type: 'rectangle', rect: patch.rect, text: drawing.text };
+          return {
+            id: drawing.id,
+            type: 'rectangle',
+            rect: patch.rect,
+            text: drawing.text,
+          };
         }
         if (patch.point) {
-          return { id: drawing.id, type: 'point', point: patch.point, text: drawing.text };
+          return {
+            id: drawing.id,
+            type: 'point',
+            point: patch.point,
+            text: drawing.text,
+          };
         }
         if (patch.polygon?.points) {
           return {
@@ -965,7 +980,10 @@ export const createStoryBuilderController = (
     const lastId = storyValue.chapters[storyValue.chapters.length - 1]?.id;
     if (lastId) {
       storyStoreWrapper.setAdvanceMode({ chapterId: lastId, mode: 'auto' });
-      storyStoreWrapper.setDelay({ chapterId: lastId, delayMs: transitionDelay });
+      storyStoreWrapper.setDelay({
+        chapterId: lastId,
+        delayMs: transitionDelay,
+      });
       if (latestNarrationSegment) {
         storyStoreWrapper.setNarrationSegment({
           chapterId: lastId,
@@ -999,6 +1017,21 @@ export const createStoryBuilderController = (
       chapterId,
       capture: result.capture,
     });
+    const updatedChapter = get(storyStore).chapters.find((chapter) => chapter.id === chapterId);
+    const track = updatedChapter?.cameraTrack;
+    const stableViewBox = result.capture.viewBox;
+    if (track?.preset && track.preset !== 'custom' && stableViewBox) {
+      storyStoreWrapper.setChapterCameraTrack({
+        chapterId,
+        cameraTrack: configureCameraTrackPreset(
+          track,
+          track.preset,
+          stableViewBox,
+          track.durationMs,
+          { preservePoints: true },
+        ),
+      });
+    }
     return true;
   };
 
@@ -1464,7 +1497,10 @@ export const createStoryBuilderController = (
     const chapter = get(storyStore).chapters.find((item) => item.id === chapterId);
     if (!chapterId || !chapter) return;
     pushHistorySnapshot();
-    storyStoreWrapper.setChapterCameraTrack({ chapterId, cameraTrack: transform(chapter) });
+    storyStoreWrapper.setChapterCameraTrack({
+      chapterId,
+      cameraTrack: transform(chapter),
+    });
   };
 
   const captureMotionPoint = (keyframeId?: string, focus?: { x: number; y: number }) => {
@@ -1478,7 +1514,12 @@ export const createStoryBuilderController = (
         ? existing.find((entry) => entry.id === keyframeId)
         : undefined;
       const currentViewBox = viewer?.getViewBox?.() ?? chapter.viewBox;
-      const referenceViewBox = existingPoint?.viewBox ?? currentViewBox;
+      const stableViewBox = chapter.viewBox ?? currentViewBox;
+      const activePreset = chapter.cameraTrack?.preset ?? 'custom';
+      const referenceViewBox =
+        activePreset === 'custom'
+          ? (currentViewBox ?? existingPoint?.viewBox ?? stableViewBox)
+          : (existingPoint?.viewBox ?? stableViewBox);
       const viewBox =
         referenceViewBox && focus
           ? {
@@ -1492,6 +1533,7 @@ export const createStoryBuilderController = (
       const capturedLayers =
         existingPoint?.layerOpacities ?? viewer?.getLayerOpacities?.() ?? chapter.layerOpacities;
       const point = {
+        ...existingPoint,
         id: keyframeId ?? motionPointId(),
         timeMs: existingPoint?.timeMs ?? 0,
         ...(focus ? { focus } : {}),
@@ -1505,11 +1547,15 @@ export const createStoryBuilderController = (
       const nextTrack: NonNullable<Chapter['cameraTrack']> = {
         ...chapter.cameraTrack,
         durationMs,
-        preset: 'custom',
+        preset: activePreset,
         easing: chapter.cameraTrack?.easing ?? 'ease-in-out',
         keyframes: retimeCameraKeyframes(nextPoints, durationMs),
       };
-      return nextTrack;
+      return activePreset !== 'custom' && stableViewBox
+        ? configureCameraTrackPreset(nextTrack, activePreset, stableViewBox, durationMs, {
+            preservePoints: true,
+          })
+        : nextTrack;
     });
   };
 
@@ -1519,6 +1565,7 @@ export const createStoryBuilderController = (
       const keyframes = chapter.cameraTrack.keyframes.filter((point) => point.id !== keyframeId);
       return {
         ...chapter.cameraTrack,
+        preset: 'custom',
         keyframes: retimeCameraKeyframes(keyframes, chapter.cameraTrack.durationMs),
       };
     });
@@ -1528,10 +1575,54 @@ export const createStoryBuilderController = (
     updateCameraTrack((chapter) => {
       const safeDuration = Math.max(1, Number.isFinite(durationMs) ? durationMs : 5000);
       return {
+        ...chapter.cameraTrack,
         durationMs: safeDuration,
-        preset: chapter.cameraTrack?.preset ?? 'custom',
+        preset: chapter.cameraTrack?.preset ?? 'ken-burns',
         easing: chapter.cameraTrack?.easing ?? 'ease-in-out',
         keyframes: retimeCameraKeyframes(chapter.cameraTrack?.keyframes ?? [], safeDuration),
+      };
+    });
+  };
+
+  const updateMotionPathType = (pathType: 'linear' | 'spline') => {
+    updateCameraTrack((chapter) => {
+      const currentView = chapter.viewBox ?? viewer?.getViewBox?.();
+      const track =
+        chapter.cameraTrack ??
+        (currentView ? generateCameraPreset('ken-burns', currentView, 5000) : undefined);
+      if (!track) return undefined;
+      return {
+        ...track,
+        pathType,
+      };
+    });
+  };
+
+  const updateMotionInitialDwell = (dwellMs: number) => {
+    updateCameraTrack((chapter) => {
+      const currentView = chapter.viewBox ?? viewer?.getViewBox?.();
+      const track =
+        chapter.cameraTrack ??
+        (currentView ? generateCameraPreset('ken-burns', currentView, 5000) : undefined);
+      if (!track || !track.keyframes.length) return track;
+      const keyframes = track.keyframes.map((point, index) => {
+        if (index !== 0) return point;
+        const { dwellMs: _, ...rest } = point;
+        return dwellMs > 0 ? { ...point, dwellMs } : rest;
+      });
+      return {
+        ...track,
+        keyframes,
+      };
+    });
+  };
+
+  const updateMotionEasing = (easing: NonNullable<ChapterCameraTrack['easing']>) => {
+    updateCameraTrack((chapter) => {
+      if (!chapter.cameraTrack) return undefined;
+      return {
+        ...chapter.cameraTrack,
+        easing,
       };
     });
   };
@@ -1553,7 +1644,7 @@ export const createStoryBuilderController = (
   const applyMotionPreset = (preset: NonNullable<Chapter['cameraTrack']>['preset']) => {
     if (!preset) return;
     updateCameraTrack((chapter) => {
-      const currentView = viewer?.getViewBox?.() ?? chapter.viewBox;
+      const currentView = chapter.viewBox ?? viewer?.getViewBox?.();
       if (!currentView) return chapter.cameraTrack;
       const duration = chapter.cameraTrack?.durationMs ?? chapter.presentationDurationMs ?? 5000;
       return configureCameraTrackPreset(chapter.cameraTrack, preset, currentView, duration);
@@ -1578,6 +1669,11 @@ export const createStoryBuilderController = (
   const startMotionTrackPlayback = (chapter: Chapter) => {
     if (!chapter.cameraTrack || chapter.cameraTrack.keyframes.length < 2 || !viewer) return;
     stopMotionPreview();
+    pendingApplyToken += 1;
+    if (cancelAnimation) {
+      cancelAnimation();
+      cancelAnimation = null;
+    }
     const track = chapter.cameraTrack;
     const reduceMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const applySample = (elapsedMs: number) => {
@@ -1592,6 +1688,7 @@ export const createStoryBuilderController = (
       applySample(track.durationMs);
       return;
     }
+    applySample(0);
     motionPreviewing.set(true);
     const startedAt = performance.now();
     const frame = (time: number) => {
@@ -1615,7 +1712,10 @@ export const createStoryBuilderController = (
     const focus =
       point?.focus ??
       (point?.viewBox
-        ? { x: point.viewBox.x + point.viewBox.w / 2, y: point.viewBox.y + point.viewBox.h / 2 }
+        ? {
+            x: point.viewBox.x + point.viewBox.w / 2,
+            y: point.viewBox.y + point.viewBox.h / 2,
+          }
         : undefined) ??
       (() => {
         const view = viewer?.getViewBox?.();
@@ -1868,6 +1968,9 @@ export const createStoryBuilderController = (
     captureMotionPoint,
     deleteMotionPoint,
     updateMotionDuration,
+    updateMotionPathType,
+    updateMotionInitialDwell,
+    updateMotionEasing,
     goToMotionPoint,
     applyMotionPreset,
     motionPreviewing,

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import MangoFooterBrand from '../ui/MangoFooterBrand.svelte';
 
   interface Props {
     currentChapterIndex?: number;
@@ -125,7 +126,7 @@
     
     // Select the active chapter element (the buttons are children of the footer)
     const activeBtn = footerRef.children[activeIndex] as HTMLElement | undefined;
-    if (activeBtn) {
+    if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
       activeBtn.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
@@ -264,16 +265,33 @@
         ></span>
       </button>
     {/each}
-  </nav>
-
   {#if error}
     <div class="story-shell__error" data-testid="story-controls-error">
       {error}
     </div>
   {/if}
+
+  <footer class="story-shell__brand-footer">
+    <MangoFooterBrand position="inline" />
+  </footer>
 </div>
 
 <style>
+  .story-shell__brand-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 8px;
+    margin: 0;
+    height: 16px;
+    min-height: 16px;
+    line-height: 1;
+    background: transparent;
+    border-top: none;
+    font-size: 11px;
+    color: var(--story-muted, #d8dee9);
+  }
+
   .story-shell {
     --story-bg: #07101e;
     --story-line: rgba(255, 255, 255, 0.14);

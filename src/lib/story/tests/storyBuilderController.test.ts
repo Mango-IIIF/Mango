@@ -8,6 +8,106 @@ import {
 } from '../storyBuilderController';
 
 describe('story builder narration defaults', () => {
+  it('preserves motion settings when duration and camera points are edited', () => {
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: 'motion-chapter',
+            manifest: 'https://example.org/manifest.json',
+            canvasIndex: 0,
+            viewBox: { x: 0, y: 0, w: 100, h: 100 },
+            cameraTrack: {
+              durationMs: 5000,
+              preset: 'custom',
+              pathType: 'spline',
+              easing: 'ease-out',
+              keyframes: [
+                {
+                  id: 'one',
+                  timeMs: 0,
+                  dwellMs: 1000,
+                  focus: { x: 50, y: 50 },
+                  viewBox: { x: 0, y: 0, w: 100, h: 100 },
+                },
+                {
+                  id: 'two',
+                  timeMs: 5000,
+                  focus: { x: 70, y: 70 },
+                  viewBox: { x: 20, y: 20, w: 100, h: 100 },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    controller.selectedChapterId.set('motion-chapter');
+
+    controller.updateMotionDuration(8000);
+    expect(get(controller.story).chapters[0].cameraTrack).toMatchObject({
+      durationMs: 8000,
+      pathType: 'spline',
+      easing: 'ease-out',
+    });
+
+    controller.captureMotionPoint('one', { x: 60, y: 65 });
+    expect(get(controller.story).chapters[0].cameraTrack?.keyframes[0]).toMatchObject({
+      id: 'one',
+      dwellMs: 1000,
+      focus: { x: 60, y: 65 },
+    });
+
+    controller.updateMotionEasing('linear');
+    controller.updateMotionPathType('linear');
+    controller.updateMotionInitialDwell(1500);
+    expect(get(controller.story).chapters[0].cameraTrack?.easing).toBe('linear');
+    expect(get(controller.story).chapters[0].cameraTrack?.pathType).toBe('linear');
+    expect(get(controller.story).chapters[0].cameraTrack?.keyframes[0].dwellMs).toBe(1500);
+  });
+
+  it('keeps named motion styles in control of zoom when a focal point moves', () => {
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: 'styled-motion',
+            manifest: 'https://example.org/manifest.json',
+            canvasIndex: 0,
+            viewBox: { x: 0, y: 0, w: 1000, h: 500 },
+            cameraTrack: {
+              durationMs: 5000,
+              preset: 'ken-burns',
+              pathType: 'spline',
+              keyframes: [
+                {
+                  id: 'ken-burns-start',
+                  timeMs: 0,
+                  focus: { x: 500, y: 250 },
+                  viewBox: { x: 0, y: 0, w: 1000, h: 500 },
+                },
+                {
+                  id: 'ken-burns-end',
+                  timeMs: 5000,
+                  focus: { x: 600, y: 250 },
+                  viewBox: { x: 250, y: 75, w: 700, h: 350 },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    controller.selectedChapterId.set('styled-motion');
+    controller.captureMotionPoint('ken-burns-end', { x: 800, y: 250 });
+
+    const track = get(controller.story).chapters[0].cameraTrack;
+    expect(track?.preset).toBe('ken-burns');
+    expect(track?.keyframes[0].viewBox?.w).toBe(1000);
+    expect(track?.keyframes[1].viewBox?.w).toBe(700);
+    expect(track?.keyframes[1].focus).toEqual({ x: 800, y: 250 });
+  });
+
   it('keeps the latest valid range for each language', () => {
     expect(
       collectLatestNarrationSegments({
@@ -45,7 +145,10 @@ describe('story builder narration defaults', () => {
             canvasIndex: 0,
             viewBox: { x: 0, y: 0, w: 100, h: 100 },
             annotations: {
-              en: { text: 'Editable text', placement: { x: 20, y: 30, w: 25, h: 15 } },
+              en: {
+                text: 'Editable text',
+                placement: { x: 20, y: 30, w: 25, h: 15 },
+              },
             },
           },
         ],
@@ -140,7 +243,9 @@ describe('story builder narration defaults', () => {
   });
 
   it('captures the full source by default and edits source-media timing independently', () => {
-    const controller = createStoryBuilderController({ initialStory: { chapters: [] } });
+    const controller = createStoryBuilderController({
+      initialStory: { chapters: [] },
+    });
     const events = createEventBus();
     const viewer = {
       getManifestId: () => 'https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json',
@@ -197,7 +302,10 @@ describe('story builder narration defaults', () => {
     });
 
     controller.assignMediaSegment(12.5, 42);
-    expect(get(controller.story).chapters[0].media).toEqual({ start: 12.5, end: 42 });
+    expect(get(controller.story).chapters[0].media).toEqual({
+      start: 12.5,
+      end: 42,
+    });
     expect(viewer.setMediaSegment).toHaveBeenLastCalledWith(12.5, 42);
     expect(get(controller.story).chapters[0].narrationSegment).toBeUndefined();
 

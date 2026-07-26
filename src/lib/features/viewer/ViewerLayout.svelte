@@ -11,6 +11,7 @@
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
   import type { ViewerApi } from '../../core/types/viewer-api';
   import PluginSlot from '../../plugins/PluginSlot.svelte';
+  import MangoFooterBrand from '../../story/ui/MangoFooterBrand.svelte';
   import { createAnnotationFocusPlugin } from '../../plugins/annotationFocus';
   import ViewerHeader from '../../viewer/ui/ViewerHeader.svelte';
   import LeftPanelStack from '../../viewer/ui/LeftPanelStack.svelte';
@@ -2085,10 +2086,33 @@
         {/if}
       </aside>
     {/if}
+
+    <footer class="mango-app-footer-global" aria-label="Mango application footer">
+      <div class="mango-app-footer-global__brand">
+        <MangoFooterBrand position="inline" />
+      </div>
+    </footer>
   </div>
 </div>
 
 <style>
+  .mango-app-footer-global {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 8px;
+    margin: 0;
+    height: 16px;
+    min-height: 16px;
+    line-height: 1;
+    background: transparent;
+    border-top: none;
+    font-size: 11px;
+    color: var(--viewer-muted, #9aa6b2);
+    z-index: 900;
+  }
+
   .stage-gallery-view {
     width: 100%;
     min-width: 0;

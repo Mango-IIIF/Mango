@@ -51,10 +51,7 @@ export type ChapterTransitionOrchestrator = {
     event: K,
     handler: TransitionEventHandler<K>,
   ) => () => void;
-  off: <K extends keyof TransitionEventMap>(
-    event: K,
-    handler: TransitionEventHandler<K>,
-  ) => void;
+  off: <K extends keyof TransitionEventMap>(event: K, handler: TransitionEventHandler<K>) => void;
   getCurrentRunId: () => string | null;
   destroy: () => void;
 };
@@ -76,12 +73,8 @@ export const createChapterTransitionOrchestrator = (
     now = () => Date.now(),
     setTimeoutFn = setTimeout,
     clearTimeoutFn = clearTimeout,
-    requestAnimationFrame: rAF = globalThis.requestAnimationFrame?.bind(
-      globalThis,
-    ),
-    cancelAnimationFrame: cAF = globalThis.cancelAnimationFrame?.bind(
-      globalThis,
-    ),
+    requestAnimationFrame: rAF = globalThis.requestAnimationFrame?.bind(globalThis),
+    cancelAnimationFrame: cAF = globalThis.cancelAnimationFrame?.bind(globalThis),
     posePaintedTimeoutMs = 500,
     sourceOpenTimeoutMs = 500,
   } = deps;
@@ -166,8 +159,7 @@ export const createChapterTransitionOrchestrator = (
     currentRunId = null;
   };
 
-  const generateRunId = (): string =>
-    `run-${now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const generateRunId = (): string => `run-${now()}-${Math.random().toString(36).substring(2, 9)}`;
 
   const applyModelPose = (pose: ModelPose, options?: ModelPoseOptions) => {
     viewer.setModelPose?.(pose, options);
@@ -177,14 +169,15 @@ export const createChapterTransitionOrchestrator = (
     if (pose.orientation) viewer.setModelOrientation?.(pose.orientation);
   };
 
-  const loadChapter = async (
-    index: number,
-    _options: TransitionOptions = {},
-  ): Promise<void> => {
+  const loadChapter = async (index: number, _options: TransitionOptions = {}): Promise<void> => {
     cancelCurrentTransition();
 
     const chapter = story.chapters[index];
     if (!chapter) throw new Error(`Chapter ${index} not found`);
+    const entryViewBox =
+      [...(chapter.cameraTrack?.keyframes ?? [])]
+        .sort((a, b) => a.timeMs - b.timeMs)
+        .find((point) => point.viewBox)?.viewBox ?? chapter.viewBox;
 
     const runId = generateRunId();
     currentRunId = runId;
@@ -196,8 +189,7 @@ export const createChapterTransitionOrchestrator = (
       emit('transition:start', { chapterId: chapter.id, runId });
       emit('transition:assetsLoading', { chapterId: chapter.id, runId });
 
-      if (viewer.getManifestId)
-        currentManifest = viewer.getManifestId() ?? null;
+      if (viewer.getManifestId) currentManifest = viewer.getManifestId() ?? null;
 
       let manifestChanged = false;
 
@@ -205,26 +197,16 @@ export const createChapterTransitionOrchestrator = (
         viewer.setManifest?.(chapter.manifest);
         manifestChanged = true;
 
-        const manifestResult = await guard.waitForManifestChange(
-          runId,
-          chapter.manifest,
-        );
+        const manifestResult = await guard.waitForManifestChange(runId, chapter.manifest);
         if (checkCancelled()) return;
         if (manifestResult.degraded)
-          console.warn(
-            '[Orchestrator] Manifest loaded with degraded certainty',
-          );
+          console.warn('[Orchestrator] Manifest loaded with degraded certainty');
 
         if (typeof chapter.canvasIndex === 'number') {
-          const canvasResult = await guard.waitForCanvasesAvailable(
-            runId,
-            chapter.canvasIndex,
-          );
+          const canvasResult = await guard.waitForCanvasesAvailable(runId, chapter.canvasIndex);
           if (checkCancelled()) return;
           if (canvasResult.degraded)
-            console.warn(
-              '[Orchestrator] Canvases loaded with degraded certainty',
-            );
+            console.warn('[Orchestrator] Canvases loaded with degraded certainty');
         }
 
         currentManifest = chapter.manifest;
@@ -234,8 +216,7 @@ export const createChapterTransitionOrchestrator = (
       const currentCanvasId = viewer.getCanvasId?.() ?? null;
       const pageChanged = chapter.canvasId
         ? chapter.canvasId !== currentCanvasId
-        : typeof chapter.canvasIndex === 'number' &&
-          chapter.canvasIndex !== currentCanvasIndex;
+        : typeof chapter.canvasIndex === 'number' && chapter.canvasIndex !== currentCanvasIndex;
 
       if (chapter.canvasId || typeof chapter.canvasIndex === 'number') {
         if (chapter.canvasId) {
@@ -299,9 +280,9 @@ export const createChapterTransitionOrchestrator = (
         }
       }
 
-      if (chapter.viewBox) {
+      if (entryViewBox) {
         const currentViewBox = viewer.getViewBox?.();
-        const targetViewBox = chapter.viewBox as ViewBox;
+        const targetViewBox = entryViewBox as ViewBox;
         if (!isViewBoxEqual(currentViewBox, targetViewBox)) {
           const stabilityResult = await guard.waitForContainerStable(runId);
           if (checkCancelled()) return;
@@ -313,9 +294,9 @@ export const createChapterTransitionOrchestrator = (
         }
       }
 
-      if (chapter.viewBox) {
+      if (entryViewBox) {
         const currentViewBox = viewer.getViewBox?.();
-        const targetViewBox = chapter.viewBox as ViewBox;
+        const targetViewBox = entryViewBox as ViewBox;
         const viewBoxUnchanged = isViewBoxEqual(currentViewBox, targetViewBox);
 
         if (!viewBoxUnchanged) {
@@ -323,16 +304,11 @@ export const createChapterTransitionOrchestrator = (
             cancelViewBoxAnimation();
             cancelViewBoxAnimation = null;
           }
-          cancelViewBoxAnimation = panToViewBox(
-            viewer,
-            targetViewBox,
-            manifestChanged,
-            {
-              now,
-              requestAnimationFrame: rAF,
-              cancelAnimationFrame: cAF,
-            },
-          );
+          cancelViewBoxAnimation = panToViewBox(viewer, targetViewBox, manifestChanged, {
+            now,
+            requestAnimationFrame: rAF,
+            cancelAnimationFrame: cAF,
+          });
         }
       } else if (chapter.model) {
         applyModelPose(chapter.model, chapter.modelOptions);
@@ -343,7 +319,7 @@ export const createChapterTransitionOrchestrator = (
       if (checkCancelled()) return;
       emit('transition:poseApplied', { chapterId: chapter.id, runId });
 
-      const needsPosePainted = Boolean(chapter.viewBox || chapter.model);
+      const needsPosePainted = Boolean(entryViewBox || chapter.model);
       let posePaintedResult: GateResult = { ok: true, degraded: false };
       if (needsPosePainted) {
         posePaintedResult = await guard.waitForPosePainted(runId);

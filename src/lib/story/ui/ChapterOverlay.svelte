@@ -107,12 +107,15 @@
   export let onSave: (() => void) | undefined;
   export let onSetAnnotationPositioning: ((lang: string) => void) | undefined =
     undefined;
-  export let onDeleteMotionPoint: ((keyframeId: string) => void) | undefined =
-    undefined;
   export let onUpdateMotionDuration:
     ((durationMs: number) => void) | undefined = undefined;
-  export let onGoToMotionPoint: ((keyframeId: string) => void) | undefined =
-    undefined;
+  export let onUpdateMotionPathType:
+    ((pathType: "linear" | "spline") => void) | undefined = undefined;
+  export let onUpdateMotionInitialDwell:
+    ((dwellMs: number) => void) | undefined = undefined;
+  export let onUpdateMotionEasing:
+    | ((easing: "linear" | "ease-in" | "ease-out" | "ease-in-out") => void)
+    | undefined = undefined;
   export let motionPreviewing = false;
   export let onApplyMotionPreset:
     | ((
@@ -123,8 +126,6 @@
     | undefined = undefined;
   export let onPreviewMotion: (() => void) | undefined = undefined;
   export let onStopMotionPreview: (() => void) | undefined = undefined;
-  export let onStartMotionPointPositioning:
-    ((keyframeId?: string) => void) | undefined = undefined;
   export let onChapterTaskChange:
     ((task: ChapterTaskId | null) => void) | undefined = undefined;
 
@@ -1337,12 +1338,11 @@
           <ChapterMotionPanel
             track={chapter?.cameraTrack}
             previewing={motionPreviewing}
-            onPositionPoint={(keyframeId) =>
-              onStartMotionPointPositioning?.(keyframeId)}
-            onDeletePoint={(keyframeId) => onDeleteMotionPoint?.(keyframeId)}
-            onGoToPoint={(keyframeId) => onGoToMotionPoint?.(keyframeId)}
             onUpdateDuration={(durationMs) =>
               onUpdateMotionDuration?.(durationMs)}
+            onUpdatePathType={(pathType) => onUpdateMotionPathType?.(pathType)}
+            onUpdateDwell={(dwellMs) => onUpdateMotionInitialDwell?.(dwellMs)}
+            onUpdateEasing={(easing) => onUpdateMotionEasing?.(easing)}
             onApplyPreset={(preset) => onApplyMotionPreset?.(preset)}
             onPreview={() => onPreviewMotion?.()}
             onStopPreview={() => onStopMotionPreview?.()}

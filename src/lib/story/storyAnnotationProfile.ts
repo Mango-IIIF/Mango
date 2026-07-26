@@ -213,6 +213,7 @@ const parseCameraTrack = (value: unknown): Chapter['cameraTrack'] | undefined =>
     if (!isRecord(raw) || typeof raw.id !== 'string' || !raw.id) return [];
     const timeMs = nonNegativeNumber(raw.timeMs);
     if (timeMs === undefined) return [];
+    const dwellMs = nonNegativeNumber(raw.dwellMs);
     const viewBox = parseViewBox(raw.viewBox);
     const focus = isRecord(raw.focus)
       ? { x: finiteNumber(raw.focus.x), y: finiteNumber(raw.focus.y) }
@@ -226,6 +227,7 @@ const parseCameraTrack = (value: unknown): Chapter['cameraTrack'] | undefined =>
       {
         id: raw.id,
         timeMs,
+        ...(dwellMs !== undefined ? { dwellMs } : {}),
         ...(validFocus ? { focus: validFocus } : {}),
         ...(viewBox ? { viewBox } : {}),
         ...(model ? { model } : {}),
@@ -234,6 +236,7 @@ const parseCameraTrack = (value: unknown): Chapter['cameraTrack'] | undefined =>
     ];
   });
   const preset = value.preset;
+  const pathType = value.pathType;
   const easing = value.easing;
   return {
     durationMs,
@@ -243,9 +246,13 @@ const parseCameraTrack = (value: unknown): Chapter['cameraTrack'] | undefined =>
     preset === 'zoom-out' ||
     preset === 'pan' ||
     preset === 'drift-zoom' ||
-    preset === 'custom'
+    preset === 'custom' ||
+    preset === 'ken-burns' ||
+    preset === 'hero-reveal' ||
+    preset === 'arc-sweep'
       ? { preset }
       : {}),
+    ...(pathType === 'linear' || pathType === 'spline' ? { pathType } : {}),
     ...(easing === 'linear' ||
     easing === 'ease-in' ||
     easing === 'ease-out' ||

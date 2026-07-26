@@ -52,6 +52,8 @@ export type ChapterCameraKeyframe = {
   id: string;
   /** Position on the chapter presentation clock. */
   timeMs: number;
+  /** Dwell time in ms to hold on this keyframe before resuming motion. */
+  dwellMs?: number;
   /** Canvas-coordinate focal point selected directly on the artwork. */
   focus?: { x: number; y: number };
   viewBox?: ViewBox;
@@ -62,7 +64,17 @@ export type ChapterCameraKeyframe = {
 export type ChapterCameraTrack = {
   durationMs: number;
   keyframes: ChapterCameraKeyframe[];
-  preset?: 'static' | 'zoom-in' | 'zoom-out' | 'pan' | 'drift-zoom' | 'custom';
+  preset?:
+    | 'static'
+    | 'zoom-in'
+    | 'zoom-out'
+    | 'pan'
+    | 'drift-zoom'
+    | 'custom'
+    | 'ken-burns'
+    | 'hero-reveal'
+    | 'arc-sweep';
+  pathType?: 'linear' | 'spline';
   easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
 };
 

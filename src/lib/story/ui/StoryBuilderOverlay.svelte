@@ -6,6 +6,7 @@
   import StoryChapterOverlay from './ChapterOverlay.svelte';
   import StoryAnnotationOverlay from './StoryAnnotationOverlay.svelte';
   import SaveExportModal from './SaveExportModal.svelte';
+  import MangoFooterBrand from './MangoFooterBrand.svelte';
   import RectanglePlacementEditor from '../../features/annotations/RectanglePlacementEditor.svelte';
   import type {
     AnnotationPlacement,
@@ -75,9 +76,12 @@
   export let onUpdateChapterPosition: () => void;
   export let onRevertChapterPosition: () => void;
   export let onSaveChapterSettings: () => void;
-  export let onDeleteMotionPoint: (keyframeId: string) => void;
   export let onUpdateMotionDuration: (durationMs: number) => void;
-  export let onGoToMotionPoint: (keyframeId: string) => void;
+  export let onUpdateMotionPathType: (pathType: 'linear' | 'spline') => void;
+  export let onUpdateMotionInitialDwell: (dwellMs: number) => void;
+  export let onUpdateMotionEasing: (
+    easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out',
+  ) => void;
   export let motionPreviewing: Readable<boolean>;
   export let motionPointDraft: Readable<{
     keyframeId?: string;
@@ -388,12 +392,11 @@
         : (activeChapter?.cameraTrack?.keyframes.length ?? 0) + 1;
   }
   let motionPointDragging = false;
+  let motionSurfaceElement: HTMLElement | null = null;
   const focusFromPointer = (event: MouseEvent | PointerEvent): { x: number; y: number } | null => {
     if (!motionReferenceViewBox) return null;
-    const bounds =
-      event.currentTarget instanceof HTMLElement
-        ? event.currentTarget.getBoundingClientRect()
-        : null;
+    const targetEl = motionSurfaceElement || (event.currentTarget as HTMLElement | null);
+    const bounds = targetEl?.getBoundingClientRect();
     if (!bounds || bounds.width <= 0 || bounds.height <= 0) return null;
     const xRatio = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width));
     const yRatio = Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height));
@@ -486,9 +489,10 @@
         layers={$layers}
         layerOpacities={$layerOpacities}
         {onUpdateLayerOpacity}
-        {onDeleteMotionPoint}
         {onUpdateMotionDuration}
-        {onGoToMotionPoint}
+        {onUpdateMotionPathType}
+        {onUpdateMotionInitialDwell}
+        {onUpdateMotionEasing}
         motionPreviewing={$motionPreviewing}
         {onApplyMotionPreset}
         {onPreviewMotion}
@@ -581,16 +585,22 @@
 
     {#if currentMode === 'motionPointPositioning' && $motionPointDraft}
       <button
+        bind:this={motionSurfaceElement}
         class="story-builder-motion-point-surface"
         type="button"
-        aria-label="Click the artwork to place the camera point"
+        aria-label="Click or drag the artwork to place the camera point"
         on:click={handleMotionCanvasClick}
         on:pointerdown={handleMotionPointerDown}
         on:pointermove={handleMotionPointerMove}
         on:pointerup={handleMotionPointerUp}
       >
         {#if effectiveMotionPlacementFocus}
-          <div class="story-builder-motion-placement-pin" style={motionPlacementPinStyle}>
+          <div
+            class="story-builder-motion-placement-pin"
+            class:story-builder-motion-placement-pin--dragging={motionPointDragging}
+            style={motionPlacementPinStyle}
+          >
+            <div class="story-builder-motion-placement-target" aria-hidden="true"></div>
             <MapPin aria-hidden="true" />
             <span>{motionPlacementNumber}</span>
           </div>
@@ -603,9 +613,6 @@
               ? `Move point ${motionPlacementNumber}`
               : `Place point ${motionPlacementNumber}`}
           </strong>
-          <span>
-            Drag the pin or click directly on the artwork to choose this focal position.
-          </span>
         </div>
         <div class="story-builder-motion-placement__actions">
           <button type="button" on:click={onCancelMotionPointPositioning}>Cancel</button>
@@ -763,19 +770,20 @@
   .story-builder-motion-placement {
     position: absolute;
     left: 50%;
-    bottom: 24px;
+    bottom: 16px;
     z-index: 102;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 18px;
-    width: min(620px, calc(100% - 32px));
-    padding: 13px 15px;
+    gap: 12px;
+    width: auto;
+    max-width: min(440px, calc(100% - 32px));
+    padding: 6px 12px;
     transform: translateX(-50%);
     border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 14px;
+    border-radius: 12px;
     background: rgba(18, 25, 34, 0.96);
     color: var(--viewer-text, #e8edf4);
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.42);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
     pointer-events: auto;
   }
 
@@ -799,6 +807,30 @@
     transform: translate(-50%, -88%);
     color: white;
     filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.75));
+    pointer-events: none;
+    transition:
+      filter 0.15s ease,
+      transform 0.1s ease;
+  }
+
+  .story-builder-motion-placement-pin--dragging {
+    filter: drop-shadow(0 8px 14px rgba(224, 122, 63, 0.85));
+    transform: translate(-50%, -96%) scale(1.08);
+  }
+
+  .story-builder-motion-placement-target {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, 50%);
+    border: 2px solid white;
+    border-radius: 50%;
+    background: var(--accent, #e07a3f);
+    box-shadow:
+      0 0 8px rgba(0, 0, 0, 0.6),
+      inset 0 0 0 2px rgba(0, 0, 0, 0.3);
     pointer-events: none;
   }
 
@@ -828,11 +860,6 @@
   }
   .story-builder-motion-placement__message strong {
     font-size: 13px;
-  }
-  .story-builder-motion-placement__message span {
-    color: var(--viewer-muted, #9aa6b2);
-    font-size: 11px;
-    line-height: 1.4;
   }
   .story-builder-motion-placement__actions {
     display: flex;

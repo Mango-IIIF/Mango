@@ -29,7 +29,13 @@ describe("StoryBuilderWideAuthoring", () => {
               rect: { x: 10, y: 10, w: 20, h: 20 },
             },
           ],
-          cameraTrack: { durationMs: 5000, keyframes: [] },
+          cameraTrack: {
+            durationMs: 5000,
+            keyframes: [
+              { id: "one", timeMs: 0, viewBox: { x: 0, y: 0, w: 100, h: 100 } },
+              { id: "two", timeMs: 5000, viewBox: { x: 25, y: 25, w: 50, h: 50 } },
+            ],
+          },
           narrationSegment: { en: { start: 1, end: 4 } },
           media: { start: 5, end: 25 },
         },
@@ -60,15 +66,12 @@ describe("StoryBuilderWideAuthoring", () => {
         story,
         selectedChapterId,
         activeTask,
-        previewing: writable(false),
         mediaType,
         mediaSources,
         mediaMarks,
         avMarksValid: writable(true),
         onAddPoint: vi.fn(),
         onGoToPoint: vi.fn(),
-        onPreview: vi.fn(),
-        onStopPreview: vi.fn(),
         onSetNarrationTrack: vi.fn(),
         onAssignNarrationSegment: vi.fn(),
         onAssignMediaSegment,
@@ -88,6 +91,8 @@ describe("StoryBuilderWideAuthoring", () => {
     await tick();
     expect(target.querySelector(".story-wide-authoring")).toBeTruthy();
     expect(target.querySelector(".story-wide-narration")).toBeNull();
+    expect(target.textContent).toContain("1.00× zoom");
+    expect(target.textContent).toContain("2.00× zoom");
 
     activeTask.set("audio-timing");
     await tick();

@@ -190,9 +190,7 @@ describe('storyViewerController.loadChapter', () => {
 
     await runtime.loadStory(canvasStory);
 
-    expect(viewer.setCanvasById).toHaveBeenCalledWith(
-      'https://example.org/canvas/stable',
-    );
+    expect(viewer.setCanvasById).toHaveBeenCalledWith('https://example.org/canvas/stable');
     expect(viewer.setCanvasByIndex).not.toHaveBeenCalled();
   });
 
@@ -225,9 +223,7 @@ describe('storyViewerController.loadChapter', () => {
     await runtime.loadStory(canvasStory);
     await runtime.loadChapter(1);
 
-    expect(viewer.setCanvasById).toHaveBeenLastCalledWith(
-      'https://example.org/stale-canvas/1',
-    );
+    expect(viewer.setCanvasById).toHaveBeenLastCalledWith('https://example.org/stale-canvas/1');
     expect(viewer.setCanvasByIndex).toHaveBeenCalledWith(1);
     expect(viewer.getCanvasIndex()).toBe(1);
   });
@@ -357,10 +353,10 @@ describe('storyViewerController.loadChapter', () => {
           narrationSegment: { en: { start: 0, end: 1 } },
           cameraTrack: {
             durationMs: 1000,
-            preset: 'custom',
+            preset: 'pan',
             easing: 'linear',
             keyframes: [
-              { id: 'start', timeMs: 0, viewBox: { x: 0, y: 0, w: 100, h: 100 } },
+              { id: 'start', timeMs: 0, viewBox: { x: 25, y: 0, w: 80, h: 80 } },
               { id: 'end', timeMs: 1000, viewBox: { x: 100, y: 0, w: 100, h: 100 } },
             ],
           },
@@ -380,6 +376,7 @@ describe('storyViewerController.loadChapter', () => {
     const loadPromise = runtime.loadStory(motionStory);
     await vi.advanceTimersByTimeAsync(150);
     await loadPromise;
+    expect(viewer.setViewBox).toHaveBeenCalledWith({ x: 25, y: 0, w: 80, h: 80 });
     viewer.setViewBox.mockClear();
     viewer.setCanvasByIndex.mockClear();
 
@@ -387,9 +384,7 @@ describe('storyViewerController.loadChapter', () => {
     narrationTime = 0.5;
     await vi.advanceTimersByTimeAsync(60);
     expect(mockNarration.playSegment).toHaveBeenCalledTimes(1);
-    expect(
-      viewer.setViewBox.mock.calls.some(([box]) => box.x > 0 && box.x < 100),
-    ).toBe(true);
+    expect(viewer.setViewBox.mock.calls.some(([box]) => box.x > 0 && box.x < 100)).toBe(true);
 
     narrationTime = 1;
     finishNarration?.(true);
@@ -571,18 +566,14 @@ describe('storyViewerController.loadChapter', () => {
     await loadChapter2Promise;
 
     // Now setViewBox should have been called with chapter 2's viewBox
-    expect(viewer.setViewBox).toHaveBeenCalledWith(
-      storyWithManifestChange.chapters[1].viewBox,
-    );
+    expect(viewer.setViewBox).toHaveBeenCalledWith(storyWithManifestChange.chapters[1].viewBox);
     expect(viewer.setManifest).toHaveBeenCalledWith('m2');
 
     // Switching to chapter 3 (same manifest, different canvas)
     await runtime.loadChapter(2);
 
     // ViewBox should be applied after pageChange
-    expect(viewer.setViewBox).toHaveBeenCalledWith(
-      storyWithManifestChange.chapters[2].viewBox,
-    );
+    expect(viewer.setViewBox).toHaveBeenCalledWith(storyWithManifestChange.chapters[2].viewBox);
     expect(viewer.setCanvasByIndex).toHaveBeenCalledWith(1);
   });
 

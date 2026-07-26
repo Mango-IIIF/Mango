@@ -16,7 +16,12 @@ describe('in-chapter camera track sampling', () => {
   };
 
   it('interpolates between camera points within a chapter', () => {
-    expect(sampleCameraTrack(track, 2000)?.viewBox).toEqual({ x: 25, y: 12.5, w: 75, h: 75 });
+    expect(sampleCameraTrack(track, 2000)?.viewBox).toEqual({
+      x: 25,
+      y: 12.5,
+      w: 75,
+      h: 75,
+    });
   });
 
   it('clamps sampling to exact endpoints', () => {
@@ -39,21 +44,40 @@ describe('in-chapter camera track sampling', () => {
   it('never moves placed focal pins when the movement style changes', () => {
     const placed = {
       ...track,
-      preset: 'custom' as const,
+      preset: 'pan' as const,
       keyframes: [
         { ...track.keyframes[0], focus: { x: 20, y: 30 } },
         { ...track.keyframes[1], focus: { x: 70, y: 60 } },
       ],
     };
-    const styled = configureCameraTrackPreset(
-      placed,
-      'zoom-in',
-      { x: 0, y: 0, w: 100, h: 100 },
-    );
+    const styled = configureCameraTrackPreset(placed, 'zoom-in', {
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+    });
     expect(styled.keyframes.map((point) => point.focus)).toEqual([
       { x: 20, y: 30 },
       { x: 70, y: 60 },
     ]);
+  });
+
+  it('uses the stable chapter frame for named-style zoom when focal points move', () => {
+    const baseView = { x: 0, y: 0, w: 1000, h: 500 };
+    const generated = generateCameraPreset('ken-burns', baseView, 5000);
+    const repositioned = {
+      ...generated,
+      keyframes: generated.keyframes.map((point, index) =>
+        index === 1 ? { ...point, focus: { x: 800, y: 250 } } : point,
+      ),
+    };
+    const configured = configureCameraTrackPreset(repositioned, 'ken-burns', baseView, 5000, {
+      preservePoints: true,
+    });
+
+    expect(configured.keyframes[0].viewBox?.w).toBe(1000);
+    expect(configured.keyframes[1].viewBox?.w).toBe(700);
+    expect(configured.keyframes[1].focus).toEqual({ x: 800, y: 250 });
   });
 
   it('spaces ordered positions automatically across the duration', () => {
@@ -65,5 +89,31 @@ describe('in-chapter camera track sampling', () => {
     expect(retimeCameraKeyframes(points, 8000).map((point) => point.timeMs)).toEqual([
       0, 4000, 8000,
     ]);
+  });
+
+  it('regenerates generated presets and makes Still genuinely stationary', () => {
+    const view = { x: 0, y: 0, w: 1000, h: 500 };
+    const kenBurns = generateCameraPreset('ken-burns', view, 5000);
+    const arc = configureCameraTrackPreset(kenBurns, 'arc-sweep', view, 5000);
+    expect(arc.keyframes).toHaveLength(3);
+
+    const still = configureCameraTrackPreset(kenBurns, 'static', view, 5000);
+    expect(still.keyframes).toHaveLength(2);
+    expect(still.keyframes[0].viewBox).toEqual(still.keyframes[1].viewBox);
+    expect(sampleCameraTrack(still, 2500)?.viewBox).toEqual(still.keyframes[0].viewBox);
+  });
+
+  it('always reaches an exact keyframe even when imported dwell data is invalid', () => {
+    const invalidDwellTrack = {
+      ...track,
+      durationMs: 1000,
+      keyframes: [
+        { ...track.keyframes[0], timeMs: 0, dwellMs: 3000 },
+        { ...track.keyframes[1], timeMs: 1000 },
+      ],
+    };
+    expect(sampleCameraTrack(invalidDwellTrack, 1000)?.viewBox).toEqual(
+      invalidDwellTrack.keyframes[1].viewBox,
+    );
   });
 });
