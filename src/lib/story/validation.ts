@@ -1,5 +1,6 @@
 import type { Chapter, StoryState } from '../core/types/story';
 import { isAnnotationPlacement } from './annotationPlacement';
+import { validatePublicationIdentifiers } from './publicIdentifiers';
 
 const hasSingleCapture = (chapter: Chapter): boolean => {
   const captureCount = [chapter.viewBox, chapter.media, chapter.model].filter(Boolean)
@@ -49,6 +50,30 @@ const validateChapter = (chapter: Chapter, index: number): string[] => {
   if (chapter.model && !isValidModel(chapter)) {
     errors.push(`${prefix}: model pose is missing`);
   }
+  if (chapter.entryTransition && chapter.entryTransition.durationMs < 0) {
+    errors.push(`${prefix}: entry transition duration must be non-negative`);
+  }
+  if (chapter.presentationDurationMs !== undefined && chapter.presentationDurationMs < 0) {
+    errors.push(`${prefix}: presentation duration must be non-negative`);
+  }
+  if (chapter.cameraTrack) {
+    if (!(chapter.cameraTrack.durationMs > 0)) {
+      errors.push(`${prefix}: camera track duration must be positive`);
+    }
+    const pointIds = new Set<string>();
+    for (const point of chapter.cameraTrack.keyframes) {
+      if (!point.id || pointIds.has(point.id)) {
+        errors.push(`${prefix}: camera track point IDs must be unique`);
+      }
+      pointIds.add(point.id);
+      if (point.timeMs < 0 || point.timeMs > chapter.cameraTrack.durationMs) {
+        errors.push(`${prefix}: camera track point is outside the chapter duration`);
+      }
+      if (!point.focus && !point.viewBox && !point.model && !point.layerOpacities) {
+        errors.push(`${prefix}: camera track point has no captured state`);
+      }
+    }
+  }
 
   if (
     chapter.annotationPlacement !== undefined &&
@@ -85,6 +110,10 @@ export const validateStory = (story: StoryState): { ok: boolean; errors: string[
     story.chapters.forEach((chapter, index) => {
       errors.push(...validateChapter(chapter, index));
     });
+  }
+
+  if (story.publication?.status === 'published' || story.id || story.publication?.annotationBase) {
+    errors.push(...validatePublicationIdentifiers(story).errors);
   }
 
   return {

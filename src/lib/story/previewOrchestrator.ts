@@ -1,5 +1,6 @@
 import { get, writable, type Readable } from 'svelte/store';
 import type { Chapter, StoryState } from '../core/types/story';
+import { resolveChapterTiming } from './timing';
 
 export type StoryPreviewOrchestrator = {
   isPreviewing: Readable<boolean>;
@@ -11,15 +12,21 @@ export const getPreviewChapterDuration = (
   chapter: Chapter,
   narration: { start: number; end: number } | null,
 ): number => {
-  let durationMs = 0;
-  if (narration) durationMs += (narration.end - narration.start) * 1000;
+  let sequentialMediaMs = 0;
+  if (narration) sequentialMediaMs += (narration.end - narration.start) * 1000;
   if (chapter.media) {
-    durationMs += (chapter.media.end - chapter.media.start) * 1000;
+    sequentialMediaMs += (chapter.media.end - chapter.media.start) * 1000;
   }
+  const presentationMs = Math.max(
+    sequentialMediaMs,
+    chapter.cameraTrack?.durationMs ?? 0,
+    resolveChapterTiming(chapter).presentationDurationMs,
+  );
+  let durationMs = presentationMs;
   if (chapter.advance?.mode === 'auto' && chapter.advance.delayMs) {
     durationMs += chapter.advance.delayMs;
   }
-  return durationMs || 2000;
+  return durationMs;
 };
 
 export const createStoryPreviewOrchestrator = ({

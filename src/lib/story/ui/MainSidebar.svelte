@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { Camera, Clock3, GripVertical, MoreVertical, Plus } from '@lucide/svelte';
   import { readable, type Readable } from 'svelte/store';
   import type { Chapter, StoryState } from '../../core/types/story';
+  import { resolveChapterTiming } from '../timing';
   import { t } from '../../i18n';
   import { fetchManifest, manifestsStore } from '../../state/manifests';
   import { resolveCanvasThumbnail } from '../../viewer/iiif/thumbnails';
@@ -54,11 +56,14 @@
         ? Math.max(0, chapter.media.end - chapter.media.start)
         : 0;
 
-    if (narrationDuration > 0 || mediaDuration > 0) {
-      return narrationDuration + mediaDuration;
+    if (narrationDuration > 0 || mediaDuration > 0 || chapter.cameraTrack) {
+      return Math.max(
+        narrationDuration + mediaDuration,
+        (chapter.cameraTrack?.durationMs ?? 0) / 1000,
+      );
     }
 
-    return Math.max(0, (chapter.transitionTimeMs ?? 0) / 1000);
+    return resolveChapterTiming(chapter).presentationDurationMs / 1000;
   };
 
   const formatDuration = (seconds: number): string => {
@@ -222,13 +227,15 @@
 
   <section class="story-sidebar__chapters" data-testid="chapter-list">
     <div class="story-sidebar__header">
-      <div>
-        <span>Story chapters</span>
-        <small
-          >{$story.chapters.length}
-          {$story.chapters.length === 1 ? 'chapter' : 'chapters'}</small
-        >
-      </div>
+      <span>Chapters</span>
+      <button
+        class="story-sidebar__header-add"
+        type="button"
+        data-testid="add-chapter"
+        on:click={() => onAddChapter?.()}
+      >
+        <Plus aria-hidden="true" /> Add chapter
+      </button>
     </div>
 
     {#if $story.chapters.length === 0}
@@ -271,6 +278,7 @@
                   {index + 1}
                 </div>
               {/if}
+              <span class="story-sidebar__thumbnail-index">{index + 1}</span>
             </div>
 
             <div class="story-sidebar__row-content">
@@ -279,6 +287,7 @@
                 {labelForChapter(chapter, index)}
               </div>
               <div class="story-sidebar__row-duration">
+                <Clock3 aria-hidden="true" />
                 {chapterDurationLabel(chapter)}
               </div>
               {#if errorsForChapter(index).length > 0}
@@ -297,7 +306,7 @@
               data-testid="chapter-menu-{chapter.id}"
               on:click|stopPropagation={() => toggleMenu(chapter.id)}
             >
-              ...
+              <MoreVertical aria-hidden="true" />
             </button>
 
             {#if menuChapterId === chapter.id}
@@ -342,16 +351,21 @@
         </div>
       {/each}
     </div>
+    {#if $story.chapters.length > 1}
+      <div class="story-sidebar__reorder">
+        <GripVertical aria-hidden="true" /> Drag to reorder chapters
+      </div>
+    {/if}
   </section>
 
   <div class="story-sidebar__actions">
     <button
       class="story-sidebar__add"
       type="button"
-      data-testid="add-chapter"
+      data-testid="capture-current-view"
       on:click={() => onAddChapter?.()}
     >
-      Capture current view
+      <Camera aria-hidden="true" /> Capture current view
     </button>
     <p>Pan or zoom the media, then capture that state as a new chapter.</p>
   </div>
@@ -464,8 +478,8 @@
   .story-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 16px 16px 24px;
+    gap: 18px;
+    padding: 18px;
     background: var(--story-sidebar-bg, var(--viewer-panel, #121922));
     color: var(--story-sidebar-text, var(--viewer-text, #e8edf4));
     border-right: 1px solid
@@ -476,7 +490,9 @@
     overflow: hidden;
     height: 100%;
     max-height: 100%;
-    border-radius: 0 18px 18px 0;
+    border: 1px solid
+      var(--story-sidebar-border, var(--viewer-panel-border, rgba(255, 255, 255, 0.08)));
+    border-radius: 18px;
   }
 
   .story-sidebar--embedded {
@@ -499,35 +515,46 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.16em;
     color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.65));
   }
 
-  .story-sidebar__header > div {
-    display: grid;
-    gap: 4px;
-  }
-
-  .story-sidebar__header small {
+  .story-sidebar__header-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 0;
+    padding: 5px;
+    background: transparent;
+    color: #2ac7ff;
     font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0;
-    text-transform: none;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .story-sidebar__header-add :global(svg) {
+    width: 15px;
+    height: 15px;
   }
 
   .story-sidebar__add {
-    border: none;
-    border-radius: 10px;
-    padding: 10px 12px;
-    background: var(--accent, #e07a3f);
-    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--accent, #e07a3f);
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     cursor: pointer;
+  }
+  .story-sidebar__add :global(svg) {
+    width: 22px;
+    height: 22px;
   }
 
   .story-sidebar__empty {
@@ -560,9 +587,9 @@
     gap: 4px;
     align-items: start;
     padding: 10px;
-    border: 1px solid transparent;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
-    background: var(--story-sidebar-row-bg, rgba(255, 255, 255, 0.06));
+    background: color-mix(in srgb, var(--viewer-surface, #151d26) 60%, transparent);
     position: relative;
   }
 
@@ -586,7 +613,8 @@
   }
 
   .story-sidebar__row--active {
-    border-color: var(--accent, #e07a3f);
+    border-color: #2ac7ff;
+    background: color-mix(in srgb, #2ac7ff 6%, var(--viewer-surface, #151d26));
   }
 
   .story-sidebar__row--dragging {
@@ -614,6 +642,7 @@
   }
 
   .story-sidebar__thumbnail-wrap {
+    position: relative;
     width: 56px;
     height: 56px;
   }
@@ -633,6 +662,23 @@
     font-size: 14px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.75);
+  }
+
+  .story-sidebar__thumbnail-index {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    display: grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 3px;
+    border-radius: 5px;
+    background: rgba(232, 237, 244, 0.88);
+    color: #13202d;
+    font-size: 9px;
+    font-weight: 800;
+    box-sizing: border-box;
   }
 
   .story-sidebar__row-content {
@@ -655,12 +701,16 @@
   }
 
   .story-sidebar__row-duration {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     justify-self: start;
-    padding: 4px 8px;
-    border-radius: 10px;
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.92);
-    background: rgba(255, 255, 255, 0.08);
+    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
+  }
+  .story-sidebar__row-duration :global(svg) {
+    width: 13px;
+    height: 13px;
   }
 
   .story-sidebar__row-error {
@@ -679,12 +729,14 @@
     border: none;
     background: transparent;
     color: inherit;
-    letter-spacing: 0.15em;
-    font-weight: 700;
     cursor: pointer;
     padding: 6px;
     border-radius: 8px;
     min-width: 30px;
+  }
+  .story-sidebar__menu-button :global(svg) {
+    width: 16px;
+    height: 16px;
   }
 
   .story-sidebar__menu-button:hover {
@@ -732,6 +784,23 @@
   .story-sidebar__actions {
     display: grid;
     gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+  }
+
+  .story-sidebar__reorder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px;
+    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
+    font-size: 11px;
+  }
+  .story-sidebar__reorder :global(svg) {
+    width: 15px;
+    height: 15px;
   }
 
   .story-sidebar__actions p {

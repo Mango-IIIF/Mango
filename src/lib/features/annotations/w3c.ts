@@ -1,12 +1,6 @@
-import {
-  W3CParser,
-  type NormalizedShape,
-  type W3CAnnotation,
-} from '@mango-iiif/w3c-parser';
-import type {
-  AnnotationBody,
-  ResolvedAnnotation,
-} from '../../iiif/annotationResolver';
+import { W3CParser, type NormalizedShape, type W3CAnnotation } from '@mango-iiif/w3c-parser';
+import type { AnnotationBody, ResolvedAnnotation } from '../../iiif/annotationResolver';
+import type { ChapterAnnotationTool } from '../../core/types/story';
 
 const normaliseTag = (value: string): string => value.trim().replace(/\s+/g, ' ');
 
@@ -116,10 +110,9 @@ export const w3cToResolved = (annotation: unknown): ResolvedAnnotation | null =>
 
   return {
     id: parsed.id,
+    shapeType: parsed.shape.type === 'none' ? undefined : parsed.shape.type,
     ...shapeToResolved(parsed.shape),
-    time: parsed.temporal
-      ? { start: parsed.temporal.start, end: parsed.temporal.end }
-      : undefined,
+    time: parsed.temporal ? { start: parsed.temporal.start, end: parsed.temporal.end } : undefined,
     text: parsed.text,
     label: parsed.label,
     notes,
@@ -129,6 +122,22 @@ export const w3cToResolved = (annotation: unknown): ResolvedAnnotation | null =>
     targetStyleClass: target?.styleClass ?? parsed.layer,
     targetStyle: target?.style,
   };
+};
+
+export const normalizedShapeTool = (
+  shape: NormalizedShape,
+): Exclude<ChapterAnnotationTool, 'select'> | null =>
+  shape.type === 'none' ? null : shape.type === 'rect' ? 'rectangle' : shape.type;
+
+export const w3cShapeTool = (
+  annotation: unknown,
+): Exclude<ChapterAnnotationTool, 'select'> | null => {
+  try {
+    return normalizedShapeTool(W3CParser.parseAnnotation(annotation).shape);
+  } catch {
+    // Invalid W3C geometry is ignored by the annotation creation flow.
+  }
+  return null;
 };
 
 export type { W3CAnnotation } from '@mango-iiif/w3c-parser';

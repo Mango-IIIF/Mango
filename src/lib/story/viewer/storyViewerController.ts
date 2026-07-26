@@ -1,6 +1,8 @@
 import { writable, type Writable } from 'svelte/store';
 import type { ViewerApi } from '../../core/types/viewer-api';
 import type { StoryWithDefaults } from './storyLoader';
+import { resolveChapterTiming } from '../timing';
+import { sampleCameraTrack } from '../cameraTrack';
 import { createNarrationPlayer, type NarrationPlayer } from '../narrationPlayer';
 import type { NarrationSegment as PlayerSegment } from '../narrationPlayer';
 import {
@@ -98,11 +100,11 @@ const toChapterDurationSec = (
       ? Math.max(0, chapter.media.end - chapter.media.start)
       : 0;
 
-  if (narrationDuration > 0 || mediaDuration > 0) {
-    return narrationDuration + mediaDuration;
-  }
-
-  return Math.max(0, (chapter.transitionTimeMs ?? 0) / 1000);
+  return Math.max(
+    narrationDuration + mediaDuration,
+    (chapter.cameraTrack?.durationMs ?? 0) / 1000,
+    resolveChapterTiming(chapter).presentationDurationMs / 1000,
+  );
 };
 
 export const createStoryViewerRuntime = (
@@ -160,6 +162,16 @@ export const createStoryViewerRuntime = (
         }));
   const unsubscribeClock = playbackClock.subscribe((value) => {
     playbackState.set(value);
+    const chapter = story?.chapters?.[chapterIndexValue];
+    if (!chapter?.cameraTrack || value.isBuffering) return;
+    const sample = sampleCameraTrack(chapter.cameraTrack, value.currentTime * 1000);
+    if (sample?.viewBox) viewer.setViewBox?.(sample.viewBox);
+    if (sample?.model) viewer.setModelPose?.(sample.model);
+    if (sample?.layerOpacities) {
+      for (const [id, opacity] of Object.entries(sample.layerOpacities)) {
+        viewer.updateLayerOpacity?.(id, opacity);
+      }
+    }
   });
 
   let activeLanguage = deps.language ?? 'en';
@@ -231,6 +243,12 @@ export const createStoryViewerRuntime = (
     const chapter = story?.chapters?.[chapterIndexValue];
     if (!chapter) return;
 
+    if (chapter.advance?.mode === 'manual') {
+      playbackClock.stop();
+      setState('IDLE');
+      return;
+    }
+
     setState('TRANSITION_DELAY');
     pausedKind = null;
     activeTimerKind = 'transition';
@@ -240,12 +258,37 @@ export const createStoryViewerRuntime = (
       bumpCall('setCanvasByIndex');
     }
 
+    const timing = resolveChapterTiming(chapter);
+    const legacyDelayMs = timing.migratedFromLegacy ? timing.presentationDurationMs : 0;
     playbackClock.startTimerPhase({
       offsetSec: playbackClock.getState().duration,
-      durationSec: Math.max(0, (chapter.transitionTimeMs ?? 2000) / 1000),
+      durationSec: (timing.advanceDelayMs ?? legacyDelayMs) / 1000,
       onComplete: () => {
         advanceToNextChapter(true);
       },
+    });
+    playbackClock.play();
+  };
+
+  const finishChapterPresentation = (completedContentSec: number) => {
+    const chapter = story?.chapters?.[chapterIndexValue];
+    if (!chapter) return;
+    const remainingSec = Math.max(
+      0,
+      toChapterDurationSec(chapter, activeLanguage) - Math.max(0, completedContentSec),
+    );
+    if (remainingSec <= 0.001) {
+      startTransitionDelay();
+      return;
+    }
+
+    setState('PRESENTING_SILENT');
+    pausedKind = null;
+    activeTimerKind = 'presentation';
+    playbackClock.startTimerPhase({
+      offsetSec: Math.max(0, completedContentSec),
+      durationSec: remainingSec,
+      onComplete: startTransitionDelay,
     });
     playbackClock.play();
   };
@@ -275,7 +318,7 @@ export const createStoryViewerRuntime = (
         if (state !== 'PLAYING_MEDIA' || !mediaPlaying) return;
         mediaPlaying = false;
         viewer.pause?.();
-        startTransitionDelay();
+        finishChapterPresentation(offsetSec + mediaDurationSec);
       },
     });
     playbackClock.play();
@@ -319,7 +362,7 @@ export const createStoryViewerRuntime = (
         if (nextChapter?.media) {
           playMedia(narrationDurationSec);
         } else {
-          advanceToNextChapter(true);
+          finishChapterPresentation(narrationDurationSec);
         }
       })
       .catch(() => {
@@ -353,10 +396,8 @@ export const createStoryViewerRuntime = (
 
     playbackClock.startTimerPhase({
       offsetSec: 0,
-      durationSec: Math.max(0, (chapter.transitionTimeMs ?? 2000) / 1000),
-      onComplete: () => {
-        advanceToNextChapter(true);
-      },
+      durationSec: toChapterDurationSec(chapter, activeLanguage),
+      onComplete: startTransitionDelay,
     });
     playbackClock.play();
   };
@@ -643,7 +684,13 @@ export const createStoryViewerRuntime = (
     if (state !== 'PLAYING_MEDIA' || !mediaPlaying) return;
     mediaPlaying = false;
     viewer.pause?.();
-    startTransitionDelay();
+    const chapter = story?.chapters?.[chapterIndexValue];
+    const narration = toNarrationSegment(story, chapterIndexValue, activeLanguage);
+    const narrationDurationSec = narration ? Math.max(0, narration.end - narration.start) : 0;
+    const mediaDurationSec = chapter?.media
+      ? Math.max(0, chapter.media.end - chapter.media.start)
+      : 0;
+    finishChapterPresentation(narrationDurationSec + mediaDurationSec);
   };
 
   const unsubscribeMediaSegmentEnd = viewer.on?.('mediaSegmentEnd', handleMediaSegmentEnd);

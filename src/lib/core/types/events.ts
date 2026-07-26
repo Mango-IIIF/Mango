@@ -1,7 +1,8 @@
-import type { ResolvedAnnotation } from "../../iiif/annotationResolver";
-import type { MediaType } from "../../iiif/mediaResolver";
-import type { ModelPose } from "./model";
-import type { ViewBox, ViewerStateSnapshot } from "./viewer";
+import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
+import type { ChapterAnnotationTool } from './story';
+import type { MediaType } from '../../iiif/mediaResolver';
+import type { ModelPose } from './model';
+import type { ViewBox, ViewerStateSnapshot } from './viewer';
 
 export type ModelViewChange = {
   source?: string;
@@ -22,7 +23,7 @@ export type ViewerEventMap = {
   addAnnotation: { annotation: unknown };
   updateAnnotation: { annotation: unknown };
   removeAnnotation: { annotationId: string };
-  annotationCreate: { annotation: unknown };
+  annotationCreate: { annotation: unknown; tool?: ChapterAnnotationTool };
   annotationUpdate: {
     annotationId: string;
     patch: Partial<ResolvedAnnotation>;
@@ -41,8 +42,7 @@ export type ViewerEventMap = {
   rotationChange: { rotation: number };
   exportAnnotations: { annotations: ResolvedAnnotation[] };
   panelToggle: {
-    panel:
-      "thumbnails" | "search" | "metadata" | "annotations" | "tools" | string;
+    panel: 'thumbnails' | 'search' | 'metadata' | 'annotations' | 'tools' | string;
     open: boolean;
   };
   stateChange: { snapshot: ViewerStateSnapshot };
@@ -50,26 +50,20 @@ export type ViewerEventMap = {
   pluginError: {
     pluginId: string;
     pluginLabel: string;
-    phase: "init" | "destroy";
+    phase: 'init' | 'destroy';
     message: string;
     cause?: unknown;
   };
   error: {
-    scope: "manifest" | "media" | "search" | "annotations";
+    scope: 'manifest' | 'media' | 'search' | 'annotations';
     message: string;
     cause?: unknown;
   };
 };
 
 export type EventBus<EventMap extends Record<string, unknown>> = {
-  on<K extends keyof EventMap>(
-    event: K,
-    handler: (payload: EventMap[K]) => void,
-  ): () => void;
-  off<K extends keyof EventMap>(
-    event: K,
-    handler: (payload: EventMap[K]) => void,
-  ): void;
+  on<K extends keyof EventMap>(event: K, handler: (payload: EventMap[K]) => void): () => void;
+  off<K extends keyof EventMap>(event: K, handler: (payload: EventMap[K]) => void): void;
   emit<K extends keyof EventMap>(event: K, payload: EventMap[K]): void;
 };
 

@@ -50,7 +50,9 @@
 </script>
 
 <div class="story-topbar" data-testid="story-builder-topbar" bind:this={root}>
-  <div class="story-topbar__title" data-testid="story-builder-title">{storyTitle}</div>
+  <div class="story-topbar__title" data-testid="story-builder-title">
+    {storyTitle}
+  </div>
 
   <div class="story-topbar__status" aria-live="polite">
     <span class:story-topbar__status-dot--dirty={$dirty} class="story-topbar__status-dot"></span>
@@ -65,15 +67,6 @@
       <Redo2 aria-hidden="true" />
     </button>
   </div>
-
-  <button
-    class="story-topbar__button story-topbar__button--narration"
-    type="button"
-    on:click={onNarration}
-  >
-    <Settings2 aria-hidden="true" />
-    <span>Story settings</span>
-  </button>
 
   <button
     class="story-topbar__button story-topbar__button--preview"
@@ -110,6 +103,15 @@
   >
     <Download aria-hidden="true" />
     <span>Export</span>
+  </button>
+
+  <button
+    class="story-topbar__button story-topbar__button--narration"
+    type="button"
+    on:click={onNarration}
+  >
+    <Settings2 aria-hidden="true" />
+    <span>Story settings</span>
   </button>
 </div>
 

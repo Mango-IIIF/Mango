@@ -155,6 +155,7 @@ describe('viewer AV integration', () => {
       type: 'video',
       src: 'https://example.org/video/master.m3u8',
       format: 'application/vnd.apple.mpegurl',
+      duration: 120,
     });
   });
 

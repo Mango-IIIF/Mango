@@ -41,6 +41,7 @@ export type AnnotationBody = {
 
 export type ResolvedAnnotation = {
   id: string;
+  shapeType?: 'rect' | 'point' | 'polygon' | 'freehand' | 'line';
   rect?: AnnotationRect;
   time?: AnnotationTime;
   point?: AnnotationPoint;
@@ -99,9 +100,7 @@ const parseXYWH = (value: string): AnnotationRect | null => {
 /**
  * Extracts the string value from an IIIF selector
  */
-const extractSelectorValue = (
-  selector: IIIFSelector | null | undefined,
-): string | undefined => {
+const extractSelectorValue = (selector: IIIFSelector | null | undefined): string | undefined => {
   if (!selector) return undefined;
   if (typeof selector === 'string') return selector;
   if (typeof selector === 'object') {
@@ -250,9 +249,7 @@ const parseSvgSelector = (svg: string): AnnotationPolygon | null => {
 const normaliseMotivation = (annotation: IIIFAnnotation | null | undefined): string[] => {
   const motivations = normaliseArray(annotation?.motivation);
   return motivations
-    .map((value) =>
-      typeof value === 'string' ? value : readId(value as IIIFIdentifiable),
-    )
+    .map((value) => (typeof value === 'string' ? value : readId(value as IIIFIdentifiable)))
     .filter(Boolean);
 };
 
@@ -273,8 +270,7 @@ const normaliseBody = (body: unknown): AnnotationBody[] => {
     if (!bodyObj.styleClass && !bodyObj.style) return sourceBodies;
     return sourceBodies.map((entry) => ({
       ...entry,
-      styleClass:
-        typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : entry.styleClass,
+      styleClass: typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : entry.styleClass,
       style: typeof bodyObj.style === 'string' ? bodyObj.style : entry.style,
     }));
   }
@@ -303,17 +299,13 @@ const normaliseBody = (body: unknown): AnnotationBody[] => {
         value: rawValue ?? '',
         format,
         language,
-        styleClass:
-          typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : undefined,
+        styleClass: typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : undefined,
         style: typeof bodyObj.style === 'string' ? bodyObj.style : undefined,
       },
     ];
   }
 
-  if (
-    bodyObj.type === 'Image' ||
-    (typeof format === 'string' && format.startsWith('image/'))
-  ) {
+  if (bodyObj.type === 'Image' || (typeof format === 'string' && format.startsWith('image/'))) {
     const src = readId(bodyObj as IIIFIdentifiable);
     return src
       ? [
@@ -321,8 +313,7 @@ const normaliseBody = (body: unknown): AnnotationBody[] => {
             type: 'image',
             src,
             format,
-            styleClass:
-              typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : undefined,
+            styleClass: typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : undefined,
             style: typeof bodyObj.style === 'string' ? bodyObj.style : undefined,
           },
         ]
@@ -333,9 +324,7 @@ const normaliseBody = (body: unknown): AnnotationBody[] => {
     {
       type: 'unknown',
       value:
-        typeof bodyObj.value === 'string'
-          ? bodyObj.value
-          : readId(bodyObj as IIIFIdentifiable),
+        typeof bodyObj.value === 'string' ? bodyObj.value : readId(bodyObj as IIIFIdentifiable),
       format,
       language,
       styleClass: typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : undefined,
@@ -347,9 +336,7 @@ const normaliseBody = (body: unknown): AnnotationBody[] => {
 /**
  * Extracts bodies from an IIIF annotation
  */
-const extractBodies = (
-  annotation: IIIFAnnotation | null | undefined,
-): AnnotationBody[] => {
+const extractBodies = (annotation: IIIFAnnotation | null | undefined): AnnotationBody[] => {
   const bodies = normaliseArray(
     (annotation as Record<string, unknown>)?.body ??
       (annotation as Record<string, unknown>)?.resource ??
@@ -513,9 +500,7 @@ const resolveAnnotation = (
     try {
       const parsed = W3CParser.parseAnnotation(annotationObj);
       targetId = parsed.canvasId || targetId;
-      time = parsed.temporal
-        ? { start: parsed.temporal.start, end: parsed.temporal.end }
-        : time;
+      time = parsed.temporal ? { start: parsed.temporal.start, end: parsed.temporal.end } : time;
       if (parsed.shape.type === 'rect') rect = parsed.shape.geometry;
       if (parsed.shape.type === 'point') point = parsed.shape.geometry;
       if (parsed.shape.type === 'polygon' || parsed.shape.type === 'freehand') {
@@ -537,9 +522,7 @@ const resolveAnnotation = (
   // Filter out painting motivation ONLY if body is an image
   // (IIIF v2 uses sc:painting for both canvas images AND text transcriptions)
   if (
-    motivations.some(
-      (m) => m === 'painting' || m.endsWith(':painting') || m.endsWith('/painting'),
-    )
+    motivations.some((m) => m === 'painting' || m.endsWith(':painting') || m.endsWith('/painting'))
   ) {
     const hasImageBody = bodies.some((b) => b.type === 'image');
     if (hasImageBody) {

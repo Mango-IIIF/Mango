@@ -13,6 +13,40 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe('ChapterOverlay', () => {
+  it('loads the first manifest from the empty story state', async () => {
+    const store = createStoryStoreForTest({ chapters: [] });
+    const target = createTarget();
+    const onLoadManifest = vi.fn();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: null,
+        onLoadManifest,
+      },
+    });
+
+    expect(target.textContent).toContain('Load a source');
+    const input = target.querySelector('[data-testid="chapter-manifest"]') as HTMLInputElement;
+    const load = target.querySelector(
+      '[data-testid="chapter-manifest-reload"]',
+    ) as HTMLButtonElement;
+    expect(input.getAttribute('aria-label')).toBe('Manifest URL');
+    expect(load.textContent?.trim()).toBe('Load manifest');
+    expect(load.disabled).toBe(true);
+
+    input.value = 'https://example.org/manifest.json';
+    input.dispatchEvent(new Event('input'));
+    await tick();
+    expect(load.disabled).toBe(false);
+    load.click();
+    expect(onLoadManifest).toHaveBeenCalledWith('https://example.org/manifest.json');
+
+    unmount(instance);
+    target.remove();
+  });
+
   it('updates manifest and triggers reload', async () => {
     const store = createStoryStoreForTest({
       chapters: [
@@ -26,6 +60,7 @@ describe('ChapterOverlay', () => {
     });
     const target = createTarget();
     let reloadPayload: { manifest: string; canvasIndex: number } | null = null;
+    let selectedCanvas = -1;
 
     const instance = mount(ChapterOverlay, {
       target,
@@ -33,16 +68,29 @@ describe('ChapterOverlay', () => {
         story: store.story,
         open: true,
         chapterId: 'chapter-1',
+        canvasIndex: 2,
+        canvasCount: 3,
         language: 'en',
         onUpdateManifest: (chapterId: string, manifest: string) =>
           store.setChapterManifest({ chapterId, manifest }),
         onReloadManifest: (_chapterId: string, manifest: string, canvasIndex: number) => {
           reloadPayload = { manifest, canvasIndex };
         },
+        onSelectCanvas: (canvasIndex: number) => {
+          selectedCanvas = canvasIndex;
+        },
       },
     });
 
     const input = target.querySelector('[data-testid="chapter-manifest"]') as HTMLInputElement;
+    const canvasSelect = target.querySelector(
+      '[data-testid="chapter-canvas-select"]',
+    ) as HTMLSelectElement;
+    expect(canvasSelect.options).toHaveLength(3);
+    expect(canvasSelect.value).toBe('2');
+    canvasSelect.value = '1';
+    canvasSelect.dispatchEvent(new Event('change'));
+    expect(selectedCanvas).toBe(1);
     input.value = 'https://example.org/updated.json';
     input.dispatchEvent(new Event('input'));
     await tick();
@@ -79,6 +127,8 @@ describe('ChapterOverlay', () => {
     });
     const target = createTarget();
     let positioningTriggered = '';
+    const onUpdateChapterPosition = vi.fn();
+    const onSave = vi.fn();
 
     const instance = mount(ChapterOverlay, {
       target,
@@ -92,6 +142,8 @@ describe('ChapterOverlay', () => {
         onSetAnnotationPositioning: (lang: string) => {
           positioningTriggered = lang;
         },
+        onUpdateChapterPosition,
+        onSave,
       },
     });
 
@@ -117,6 +169,8 @@ describe('ChapterOverlay', () => {
       store.story.subscribe((value) => resolve(value))();
     });
     expect((storyValue as any).chapters[0].annotations.en.text).toBe('Note');
+    expect(onUpdateChapterPosition).not.toHaveBeenCalled();
+    expect(onSave).toHaveBeenCalledOnce();
 
     unmount(instance);
     target.remove();

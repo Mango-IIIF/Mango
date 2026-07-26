@@ -14,6 +14,31 @@ export { setChapterManifest } from './state/story.svelte';
 export { resolveManifestForNewChapter } from './story/manifestResolver';
 export { validateStory } from './story/validation';
 export {
+  evaluateChapterTasks,
+  evaluateTaskAvailability,
+  evaluateTaskStatus,
+  taskForValidationMessage,
+  type ChapterInspectorView,
+  type ChapterTaskId,
+  type CompletionState,
+  type TaskAvailability,
+  type TaskStatus,
+} from './story/chapterTasks';
+export {
+  buildChapterAnnotationId,
+  deriveChapterAnnotationBase,
+  validatePublicIdentifier,
+  validatePublicationIdentifiers,
+} from './story/publicIdentifiers';
+export { migrateLegacyChapterTiming, resolveChapterTiming } from './story/timing';
+export {
+  configureCameraTrackPreset,
+  generateCameraPreset,
+  retimeCameraKeyframes,
+  sampleCameraTrack,
+  type CameraTrackSample,
+} from './story/cameraTrack';
+export {
   buildExportEnvelope,
   serializeStoryToIiif,
   type ExportEnvelope,
@@ -44,6 +69,8 @@ export {
   setNarrationSegment,
   removeNarrationSegment,
   setNarrationTrack,
+  setStoryIdentifiers,
+  setChapterCameraTrack,
   updateChapterFromCapture,
   type StoryStoreRunes,
 } from './state/story.svelte';
@@ -52,10 +79,15 @@ export type {
   AnnotationPlacement,
   Chapter,
   ChapterAdvance,
+  ChapterEntryTransition,
+  ChapterCameraKeyframe,
+  ChapterCameraTrack,
   ChapterAnnotation,
   ChapterMedia,
   ChapterModel,
   LanguageMap,
   NarrationSegment,
   NarrationTrack,
+  StoryPublication,
+  StoryState,
 } from './core/types/story';

@@ -2,6 +2,7 @@
   import { Check, Link2, Volume2 } from '@lucide/svelte';
   import type { Readable } from 'svelte/store';
   import type { StoryState } from '../../core/types/story';
+  import { deriveChapterAnnotationBase, validatePublicIdentifier } from '../publicIdentifiers';
 
   export let story: Readable<StoryState>;
   export let open = false;
@@ -12,6 +13,8 @@
   export let onClose: (() => void) | undefined;
   export let onSetNarrationTrack: ((lang: string, src: string) => void) | undefined;
   export let onUpdateStoryTitle: ((lang: string, value: string) => void) | undefined;
+  export let onUpdateStoryIdentifiers:
+    ((id: string, annotationBase: string) => void) | undefined;
 
   let activeLanguage = language;
   let lastLanguageProp = language;
@@ -19,6 +22,9 @@
   let title = '';
   let lastTrackSyncKey = '';
   let lastTitleSyncKey = '';
+  let storyId = '';
+  let annotationBase = '';
+  let lastIdentifierSyncKey = '';
 
   const getTrackSrc = (value: StoryState, lang: string): string => {
     return value.narration?.tracks?.[lang]?.src ?? '';
@@ -37,6 +43,32 @@
       url = trackSrc;
     }
   }
+
+  $: {
+    const nextStoryId = $story.id ?? '';
+    const nextBase = $story.publication?.annotationBase ?? deriveChapterAnnotationBase($story) ?? '';
+    const key = `${open ? '1' : '0'}:${nextStoryId}:${nextBase}`;
+    if (key !== lastIdentifierSyncKey) {
+      lastIdentifierSyncKey = key;
+      storyId = nextStoryId;
+      annotationBase = nextBase;
+    }
+  }
+
+  $: identifiersLocked = Boolean($story.publication?.identifiersLocked);
+  $: storyIdErrors = storyId.trim() ? validatePublicIdentifier(storyId, 'Story ID') : [];
+  $: annotationBaseErrors = annotationBase.trim()
+    ? validatePublicIdentifier(annotationBase, 'Chapter Annotation base')
+    : [];
+  $: changingPublishedBase =
+    $story.publication?.status === 'published' &&
+    Boolean($story.publication.annotationBase) &&
+    annotationBase.trim() !== $story.publication.annotationBase;
+
+  const saveIdentifiers = () => {
+    if (identifiersLocked || storyIdErrors.length || annotationBaseErrors.length) return;
+    onUpdateStoryIdentifiers?.(storyId, annotationBase);
+  };
 
   $: {
     const titleValue = $story.title?.[activeLanguage] ?? '';
@@ -157,6 +189,59 @@
         <p class="narration-overlay__hint">
           Saved as the {activeLanguage.toUpperCase()} value in the AnnotationPage label.
         </p>
+      </section>
+
+      <section class="narration-overlay__section narration-overlay__section--card">
+        <div class="narration-overlay__source-heading">
+          <span class="narration-overlay__source-icon"><Link2 aria-hidden="true" /></span>
+          <span>
+            <strong>Publishing identifiers</strong>
+            <small>Stable public IDs for the story and its chapters</small>
+          </span>
+        </div>
+        <label class="narration-overlay__label">
+          AnnotationPage ID
+          <input
+            class="narration-overlay__input narration-overlay__input--standalone"
+            type="url"
+            data-testid="story-public-id"
+            bind:value={storyId}
+            disabled={identifiersLocked}
+            placeholder="https://museum.example/stories/my-story"
+          />
+        </label>
+        <label class="narration-overlay__label">
+          Chapter Annotation base
+          <input
+            class="narration-overlay__input narration-overlay__input--standalone"
+            type="url"
+            data-testid="story-annotation-base"
+            bind:value={annotationBase}
+            disabled={identifiersLocked}
+            placeholder="Derived from the AnnotationPage ID"
+          />
+        </label>
+        {#if identifiersLocked}
+          <p class="narration-overlay__hint">These identifiers are managed by the publishing host.</p>
+        {:else if changingPublishedBase}
+          <p class="narration-overlay__warning" role="alert">
+            Changing this base will change the public IDs of previously published chapter Annotations.
+          </p>
+        {/if}
+        {#if storyIdErrors.length || annotationBaseErrors.length}
+          <ul class="narration-overlay__warning" role="alert">
+            {#each [...storyIdErrors, ...annotationBaseErrors] as error}<li>{error}</li>{/each}
+          </ul>
+        {/if}
+        <button
+          class="narration-overlay__button narration-overlay__button--accent"
+          type="button"
+          data-testid="story-save-identifiers"
+          disabled={identifiersLocked || storyIdErrors.length > 0 || annotationBaseErrors.length > 0}
+          on:click={saveIdentifiers}
+        >
+          <Check aria-hidden="true" /> Save publishing identifiers
+        </button>
       </section>
 
       <section class="narration-overlay__section narration-overlay__section--card">
@@ -401,6 +486,17 @@
   .narration-overlay__input:disabled {
     opacity: 0.56;
     cursor: not-allowed;
+  }
+
+  .narration-overlay__warning {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 157, 92, 0.45);
+    border-radius: 9px;
+    background: rgba(255, 157, 92, 0.1);
+    color: #ffd2b2;
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   .narration-overlay__player-shell {

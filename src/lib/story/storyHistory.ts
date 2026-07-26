@@ -9,16 +9,18 @@ export type StoryHistory = {
   canRedo: () => boolean;
 };
 
-const cloneStory = (story: StoryState): StoryState => {
+export const cloneStoryValue = <T>(value: T): T => {
   try {
     if (typeof structuredClone === 'function') {
-      return structuredClone(story);
+      return structuredClone(value);
     }
   } catch {
     // Fall back to JSON serialization if story is a reactive proxy or has non-cloneable internals
   }
-  return JSON.parse(JSON.stringify(story));
+  return JSON.parse(JSON.stringify(value));
 };
+
+const cloneStory = (story: StoryState): StoryState => cloneStoryValue(story);
 
 export const createStoryHistory = (initial: StoryState, maxEntries = 100): StoryHistory => {
   const past: StoryState[] = [];

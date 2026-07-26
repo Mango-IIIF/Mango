@@ -5,6 +5,7 @@
   import { normaliseViewerConfig } from '../../config/normalise';
   import type { ViewerEventMap } from '../../core/types/events';
   import type { ViewerConfig } from '../../core/types/config';
+  import type { ChapterAnnotationTool } from '../../core/types/story';
   import type { ViewBox } from '../../core/types/viewer';
   import type { ViewerPlugin } from '../../core/types/plugin';
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
@@ -18,7 +19,7 @@
   import StageToolbar from '../../viewer/ui/StageToolbar.svelte';
   import Gallery from '../../viewer/ui/Gallery.svelte';
   import type { LayerItem } from '../annotations/workspace/LeftSidebar.svelte';
-  import { w3cToResolved } from '../annotations/w3c';
+  import { w3cShapeTool, w3cToResolved } from '../annotations/w3c';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import { createViewerState } from '../../viewer/state/viewerState';
   import { createViewerDerived } from '../../viewer/state/viewerDerived';
@@ -290,6 +291,9 @@
   let annotationEditorTool = $state<
     'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line'
   >('rectangle');
+  let storyBuilderAnnotations = $state<ResolvedAnnotation[]>([]);
+  let storyAnnotationEditing = $state(false);
+  let storyBuilderActiveAnnotationId = $state<string | null>(null);
   let effectiveAnnotationMode = $derived(canDrawAnnotations ? $annotationMode : 'edit');
   let viewerSettingsLayout = $state<'1x1' | '1x2' | '2x1' | '1x2-panel' | '2x2'>('1x1');
   let contentsPanelTab = $state<'toc' | 'transcript'>('toc');
@@ -747,7 +751,10 @@
   });
   onDestroy(unsubscribeActiveId);
 
-  const handleAnnotationCreate = async (payload: { annotation: unknown }) => {
+  const handleAnnotationCreate = async (payload: {
+    annotation: unknown;
+    tool?: ChapterAnnotationTool;
+  }) => {
     const annotation = payload?.annotation;
     if (!annotation || typeof annotation !== 'object') return;
 
@@ -762,11 +769,25 @@
         ? resolved.motivation
         : ['oa:commenting'];
 
+    if (isStoryBuilder) {
+      controller.emitEvent('annotationCreate', {
+        annotation: resolved,
+        tool: payload.tool ?? w3cShapeTool(annotation) ?? undefined,
+      });
+      annotationEditorTool = 'select';
+      controller.setAnnotationMode('edit');
+      return;
+    }
+
     draftAnno = resolved;
     controller.handleAnnotationSelect({ id: resolved.id, preventZoom: true });
   };
 
   const handleAnnotationDelete = async (id: string) => {
+    if (isStoryBuilder) {
+      controller.emitEvent('annotationDelete', { annotationId: id });
+      return;
+    }
     if (draftAnno && draftAnno.id === id) {
       draftAnno = null;
       controller.handleAnnotationClear();
@@ -776,6 +797,10 @@
   };
 
   const handleAnnotationUpdate = (id: string, patch: Partial<ResolvedAnnotation>) => {
+    if (isStoryBuilder) {
+      controller.emitEvent('annotationUpdate', { annotationId: id, patch });
+      return;
+    }
     if (draftAnno && draftAnno.id === id) {
       draftAnno = { ...draftAnno, ...patch };
       return;
@@ -864,6 +889,30 @@
     getModelPose,
     addAnnotation,
     removeAnnotation,
+    setAnnotationTool: (tool) => {
+      annotationEditorTool = tool;
+      controller.setAnnotationMode(tool === 'select' ? 'edit' : 'create');
+    },
+    setStoryAnnotations: (annotations) => {
+      storyBuilderAnnotations = annotations;
+      if (
+        storyBuilderActiveAnnotationId &&
+        !annotations.some((annotation) => annotation.id === storyBuilderActiveAnnotationId)
+      ) {
+        storyBuilderActiveAnnotationId = null;
+      }
+    },
+    setStoryAnnotationEditing: (enabled) => {
+      storyAnnotationEditing = enabled;
+      if (!enabled) {
+        storyBuilderActiveAnnotationId = null;
+        annotationEditorTool = 'select';
+        controller.setAnnotationMode('edit');
+      }
+    },
+    setStoryAnnotationSelection: (annotationId) => {
+      storyBuilderActiveAnnotationId = annotationId;
+    },
     updateLayerOpacity: (id: string, opacity: number) => {
       controller.updateLayerOpacity(id, opacity);
     },
@@ -1900,7 +1949,9 @@
                 activeLayoutImages={$activeLayoutImages}
                 annotations={$overlayAnnotations}
                 highlightIds={$highlightIds}
-                activeAnnotationId={$activeAnnotationId}
+                activeAnnotationId={isStoryBuilder && storyAnnotationEditing
+                  ? storyBuilderActiveAnnotationId
+                  : $activeAnnotationId}
                 hoverAnnotationId={$hoverAnnotationId}
                 overlayPlugins={$pluginSlots.overlay}
                 {pluginContext}
@@ -1938,6 +1989,20 @@
                 onannotationcreate={handleAnnotationCreate}
                 onannotationupdate={(payload) =>
                   handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
+                annotationTool={annotationEditorTool}
+                annotationEditorEnabled={isStoryBuilder && storyAnnotationEditing}
+                annotationEditorAnnotations={storyBuilderAnnotations}
+                {annotationLayers}
+                onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
+                onannotationselect={(payload) => {
+                  if (isStoryBuilder && storyAnnotationEditing) {
+                    storyBuilderActiveAnnotationId = payload.id;
+                  }
+                }}
+                onannotationtoolchange={(detail) => {
+                  annotationEditorTool = detail.tool;
+                  controller.setAnnotationMode(detail.tool === 'select' ? 'edit' : 'create');
+                }}
               />
             {/if}
 
@@ -2337,6 +2402,8 @@
 
   .viewer.viewer--story-builder {
     min-height: 0;
+    gap: 12px;
+    padding: 14px;
   }
 
   .viewer--story-builder .viewer__top-row {
@@ -2689,8 +2756,12 @@
   }
 
   .viewer--story-builder .viewer__grid.viewer__grid--left.viewer__grid--right {
-    grid-template-columns: minmax(240px, 280px) minmax(420px, 1fr) minmax(340px, 400px);
-    column-gap: 12px;
+    grid-template-columns: minmax(250px, 310px) minmax(430px, 1fr) minmax(330px, 370px);
+    column-gap: 14px;
+  }
+
+  .viewer--story-builder .viewer__grid {
+    row-gap: 14px;
   }
 
   .viewer--story-builder .panel-stack--right {
@@ -2869,6 +2940,12 @@
   .stage--story-builder :global(.stage__toolbar--below) {
     margin-top: 0;
     padding-top: 8px;
+  }
+
+  .stage--story-builder {
+    grid-template-rows: minmax(300px, 1fr) auto;
+    align-content: stretch;
+    overflow: hidden;
   }
 
   .stage--with-bottom-toolbar {

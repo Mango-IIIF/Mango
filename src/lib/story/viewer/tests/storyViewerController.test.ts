@@ -314,8 +314,94 @@ describe('storyViewerController.loadChapter', () => {
     runtime.play();
     expect(mockNarration.playSegment).toHaveBeenCalled();
     await Promise.resolve();
+    expect(runtime.getState()).toBe('TRANSITION_DELAY');
     await runtime.loadChapter(1);
-    expect(viewer.setCanvasByIndex).toHaveBeenCalledTimes(3);
+    expect(viewer.setCanvasByIndex).toHaveBeenCalledTimes(2);
+    runtime.destroy();
+  });
+
+  it('plays camera motion with narration, then waits before advancing', async () => {
+    vi.useFakeTimers();
+    const viewer = createMockViewer();
+    let narrationTime = 0;
+    let finishNarration: ((ok: boolean) => void) | undefined;
+    const mockNarration = {
+      playSegment: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishNarration = resolve;
+          }),
+      ),
+      stop: vi.fn(),
+      pause: vi.fn().mockReturnValue(true),
+      resume: vi.fn().mockReturnValue(true),
+      isPlaying: vi.fn().mockReturnValue(true),
+      getCurrentTime: vi.fn(() => narrationTime),
+    };
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      createNarrationPlayer: () => mockNarration as any,
+      now: () => Date.now(),
+      posePaintedTimeoutMs: 100,
+      sourceOpenTimeoutMs: 100,
+    });
+    const motionStory: StoryWithDefaults = {
+      narration: { tracks: { en: { src: 'narration.mp3' } } },
+      chapters: [
+        {
+          id: 'moving',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          transitionTimeMs: 0,
+          presentationDurationMs: 1000,
+          narrationSegment: { en: { start: 0, end: 1 } },
+          cameraTrack: {
+            durationMs: 1000,
+            preset: 'custom',
+            easing: 'linear',
+            keyframes: [
+              { id: 'start', timeMs: 0, viewBox: { x: 0, y: 0, w: 100, h: 100 } },
+              { id: 'end', timeMs: 1000, viewBox: { x: 100, y: 0, w: 100, h: 100 } },
+            ],
+          },
+          advance: { mode: 'auto', delayMs: 500 },
+        },
+        {
+          id: 'next',
+          manifest: 'm1',
+          canvasIndex: 1,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          transitionTimeMs: 0,
+          advance: { mode: 'manual' },
+        },
+      ],
+    };
+
+    const loadPromise = runtime.loadStory(motionStory);
+    await vi.advanceTimersByTimeAsync(150);
+    await loadPromise;
+    viewer.setViewBox.mockClear();
+    viewer.setCanvasByIndex.mockClear();
+
+    runtime.play();
+    narrationTime = 0.5;
+    await vi.advanceTimersByTimeAsync(60);
+    expect(mockNarration.playSegment).toHaveBeenCalledTimes(1);
+    expect(
+      viewer.setViewBox.mock.calls.some(([box]) => box.x > 0 && box.x < 100),
+    ).toBe(true);
+
+    narrationTime = 1;
+    finishNarration?.(true);
+    await Promise.resolve();
+    expect(runtime.getState()).toBe('TRANSITION_DELAY');
+    await vi.advanceTimersByTimeAsync(499);
+    expect(viewer.setCanvasByIndex).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(viewer.setCanvasByIndex).toHaveBeenCalledWith(1);
+
+    runtime.destroy();
+    vi.useRealTimers();
   });
 
   it('pause preserves timer and resumes media', async () => {
@@ -414,7 +500,7 @@ describe('storyViewerController.loadChapter', () => {
     await vi.advanceTimersByTimeAsync(250);
     await loadPromise;
     runtime.play();
-    await vi.advanceTimersByTimeAsync(110);
+    await vi.advanceTimersByTimeAsync(210);
     expect(runtime.getState()).toBe('ENDED');
     runtime.play();
     expect(runtime.getState()).not.toBe('ENDED');

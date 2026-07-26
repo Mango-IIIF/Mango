@@ -8,6 +8,7 @@
     type ShapeData,
   } from '@mango-iiif/annotation';
   import { W3CParser } from '@mango-iiif/w3c-parser';
+  import { normalizedShapeTool } from './w3c';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { LayerItem } from './workspace/LeftSidebar.svelte';
 
@@ -24,10 +25,10 @@
     activeTool?: Tool;
     layers?: LayerItem[];
     ontoolchange?: ((payload: { tool: Tool }) => void) | undefined;
-    onannotationcreate?: ((payload: { annotation: unknown }) => void) | undefined;
+    onannotationcreate?:
+      ((payload: { annotation: unknown; tool: Exclude<Tool, 'select'> }) => void) | undefined;
     onannotationupdate?:
-      | ((payload: { id: string; patch: Partial<ResolvedAnnotation> }) => void)
-      | undefined;
+      ((payload: { id: string; patch: Partial<ResolvedAnnotation> }) => void) | undefined;
     onannotationdelete?: ((payload: { id: string }) => void) | undefined;
     onannotationselect?: ((payload: { id: string }) => void) | undefined;
   }
@@ -57,31 +58,69 @@
       layer: annotation.targetStyleClass,
       label: annotation.label,
       text: annotation.text,
-      data: annotation,
     };
-    if (annotation.rect) return { ...shared, type: 'rect', geometry: annotation.rect };
-    if (annotation.point) return { ...shared, type: 'point', geometry: annotation.point };
+    if (annotation.rect) {
+      return {
+        ...shared,
+        type: 'rect',
+        geometry: {
+          x: annotation.rect.x,
+          y: annotation.rect.y,
+          w: annotation.rect.w,
+          h: annotation.rect.h,
+        },
+      };
+    }
+    if (annotation.point) {
+      return {
+        ...shared,
+        type: 'point',
+        geometry: { x: annotation.point.x, y: annotation.point.y },
+      };
+    }
     if (annotation.polygon?.points?.length) {
-      return { ...shared, type: 'polygon', geometry: { points: annotation.polygon.points } };
+      if (annotation.shapeType === 'line' && annotation.polygon.points.length >= 2) {
+        const start = annotation.polygon.points[0];
+        const end = annotation.polygon.points[annotation.polygon.points.length - 1];
+        return {
+          ...shared,
+          type: 'line',
+          geometry: {
+            start: { x: start.x, y: start.y },
+            end: { x: end.x, y: end.y },
+          },
+        };
+      }
+      const points = annotation.polygon.points.map((point) => ({ x: point.x, y: point.y }));
+      if (annotation.shapeType === 'freehand') {
+        return {
+          ...shared,
+          type: 'freehand',
+          geometry: { points },
+        };
+      }
+      return { ...shared, type: 'polygon', geometry: { points } };
     }
     return null;
   };
 
   const toPatch = (shape: ShapeData): Partial<ResolvedAnnotation> => {
     if (shape.type === 'rect') {
-      return { rect: shape.geometry, point: undefined, polygon: undefined };
+      return { shapeType: 'rect', rect: shape.geometry, point: undefined, polygon: undefined };
     }
     if (shape.type === 'point') {
-      return { rect: undefined, point: shape.geometry, polygon: undefined };
+      return { shapeType: 'point', rect: undefined, point: shape.geometry, polygon: undefined };
     }
     if (shape.type === 'line') {
       return {
+        shapeType: 'line',
         rect: undefined,
         point: undefined,
         polygon: { points: [shape.geometry.start, shape.geometry.end] },
       };
     }
     return {
+      shapeType: shape.type,
       rect: undefined,
       point: undefined,
       polygon: { points: shape.geometry.points },
@@ -99,9 +138,7 @@
       : longHex
         ? longHex.slice(1).map((channel) => parseInt(channel, 16))
         : null;
-    return channels
-      ? `rgba(${channels[0]}, ${channels[1]}, ${channels[2]}, ${opacity})`
-      : value;
+    return channels ? `rgba(${channels[0]}, ${channels[1]}, ${channels[2]}, ${opacity})` : value;
   };
 
   const themeForLayers = (items: LayerItem[]): AnnotationTheme => ({
@@ -135,6 +172,8 @@
       },
       onAnnotationCreated: (shape) => {
         if (!canvasId) return;
+        const tool = normalizedShapeTool(shape);
+        if (!tool) return;
         const annotation = W3CParser.serialize({
           id: shape.id,
           canvasId,
@@ -143,7 +182,7 @@
           layer: shape.layer,
           shape,
         });
-        onannotationcreate?.({ annotation });
+        onannotationcreate?.({ annotation, tool });
       },
       onAnnotationUpdated: (shape) => {
         onannotationupdate?.({ id: shape.id, patch: toPatch(shape) });

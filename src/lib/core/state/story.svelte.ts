@@ -7,6 +7,8 @@ import type {
   ChapterMedia,
   ChapterModel,
   NarrationSegment,
+  ChapterCameraTrack,
+  ChapterDrawingAnnotation,
   StoryState,
 } from '../types/story';
 
@@ -19,6 +21,11 @@ export type CapturePayload = {
   model?: ChapterModel;
   modelOptions?: ModelPoseOptions;
   layerOpacities?: Record<string, number>;
+  entryTransition?: Chapter['entryTransition'];
+  presentationDurationMs?: number;
+  transitionTimeMs?: number;
+  cameraTrack?: ChapterCameraTrack;
+  drawingAnnotations?: ChapterDrawingAnnotation[];
 };
 
 export type AddChapterPayload = {
@@ -100,6 +107,16 @@ export type StoryMetadataPayload = {
   value?: string;
 };
 
+export type StoryIdentifiersPayload = {
+  id?: string;
+  annotationBase?: string;
+};
+
+export type ChapterCameraTrackPayload = {
+  chapterId: string;
+  cameraTrack?: ChapterCameraTrack;
+};
+
 export type ReorderChapterPayload = {
   chapterId: string;
   targetChapterId: string;
@@ -141,6 +158,13 @@ const applyCapture = (chapter: Chapter, capture: CapturePayload): Chapter => {
   if (capture.model) next.model = capture.model;
   if (capture.modelOptions) next.modelOptions = capture.modelOptions;
   if (capture.layerOpacities) next.layerOpacities = capture.layerOpacities;
+  if (capture.entryTransition) next.entryTransition = capture.entryTransition;
+  if (capture.presentationDurationMs !== undefined) {
+    next.presentationDurationMs = capture.presentationDurationMs;
+  }
+  if (capture.transitionTimeMs !== undefined) next.transitionTimeMs = capture.transitionTimeMs;
+  if (capture.cameraTrack) next.cameraTrack = capture.cameraTrack;
+  if (capture.drawingAnnotations) next.drawingAnnotations = capture.drawingAnnotations;
 
   return next;
 };
@@ -441,6 +465,39 @@ export const setStoryTitle = (story: StoryState, payload: StoryMetadataPayload):
   };
 };
 
+export const setStoryIdentifiers = (
+  story: StoryState,
+  payload: StoryIdentifiersPayload,
+): StoryState => {
+  if (story.publication?.identifiersLocked) return story;
+  const id = payload.id?.trim() || undefined;
+  const annotationBase = payload.annotationBase?.trim() || undefined;
+  return {
+    ...story,
+    id,
+    publication: {
+      ...story.publication,
+      ...(annotationBase ? { annotationBase } : {}),
+    },
+  };
+};
+
+export const setChapterCameraTrack = (
+  story: StoryState,
+  payload: ChapterCameraTrackPayload,
+): StoryState => {
+  const index = story.chapters.findIndex((chapter) => chapter.id === payload.chapterId);
+  if (index === -1) return story;
+  const nextChapters = [...story.chapters];
+  const current = nextChapters[index];
+  if (!current) return story;
+  const { cameraTrack: _previous, ...withoutTrack } = current;
+  nextChapters[index] = payload.cameraTrack
+    ? { ...withoutTrack, cameraTrack: payload.cameraTrack }
+    : withoutTrack;
+  return { ...story, chapters: nextChapters };
+};
+
 export const setChapterDescription = (
   story: StoryState,
   payload: ChapterMetadataPayload,
@@ -594,6 +651,14 @@ export function createStoryStore(initial?: StoryState) {
 
     setStoryTitle(payload: StoryMetadataPayload): void {
       story = setStoryTitle(story, payload);
+    },
+
+    setStoryIdentifiers(payload: StoryIdentifiersPayload): void {
+      story = setStoryIdentifiers(story, payload);
+    },
+
+    setChapterCameraTrack(payload: ChapterCameraTrackPayload): void {
+      story = setChapterCameraTrack(story, payload);
     },
 
     setChapterDescription(payload: ChapterMetadataPayload): void {

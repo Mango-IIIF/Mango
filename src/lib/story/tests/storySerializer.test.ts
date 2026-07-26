@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { W3CParser } from '@mango-iiif/w3c-parser';
 import { loadStoryIntoStore, serializeStoryToIiif } from '../storySerializer';
 import { normaliseStoryInput } from '../viewer/storyLoader';
 import type { StoryState } from '../../core/types/story';
@@ -43,6 +44,18 @@ describe('Story IIIF Serialization and Parsing', () => {
           },
         },
         annotationPlacement: { x: 10, y: 20, w: 300, h: 200 },
+        drawingAnnotations: [
+          { id: 'point-1', type: 'point', point: { x: 120, y: 180 } },
+          {
+            id: 'polygon-1',
+            type: 'polygon',
+            points: [
+              { x: 100, y: 100 },
+              { x: 200, y: 100 },
+              { x: 150, y: 220 },
+            ],
+          },
+        ],
         advance: { mode: 'auto', delayMs: 4500 },
         layerOpacities: {
           'https://example.com/layers/natural': 0.25,
@@ -71,16 +84,14 @@ describe('Story IIIF Serialization and Parsing', () => {
   it('should serialize story into a valid IIIF Presentation v3 AnnotationPage', () => {
     const serialized = serializeStoryToIiif(sampleStory);
 
-    expect(serialized['@context'][0]).toBe(
-      'http://iiif.io/api/presentation/3/context.json',
-    );
+    expect(serialized['@context'][0]).toBe('http://iiif.io/api/presentation/3/context.json');
     expect(serialized['mango:storyVersion']).toBe(MANGO_STORY_VERSION);
     expect(serialized.id).toBe(sampleStory.id);
     expect(serialized.type).toBe('AnnotationPage');
     expect(serialized.label.en[0]).toBe('My Awesome Story');
     expect(serialized.label.cy[0]).toBe('Fy Stori Wych');
 
-    expect(serialized.items).toHaveLength(3);
+    expect(serialized.items).toHaveLength(5);
     const annotation = serialized.items[0];
     expect(annotation.type).toBe('Annotation');
     expect(annotation.motivation).toBe('supplementing');
@@ -91,40 +102,46 @@ describe('Story IIIF Serialization and Parsing', () => {
     expect(annotation.target.source).toBe(
       'https://manifests.collections.yale.edu/ycba/obj/34/canvas/0#t=170,183',
     );
-    expect(annotation.target.partOf.id).toBe(
-      'https://manifests.collections.yale.edu/ycba/obj/34',
-    );
-    expect(annotation.target.selector.value).toBe(
-      'xywh=0,100,1000,500&t=170,183',
-    ); // x=-500 clamped to 0, temporal media appended!
+    expect(annotation.target.partOf.id).toBe('https://manifests.collections.yale.edu/ycba/obj/34');
+    expect(annotation.target.selector.value).toBe('xywh=0,100,1000,500&t=170,183'); // x=-500 clamped to 0, temporal media appended!
 
     // Sound and Textual bodies checks
     expect(Array.isArray(annotation.body)).toBe(true);
-    const soundEn = annotation.body.find(
-      (b: any) => b.type === 'Sound' && b.language === 'en',
-    );
+    const soundEn = annotation.body.find((b: any) => b.type === 'Sound' && b.language === 'en');
     expect(soundEn).toBeDefined();
     expect(soundEn.id).toBe('https://example.com/audio-en.mp3#t=0,12.5');
 
-    const soundCy = annotation.body.find(
-      (b: any) => b.type === 'Sound' && b.language === 'cy',
-    );
+    const soundCy = annotation.body.find((b: any) => b.type === 'Sound' && b.language === 'cy');
     expect(soundCy).toBeDefined();
     expect(soundCy.id).toBe('https://example.com/audio-cy.mp3#t=0,14.2');
 
-    const textOverlay = serialized.items.find(
-      (item) => item['mango:role'] === 'overlay',
-    );
+    const textOverlay = serialized.items.find((item) => item['mango:role'] === 'overlay');
     expect(textOverlay).toBeDefined();
     expect(textOverlay?.['mango:chapterId']).toBe('chapter_1');
     expect((textOverlay?.body as any).value).toBe('Look at this detail!');
-    expect((textOverlay?.target as any).selector.value).toBe(
-      'xywh=4500,6500,800,300',
-    );
+    expect((textOverlay?.target as any).selector.value).toBe('xywh=4500,6500,800,300');
 
-    const viewerState = annotation.body.find(
-      (b: any) => b.type === MANGO_VIEWER_STATE_TYPE,
+    const drawingOverlays = serialized.items.filter((item) =>
+      item.id.includes('/overlay/drawing/'),
     );
+    expect(drawingOverlays).toHaveLength(2);
+    expect(drawingOverlays.every((item) => item.motivation === 'highlighting')).toBe(true);
+    expect(W3CParser.parseAnnotation(drawingOverlays[0]).shape).toEqual({
+      type: 'point',
+      geometry: { x: 120, y: 180 },
+    });
+    expect(W3CParser.parseAnnotation(drawingOverlays[1]).shape).toEqual({
+      type: 'polygon',
+      geometry: {
+        points: [
+          { x: 100, y: 100 },
+          { x: 200, y: 100 },
+          { x: 150, y: 220 },
+        ],
+      },
+    });
+
+    const viewerState = annotation.body.find((b: any) => b.type === MANGO_VIEWER_STATE_TYPE);
     expect(viewerState.format).toBe(MANGO_VIEWER_STATE_FORMAT);
     expect(viewerState['mango:storyVersion']).toBe(MANGO_STORY_VERSION);
     expect(viewerState.mangoState).toEqual({
@@ -137,6 +154,18 @@ describe('Story IIIF Serialization and Parsing', () => {
         'https://example.com/layers/xray': 0.75,
       },
       annotationPlacement: { x: 10, y: 20, w: 300, h: 200 },
+      drawingAnnotations: [
+        { id: 'point-1', type: 'point', point: { x: 120, y: 180 } },
+        {
+          id: 'polygon-1',
+          type: 'polygon',
+          points: [
+            { x: 100, y: 100 },
+            { x: 200, y: 100 },
+            { x: 150, y: 220 },
+          ],
+        },
+      ],
       playback: {
         advance: 'auto',
         delayMs: 4500,
@@ -144,7 +173,7 @@ describe('Story IIIF Serialization and Parsing', () => {
       },
     });
 
-    const modelAnnotation = serialized.items[2];
+    const modelAnnotation = serialized.items.find((item) => item.label?.en?.[0] === 'Model detail')!;
     expect(modelAnnotation.id).toContain('model%20chapter');
     expect(modelAnnotation.target.selector).toBeUndefined();
   });
@@ -159,12 +188,8 @@ describe('Story IIIF Serialization and Parsing', () => {
     expect(parsed.title?.en).toBe('My Awesome Story');
     expect(parsed.id).toBe(sampleStory.id);
     expect(parsed.title?.cy).toBe('Fy Stori Wych');
-    expect(parsed.narration?.tracks?.en.src).toBe(
-      'https://example.com/audio-en.mp3',
-    );
-    expect(parsed.narration?.tracks?.cy.src).toBe(
-      'https://example.com/audio-cy.mp3',
-    );
+    expect(parsed.narration?.tracks?.en.src).toBe('https://example.com/audio-en.mp3');
+    expect(parsed.narration?.tracks?.cy.src).toBe('https://example.com/audio-cy.mp3');
 
     expect(parsed.chapters).toHaveLength(2);
     const chapter = parsed.chapters[0];
@@ -172,13 +197,9 @@ describe('Story IIIF Serialization and Parsing', () => {
     expect(chapter.title?.en).toBe('Chapter 1');
     expect(chapter.description?.en).toBe('This is the first chapter');
     expect(chapter.transitionTimeMs).toBe(2000);
-    expect(chapter.manifest).toBe(
-      'https://manifests.collections.yale.edu/ycba/obj/34',
-    );
+    expect(chapter.manifest).toBe('https://manifests.collections.yale.edu/ycba/obj/34');
     expect(chapter.canvasIndex).toBe(0);
-    expect(chapter.canvasId).toBe(
-      'https://manifests.collections.yale.edu/ycba/obj/34/canvas/0',
-    );
+    expect(chapter.canvasId).toBe('https://manifests.collections.yale.edu/ycba/obj/34/canvas/0');
 
     // The standard target is clamped, while Mango state retains the exact pose.
     expect(chapter.viewBox).toEqual({ x: -500, y: 100, w: 1000, h: 500 });
@@ -202,6 +223,7 @@ describe('Story IIIF Serialization and Parsing', () => {
       w: 300,
       h: 200,
     });
+    expect(chapter.drawingAnnotations).toEqual(sampleStory.chapters[0].drawingAnnotations);
     expect(chapter.advance).toEqual({ mode: 'auto', delayMs: 4500 });
     expect(chapter.layerOpacities).toEqual({
       'https://example.com/layers/natural': 0.25,
@@ -212,9 +234,7 @@ describe('Story IIIF Serialization and Parsing', () => {
     expect(modelChapter.id).toBe('model chapter');
     expect(modelChapter.canvasIndex).toBe(3);
     expect(modelChapter.model).toEqual(sampleStory.chapters[1].model);
-    expect(modelChapter.modelOptions).toEqual(
-      sampleStory.chapters[1].modelOptions,
-    );
+    expect(modelChapter.modelOptions).toEqual(sampleStory.chapters[1].modelOptions);
     expect(modelChapter.advance).toEqual({ mode: 'manual' });
     expect(modelChapter.transitionTimeMs).toBe(1200);
   });
@@ -229,6 +249,122 @@ describe('Story IIIF Serialization and Parsing', () => {
     expect(serialized.items[0].id).toBe(
       'https://museum.example/stories/42/chapters/annotation/chapter_1',
     );
+  });
+
+  it('round-trips in-chapter camera points independently from entry timing', () => {
+    const story: StoryState = {
+      ...sampleStory,
+      chapters: [
+        {
+          ...sampleStory.chapters[0],
+          entryTransition: { type: 'cut', durationMs: 0 },
+          cameraTrack: {
+            durationMs: 6000,
+            keyframes: [
+              {
+                id: 'point-a',
+                timeMs: 0,
+                focus: { x: 500, y: 250 },
+                viewBox: { x: 0, y: 0, w: 1000, h: 500 },
+              },
+              {
+                id: 'point-b',
+                timeMs: 6000,
+                focus: { x: 450, y: 225 },
+                viewBox: { x: 200, y: 100, w: 500, h: 250 },
+              },
+            ],
+          },
+        },
+      ],
+    };
+    const result = normaliseStoryInput(serializeStoryToIiif(story));
+    expect(result.story?.chapters[0].entryTransition).toEqual({ type: 'cut', durationMs: 0 });
+    expect(result.story?.chapters[0].cameraTrack).toEqual(story.chapters[0].cameraTrack);
+  });
+
+  it('exports rectangle, line, and freehand drawings as parseable Web Annotations', () => {
+    const serialized = serializeStoryToIiif({
+      id: 'https://example.org/story/annotations',
+      chapters: [
+        {
+          id: 'chapter-1',
+          manifest: 'https://example.org/manifest',
+          canvasIndex: 0,
+          canvasId: 'https://example.org/canvas/1',
+          drawingAnnotations: [
+            { id: 'rect', type: 'rectangle', rect: { x: 10, y: 20, w: 30, h: 40 } },
+            {
+              id: 'line',
+              type: 'line',
+              text: 'A route',
+              points: [
+                { x: 5, y: 6 },
+                { x: 50, y: 60 },
+              ],
+            },
+            {
+              id: 'freehand',
+              type: 'freehand',
+              points: [
+                { x: 1, y: 2 },
+                { x: 3, y: 5 },
+                { x: 8, y: 13 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const drawings = serialized.items.filter((item) => item.id.includes('/overlay/drawing/'));
+    expect(drawings).toHaveLength(3);
+    expect(drawings.map((item) => W3CParser.parseAnnotation(item).shape.type)).toEqual([
+      'rect',
+      'line',
+      'freehand',
+    ]);
+    expect(drawings[0].motivation).toBe('highlighting');
+    expect(drawings[0].body).toBeUndefined();
+    expect(drawings[1].motivation).toBe('commenting');
+    expect((drawings[1].body as { value: string }).value).toBe('A route');
+  });
+
+  it('exports relative text-box placement as a valid spatial selector', () => {
+    const withCapturedView = serializeStoryToIiif({
+      chapters: [
+        {
+          id: 'chapter-1',
+          manifest: 'https://example.org/manifest',
+          canvasIndex: 0,
+          canvasId: 'https://example.org/canvas/1',
+          viewBox: { x: 100, y: 200, w: 1000, h: 500 },
+          annotations: {
+            en: { text: 'Relative note', placement: { x: 0.2, y: 0.3, w: 0.4, h: 0.2 } },
+          },
+        },
+      ],
+    });
+    const overlay = withCapturedView.items.find((item) => item['mango:role'] === 'overlay')!;
+    expect((overlay.target as any).selector.value).toBe('xywh=300,350,400,100');
+
+    const withoutCapturedView = serializeStoryToIiif({
+      chapters: [
+        {
+          id: 'chapter-1',
+          manifest: 'https://example.org/manifest',
+          canvasIndex: 0,
+          canvasId: 'https://example.org/canvas/1',
+          annotations: {
+            en: { text: 'Percent note', placement: { x: 0.1, y: 0.2, w: 0.3, h: 0.4 } },
+          },
+        },
+      ],
+    });
+    const percentOverlay = withoutCapturedView.items.find(
+      (item) => item['mango:role'] === 'overlay',
+    )!;
+    expect((percentOverlay.target as any).selector.value).toBe('xywh=percent:10,20,30,40');
   });
 
   it('restores builder advance delays without replacing them with transition timing', () => {

@@ -103,6 +103,8 @@
             initialStory: loadedStory ?? undefined,
             languages: normalisedConfig.story?.languages,
             annotationPageId: normalisedConfig.story?.annotationPageId,
+            annotationBase: normalisedConfig.story?.annotationBase,
+            identifiersLocked: normalisedConfig.story?.identifiersLocked,
           });
         });
       });
