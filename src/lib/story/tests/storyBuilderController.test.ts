@@ -191,6 +191,10 @@ describe('story builder narration defaults', () => {
       start: 0,
       end: 1985.024,
     });
+    expect(get(controller.story).chapters[0].advance).toEqual({
+      mode: 'auto',
+      delayMs: 2000,
+    });
 
     controller.assignMediaSegment(12.5, 42);
     expect(get(controller.story).chapters[0].media).toEqual({ start: 12.5, end: 42 });
@@ -204,6 +208,14 @@ describe('story builder narration defaults', () => {
     controller.stopPreviewMediaSegment();
     expect(viewer.pause).toHaveBeenCalledOnce();
     expect(viewer.seekTo).toHaveBeenLastCalledWith(12.5);
+
+    controller.updateAdvanceMode('auto');
+    controller.updateDelay(3500);
+    controller.addChapter();
+    expect(get(controller.story).chapters[1].advance).toEqual({
+      mode: 'auto',
+      delayMs: 3500,
+    });
     detach();
   });
 });

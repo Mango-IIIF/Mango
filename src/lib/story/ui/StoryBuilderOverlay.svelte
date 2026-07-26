@@ -36,6 +36,7 @@
   export let mediaType: Readable<MediaType | null>;
   export let mediaMarks: Readable<MediaMarksState>;
   export let avMarksValid: Readable<boolean>;
+  export let transitionDelayDefault: Readable<number>;
   export let saveModalOpen: Readable<boolean>;
   export let saveModalPayload: Readable<ExportEnvelope | null>;
   export let onCloseSaveModal: () => void;
@@ -64,6 +65,7 @@
   export let onReloadManifest: (manifest: string, canvasIndex: number) => void;
   export let onSelectCanvas: (canvasIndex: number) => void;
   export let onLoadManifest: (manifest: string) => void;
+  export let onAddChapter: () => void;
   export let onUpdateChapterTitle: (lang: string, value: string) => void;
   export let onUpdateChapterDescription: (lang: string, value: string) => void;
   export let onUpdateAnnotationText: (lang: string, text: string) => void;
@@ -102,7 +104,7 @@
   $: chapterOpen =
     currentMode === 'chapterEdit' ||
     (Boolean(chapterId) && currentMode !== 'narrationPanel') ||
-    (!manifestValue && currentMode !== 'narrationPanel');
+    ((!manifestValue || $story.chapters.length === 0) && currentMode !== 'narrationPanel');
   let overlayAnnotationLanguage = language;
   $: overlayAnnotationLanguage = $annotationLanguage ?? language;
   let exportPayload: ExportEnvelope | null = null;
@@ -361,9 +363,7 @@
     };
   }
   $: motionReferenceViewBox =
-    currentViewBox ??
-    $story.chapters.find((entry) => entry.id === chapterId)?.viewBox ??
-    null;
+    currentViewBox ?? $story.chapters.find((entry) => entry.id === chapterId)?.viewBox ?? null;
   $: effectiveMotionPlacementFocus =
     motionPlacementFocus ??
     $motionPointDraft?.focus ??
@@ -438,7 +438,7 @@
         {onUpdateStoryIdentifiers}
         {onAssignSegment}
       />
-    {:else if chapterId || currentMode === 'chapterEdit' || !manifestValue}
+    {:else if chapterId || currentMode === 'chapterEdit' || !manifestValue || $story.chapters.length === 0}
       <StoryChapterOverlay
         {story}
         open={chapterOpen}
@@ -452,6 +452,7 @@
         {mediaType}
         {mediaMarks}
         {avMarksValid}
+        transitionDelayDefaultMs={$transitionDelayDefault}
         language={overlayAnnotationLanguage}
         {languages}
         onClose={onCloseChapter}
@@ -463,6 +464,7 @@
         {onStopPreviewMediaSegment}
         onUpdateManifest={(chapterId, manifest) => onUpdateManifest(manifest)}
         {onLoadManifest}
+        onCreateChapter={onAddChapter}
         onReloadManifest={(chapterId, manifest, canvasIndex) =>
           onReloadManifest(manifest, canvasIndex)}
         {onSelectCanvas}
@@ -613,8 +615,7 @@
             disabled={!effectiveMotionPlacementFocus}
             on:click={() =>
               effectiveMotionPlacementFocus &&
-              onConfirmMotionPointPositioning(effectiveMotionPlacementFocus)}
-            >Use this point</button
+              onConfirmMotionPointPositioning(effectiveMotionPlacementFocus)}>Use this point</button
           >
         </div>
       </div>

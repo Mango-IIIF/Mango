@@ -36,6 +36,13 @@ describe('Chapter dashboard navigation', () => {
     expect(target.querySelector('#chapter-dashboard-title')?.textContent).toContain(
       'Chapter tools',
     );
+    const narration = target.querySelector('[data-task-id="audio-timing"]') as HTMLElement;
+    expect(narration.textContent).toContain('Narration');
+    expect(narration.textContent).toContain('Not configured');
+    expect(narration.textContent).not.toContain('advance');
+    expect(target.querySelector('[data-task-id="transition-timing"]')?.textContent).toContain(
+      'Chapter transition time',
+    );
     const details = target.querySelector('[data-task-id="details"] button') as HTMLButtonElement;
     expect(details.getAttribute('aria-label')).toContain('0/2 languages');
     details.click();

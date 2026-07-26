@@ -170,6 +170,35 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
+  it("creates the first chapter after the manifest canvases are ready", () => {
+    const target = createTarget();
+    const onCreateChapter = vi.fn();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: createStoryStoreForTest({ chapters: [] }).story,
+        open: true,
+        docked: true,
+        chapterId: null,
+        currentManifest: "https://example.org/manifest.json",
+        canvasCount: 2,
+        onCreateChapter,
+      },
+    });
+
+    const onboarding = target.textContent?.replace(/\s+/g, " ") ?? "";
+    expect(onboarding).toContain("Step 2 of 2");
+    expect(onboarding).toContain("Image placement can be adjusted afterwards");
+    const create = target.querySelector(
+      '[data-testid="chapter-create-first"]',
+    ) as HTMLButtonElement;
+    create.click();
+    expect(onCreateChapter).toHaveBeenCalledOnce();
+
+    unmount(instance);
+    target.remove();
+  });
+
   it("updates manifest and triggers reload", async () => {
     const store = createStoryStoreForTest({
       chapters: [
@@ -312,7 +341,7 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("stores advance mode and delay", async () => {
+  it("stores chapter transition time independently", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -341,9 +370,22 @@ describe("ChapterOverlay", () => {
       },
     });
 
-    const delayInput = target.querySelector(
-      '[data-testid="chapter-advance-delay"]',
+    const transitionTiming = target.querySelector(
+      '[data-task-id="transition-timing"] button',
+    ) as HTMLButtonElement;
+    transitionTiming.click();
+    await tick();
+
+    const visibleTask = target.querySelector(
+      ".chapter-overlay__task:not([hidden])",
+    ) as HTMLElement;
+    expect(visibleTask.textContent).toContain("Chapter transition time");
+    expect(visibleTask.textContent).not.toContain("Advance timing");
+
+    const delayInput = visibleTask.querySelector(
+      '[data-testid="chapter-transition-delay"]',
     ) as HTMLInputElement;
+    expect(delayInput.value).toBe("2");
     delayInput.value = "3";
     delayInput.dispatchEvent(new Event("input"));
 

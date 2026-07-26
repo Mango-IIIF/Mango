@@ -56,6 +56,7 @@
     markOut: null,
   });
   export let avMarksValid: Readable<boolean> = readable(true);
+  export let transitionDelayDefaultMs = 2000;
   export let language = "en";
   export let languages: string[] = ["en"];
   export let currentManifest: string | null = null;
@@ -79,6 +80,7 @@
   export let onUpdateManifest:
     ((chapterId: string, manifest: string) => void) | undefined;
   export let onLoadManifest: ((manifest: string) => void) | undefined;
+  export let onCreateChapter: (() => void) | undefined;
   export let onReloadManifest:
     | ((chapterId: string, manifest: string, canvasIndex: number) => void)
     | undefined;
@@ -145,10 +147,9 @@
     DEFAULT_ANNOTATION_PLACEMENT,
   );
   let advanceModeDraft: ChapterAdvance["mode"] = "manual";
-  let delayDraft: number | undefined = 2000;
+  let delayDraft: number | undefined = undefined;
   let lastChapterId: string | null = null;
   let lastCurrentManifest: string | null = null;
-  let pendingDraftApply = false;
   let saveDisabled = false;
   let markInDraft = "";
   let markOutDraft = "";
@@ -177,7 +178,8 @@
     details: "Details",
     focus: "Annotations",
     motion: "Motion",
-    "audio-timing": "Narration and advance",
+    "audio-timing": "Narration",
+    "transition-timing": "Chapter transition time",
     "media-timing": "Media timing",
     layers: "Layers",
     comparison: "Comparison",
@@ -187,7 +189,8 @@
     details: "Save details",
     focus: "Save annotations",
     motion: "Save motion",
-    "audio-timing": "Save narration and advance",
+    "audio-timing": "Save narration",
+    "transition-timing": "Save chapter transition time",
     "media-timing": "Save media timing",
     layers: "Save layers",
     comparison: "Save comparison",
@@ -259,7 +262,6 @@
   let narrationSectionCollapsed = false;
   let avSectionCollapsed = false;
   let annotationSectionCollapsed = false;
-  let transitionSectionCollapsed = false;
   let lastSectionSyncKey = "";
 
   $: if (currentNarrationAudioRef) {
@@ -547,10 +549,11 @@
       chapterPlacementFallback ??
       cloneAnnotationPlacement(DEFAULT_ANNOTATION_PLACEMENT);
 
-    advanceModeDraft = chapter?.advance?.mode ?? advanceModeDraft ?? "manual";
+    advanceModeDraft = chapter?.advance?.mode ?? "auto";
     delayDraft =
-      chapter?.advance?.delayMs ??
-      (delayDraft === undefined ? 2000 : delayDraft);
+      chapter?.advance?.mode === "manual"
+        ? undefined
+        : (chapter?.advance?.delayMs ?? transitionDelayDefaultMs);
 
     if (!chapter && currentManifest && manifestDraft.trim() === "") {
       manifestDraft = currentManifest;
@@ -605,15 +608,17 @@
       placementDraft = nextPlacement;
     }
 
-    if (chapter.advance?.mode && advanceModeDraft !== chapter.advance.mode) {
-      advanceModeDraft = chapter.advance.mode;
+    const nextAdvanceMode = chapter.advance?.mode ?? "auto";
+    if (advanceModeDraft !== nextAdvanceMode) {
+      advanceModeDraft = nextAdvanceMode;
     }
 
-    if (
-      chapter.advance?.delayMs !== undefined &&
-      delayDraft !== chapter.advance.delayMs
-    ) {
-      delayDraft = chapter.advance.delayMs;
+    const nextDelay =
+      chapter.advance?.mode === "manual"
+        ? undefined
+        : (chapter.advance?.delayMs ?? transitionDelayDefaultMs);
+    if (delayDraft !== nextDelay) {
+      delayDraft = nextDelay;
     }
   }
 
@@ -669,14 +674,7 @@
     }
 
     onUpdateAnnotationPlacement?.(targetId, activeLanguage, placementDraft);
-    onUpdateAdvanceMode?.(targetId, advanceModeDraft);
-    onUpdateDelay?.(targetId, delayDraft);
   };
-
-  $: if (pendingDraftApply && chapterId && chapter) {
-    pendingDraftApply = false;
-    applyDrafts(chapterId);
-  }
 
   $: fallbackPlacement = Object.values(chapter?.annotations ?? {})
     .map((entry) => coerceAnnotationPlacement(entry?.placement))
@@ -747,6 +745,14 @@
     if (!chapterId || !chapter) return;
     commitMediaMarks();
     applyDrafts(chapterId);
+    if (
+      inspectorView.mode === "task" &&
+      inspectorView.task === "transition-timing"
+    ) {
+      const nextDelay = delayDraft ?? transitionDelayDefaultMs;
+      onUpdateAdvanceMode?.(chapterId, "auto");
+      onUpdateDelay?.(chapterId, nextDelay);
+    }
     saveAcknowledged = true;
     if (saveFeedbackTimeout) clearTimeout(saveFeedbackTimeout);
     saveFeedbackTimeout = setTimeout(() => {
@@ -809,8 +815,6 @@
       avSectionCollapsed = !hasValidRange(markInDraft, markOutDraft);
 
       annotationSectionCollapsed = false;
-
-      transitionSectionCollapsed = delayDraft === undefined;
     }
   }
 
@@ -952,8 +956,9 @@
         {:else if inspectorView.mode === "dashboard"}
           <div class="chapter-overlay__empty-source">
             <p class="chapter-overlay__hint">
-              Load a IIIF Manifest, choose the view you want, then capture your
-              first chapter.
+              Add the source for your story, choose its starting canvas, and
+              create the first chapter. You can adjust image placement from the
+              chapter tools afterwards.
             </p>
             <ChapterCameraConfig
               section="source"
@@ -962,15 +967,15 @@
               {canvasIndex}
               {canvasCount}
               {manifestDraft}
-              {transitionSectionCollapsed}
+              sourceLoaded={Boolean(
+                currentManifest && currentManifest === manifestDraft.trim(),
+              )}
               {delayMs}
               onManifestInput={handleManifestInput}
               onReloadManifest={() => handleReload()}
               {onSelectCanvas}
-              onToggleTransition={() => {
-                transitionSectionCollapsed = !transitionSectionCollapsed;
-              }}
               onDelayChange={handleDelaySecondsChange}
+              {onCreateChapter}
             />
           </div>
         {/if}
@@ -1149,14 +1154,10 @@
               {canvasIndex}
               {canvasCount}
               {manifestDraft}
-              {transitionSectionCollapsed}
               {delayMs}
               onManifestInput={handleManifestInput}
               onReloadManifest={() => handleReload()}
               {onSelectCanvas}
-              onToggleTransition={() => {
-                transitionSectionCollapsed = !transitionSectionCollapsed;
-              }}
               onDelayChange={handleDelaySecondsChange}
             />
           </section>
@@ -1233,20 +1234,6 @@
           >
             ← Back to chapter tools
           </button>
-          <ChapterCameraConfig
-            section="audio-timing"
-            chapterExists={Boolean(chapter)}
-            chapterCanvasIndex={chapter?.canvasIndex ?? 0}
-            {manifestDraft}
-            {transitionSectionCollapsed}
-            {delayMs}
-            onManifestInput={handleManifestInput}
-            onReloadManifest={() => handleReload()}
-            onToggleTransition={() => {
-              transitionSectionCollapsed = !transitionSectionCollapsed;
-            }}
-            onDelayChange={handleDelaySecondsChange}
-          />
           <div class="chapter-overlay__wide-tool-note">
             <strong>Narration editor</strong>
             <span
@@ -1305,6 +1292,32 @@
               onStopPreviewMedia={onStopPreviewMediaSegment}
             />
           </div>
+        </section>
+
+        <section
+          class="chapter-overlay__task"
+          hidden={inspectorView.mode !== "task" ||
+            inspectorView.task !== "transition-timing"}
+          aria-hidden={inspectorView.mode !== "task" ||
+            inspectorView.task !== "transition-timing"}
+        >
+          <button
+            class="chapter-overlay__task-back"
+            type="button"
+            on:click={returnToDashboard}
+          >
+            ← Back to chapter tools
+          </button>
+          <ChapterCameraConfig
+            section="transition-timing"
+            chapterExists={Boolean(chapter)}
+            chapterCanvasIndex={chapter?.canvasIndex ?? 0}
+            {manifestDraft}
+            {delayMs}
+            onManifestInput={handleManifestInput}
+            onReloadManifest={() => handleReload()}
+            onDelayChange={handleDelaySecondsChange}
+          />
         </section>
 
         <section
@@ -1859,6 +1872,15 @@
 
     .chapter-overlay__row--tight {
       align-items: center;
+    }
+
+    .chapter-overlay__onboarding-finish {
+      display: grid;
+      gap: 10px;
+    }
+
+    .chapter-overlay__onboarding-finish .chapter-overlay__button {
+      justify-self: start;
     }
 
     .chapter-overlay__button {

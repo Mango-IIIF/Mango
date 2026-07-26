@@ -58,12 +58,32 @@ describe('chapter task evaluation', () => {
 
   it('only exposes source media timing for audio and video canvases', () => {
     expect(evaluateTaskAvailability('media-timing', context())).toEqual({ state: 'hidden' });
+    expect(evaluateTaskAvailability('media-timing', { ...context(), mediaType: 'audio' })).toEqual({
+      state: 'available',
+    });
+    expect(evaluateTaskAvailability('media-timing', { ...context(), mediaType: 'video' })).toEqual({
+      state: 'available',
+    });
+  });
+
+  it('disables annotations for audio, video, and 3D chapters', () => {
+    for (const mediaType of ['audio', 'video', 'model'] as const) {
+      expect(evaluateTaskAvailability('focus', { ...context(), mediaType })).toMatchObject({
+        state: 'disabled',
+        reason: 'Annotations are available for image and PDF chapters only.',
+      });
+    }
+
     expect(
-      evaluateTaskAvailability('media-timing', { ...context(), mediaType: 'audio' }),
-    ).toEqual({ state: 'available' });
-    expect(
-      evaluateTaskAvailability('media-timing', { ...context(), mediaType: 'video' }),
-    ).toEqual({ state: 'available' });
+      evaluateTaskAvailability('focus', {
+        ...context(),
+        mediaType: null,
+        chapter: {
+          ...story.chapters[0],
+          model: { orbit: '0deg 75deg 2m' },
+        },
+      }),
+    ).toMatchObject({ state: 'disabled' });
   });
 
   it('makes motion available for any chapter with a spatial capture', () => {
@@ -76,6 +96,17 @@ describe('chapter task evaluation', () => {
       completion: 'empty',
       messages: [],
     });
+  });
+
+  it('keeps narration and chapter transition configuration independent', () => {
+    const chapter = {
+      ...story.chapters[0],
+      advance: { mode: 'auto' as const, delayMs: 3000 },
+    };
+    const taskContext = { ...context(), chapter };
+
+    expect(evaluateTaskStatus('audio-timing', taskContext).completion).toBe('empty');
+    expect(evaluateTaskStatus('transition-timing', taskContext).completion).toBe('complete');
   });
 
   it('only reports partial annotations when authored text is missing its placement', () => {
@@ -99,14 +130,15 @@ describe('chapter task evaluation', () => {
 
   it('returns all dashboard tasks in the agreed order', () => {
     expect(evaluateChapterTasks(context()).map((task) => task.id)).toEqual([
+      'source',
+      'transition-timing',
       'details',
+      'audio-timing',
       'focus',
       'motion',
-      'audio-timing',
-      'media-timing',
       'layers',
       'comparison',
-      'source',
+      'media-timing',
     ]);
   });
 });

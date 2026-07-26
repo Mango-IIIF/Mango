@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Camera, Clock3, GripVertical, MoreVertical, Plus } from '@lucide/svelte';
+  import { Clock3, GripVertical, MoreVertical, Plus } from '@lucide/svelte';
   import { readable, type Readable } from 'svelte/store';
   import type { Chapter, StoryState } from '../../core/types/story';
   import { resolveChapterTiming } from '../timing';
@@ -228,19 +228,22 @@
   <section class="story-sidebar__chapters" data-testid="chapter-list">
     <div class="story-sidebar__header">
       <span>Chapters</span>
-      <button
-        class="story-sidebar__header-add"
-        type="button"
-        data-testid="add-chapter"
-        on:click={() => onAddChapter?.()}
-      >
-        <Plus aria-hidden="true" /> Add chapter
-      </button>
+      {#if $story.chapters.length > 0}
+        <button
+          class="story-sidebar__header-add"
+          type="button"
+          data-testid="add-chapter"
+          on:click={() => onAddChapter?.()}
+        >
+          <Plus aria-hidden="true" /> Add chapter
+        </button>
+      {/if}
     </div>
 
     {#if $story.chapters.length === 0}
       <div class="story-sidebar__empty" data-testid="chapter-empty">
-        No chapters yet. Capture the current view to begin.
+        <strong>Start your story</strong>
+        <span> Load a IIIF Manifest in the setup panel, then create your first chapter. </span>
       </div>
     {/if}
 
@@ -357,18 +360,6 @@
       </div>
     {/if}
   </section>
-
-  <div class="story-sidebar__actions">
-    <button
-      class="story-sidebar__add"
-      type="button"
-      data-testid="capture-current-view"
-      on:click={() => onAddChapter?.()}
-    >
-      <Camera aria-hidden="true" /> Capture current view
-    </button>
-    <p>Pan or zoom the media, then capture that state as a new chapter.</p>
-  </div>
 
   {#if showDebug}
     <div class="story-sidebar__debug">
@@ -538,28 +529,20 @@
     height: 15px;
   }
 
-  .story-sidebar__add {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    border: 0;
-    padding: 0;
-    background: transparent;
-    color: var(--accent, #e07a3f);
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    cursor: pointer;
-  }
-  .story-sidebar__add :global(svg) {
-    width: 22px;
-    height: 22px;
-  }
-
   .story-sidebar__empty {
+    display: grid;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
     font-size: 12px;
     color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
+  }
+  .story-sidebar__empty strong {
+    color: var(--story-sidebar-text, var(--viewer-text, #e8edf4));
+  }
+  .story-sidebar__empty span {
+    line-height: 1.45;
   }
 
   .story-sidebar__chapters {
@@ -612,6 +595,11 @@
     cursor: -webkit-grab;
   }
 
+  .story-sidebar__row--draggable .story-sidebar__row-select {
+    cursor: grab;
+    cursor: -webkit-grab;
+  }
+
   .story-sidebar__row--active {
     border-color: #2ac7ff;
     background: color-mix(in srgb, #2ac7ff 6%, var(--viewer-surface, #151d26));
@@ -619,6 +607,11 @@
 
   .story-sidebar__row--dragging {
     opacity: 0.65;
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
+  }
+
+  .story-sidebar__row--dragging .story-sidebar__row-select {
     cursor: grabbing;
     cursor: -webkit-grabbing;
   }
@@ -781,14 +774,6 @@
     color: #ff9aa2;
   }
 
-  .story-sidebar__actions {
-    display: grid;
-    gap: 10px;
-    padding: 14px;
-    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
-    border-radius: 12px;
-  }
-
   .story-sidebar__reorder {
     display: flex;
     align-items: center;
@@ -801,13 +786,6 @@
   .story-sidebar__reorder :global(svg) {
     width: 15px;
     height: 15px;
-  }
-
-  .story-sidebar__actions p {
-    margin: 0;
-    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
-    font-size: 11px;
-    line-height: 1.45;
   }
 
   .story-sidebar__debug {

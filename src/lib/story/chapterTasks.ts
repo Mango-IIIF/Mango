@@ -6,6 +6,7 @@ export type ChapterTaskId =
   | 'focus'
   | 'motion'
   | 'audio-timing'
+  | 'transition-timing'
   | 'media-timing'
   | 'layers'
   | 'comparison'
@@ -51,7 +52,8 @@ const validationForTask = (task: ChapterTaskId, messages: string[]): string[] =>
     details: /title|description|language|translation/i,
     focus: /viewBox|capture|model pose|placement|annotation/i,
     motion: /motion|camera track|camera point|keyframe/i,
-    'audio-timing': /narration|voiceover|advance|delay/i,
+    'audio-timing': /narration|voiceover/i,
+    'transition-timing': /advance|delay|chapter transition/i,
     'media-timing': /media|segment|mark in|mark out|audio|video/i,
     layers: /layer|opacity/i,
     comparison: /comparison|alignment/i,
@@ -68,6 +70,7 @@ export const evaluateTaskAvailability = (
   switch (task) {
     case 'details':
     case 'audio-timing':
+    case 'transition-timing':
     case 'source':
       return { state: 'available' };
     case 'media-timing':
@@ -75,6 +78,18 @@ export const evaluateTaskAvailability = (
         ? { state: 'available' }
         : { state: 'hidden' };
     case 'focus':
+      if (
+        context.mediaType === 'audio' ||
+        context.mediaType === 'video' ||
+        context.mediaType === 'model' ||
+        Boolean(chapter.model)
+      ) {
+        return {
+          state: 'disabled',
+          reason: 'Annotations are available for image and PDF chapters only.',
+          action: 'Choose an image or PDF source to add annotations.',
+        };
+      }
       return chapter.viewBox || chapter.model || chapter.annotations
         ? { state: 'available' }
         : {
@@ -166,13 +181,24 @@ export const evaluateTaskStatus = (
       return withAttention(pointCount === 0 ? 'empty' : pointCount === 1 ? 'partial' : 'complete');
     }
     case 'audio-timing': {
-      const narration = Object.keys(chapter.narrationSegment ?? {}).length > 0;
-      const configured = Boolean(narration || chapter.advance);
-      const validNarration = Object.entries(chapter.narrationSegment ?? {}).every(
+      const narration = Object.entries(chapter.narrationSegment ?? {});
+      const validNarration = narration.every(
         ([language, segment]) =>
           segment.end > segment.start && hasText(story.narration?.tracks?.[language]?.src),
       );
-      return withAttention(!configured ? 'empty' : validNarration ? 'complete' : 'partial');
+      return withAttention(
+        narration.length === 0 ? 'empty' : validNarration ? 'complete' : 'partial',
+      );
+    }
+    case 'transition-timing': {
+      const delay = chapter.advance?.delayMs;
+      return withAttention(
+        chapter.advance?.mode !== 'auto' || delay === undefined
+          ? 'empty'
+          : Number.isFinite(delay) && delay >= 0
+            ? 'complete'
+            : 'attention',
+      );
     }
     case 'media-timing':
       return withAttention(
@@ -198,14 +224,15 @@ export const evaluateTaskStatus = (
 export const evaluateChapterTasks = (context: ChapterTaskContext): ChapterTaskEvaluation[] =>
   (
     [
+      'source',
+      'transition-timing',
       'details',
+      'audio-timing',
       'focus',
       'motion',
-      'audio-timing',
-      'media-timing',
       'layers',
       'comparison',
-      'source',
+      'media-timing',
     ] as ChapterTaskId[]
   ).map((id) => ({
     id,
@@ -219,6 +246,7 @@ export const taskForValidationMessage = (message: string): ChapterTaskId => {
     'focus',
     'motion',
     'audio-timing',
+    'transition-timing',
     'media-timing',
     'layers',
     'comparison',

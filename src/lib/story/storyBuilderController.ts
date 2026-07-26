@@ -55,6 +55,7 @@ export type StoryBuilderController = {
   modelPoseDebug: Readable<string | null>;
   mediaType: Readable<MediaType | null>;
   mediaMarks: Readable<MediaMarksState>;
+  transitionDelayDefault: Readable<number>;
   avMarksValid: Readable<boolean>;
   error: Writable<string | null>;
   validationErrors: Readable<string[]>;
@@ -185,6 +186,19 @@ export const collectLatestNarrationSegments = (
   return latest;
 };
 
+export const DEFAULT_CHAPTER_TRANSITION_DELAY_MS = 2000;
+
+export const collectLatestTransitionDelay = (story: StoryState): number => {
+  let latest = DEFAULT_CHAPTER_TRANSITION_DELAY_MS;
+  for (const chapter of story.chapters) {
+    const delay = chapter.advance?.delayMs;
+    if (chapter.advance?.mode === 'auto' && Number.isFinite(delay) && (delay as number) >= 0) {
+      latest = delay as number;
+    }
+  }
+  return latest;
+};
+
 export const createStoryBuilderController = (
   options: StoryBuilderOptions = {},
 ): StoryBuilderController => {
@@ -267,6 +281,7 @@ export const createStoryBuilderController = (
   const viewBox = writable<ViewBox | null>(null);
   const mediaType = writable<MediaType | null>(null);
   const avMarksValid = writable(true);
+  const transitionDelayDefault = writable(collectLatestTransitionDelay(initialStoryData));
   const error = writable<string | null>(null);
   const validationErrors = writable<string[]>([]);
   const currentManifest = writable<string | null>(null);
@@ -944,10 +959,13 @@ export const createStoryBuilderController = (
     setError(null);
     const activeLanguage = get(annotationLanguage);
     const latestNarrationSegment = latestNarrationSegments[activeLanguage];
+    const transitionDelay = get(transitionDelayDefault);
     storyStoreWrapper.addChapterFromCapture({ capture: result.capture });
     const storyValue = get(storyStore);
     const lastId = storyValue.chapters[storyValue.chapters.length - 1]?.id;
     if (lastId) {
+      storyStoreWrapper.setAdvanceMode({ chapterId: lastId, mode: 'auto' });
+      storyStoreWrapper.setDelay({ chapterId: lastId, delayMs: transitionDelay });
       if (latestNarrationSegment) {
         storyStoreWrapper.setNarrationSegment({
           chapterId: lastId,
@@ -1016,9 +1034,7 @@ export const createStoryBuilderController = (
       )?.duration;
       const segment =
         markedSegment ??
-        (sourceDuration != null && sourceDuration > 0
-          ? { start: 0, end: sourceDuration }
-          : null);
+        (sourceDuration != null && sourceDuration > 0 ? { start: 0, end: sourceDuration } : null);
       return captureAudioVideo(viewer, segment, manifestOverride);
     }
     if (type === 'model') {
@@ -1668,6 +1684,9 @@ export const createStoryBuilderController = (
   const updateDelay = (delayMs?: number) => {
     pushHistorySnapshot();
     chapterActions.updateDelay(delayMs);
+    if (Number.isFinite(delayMs) && (delayMs as number) >= 0) {
+      transitionDelayDefault.set(delayMs as number);
+    }
   };
 
   const startAnnotationPositioning = (lang: string) => {
@@ -1776,6 +1795,7 @@ export const createStoryBuilderController = (
     pushHistorySnapshot();
     loadStoryIntoStore(storyToLoad, storyStoreWrapper);
     latestNarrationSegments = collectLatestNarrationSegments(storyStoreWrapper.exportStory());
+    transitionDelayDefault.set(collectLatestTransitionDelay(storyStoreWrapper.exportStory()));
 
     // Load the first chapter's manifest if available
     const firstChapter = storyToLoad.chapters?.[0];
@@ -1807,6 +1827,7 @@ export const createStoryBuilderController = (
     viewBox,
     mediaType,
     mediaMarks: mediaMarksState,
+    transitionDelayDefault,
     avMarksValid,
     error,
     validationErrors,

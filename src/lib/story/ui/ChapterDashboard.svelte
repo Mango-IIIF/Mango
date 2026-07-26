@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     AudioLines,
+    Clock3,
     Film,
     Blend,
     FileText,
@@ -32,9 +33,14 @@
       icon: Move3d,
     },
     'audio-timing': {
-      title: 'Narration and advance',
-      description: 'Voiceover tracks and chapter advance timing.',
+      title: 'Narration',
+      description: 'Voiceover tracks and chapter narration timing.',
       icon: AudioLines,
+    },
+    'transition-timing': {
+      title: 'Chapter transition time',
+      description: 'Set the delay before moving to the next chapter.',
+      icon: Clock3,
     },
     'media-timing': {
       title: 'Media timing',
