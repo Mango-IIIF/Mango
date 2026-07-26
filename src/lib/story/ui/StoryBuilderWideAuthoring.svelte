@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { MapPin, Plus, Play, Square } from '@lucide/svelte';
-  import type { Readable } from 'svelte/store';
-  import type { ChapterCameraTrack, StoryState } from '../../core/types/story';
-  import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
-  import type { MediaMarksState } from '../mediaMarks';
-  import type { ChapterTaskId } from '../chapterTasks';
-  import StoryBuilderWideNarration from './StoryBuilderWideNarration.svelte';
-  import StoryBuilderWideMediaTiming from './StoryBuilderWideMediaTiming.svelte';
-  import StoryBuilderWideAnnotations from './StoryBuilderWideAnnotations.svelte';
+  import { MapPin, Plus, Play, Square } from "@lucide/svelte";
+  import type { Readable } from "svelte/store";
+  import type { ChapterCameraTrack, StoryState } from "../../core/types/story";
+  import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
+  import type { MediaMarksState } from "../mediaMarks";
+  import type { ChapterTaskId } from "../chapterTasks";
+  import StoryBuilderWideNarration from "./StoryBuilderWideNarration.svelte";
+  import StoryBuilderWideMediaTiming from "./StoryBuilderWideMediaTiming.svelte";
+  import StoryBuilderWideAnnotations from "./StoryBuilderWideAnnotations.svelte";
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
@@ -17,10 +17,14 @@
   export let mediaSources: Readable<MediaSource[]>;
   export let mediaMarks: Readable<MediaMarksState>;
   export let avMarksValid: Readable<boolean>;
-  export let language = 'en';
-  export let languages: string[] = ['en'];
+  export let language = "en";
+  export let languages: string[] = ["en"];
   export let onSetNarrationTrack: (language: string, src: string) => void;
-  export let onAssignNarrationSegment: (language: string, start: number, end: number) => void;
+  export let onAssignNarrationSegment: (
+    language: string,
+    start: number,
+    end: number,
+  ) => void;
   export let onAssignMediaSegment: (start: number, end: number) => void;
   export let onPreviewMediaSegment: () => void;
   export let onStopPreviewMediaSegment: () => void;
@@ -33,13 +37,19 @@
   export let onPreview: () => void;
   export let onStopPreview: () => void;
 
-  $: chapter = $story.chapters.find((entry) => entry.id === $selectedChapterId) ?? null;
+  $: chapter =
+    $story.chapters.find((entry) => entry.id === $selectedChapterId) ?? null;
   $: track = chapter?.cameraTrack;
-  $: durationMs = Math.max(1, track?.durationMs ?? chapter?.presentationDurationMs ?? 5000);
+  $: durationMs = Math.max(
+    1,
+    track?.durationMs ?? chapter?.presentationDurationMs ?? 5000,
+  );
   $: durationSeconds = durationMs / 1000;
   $: points = [...(track?.keyframes ?? [])].sort((a, b) => a.timeMs - b.timeMs);
 
-  const pointPosition = (point: ChapterCameraTrack['keyframes'][number]): string =>
+  const pointPosition = (
+    point: ChapterCameraTrack["keyframes"][number],
+  ): string =>
     `${Math.max(0, Math.min(100, (point.timeMs / durationMs) * 100))}%`;
 
   const formatTime = (timeMs: number): string => {
@@ -48,31 +58,47 @@
   };
 </script>
 
-{#if chapter && $activeTask === 'motion'}
-  <section class="story-wide-authoring" aria-labelledby="story-wide-motion-title">
+{#if chapter && $activeTask === "motion"}
+  <section
+    class="story-wide-authoring"
+    aria-labelledby="story-wide-motion-title"
+  >
     <div class="story-wide-authoring__summary">
       <div class="story-wide-authoring__summary-title">
-        <span class="story-wide-authoring__summary-icon"><MapPin aria-hidden="true" /></span>
+        <span class="story-wide-authoring__summary-icon"
+          ><MapPin aria-hidden="true" /></span
+        >
         <span>
           <strong id="story-wide-motion-title">Chapter motion</strong>
-          <small>{durationSeconds.toFixed(durationSeconds % 1 === 0 ? 0 : 1)}s</small>
+          <small
+            >{durationSeconds.toFixed(
+              durationSeconds % 1 === 0 ? 0 : 1,
+            )}s</small
+          >
         </span>
       </div>
-      <p>Place camera points on the artwork. Their order is spaced across the chapter duration.</p>
+      <p>
+        Place camera points on the artwork. Their order is spaced across the
+        chapter duration.
+      </p>
       <button
         class="story-wide-authoring__preview"
         type="button"
         disabled={points.length < 2}
         on:click={() => ($previewing ? onStopPreview() : onPreview())}
       >
-        {#if $previewing}<Square aria-hidden="true" /> Stop{:else}<Play aria-hidden="true" /> Preview{/if}
+        {#if $previewing}<Square aria-hidden="true" /> Stop{:else}<Play
+            aria-hidden="true"
+          /> Preview{/if}
       </button>
     </div>
 
     <div class="story-wide-authoring__timeline">
       <div class="story-wide-authoring__scale" aria-hidden="true">
         {#each [0, 0.25, 0.5, 0.75, 1] as ratio}
-          <span style={`left:${ratio * 100}%`}>{formatTime(durationMs * ratio)}</span>
+          <span style={`left:${ratio * 100}%`}
+            >{formatTime(durationMs * ratio)}</span
+          >
         {/each}
       </div>
 
@@ -98,16 +124,21 @@
 
       {#if points.length === 0}
         <p class="story-wide-authoring__empty">
-          No camera points yet. Add a point, then drag its pin into position in the viewer.
+          No camera points yet. Add a point, then drag its pin into position in
+          the viewer.
         </p>
       {/if}
 
-      <button class="story-wide-authoring__add" type="button" on:click={onAddPoint}>
+      <button
+        class="story-wide-authoring__add"
+        type="button"
+        on:click={onAddPoint}
+      >
         <Plus aria-hidden="true" /> Add camera point
       </button>
     </div>
   </section>
-{:else if chapter && $activeTask === 'audio-timing'}
+{:else if chapter && $activeTask === "audio-timing"}
   <StoryBuilderWideNarration
     {story}
     {selectedChapterId}
@@ -116,7 +147,7 @@
     {onSetNarrationTrack}
     {onAssignNarrationSegment}
   />
-{:else if chapter && $activeTask === 'media-timing'}
+{:else if chapter && $activeTask === "media-timing"}
   <StoryBuilderWideMediaTiming
     {story}
     {selectedChapterId}
@@ -128,7 +159,7 @@
     onPreview={onPreviewMediaSegment}
     onStopPreview={onStopPreviewMediaSegment}
   />
-{:else if chapter && $activeTask === 'focus'}
+{:else if chapter && $activeTask === "focus"}
   <StoryBuilderWideAnnotations
     {story}
     {selectedChapterId}
@@ -228,22 +259,27 @@
 
   .story-wide-authoring {
     display: grid;
-    grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
-    gap: 22px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
     min-height: 166px;
     padding: 18px;
     box-sizing: border-box;
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
     border-radius: 16px;
-    background: color-mix(in srgb, var(--viewer-panel, #121922) 92%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--viewer-panel, #121922) 92%,
+      transparent
+    );
     color: var(--viewer-text, #e8edf4);
   }
   .story-wide-authoring__summary {
     display: grid;
     align-content: start;
-    gap: 10px;
-    padding-right: 18px;
-    border-right: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid
+      var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
   }
   .story-wide-authoring__summary-title {
     display: flex;
@@ -335,11 +371,15 @@
     position: relative;
     height: 2px;
     margin-top: 14px;
-    background: color-mix(in srgb, var(--accent, #e07a3f) 78%, var(--viewer-panel-border));
+    background: color-mix(
+      in srgb,
+      var(--accent, #e07a3f) 78%,
+      var(--viewer-panel-border)
+    );
   }
   .story-wide-authoring__rail::before,
   .story-wide-authoring__rail::after {
-    content: '';
+    content: "";
     position: absolute;
     top: -3px;
     width: 1px;
@@ -385,7 +425,8 @@
   .story-wide-authoring__point:first-child .story-wide-authoring__pin {
     margin-left: 0;
   }
-  .story-wide-authoring__point:last-child:not(:first-child) .story-wide-authoring__pin {
+  .story-wide-authoring__point:last-child:not(:first-child)
+    .story-wide-authoring__pin {
     margin-right: 0;
   }
   .story-wide-authoring__pin :global(svg) {
@@ -440,18 +481,7 @@
 
   @media (max-width: 720px) {
     .story-wide-authoring {
-      grid-template-columns: 1fr;
       gap: 14px;
-    }
-    .story-wide-authoring__summary {
-      grid-template-columns: 1fr auto;
-      padding-right: 0;
-      padding-bottom: 12px;
-      border-right: 0;
-      border-bottom: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
-    }
-    .story-wide-authoring__summary p {
-      grid-column: 1 / -1;
     }
   }
 </style>

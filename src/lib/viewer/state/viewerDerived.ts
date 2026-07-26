@@ -258,12 +258,6 @@ export const createViewerDerived = (
         );
       }
       const resolved = resolveMedia(entry.manifesto, canvas?.id, index);
-      if (
-        resolved.primary?.type === "audio" ||
-        resolved.primary?.type === "video"
-      ) {
-        return [];
-      }
       return resolved.primary ? [resolved.primary, ...resolved.alternates] : [];
     },
   );

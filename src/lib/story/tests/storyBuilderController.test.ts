@@ -160,6 +160,9 @@ describe('story builder narration defaults', () => {
       ],
       getLayerOpacities: () => ({}),
       setMediaSegment: vi.fn(),
+      seekTo: vi.fn(),
+      play: vi.fn(),
+      pause: vi.fn(),
       setStoryAnnotations: vi.fn(),
       setStoryAnnotationEditing: vi.fn(),
       setStoryAnnotationSelection: vi.fn(),
@@ -193,6 +196,14 @@ describe('story builder narration defaults', () => {
     expect(get(controller.story).chapters[0].media).toEqual({ start: 12.5, end: 42 });
     expect(viewer.setMediaSegment).toHaveBeenLastCalledWith(12.5, 42);
     expect(get(controller.story).chapters[0].narrationSegment).toBeUndefined();
+
+    controller.previewMediaSegment();
+    expect(viewer.seekTo).toHaveBeenLastCalledWith(12.5);
+    expect(viewer.play).toHaveBeenCalledOnce();
+
+    controller.stopPreviewMediaSegment();
+    expect(viewer.pause).toHaveBeenCalledOnce();
+    expect(viewer.seekTo).toHaveBeenLastCalledWith(12.5);
     detach();
   });
 });

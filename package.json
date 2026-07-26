@@ -104,15 +104,16 @@
     "manifesto.js": "^4.3.0",
     "ol": "^10.9.0",
     "openseadragon": "^6.0.2",
-    "pdfjs-dist": "^4.9.155"
+    "pdfjs-dist": "^4.9.155",
+    "wavesurfer.js": "^7.12.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
     "@playwright/test": "^1.49.1",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@types/node": "^24.1.0",
-    "eslint": "^9.19.0",
-    "eslint-plugin-svelte": "^2.46.1",
+    "eslint": "^10.8.0",
+    "eslint-plugin-svelte": "^3.22.0",
     "globals": "^15.14.0",
     "jsdom": "^27.0.1",
     "prettier": "^3.4.2",

@@ -1,19 +1,138 @@
-import { describe, expect, it, vi } from 'vitest';
-import { mount, unmount } from 'svelte';
-import { tick } from 'svelte';
-import { writable } from 'svelte/store';
-import type { ChapterAdvance, StoryState } from '../../../core/types/story';
-import ChapterOverlay from '../ChapterOverlay.svelte';
-import { createStoryStoreForTest } from './testHelpers';
+import { describe, expect, it, vi } from "vitest";
+import { mount, unmount } from "svelte";
+import { tick } from "svelte";
+import { writable } from "svelte/store";
+import type { ChapterAdvance, StoryState } from "../../../core/types/story";
+import ChapterOverlay from "../ChapterOverlay.svelte";
+import { createStoryStoreForTest } from "./testHelpers";
 
 const createTarget = (): HTMLDivElement => {
-  const target = document.createElement('div');
+  const target = document.createElement("div");
   document.body.appendChild(target);
   return target;
 };
 
-describe('ChapterOverlay', () => {
-  it('loads the first manifest from the empty story state', async () => {
+describe("ChapterOverlay", () => {
+  it("acknowledges an updated captured view", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-image",
+          manifest: "https://example.org/image-manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const onUpdateChapterPosition = vi.fn();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        docked: true,
+        chapterId: "chapter-image",
+        onUpdateChapterPosition,
+      },
+    });
+
+    const details = Array.from(target.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Details"),
+    ) as HTMLButtonElement;
+    details.click();
+    await tick();
+
+    const updateView = target.querySelector(
+      '[data-testid="chapter-update-view"]',
+    ) as HTMLButtonElement;
+    updateView.click();
+    await tick();
+
+    expect(onUpdateChapterPosition).toHaveBeenCalledWith("chapter-image");
+    expect(updateView.textContent).toContain("Captured view updated");
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it("shows manifest audio editing instructions in the media timing sidebar", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-audio",
+          manifest: "https://example.org/audio-manifest.json",
+          canvasIndex: 0,
+          media: { start: 170, end: 183 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: "chapter-audio",
+        mediaType: writable("audio"),
+      },
+    });
+
+    const mediaTiming = Array.from(target.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Media timing"),
+    ) as HTMLButtonElement;
+    mediaTiming.click();
+    await tick();
+
+    const instructions = target.textContent?.replace(/\s+/g, " ") ?? "";
+    expect(instructions).toContain("Manifest audio timing");
+    expect(instructions).toContain("Drag the shaded selection");
+    expect(instructions).toContain("zoom and scroll the waveform");
+    expect(instructions).toContain("exact time edits are saved automatically");
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it("shows the same waveform editing instructions for manifest video", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-video",
+          manifest: "https://example.org/video-manifest.json",
+          canvasIndex: 0,
+          media: { start: 10, end: 20 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: "chapter-video",
+        mediaType: writable("video"),
+      },
+    });
+
+    const mediaTiming = Array.from(target.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Media timing"),
+    ) as HTMLButtonElement;
+    mediaTiming.click();
+    await tick();
+
+    const instructions = target.textContent?.replace(/\s+/g, " ") ?? "";
+    expect(instructions).toContain("Manifest video timing");
+    expect(instructions).toContain("Drag the shaded selection");
+    expect(instructions).toContain("zoom and scroll the waveform");
+    expect(instructions).toContain("exact time edits are saved automatically");
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it("loads the first manifest from the empty story state", async () => {
     const store = createStoryStoreForTest({ chapters: [] });
     const target = createTarget();
     const onLoadManifest = vi.fn();
@@ -27,32 +146,36 @@ describe('ChapterOverlay', () => {
       },
     });
 
-    expect(target.textContent).toContain('Load a source');
-    const input = target.querySelector('[data-testid="chapter-manifest"]') as HTMLInputElement;
+    expect(target.textContent).toContain("Load a source");
+    const input = target.querySelector(
+      '[data-testid="chapter-manifest"]',
+    ) as HTMLInputElement;
     const load = target.querySelector(
       '[data-testid="chapter-manifest-reload"]',
     ) as HTMLButtonElement;
-    expect(input.getAttribute('aria-label')).toBe('Manifest URL');
-    expect(load.textContent?.trim()).toBe('Load manifest');
+    expect(input.getAttribute("aria-label")).toBe("Manifest URL");
+    expect(load.textContent?.trim()).toBe("Load manifest");
     expect(load.disabled).toBe(true);
 
-    input.value = 'https://example.org/manifest.json';
-    input.dispatchEvent(new Event('input'));
+    input.value = "https://example.org/manifest.json";
+    input.dispatchEvent(new Event("input"));
     await tick();
     expect(load.disabled).toBe(false);
     load.click();
-    expect(onLoadManifest).toHaveBeenCalledWith('https://example.org/manifest.json');
+    expect(onLoadManifest).toHaveBeenCalledWith(
+      "https://example.org/manifest.json",
+    );
 
     unmount(instance);
     target.remove();
   });
 
-  it('updates manifest and triggers reload', async () => {
+  it("updates manifest and triggers reload", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
-          id: 'chapter-1',
-          manifest: 'https://example.org/manifest.json',
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
           canvasIndex: 2,
           viewBox: { x: 0, y: 0, w: 10, h: 10 },
         },
@@ -67,13 +190,17 @@ describe('ChapterOverlay', () => {
       props: {
         story: store.story,
         open: true,
-        chapterId: 'chapter-1',
+        chapterId: "chapter-1",
         canvasIndex: 2,
         canvasCount: 3,
-        language: 'en',
+        language: "en",
         onUpdateManifest: (chapterId: string, manifest: string) =>
           store.setChapterManifest({ chapterId, manifest }),
-        onReloadManifest: (_chapterId: string, manifest: string, canvasIndex: number) => {
+        onReloadManifest: (
+          _chapterId: string,
+          manifest: string,
+          canvasIndex: number,
+        ) => {
           reloadPayload = { manifest, canvasIndex };
         },
         onSelectCanvas: (canvasIndex: number) => {
@@ -82,17 +209,19 @@ describe('ChapterOverlay', () => {
       },
     });
 
-    const input = target.querySelector('[data-testid="chapter-manifest"]') as HTMLInputElement;
+    const input = target.querySelector(
+      '[data-testid="chapter-manifest"]',
+    ) as HTMLInputElement;
     const canvasSelect = target.querySelector(
       '[data-testid="chapter-canvas-select"]',
     ) as HTMLSelectElement;
     expect(canvasSelect.options).toHaveLength(3);
-    expect(canvasSelect.value).toBe('2');
-    canvasSelect.value = '1';
-    canvasSelect.dispatchEvent(new Event('change'));
+    expect(canvasSelect.value).toBe("2");
+    canvasSelect.value = "1";
+    canvasSelect.dispatchEvent(new Event("change"));
     expect(selectedCanvas).toBe(1);
-    input.value = 'https://example.org/updated.json';
-    input.dispatchEvent(new Event('input'));
+    input.value = "https://example.org/updated.json";
+    input.dispatchEvent(new Event("input"));
     await tick();
 
     const reload = target.querySelector(
@@ -104,9 +233,11 @@ describe('ChapterOverlay', () => {
     const storyValue = await new Promise((resolve) => {
       store.story.subscribe((value) => resolve(value))();
     });
-    expect((storyValue as any).chapters[0].manifest).toBe('https://example.org/updated.json');
+    expect((storyValue as any).chapters[0].manifest).toBe(
+      "https://example.org/updated.json",
+    );
     expect(reloadPayload).toEqual({
-      manifest: 'https://example.org/updated.json',
+      manifest: "https://example.org/updated.json",
       canvasIndex: 2,
     });
 
@@ -114,19 +245,19 @@ describe('ChapterOverlay', () => {
     target.remove();
   });
 
-  it('edits annotations with language-specific text and shared placement', async () => {
+  it("edits annotations with language-specific text and shared placement", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
-          id: 'chapter-1',
-          manifest: 'https://example.org/manifest.json',
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 10, h: 10 },
         },
       ],
     });
     const target = createTarget();
-    let positioningTriggered = '';
+    let positioningTriggered = "";
     const onUpdateChapterPosition = vi.fn();
     const onSave = vi.fn();
 
@@ -135,10 +266,13 @@ describe('ChapterOverlay', () => {
       props: {
         story: store.story,
         open: true,
-        chapterId: 'chapter-1',
-        language: 'en',
-        onUpdateAnnotationText: (chapterId: string, lang: string, text: string) =>
-          store.setAnnotationText({ chapterId, language: lang, text }),
+        chapterId: "chapter-1",
+        language: "en",
+        onUpdateAnnotationText: (
+          chapterId: string,
+          lang: string,
+          text: string,
+        ) => store.setAnnotationText({ chapterId, language: lang, text }),
         onSetAnnotationPositioning: (lang: string) => {
           positioningTriggered = lang;
         },
@@ -150,8 +284,8 @@ describe('ChapterOverlay', () => {
     const textarea = target.querySelector(
       '[data-testid="chapter-annotation"]',
     ) as HTMLTextAreaElement;
-    textarea.value = 'Note';
-    textarea.dispatchEvent(new Event('input'));
+    textarea.value = "Note";
+    textarea.dispatchEvent(new Event("input"));
     await tick();
 
     const setPositionButton = target.querySelector(
@@ -159,16 +293,18 @@ describe('ChapterOverlay', () => {
     ) as HTMLButtonElement;
     expect(setPositionButton).toBeTruthy();
     setPositionButton.click();
-    expect(positioningTriggered).toBe('en');
+    expect(positioningTriggered).toBe("en");
 
-    const saveButton = target.querySelector('[data-testid="chapter-save"]') as HTMLButtonElement;
+    const saveButton = target.querySelector(
+      '[data-testid="chapter-save"]',
+    ) as HTMLButtonElement;
     saveButton.click();
 
     await tick();
     const storyValue = await new Promise((resolve) => {
       store.story.subscribe((value) => resolve(value))();
     });
-    expect((storyValue as any).chapters[0].annotations.en.text).toBe('Note');
+    expect((storyValue as any).chapters[0].annotations.en.text).toBe("Note");
     expect(onUpdateChapterPosition).not.toHaveBeenCalled();
     expect(onSave).toHaveBeenCalledOnce();
 
@@ -176,12 +312,12 @@ describe('ChapterOverlay', () => {
     target.remove();
   });
 
-  it('stores advance mode and delay', async () => {
+  it("stores advance mode and delay", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
-          id: 'chapter-1',
-          manifest: 'https://example.org/manifest.json',
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 10, h: 10 },
         },
@@ -194,10 +330,12 @@ describe('ChapterOverlay', () => {
       props: {
         story: store.story,
         open: true,
-        chapterId: 'chapter-1',
-        language: 'en',
-        onUpdateAdvanceMode: (chapterId: string, mode: ChapterAdvance['mode']) =>
-          store.setAdvanceMode({ chapterId, mode }),
+        chapterId: "chapter-1",
+        language: "en",
+        onUpdateAdvanceMode: (
+          chapterId: string,
+          mode: ChapterAdvance["mode"],
+        ) => store.setAdvanceMode({ chapterId, mode }),
         onUpdateDelay: (chapterId: string, delayMs: number | undefined) =>
           store.setDelay({ chapterId, delayMs }),
       },
@@ -206,26 +344,26 @@ describe('ChapterOverlay', () => {
     const delayInput = target.querySelector(
       '[data-testid="chapter-advance-delay"]',
     ) as HTMLInputElement;
-    delayInput.value = '3';
-    delayInput.dispatchEvent(new Event('input'));
+    delayInput.value = "3";
+    delayInput.dispatchEvent(new Event("input"));
 
     await tick();
     const storyValue = await new Promise((resolve) => {
       store.story.subscribe((value) => resolve(value))();
     });
-    expect((storyValue as any).chapters[0].advance.mode).toBe('auto');
+    expect((storyValue as any).chapters[0].advance.mode).toBe("auto");
     expect((storyValue as any).chapters[0].advance.delayMs).toBe(3000);
 
     unmount(instance);
     target.remove();
   });
 
-  it('stores chapter title and description for active language', async () => {
+  it("stores chapter title and description for active language", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
-          id: 'chapter-1',
-          manifest: 'https://example.org/manifest.json',
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 10, h: 10 },
         },
@@ -238,45 +376,55 @@ describe('ChapterOverlay', () => {
       props: {
         story: store.story,
         open: true,
-        chapterId: 'chapter-1',
-        language: 'en',
-        onUpdateChapterTitle: (chapterId: string, lang: string, value: string) =>
-          store.setChapterTitle({ chapterId, language: lang, value }),
-        onUpdateChapterDescription: (chapterId: string, lang: string, value: string) =>
-          store.setChapterDescription({ chapterId, language: lang, value }),
+        chapterId: "chapter-1",
+        language: "en",
+        onUpdateChapterTitle: (
+          chapterId: string,
+          lang: string,
+          value: string,
+        ) => store.setChapterTitle({ chapterId, language: lang, value }),
+        onUpdateChapterDescription: (
+          chapterId: string,
+          lang: string,
+          value: string,
+        ) => store.setChapterDescription({ chapterId, language: lang, value }),
       },
     });
 
-    const titleInput = target.querySelector('[data-testid="chapter-title"]') as HTMLInputElement;
-    titleInput.value = 'Chapter heading';
-    titleInput.dispatchEvent(new Event('input'));
+    const titleInput = target.querySelector(
+      '[data-testid="chapter-title"]',
+    ) as HTMLInputElement;
+    titleInput.value = "Chapter heading";
+    titleInput.dispatchEvent(new Event("input"));
 
     const descriptionInput = target.querySelector(
       '[data-testid="chapter-description"]',
     ) as HTMLTextAreaElement;
-    descriptionInput.value = 'Chapter summary';
-    descriptionInput.dispatchEvent(new Event('input'));
+    descriptionInput.value = "Chapter summary";
+    descriptionInput.dispatchEvent(new Event("input"));
 
     await tick();
     const storyValue = await new Promise((resolve) => {
       store.story.subscribe((value) => resolve(value))();
     });
-    expect((storyValue as any).chapters[0].title.en).toBe('Chapter heading');
-    expect((storyValue as any).chapters[0].description.en).toBe('Chapter summary');
+    expect((storyValue as any).chapters[0].title.en).toBe("Chapter heading");
+    expect((storyValue as any).chapters[0].description.en).toBe(
+      "Chapter summary",
+    );
 
     unmount(instance);
     target.remove();
   });
 
-  it('collapses and expands metadata section', async () => {
+  it("collapses and expands metadata section", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
-          id: 'chapter-1',
-          manifest: 'https://example.org/manifest.json',
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 10, h: 10 },
-          title: { en: 'Title' },
+          title: { en: "Title" },
         },
       ],
     });
@@ -287,13 +435,17 @@ describe('ChapterOverlay', () => {
       props: {
         story: store.story,
         open: true,
-        chapterId: 'chapter-1',
-        language: 'en',
+        chapterId: "chapter-1",
+        language: "en",
       },
     });
 
-    const titleInput = target.querySelector('[data-testid="chapter-title"]') as HTMLInputElement;
-    const sectionContent = titleInput.closest('.chapter-overlay__section-content') as HTMLElement;
+    const titleInput = target.querySelector(
+      '[data-testid="chapter-title"]',
+    ) as HTMLInputElement;
+    const sectionContent = titleInput.closest(
+      ".chapter-overlay__section-content",
+    ) as HTMLElement;
     expect(sectionContent.hidden).toBe(false);
 
     const collapseButton = target.querySelector(
@@ -314,17 +466,17 @@ describe('ChapterOverlay', () => {
     target.remove();
   });
 
-  it('previews narration only between the selected start and end times', async () => {
+  it("previews narration only between the selected start and end times", async () => {
     const story = writable<StoryState>({
       narration: {
         tracks: {
-          en: { src: 'https://example.org/narration.mp3' },
+          en: { src: "https://example.org/narration.mp3" },
         },
       },
       chapters: [
         {
-          id: 'chapter-1',
-          manifest: 'https://example.org/manifest.json',
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 10, h: 10 },
           narrationSegment: { en: { start: 5, end: 10 } },
@@ -338,8 +490,8 @@ describe('ChapterOverlay', () => {
       props: {
         story,
         open: true,
-        chapterId: 'chapter-1',
-        language: 'en',
+        chapterId: "chapter-1",
+        language: "en",
       },
     });
     await tick();
@@ -348,28 +500,34 @@ describe('ChapterOverlay', () => {
       ...value,
       narration: {
         tracks: {
-          en: { src: 'https://example.org/updated-narration.mp3' },
+          en: { src: "https://example.org/updated-narration.mp3" },
         },
       },
     }));
     await tick();
 
-    const audio = target.querySelector('.chapter-overlay__audio-source') as HTMLAudioElement;
-    expect(target.textContent).toContain('Chapter narration');
+    const audio = target.querySelector(
+      ".chapter-overlay__audio-source",
+    ) as HTMLAudioElement;
+    expect(target.textContent).toContain("Chapter narration");
     expect(
-      (target.querySelector('[data-testid="chapter-narration-url"]') as HTMLInputElement).value,
-    ).toBe('https://example.org/updated-narration.mp3');
-    Object.defineProperty(audio, 'readyState', {
+      (
+        target.querySelector(
+          '[data-testid="chapter-narration-url"]',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe("https://example.org/updated-narration.mp3");
+    Object.defineProperty(audio, "readyState", {
       configurable: true,
       value: 1,
     });
-    const play = vi.spyOn(audio, 'play').mockResolvedValue(undefined);
-    const pause = vi.spyOn(audio, 'pause').mockImplementation(() => undefined);
+    const play = vi.spyOn(audio, "play").mockResolvedValue(undefined);
+    const pause = vi.spyOn(audio, "pause").mockImplementation(() => undefined);
     const preview = target.querySelector(
       '[data-testid="chapter-narration-preview"]',
     ) as HTMLButtonElement;
 
-    expect(preview.textContent?.trim()).toBe('Preview narration');
+    expect(preview.textContent?.trim()).toBe("Preview narration");
     expect(preview.disabled).toBe(false);
 
     preview.click();
@@ -377,28 +535,28 @@ describe('ChapterOverlay', () => {
 
     expect(audio.currentTime).toBe(5);
     expect(play).toHaveBeenCalledOnce();
-    expect(preview.textContent?.trim()).toBe('Stop preview');
+    expect(preview.textContent?.trim()).toBe("Stop preview");
 
     audio.currentTime = 10;
-    audio.dispatchEvent(new Event('timeupdate'));
+    audio.dispatchEvent(new Event("timeupdate"));
     await tick();
 
     expect(pause).toHaveBeenCalledOnce();
-    expect(preview.textContent?.trim()).toBe('Preview narration');
+    expect(preview.textContent?.trim()).toBe("Preview narration");
 
     unmount(instance);
     target.remove();
   });
 
-  it('allows narration to be skipped for the current chapter', async () => {
+  it("allows narration to be skipped for the current chapter", async () => {
     const story = writable<StoryState>({
       narration: {
-        tracks: { en: { src: 'https://example.org/narration.mp3' } },
+        tracks: { en: { src: "https://example.org/narration.mp3" } },
       },
       chapters: [
         {
-          id: 'chapter-1',
-          manifest: 'https://example.org/manifest.json',
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
           canvasIndex: 0,
           narrationSegment: { en: { start: 5, end: 10 } },
         },
@@ -411,8 +569,8 @@ describe('ChapterOverlay', () => {
       props: {
         story,
         open: true,
-        chapterId: 'chapter-1',
-        language: 'en',
+        chapterId: "chapter-1",
+        language: "en",
         onSkipNarration,
       },
     });
@@ -423,7 +581,7 @@ describe('ChapterOverlay', () => {
     ) as HTMLButtonElement;
     skip.click();
 
-    expect(onSkipNarration).toHaveBeenCalledWith('en');
+    expect(onSkipNarration).toHaveBeenCalledWith("en");
 
     unmount(instance);
     target.remove();

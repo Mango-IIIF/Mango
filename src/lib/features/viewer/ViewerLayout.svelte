@@ -1397,7 +1397,9 @@
   let showToolsEffectiveStory = $derived(isStoryViewer ? false : showToolsEffective);
   let showSettingsEffectiveStory = $derived(isPlainViewerMode ? $showSettings : false);
   let allowSettingsStory = $derived(isPlainViewerMode && normalisedConfig.showSettings !== false);
-  let showContentsEffectiveStory = $derived(isStoryViewer ? false : $showContents);
+  let showContentsEffectiveStory = $derived(
+    isStoryViewer || isStoryBuilder ? false : $showContents,
+  );
   let showCollectionEffectiveStory = $derived(
     isPlainViewerMode ? $showCollection && $allowCollection : false,
   );
@@ -1410,7 +1412,9 @@
   let allowAnnotationsStory = $derived(isStoryViewer ? false : $allowAnnotations);
   let allowToolsStory = $derived(isStoryViewer ? false : $allowTools);
   let allowLayersStory = $derived(isStoryViewer || isStoryBuilder ? false : $allowLayers);
-  let allowContentsStory = $derived(isStoryViewer ? false : $contentsAvailable);
+  let allowContentsStory = $derived(
+    isStoryViewer || isStoryBuilder ? false : $contentsAvailable,
+  );
   let allowChaptersStory = $derived(
     !isStoryViewer && ($mediaType === 'audio' || $mediaType === 'video') && $avChaptersAvailable,
   );
