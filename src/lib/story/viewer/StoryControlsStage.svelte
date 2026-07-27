@@ -122,7 +122,7 @@
   $effect(() => {
     const activeIndex = safeActiveIndex();
     if (!footerRef) return;
-    
+
     // Select the active chapter element (the buttons are children of the footer)
     const activeBtn = footerRef.children[activeIndex] as HTMLElement | undefined;
     if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
@@ -585,6 +585,8 @@
     .story-shell {
       grid-template-rows: auto auto auto;
       overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
     }
 
     .story-shell__body {

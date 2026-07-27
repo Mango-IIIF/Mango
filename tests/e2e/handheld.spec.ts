@@ -26,7 +26,7 @@ test.describe("desktop viewer layout", () => {
     expect(viewerBox).not.toBeNull();
     expect(mediaBox).not.toBeNull();
     expect(toolbarBox).not.toBeNull();
-    expect(viewerBox!.height).toBeGreaterThanOrEqual(900);
+    expect(viewerBox!.height).toBe(720);
     expect(mediaBox!.height).toBeGreaterThanOrEqual(400);
     expect(toolbarBox!.y).toBeGreaterThanOrEqual(mediaBox!.y);
     expect(toolbarBox!.y + toolbarBox!.height).toBeLessThanOrEqual(
@@ -45,7 +45,7 @@ test.describe("desktop viewer layout", () => {
 test.describe("handheld viewer layout", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("keeps navigation and media controls visible without forcing viewport height", async ({
+  test("keeps navigation and media controls contained by the default viewer height", async ({
     page,
   }) => {
     await page.goto("/viewer.html");
@@ -70,19 +70,176 @@ test.describe("handheld viewer layout", () => {
     expect(navigationBox).not.toBeNull();
     expect(mediaBox).not.toBeNull();
     expect(toolbarBox).not.toBeNull();
-    expect(viewerBox!.height).toBeLessThan(700);
+    expect(viewerBox!.height).toBe(720);
     expect(toolbarBox!.y).toBeGreaterThanOrEqual(
       mediaBox!.y + mediaBox!.height,
     );
     expect(toolbarBox!.y + toolbarBox!.height).toBeLessThanOrEqual(
       navigationBox!.y,
     );
-    expect(navigationBox!.y + navigationBox!.height).toBeLessThanOrEqual(844);
-    expect(toolbarBox!.y + toolbarBox!.height).toBeLessThanOrEqual(844);
+    expect(navigationBox!.y + navigationBox!.height).toBeLessThanOrEqual(
+      viewerBox!.y + viewerBox!.height,
+    );
+    expect(toolbarBox!.y + toolbarBox!.height).toBeLessThanOrEqual(
+      viewerBox!.y + viewerBox!.height,
+    );
 
     await page.waitForTimeout(3_000);
     await expect(toolbar).toHaveCSS("opacity", "1");
   });
+
+  test("allows the embedding site to override the default height", async ({
+    page,
+  }) => {
+    await page.goto("/viewer.html");
+
+    const viewer = page.locator("mango-viewer");
+    await expect(viewer).toHaveCSS("height", "720px");
+
+    await page.addStyleTag({ content: "mango-viewer { height: 512px; }" });
+
+    await expect(viewer).toHaveCSS("height", "512px");
+    const innerViewer = viewer.locator(".viewer");
+    await expect(innerViewer).toHaveCSS("height", "512px");
+  });
+
+  test("contains the plain viewer across short portrait and landscape viewports", async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 320, height: 568 },
+      { width: 390, height: 664 },
+      { width: 844, height: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/viewer.html");
+
+      const host = page.locator("mango-viewer");
+      const media = host.locator(".stage__media");
+      const toolbar = host.locator(".stage__toolbar");
+      const navigation = host.locator(".viewer__control-rail");
+      const [hostBox, mediaBox, toolbarBox, navigationBox] = await Promise.all([
+        host.boundingBox(),
+        media.boundingBox(),
+        toolbar.boundingBox(),
+        navigation.boundingBox(),
+      ]);
+
+      expect(hostBox?.height).toBe(Math.min(720, viewport.height));
+      expect(
+        toolbarBox!.y - (mediaBox!.y + mediaBox!.height),
+      ).toBeLessThanOrEqual(1);
+      expect(navigationBox!.y + navigationBox!.height).toBeLessThanOrEqual(
+        hostBox!.y + hostBox!.height,
+      );
+      expect(
+        await page.evaluate(() => document.body.scrollWidth),
+      ).toBeLessThanOrEqual(viewport.width);
+    }
+  });
+
+  test("uses the whole flexible stage without leaving a fullscreen gap", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 664 });
+    await page.addInitScript(() => {
+      Object.defineProperty(Document.prototype, "fullscreenEnabled", {
+        configurable: true,
+        get: () => false,
+      });
+      Object.defineProperty(Element.prototype, "requestFullscreen", {
+        configurable: true,
+        value: undefined,
+      });
+    });
+    await page.goto("/viewer.html");
+
+    const viewer = page.locator("mango-viewer");
+    await viewer.getByRole("button", { name: "Enter fullscreen" }).click();
+
+    const innerViewer = viewer.locator(".viewer");
+    const media = viewer.locator(".stage__media");
+    const toolbar = viewer.locator(".stage__toolbar");
+    const navigation = viewer.locator(".viewer__control-rail");
+    const [viewerBox, mediaBox, toolbarBox, navigationBox] = await Promise.all([
+      innerViewer.boundingBox(),
+      media.boundingBox(),
+      toolbar.boundingBox(),
+      navigation.boundingBox(),
+    ]);
+
+    expect(viewerBox?.height).toBe(664);
+    expect(
+      toolbarBox!.y - (mediaBox!.y + mediaBox!.height),
+    ).toBeLessThanOrEqual(1);
+    expect(navigationBox!.y + navigationBox!.height).toBeLessThanOrEqual(
+      viewerBox!.y + viewerBox!.height,
+    );
+
+    await viewer.getByRole("button", { name: "Metadata" }).click();
+    const panelBox = await viewer.locator(".panel-stack--left").boundingBox();
+    expect(panelBox).not.toBeNull();
+    expect(panelBox!.y).toBeGreaterThanOrEqual(viewerBox!.y);
+    expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(
+      viewerBox!.y + viewerBox!.height,
+    );
+  });
+
+  test("keeps fixed-height config embeds and their internal viewer in sync", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 664 });
+    await page.goto("/config.html");
+
+    const shell = page.locator(".config-viewer-shell");
+    const host = shell.locator("mango-viewer").first();
+    const innerViewer = host.locator(".viewer");
+    const [shellBox, hostBox, innerBox] = await Promise.all([
+      shell.boundingBox(),
+      host.boundingBox(),
+      innerViewer.boundingBox(),
+    ]);
+
+    expect(shellBox?.height).toBe(820);
+    expect(hostBox?.height).toBe(shellBox?.height);
+    expect(innerBox?.height).toBe(shellBox?.height);
+    expect(innerBox!.y + innerBox!.height).toBe(shellBox!.y + shellBox!.height);
+  });
+
+  for (const fixture of [
+    { path: "/story-builder.html", scrollContainer: ".viewer__grid" },
+    {
+      path: "/annotation-editor.html",
+      scrollContainer: ".annotation-workspace",
+    },
+    { path: "/index.html", scrollContainer: ".story-shell" },
+  ]) {
+    test(`contains ${fixture.path} within the custom-element height`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 664 });
+      await page.goto(fixture.path);
+
+      const host = page.locator("mango-viewer");
+      const innerViewer = host.locator(".viewer");
+      const [hostBox, innerBox] = await Promise.all([
+        host.boundingBox(),
+        innerViewer.boundingBox(),
+      ]);
+
+      expect(hostBox?.height).toBe(664);
+      expect(innerBox?.height).toBe(hostBox?.height);
+      expect(innerBox!.y + innerBox!.height).toBe(hostBox!.y + hostBox!.height);
+
+      const sizing = await host
+        .locator(fixture.scrollContainer)
+        .evaluate((element) => ({
+          clientHeight: element.clientHeight,
+          scrollHeight: element.scrollHeight,
+        }));
+      expect(sizing.scrollHeight).toBeGreaterThanOrEqual(sizing.clientHeight);
+    });
+  }
 
   test("makes workspace mode fill the dynamic viewport with a bottom tool rail", async ({
     page,

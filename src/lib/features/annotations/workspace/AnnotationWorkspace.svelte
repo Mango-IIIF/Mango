@@ -137,10 +137,21 @@
   @container mango-viewer (max-width: 1200px) {
     .annotation-workspace {
       grid-template-columns: 1fr;
-      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      grid-template-rows: minmax(220px, 32%) minmax(520px, 1fr) minmax(220px, 32%);
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
     }
     .annotation-workspace__center {
       grid-template-rows: minmax(300px, 1fr) 220px;
+    }
+  }
+
+  @container mango-viewer (max-width: 700px) {
+    .annotation-workspace {
+      grid-template-rows: 280px 520px 280px;
     }
   }
 </style>

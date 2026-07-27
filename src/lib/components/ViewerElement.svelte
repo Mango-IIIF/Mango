@@ -315,17 +315,15 @@
   :host {
     display: block;
     width: 100%;
-    height: auto;
+    /*
+     * The element owns one definite block size. Embedders can override this
+     * with ordinary site CSS (`mango-viewer { height: 900px; }`) or with the
+     * custom property. A definite host height keeps the shadow layout from
+     * alternating between percentage and intrinsic sizing at breakpoints.
+     */
+    height: var(--mango-viewer-height, min(720px, 100vh));
+    height: var(--mango-viewer-height, min(720px, 100svh));
     min-height: 0;
-  }
-
-  /* Graceful fallback for embedders who don't give the element (or an ancestor)
-     a definite height: without this, plain viewer mode has no intrinsic height
-     and collapses to a width-dependent sliver (as little as ~150px on wide
-     containers). A host that sets its own height still wins — this only floors
-     the height, and `:host` rules can be overridden by the embedding page. */
-  :host([mode='viewer']) {
-    min-height: 420px;
   }
 
   .element-root {
@@ -335,24 +333,8 @@
     box-sizing: border-box;
   }
 
-  @media (max-width: 820px) {
-    :host([mode='story-builder']) {
-      height: auto;
-      min-height: min(1080px, 140dvh);
-    }
-
-    :host([mode='workspace']) {
-      height: 100vh;
-      height: 100dvh;
-      min-height: 100vh;
-      min-height: 100dvh;
-    }
-
-    .element-root--workspace {
-      height: 100vh;
-      height: 100dvh;
-      min-height: 100vh;
-      min-height: 100dvh;
-    }
+  :host([mode='workspace']) {
+    height: var(--mango-viewer-height, 100vh);
+    height: var(--mango-viewer-height, 100dvh);
   }
 </style>

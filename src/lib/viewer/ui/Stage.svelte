@@ -598,8 +598,7 @@
       gap: 4px;
     }
 
-    .stage__media--fixed,
-    .stage__media--constrained:not(.stage__media--audio) {
+    .stage__media--fixed {
       height: clamp(300px, 52svh, 560px);
     }
 
@@ -617,8 +616,7 @@
   }
 
   @container mango-viewer (max-width: 480px) {
-    .stage__media--fixed,
-    .stage__media--constrained:not(.stage__media--audio) {
+    .stage__media--fixed {
       height: clamp(230px, 44svh, 340px);
     }
 

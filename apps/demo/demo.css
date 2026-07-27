@@ -180,13 +180,8 @@ body {
 }
 
 .page--viewer .viewer-shell {
-  /* Fill the space under the hero on tall screens, but never shrink below a
-     height that keeps the image stage large. The viewport-relative minimum
-     gives multi-canvas manifests a little more room for the image above their
-     page strip, while the cap avoids an excessively tall viewer. On short
-     viewports the page scrolls instead of the image collapsing. */
-  height: 100%;
-  min-height: clamp(840px, 92dvh, 960px);
+  height: auto;
+  min-height: 0;
 }
 
 /* At/below the viewer's own MOBILE_LAYOUT_WIDTH (1024px) the component switches
@@ -202,11 +197,6 @@ body {
     height: auto;
     min-height: auto;
   }
-
-  .page--viewer .viewer-shell mango-viewer[mode='viewer'] {
-    flex: 0 0 auto;
-    height: auto;
-  }
 }
 
 .page--editor .viewer-shell {
@@ -217,18 +207,10 @@ body {
 
 .viewer-shell mango-viewer {
   display: block;
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  height: 100%;
   width: 100%;
-  overflow: visible;
   --viewer-frame-shadow: none;
-}
-
-@media (min-width: 701px) {
-  .page--story-viewer .viewer-shell mango-viewer[mode="story-viewer"] {
-    min-height: 580px;
-  }
 }
 
 @media (max-width: 700px) {
@@ -244,10 +226,6 @@ body {
     overflow: visible;
   }
 
-  .page--editor .viewer-shell mango-viewer[mode="story-builder"] {
-    min-height: 1080px;
-  }
-
   .viewer-shell {
     min-height: auto;
   }
@@ -255,11 +233,6 @@ body {
   .page--viewer .viewer-shell {
     height: auto;
     min-height: auto;
-  }
-
-  .viewer-shell mango-viewer:not([mode="workspace"]) {
-    flex: 0 0 auto;
-    height: auto;
   }
 
   .manifest-form__row {

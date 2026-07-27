@@ -44,14 +44,13 @@ No application framework or build step is required:
     <style>
       .viewer-shell {
         width: 100%;
-        height: min(75vh, 800px);
-        min-height: 420px;
       }
 
       mango-viewer {
         display: block;
         width: 100%;
-        height: 100%;
+        /* Optional: Mango defaults to 720px, capped by the small viewport. */
+        height: min(75vh, 800px);
       }
     </style>
   </head>
@@ -72,9 +71,11 @@ No application framework or build step is required:
 </html>
 ```
 
-The viewer and its parent need an explicit height. Replace the example Manifest
-URL with a resource that permits cross-origin browser requests. Pin an exact
-package version before deploying to production.
+The viewer has a default height of 720px, capped by the small viewport so it
+fits on phones. Override it with ordinary site CSS as above, or set
+`--mango-viewer-height`; its parent does not need an explicit height. Replace
+the example Manifest URL with a resource that permits cross-origin browser
+requests. Pin an exact package version before deploying to production.
 
 See the [standalone and npm getting-started guide](https://github.com/Mango-IIIF/Mango/wiki/Getting-Started)
 for troubleshooting and production guidance.

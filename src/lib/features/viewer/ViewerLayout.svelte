@@ -2455,7 +2455,7 @@
     gap: 16px;
     box-sizing: border-box;
     height: 100%;
-    max-height: 100vh;
+    max-height: none;
     min-height: 0;
     overflow: hidden;
     padding: 20px;
@@ -3112,9 +3112,9 @@
   @media (max-width: 1024px) {
     .viewer {
       min-height: 0;
-      max-height: none;
-      height: auto;
-      overflow: visible;
+      max-height: 100%;
+      height: 100%;
+      overflow: hidden;
       padding: 12px;
       border-radius: 16px;
     }
@@ -3123,9 +3123,9 @@
   @container mango-viewer (max-width: 1024px) {
     .viewer {
       min-height: 0;
-      max-height: none;
-      height: auto;
-      overflow: visible;
+      max-height: 100%;
+      height: 100%;
+      overflow: hidden;
       padding: 12px;
       gap: 10px;
     }
@@ -3136,9 +3136,9 @@
     }
 
     .viewer.viewer--story-builder {
-      height: min(900px, 100dvh);
-      min-height: 680px;
-      max-height: 100dvh;
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
       overflow: hidden;
     }
 
@@ -3154,10 +3154,10 @@
       grid-template-columns: 1fr;
       grid-template-rows: minmax(0, 1fr) auto;
       row-gap: 8px;
-      height: auto;
-      max-height: none;
+      height: 100%;
+      max-height: 100%;
       min-height: 0;
-      overflow: visible;
+      overflow: hidden;
     }
 
     .viewer--story-builder .viewer__grid {
@@ -3322,9 +3322,9 @@
     }
 
     .stage {
-      height: auto;
+      height: 100%;
       min-height: 0;
-      overflow: visible;
+      overflow: hidden;
     }
 
     .stage--story {
@@ -3368,18 +3368,21 @@
 
   @container mango-viewer (max-width: 700px) {
     .viewer.viewer--story-builder {
-      height: auto;
-      min-height: 1080px;
-      max-height: none;
-      overflow: visible;
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
+      overflow: hidden;
     }
 
     .viewer--story-builder .viewer__grid {
       grid-template-columns: 1fr !important;
       grid-template-rows: 360px 280px 440px;
-      height: auto;
-      max-height: none;
-      overflow: visible;
+      height: 100%;
+      max-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
     }
 
     .viewer--story-builder .viewer__grid > .stage {
@@ -3409,10 +3412,10 @@
 
   @media (max-width: 700px) {
     .viewer.viewer--story-builder {
-      height: auto;
-      min-height: 1080px;
-      max-height: none;
-      overflow: visible;
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
+      overflow: hidden;
     }
   }
 

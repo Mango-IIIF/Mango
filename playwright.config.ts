@@ -21,6 +21,17 @@ export default defineConfig({
         viewport: { width: 1440, height: 1000 },
       },
     },
+    ...(process.env.CI
+      ? [
+          {
+            name: 'mobile-webkit',
+            grep: /handheld viewer layout/,
+            use: {
+              ...devices['iPhone 13'],
+            },
+          },
+        ]
+      : []),
   ],
   webServer: {
     command:
