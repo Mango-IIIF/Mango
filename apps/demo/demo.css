@@ -46,6 +46,13 @@ body {
   min-height: 0 !important;
 }
 
+.page--viewer {
+  /* Fill the viewport on tall screens, but allow the page to grow (and scroll)
+     rather than squeezing the viewer: the image stage keeps a generous height
+     even when the hero leaves little room. */
+  min-height: 100dvh;
+}
+
 .page--story-viewer {
   padding-bottom: clamp(4px, 0.8vw, 10px);
 }
@@ -173,8 +180,31 @@ body {
 }
 
 .page--viewer .viewer-shell {
-  height: min(880px, calc(100dvh - 40px));
-  min-height: 680px;
+  /* Fill the space under the hero on tall screens, but never shrink below a
+     height that keeps the image stage large. On short viewports the page
+     scrolls instead of the image collapsing. */
+  height: 100%;
+  min-height: 840px;
+}
+
+/* At/below the viewer's own MOBILE_LAYOUT_WIDTH (1024px) the component switches
+   to a stacked layout that is intrinsically tall and expects an auto-height host
+   that scrolls. Release the desktop 100dvh lock in that range so the page scrolls
+   naturally instead of cramming the tall viewer into a fixed short track. */
+@media (max-width: 1024px) {
+  .page--viewer {
+    height: auto;
+  }
+
+  .page--viewer .viewer-shell {
+    height: auto;
+    min-height: auto;
+  }
+
+  .page--viewer .viewer-shell mango-viewer[mode='viewer'] {
+    flex: 0 0 auto;
+    height: auto;
+  }
 }
 
 .page--editor .viewer-shell {

@@ -546,12 +546,17 @@
 
   @container (max-width: 500px) {
     .stage__toolbar--below {
-      --stage-toolbar-gap: 4px;
-      --stage-toolbar-button-width: 40px;
+      /* Scale the controls down with the container so the row fits without
+         horizontal scrolling on narrow/mobile widths. Widths track the
+         container (cqw) between sensible min/max bounds; button height stays
+         tap-friendly. overflow-x below remains only as a safety net for
+         extremely narrow viewports. */
+      --stage-toolbar-gap: clamp(2px, 1cqw, 4px);
+      --stage-toolbar-button-width: clamp(30px, 9.4cqw, 40px);
       --stage-toolbar-button-height: 40px;
       --stage-toolbar-group-height: calc(var(--stage-toolbar-button-height) + 2px);
-      --stage-toolbar-value-width: 58px;
-      --stage-toolbar-zoom-width: 54px;
+      --stage-toolbar-value-width: clamp(44px, 15cqw, 58px);
+      --stage-toolbar-zoom-width: clamp(40px, 14cqw, 54px);
       --stage-toolbar-zoom-input-width: 3.6ch;
       --stage-toolbar-value-font-size: clamp(10px, 3.4cqw, 12px);
       --stage-toolbar-value-gap: clamp(2px, .8cqw, 4px);
@@ -565,7 +570,10 @@
       transform: translateX(-50%);
       margin-inline: auto;
       padding: 0;
-      justify-content: flex-start;
+      /* Keep the controls centred; `safe` falls back to start-alignment only if
+         they ever overflow, so the row never gets its leading controls clipped
+         beyond the scroll origin on ultra-narrow screens. */
+      justify-content: safe center;
       overflow-x: auto;
       overflow-y: hidden;
       overscroll-behavior-x: contain;

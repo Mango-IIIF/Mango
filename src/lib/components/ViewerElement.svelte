@@ -319,6 +319,15 @@
     min-height: 0;
   }
 
+  /* Graceful fallback for embedders who don't give the element (or an ancestor)
+     a definite height: without this, plain viewer mode has no intrinsic height
+     and collapses to a width-dependent sliver (as little as ~150px on wide
+     containers). A host that sets its own height still wins — this only floors
+     the height, and `:host` rules can be overridden by the embedding page. */
+  :host([mode='viewer']) {
+    min-height: 420px;
+  }
+
   .element-root {
     width: 100%;
     height: 100%;
