@@ -264,12 +264,13 @@
         ></span>
       </button>
     {/each}
+  </nav>
+
   {#if error}
     <div class="story-shell__error" data-testid="story-controls-error">
       {error}
     </div>
   {/if}
-
 </div>
 
 <style>

@@ -33,7 +33,11 @@ describe("StoryBuilderWideAuthoring", () => {
             durationMs: 5000,
             keyframes: [
               { id: "one", timeMs: 0, viewBox: { x: 0, y: 0, w: 100, h: 100 } },
-              { id: "two", timeMs: 5000, viewBox: { x: 25, y: 25, w: 50, h: 50 } },
+              {
+                id: "two",
+                timeMs: 5000,
+                viewBox: { x: 25, y: 25, w: 50, h: 50 },
+              },
             ],
           },
           narrationSegment: { en: { start: 1, end: 4 } },
@@ -183,7 +187,7 @@ describe("StoryBuilderWideAuthoring", () => {
     await tick();
     expect(target.querySelector(".story-wide-annotations")).toBeTruthy();
     expect(target.textContent).toContain("Rectangle");
-    expect(target.textContent).toContain("A text annotation");
+    expect(target.textContent).not.toContain("A text annotation");
     expect(
       target.querySelector(".story-wide-annotations__tool-grid"),
     ).toBeNull();
@@ -192,22 +196,20 @@ describe("StoryBuilderWideAuthoring", () => {
     ).toHaveLength(0);
     expect(
       target.querySelectorAll(".story-wide-annotations__item"),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
 
     const editButtons = target.querySelectorAll<HTMLButtonElement>(
-      ".story-wide-annotations__item-select",
+      ".story-wide-annotations__select",
     );
     editButtons[0].click();
-    editButtons[1].click();
-    expect(onEditTextAnnotation).toHaveBeenCalledWith("en");
+    expect(onEditTextAnnotation).not.toHaveBeenCalled();
     expect(onEditDrawingAnnotation).toHaveBeenCalledWith("rectangle-one");
 
     const deleteButtons = target.querySelectorAll<HTMLButtonElement>(
-      ".story-wide-annotations__item-delete",
+      ".story-wide-annotations__delete",
     );
     deleteButtons[0].click();
-    deleteButtons[1].click();
-    expect(onDeleteTextAnnotation).toHaveBeenCalledWith("en");
+    expect(onDeleteTextAnnotation).not.toHaveBeenCalled();
     expect(onDeleteDrawingAnnotation).toHaveBeenCalledWith("rectangle-one");
 
     story.update((state) => ({

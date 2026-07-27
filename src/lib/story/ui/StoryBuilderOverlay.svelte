@@ -43,7 +43,17 @@
   export let onSetAnnotationLanguage: (lang: string) => void;
   export let annotationLanguage: Readable<string>;
   export let annotationTool: Readable<ChapterAnnotationTool>;
+  export let selectedDrawingAnnotationId: Readable<string | null>;
   export let onSetAnnotationTool: (tool: ChapterAnnotationTool) => void;
+  export let onSetDrawingAnnotationLabel: (annotationId: string, lang: string, value: string) => void;
+  export let onSetDrawingAnnotationStyle: (
+    annotationId: string,
+    style: {
+      color?: string | null;
+      strokeWidth?: 'thin' | 'medium' | 'thick';
+      fillMode?: 'transparent' | 'solid';
+    },
+  ) => void;
   export let language = 'en';
   export let languages: string[] = ['en'];
   export let onBackNarration: () => void;
@@ -484,7 +494,10 @@
         onSave={onSaveChapterSettings}
         {onSetAnnotationLanguage}
         {annotationTool}
+        {selectedDrawingAnnotationId}
         {onSetAnnotationTool}
+        {onSetDrawingAnnotationLabel}
+        {onSetDrawingAnnotationStyle}
         onSetAnnotationPositioning={(lang) => onStartAnnotationPositioning(lang)}
         layers={$layers}
         layerOpacities={$layerOpacities}

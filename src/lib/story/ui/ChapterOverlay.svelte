@@ -13,6 +13,7 @@
     AnnotationPlacement,
     ChapterAdvance,
     ChapterAnnotationTool,
+    ChapterDrawingAnnotation,
     StoryState,
   } from "../../core/types/story";
   import type { MediaType, MediaSource } from "../../iiif/mediaResolver";
@@ -76,8 +77,20 @@
   export let onSetAnnotationLanguage: ((lang: string) => void) | undefined;
   export let annotationTool: Readable<ChapterAnnotationTool> =
     readable("select");
+  export let selectedDrawingAnnotationId: Readable<string | null> = readable(null);
   export let onSetAnnotationTool:
     ((tool: ChapterAnnotationTool) => void) | undefined;
+  export let onSetDrawingAnnotationLabel:
+    ((annotationId: string, lang: string, value: string) => void) | undefined;
+  export let onSetDrawingAnnotationStyle:
+    ((
+      annotationId: string,
+      style: {
+        color?: string | null;
+        strokeWidth?: "thin" | "medium" | "thick";
+        fillMode?: ChapterDrawingAnnotation["fillMode"];
+      },
+    ) => void) | undefined;
   export let onUpdateManifest:
     ((chapterId: string, manifest: string) => void) | undefined;
   export let onLoadManifest: ((manifest: string) => void) | undefined;
@@ -233,7 +246,7 @@
   };
   const taskSaveLabels: Record<ChapterTaskId, string> = {
     details: "Save details",
-    focus: "Save annotations",
+    focus: "Save annotation",
     motion: "Save motion",
     "audio-timing": "Save narration",
     "transition-timing": "Save chapter transition time",
@@ -255,6 +268,7 @@
     { id: "freehand", label: "Freehand", icon: Pencil },
     { id: "line", label: "Line", icon: Minus },
   ];
+  const annotationPalette = ["#e07a3f", "#f6c343", "#39b57e", "#3aa0e0", "#a06eff", "#ef5f7a"];
 
   const openTask = (task: ChapterTaskId) => {
     const evaluation = taskEvaluations.find((item) => item.id === task);
@@ -540,6 +554,8 @@
   }
 
   $: chapter = $story.chapters.find((item) => item.id === chapterId) ?? null;
+  $: selectedDrawingAnnotation =
+    chapter?.drawingAnnotations?.find((item) => item.id === $selectedDrawingAnnotationId) ?? null;
   $: {
     const currentPosition = $viewBox;
     const currentSignature = positionSignature(currentPosition);
@@ -1201,8 +1217,8 @@
               Drawing annotations
             </div>
             <p class="chapter-overlay__hint">
-              Add a point, shape, or line directly to the artwork. These do not
-              contain the separate text-box content below.
+              Add a point, shape, or line directly to the artwork. Select an
+              annotation in the footer to edit it here.
             </p>
             <div
               class="chapter-overlay__annotation-tools"
@@ -1222,28 +1238,91 @@
               {/each}
             </div>
           </div>
-          <ChapterTextForm
-            section="focus"
-            {activeLanguage}
-            {languages}
-            {metadataSectionCollapsed}
-            {annotationSectionCollapsed}
-            {chapterTitleDraft}
-            {chapterDescriptionDraft}
-            {annotationDraft}
-            hasChapter={Boolean(chapter)}
-            onLanguageChange={handleLanguageChange}
-            onToggleMetadata={() => {
-              metadataSectionCollapsed = !metadataSectionCollapsed;
-            }}
-            onToggleAnnotation={() => {
-              annotationSectionCollapsed = !annotationSectionCollapsed;
-            }}
-            onChapterTitleInput={handleChapterTitleInput}
-            onChapterDescriptionInput={handleChapterDescriptionInput}
-            onAnnotationInput={handleAnnotationInput}
-            onSetPositionClick={handleSetPositionClick}
-          />
+          {#if selectedDrawingAnnotation}
+            <div class="chapter-overlay__section chapter-overlay__section--card chapter-overlay__annotation-editor">
+              <div class="chapter-overlay__section-title">Edit annotation</div>
+
+              <div class="chapter-overlay__field">
+                <span>Text translations</span>
+                {#each languages as lang}
+                  <label class="chapter-overlay__translation-field">
+                    <small>{lang.toUpperCase()}</small>
+                    <input
+                      type="text"
+                      value={selectedDrawingAnnotation.label?.[lang] ?? ""}
+                      placeholder={`Annotation text (${lang.toUpperCase()})`}
+                      on:input={(event) => onSetDrawingAnnotationLabel?.(
+                        selectedDrawingAnnotation!.id,
+                        lang,
+                        (event.currentTarget as HTMLInputElement).value,
+                      )}
+                    />
+                  </label>
+                {/each}
+              </div>
+
+              <div class="chapter-overlay__field">
+                <span>Colour</span>
+                <div class="chapter-overlay__annotation-palette">
+                  {#each annotationPalette as color}
+                    <button
+                      type="button"
+                      style={`--annotation-color:${color}`}
+                      class:chapter-overlay__annotation-swatch--active={(selectedDrawingAnnotation.color ?? "#e07a3f") === color}
+                      aria-label={`Set annotation colour to ${color}`}
+                      aria-pressed={(selectedDrawingAnnotation.color ?? "#e07a3f") === color}
+                      on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { color })}
+                    ></button>
+                  {/each}
+                  <input
+                    type="color"
+                    value={selectedDrawingAnnotation.color ?? "#e07a3f"}
+                    aria-label="Custom annotation colour"
+                    on:input={(event) => onSetDrawingAnnotationStyle?.(
+                      selectedDrawingAnnotation!.id,
+                      { color: (event.currentTarget as HTMLInputElement).value },
+                    )}
+                  />
+                </div>
+              </div>
+
+              {#if selectedDrawingAnnotation.type === "rectangle" || selectedDrawingAnnotation.type === "polygon"}
+                <div class="chapter-overlay__field">
+                  <span>Background</span>
+                  <div class="chapter-overlay__segmented-control">
+                    <button
+                      type="button"
+                      class:chapter-overlay__segmented-control--active={selectedDrawingAnnotation.fillMode !== "solid"}
+                      on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { fillMode: "transparent" })}
+                    >Transparent</button>
+                    <button
+                      type="button"
+                      class:chapter-overlay__segmented-control--active={selectedDrawingAnnotation.fillMode === "solid"}
+                      on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { fillMode: "solid" })}
+                    >Solid</button>
+                  </div>
+                </div>
+              {/if}
+
+              <div class="chapter-overlay__field">
+                <span>Stroke</span>
+                <div class="chapter-overlay__segmented-control">
+                  {#each ["thin", "medium", "thick"] as width}
+                    <button
+                      type="button"
+                      class:chapter-overlay__segmented-control--active={(selectedDrawingAnnotation.strokeWidth ?? "medium") === width}
+                      on:click={() => onSetDrawingAnnotationStyle?.(
+                        selectedDrawingAnnotation!.id,
+                        { strokeWidth: width as "thin" | "medium" | "thick" },
+                      )}
+                    >{width}</button>
+                  {/each}
+                </div>
+              </div>
+            </div>
+          {:else}
+            <p class="chapter-overlay__hint">Draw an annotation, or select one from the footer to edit its text and appearance.</p>
+          {/if}
         </section>
 
         {#if chapter}
@@ -1811,6 +1890,18 @@
       background: rgba(42, 199, 255, 0.12);
       color: var(--viewer-text, #e8edf4);
     }
+    .chapter-overlay__annotation-editor { display:grid; gap:14px; }
+    .chapter-overlay__field { display:grid; gap:7px; color:var(--viewer-muted, #9aa6b2); font-size:10px; font-weight:700; }
+    .chapter-overlay__translation-field { display:grid; grid-template-columns:28px minmax(0,1fr); align-items:center; gap:7px; }
+    .chapter-overlay__translation-field small { color:var(--viewer-muted, #9aa6b2); font-size:9px; }
+    .chapter-overlay__translation-field input { min-width:0; box-sizing:border-box; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:8px 9px; background:rgba(4,9,15,.35); color:var(--viewer-text, #e8edf4); font:inherit; }
+    .chapter-overlay__annotation-palette { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+    .chapter-overlay__annotation-palette button { width:25px; height:25px; border:2px solid transparent; border-radius:999px; background:var(--annotation-color); cursor:pointer; }
+    .chapter-overlay__annotation-palette .chapter-overlay__annotation-swatch--active { border-color:#fff; box-shadow:0 0 0 2px var(--annotation-color); }
+    .chapter-overlay__annotation-palette input[type="color"] { width:30px; height:27px; padding:1px; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:7px; background:transparent; cursor:pointer; }
+    .chapter-overlay__segmented-control { display:flex; gap:5px; }
+    .chapter-overlay__segmented-control button { flex:1; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:7px; background:transparent; color:var(--viewer-muted, #9aa6b2); text-transform:capitalize; cursor:pointer; }
+    .chapter-overlay__segmented-control .chapter-overlay__segmented-control--active { border-color:var(--accent, #e07a3f); background:color-mix(in srgb, var(--accent, #e07a3f) 14%, transparent); color:var(--viewer-text, #e8edf4); }
 
     .chapter-overlay__task {
       display: grid;

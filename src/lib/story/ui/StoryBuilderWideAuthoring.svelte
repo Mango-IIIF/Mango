@@ -1,6 +1,6 @@
 <script lang="ts">
   import { MapPin, Plus, Trash2 } from "@lucide/svelte";
-  import type { Readable } from "svelte/store";
+  import { readable, type Readable } from "svelte/store";
   import type { ChapterCameraTrack, StoryState } from "../../core/types/story";
   import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
   import type { MediaMarksState } from "../mediaMarks";
@@ -11,6 +11,7 @@
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
+  export let selectedDrawingAnnotationId: Readable<string | null> = readable(null);
   export let activeTask: Readable<ChapterTaskId | null>;
   export let mediaType: Readable<MediaType | null>;
   export let mediaSources: Readable<MediaSource[]>;
@@ -28,9 +29,7 @@
   export let onPreviewMediaSegment: () => void;
   export let onStopPreviewMediaSegment: () => void;
   export let onDeleteDrawingAnnotation: (annotationId: string) => void;
-  export let onDeleteTextAnnotation: (language: string) => void;
   export let onEditDrawingAnnotation: (annotationId: string) => void;
-  export let onEditTextAnnotation: (language: string) => void;
   export let onAddPoint: () => void;
   export let onDeletePoint: (keyframeId: string) => void = () => {};
   export let onGoToPoint: (keyframeId: string) => void;
@@ -155,10 +154,10 @@
   <StoryBuilderWideAnnotations
     {story}
     {selectedChapterId}
+    selectedAnnotationId={selectedDrawingAnnotationId}
+    {language}
     onDeleteDrawing={onDeleteDrawingAnnotation}
-    onDeleteText={onDeleteTextAnnotation}
     onEditDrawing={onEditDrawingAnnotation}
-    onEditText={onEditTextAnnotation}
   />
 {:else}
   <div class="story-wide-authoring--empty" aria-hidden="true"></div>

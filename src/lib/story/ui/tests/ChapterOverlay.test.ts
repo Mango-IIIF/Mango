@@ -317,7 +317,7 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("edits annotations with language-specific text and shared placement", async () => {
+  it("edits selected Mango annotation translations and appearance in the sidebar", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -325,13 +325,21 @@ describe("ChapterOverlay", () => {
           manifest: "https://example.org/manifest.json",
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 10, h: 10 },
+          drawingAnnotations: [
+            {
+              id: "rectangle-1",
+              type: "rectangle",
+              rect: { x: 1, y: 1, w: 4, h: 3 },
+              label: { en: "Note" },
+            },
+          ],
         },
       ],
     });
     const target = createTarget();
-    let positioningTriggered = "";
-    const onUpdateChapterPosition = vi.fn();
-    const onSave = vi.fn();
+    const selectedDrawingAnnotationId = writable<string | null>("rectangle-1");
+    const onSetDrawingAnnotationLabel = vi.fn();
+    const onSetDrawingAnnotationStyle = vi.fn();
 
     const instance = mount(ChapterOverlay, {
       target,
@@ -340,45 +348,39 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-1",
         language: "en",
-        onUpdateAnnotationText: (
-          chapterId: string,
-          lang: string,
-          text: string,
-        ) => store.setAnnotationText({ chapterId, language: lang, text }),
-        onSetAnnotationPositioning: (lang: string) => {
-          positioningTriggered = lang;
-        },
-        onUpdateChapterPosition,
-        onSave,
+        languages: ["en", "cy"],
+        selectedDrawingAnnotationId,
+        onSetDrawingAnnotationLabel,
+        onSetDrawingAnnotationStyle,
       },
     });
 
-    const textarea = target.querySelector(
-      '[data-testid="chapter-annotation"]',
-    ) as HTMLTextAreaElement;
-    textarea.value = "Note";
-    textarea.dispatchEvent(new Event("input"));
+    (
+      target.querySelector('[data-task-id="focus"] button') as HTMLButtonElement
+    ).click();
     await tick();
 
-    const setPositionButton = target.querySelector(
-      '[data-testid="set-annotation-position"]',
-    ) as HTMLButtonElement;
-    expect(setPositionButton).toBeTruthy();
-    setPositionButton.click();
-    expect(positioningTriggered).toBe("en");
+    const translationInputs = target.querySelectorAll<HTMLInputElement>(
+      ".chapter-overlay__translation-field input",
+    );
+    expect(translationInputs).toHaveLength(2);
+    translationInputs[1].value = "Nodyn";
+    translationInputs[1].dispatchEvent(new Event("input"));
+    expect(onSetDrawingAnnotationLabel).toHaveBeenCalledWith(
+      "rectangle-1",
+      "cy",
+      "Nodyn",
+    );
 
-    const saveButton = target.querySelector(
-      '[data-testid="chapter-save"]',
-    ) as HTMLButtonElement;
-    saveButton.click();
-
-    await tick();
-    const storyValue = await new Promise((resolve) => {
-      store.story.subscribe((value) => resolve(value))();
+    const solidButton = Array.from(
+      target.querySelectorAll<HTMLButtonElement>(
+        ".chapter-overlay__segmented-control button",
+      ),
+    ).find((button) => button.textContent?.trim() === "Solid")!;
+    solidButton.click();
+    expect(onSetDrawingAnnotationStyle).toHaveBeenCalledWith("rectangle-1", {
+      fillMode: "solid",
     });
-    expect((storyValue as any).chapters[0].annotations.en.text).toBe("Note");
-    expect(onUpdateChapterPosition).not.toHaveBeenCalled();
-    expect(onSave).toHaveBeenCalledOnce();
 
     unmount(instance);
     target.remove();

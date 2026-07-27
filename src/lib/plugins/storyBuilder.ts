@@ -1,23 +1,28 @@
-import { get } from 'svelte/store';
-import { mount, unmount } from 'svelte';
-import type { PluginContext, ViewerPlugin } from '../core/types/plugin';
+import { get } from "svelte/store";
+import { mount, unmount } from "svelte";
+import type { PluginContext, ViewerPlugin } from "../core/types/plugin";
 import {
   createStoryBuilderController,
   type StoryBuilderOptions,
-} from '../story/storyBuilderController';
-import StoryBuilderSidebar from '../story/ui/StoryBuilderSidebar.svelte';
-import StoryBuilderOverlay from '../story/ui/StoryBuilderOverlay.svelte';
-import StoryBuilderTopBar from '../story/ui/StoryBuilderTopBar.svelte';
-import StoryBuilderWideAuthoring from '../story/ui/StoryBuilderWideAuthoring.svelte';
+} from "../story/storyBuilderController";
+import StoryBuilderSidebar from "../story/ui/StoryBuilderSidebar.svelte";
+import StoryBuilderOverlay from "../story/ui/StoryBuilderOverlay.svelte";
+import StoryBuilderTopBar from "../story/ui/StoryBuilderTopBar.svelte";
+import StoryBuilderWideAuthoring from "../story/ui/StoryBuilderWideAuthoring.svelte";
 
-export const createStoryBuilderPlugins = (options: StoryBuilderOptions = {}): ViewerPlugin[] => {
+export const createStoryBuilderPlugins = (
+  options: StoryBuilderOptions = {},
+): ViewerPlugin[] => {
   const controller = createStoryBuilderController(options);
 
   const makePlugin = (
     id: string,
     label: string,
-    slot: ViewerPlugin['slot'],
-    createMount: (target: HTMLElement, ctx: PluginContext) => { destroy: () => void },
+    slot: ViewerPlugin["slot"],
+    createMount: (
+      target: HTMLElement,
+      ctx: PluginContext,
+    ) => { destroy: () => void },
   ): ViewerPlugin => {
     let detach: (() => void) | null = null;
     let handle: { destroy: () => void } | null = null;
@@ -39,59 +44,72 @@ export const createStoryBuilderPlugins = (options: StoryBuilderOptions = {}): Vi
     };
   };
 
-  const sidebar = makePlugin('story-builder-sidebar', 'Story Builder', 'left', (target, ctx) => {
-    controller.setSaveConfig(ctx.config?.story?.save ?? {});
-    const instance = mount(StoryBuilderSidebar, {
-      target,
-      props: {
-        story: controller.story,
-        selectedChapterId: controller.selectedChapterId,
-        error: controller.error,
-        validationErrors: controller.validationErrors,
-        modelPoseDebug: controller.modelPoseDebug,
-        language: controller.language,
-        showDebug: Boolean(ctx.config?.story?.showDebug),
-        onAddChapter: controller.addChapter,
-        onSelectChapter: (chapterId: string) => {
-          controller.activeChapterTask.set(null);
-          if (get(controller.selectedChapterId) !== chapterId) {
-            controller.selectChapter(chapterId);
-          }
-          controller.openChapter();
+  const sidebar = makePlugin(
+    "story-builder-sidebar",
+    "Story Builder",
+    "left",
+    (target, ctx) => {
+      controller.setSaveConfig(ctx.config?.story?.save ?? {});
+      const instance = mount(StoryBuilderSidebar, {
+        target,
+        props: {
+          story: controller.story,
+          selectedChapterId: controller.selectedChapterId,
+          error: controller.error,
+          validationErrors: controller.validationErrors,
+          modelPoseDebug: controller.modelPoseDebug,
+          language: controller.language,
+          showDebug: Boolean(ctx.config?.story?.showDebug),
+          onAddChapter: controller.addChapter,
+          onSelectChapter: (chapterId: string) => {
+            controller.activeChapterTask.set(null);
+            if (get(controller.selectedChapterId) !== chapterId) {
+              controller.selectChapter(chapterId);
+            }
+            controller.openChapter();
+          },
+          onDeleteChapter: controller.deleteChapter,
+          onDuplicateChapter: controller.duplicateChapter,
+          onReorderChapter: controller.reorderChapter,
         },
-        onDeleteChapter: controller.deleteChapter,
-        onDuplicateChapter: controller.duplicateChapter,
-        onReorderChapter: controller.reorderChapter,
-      },
-    });
-    return { destroy: () => unmount(instance) };
-  });
+      });
+      return { destroy: () => unmount(instance) };
+    },
+  );
 
-  const topBar = makePlugin('story-builder-topbar', 'Story Builder Actions', 'top', (target) => {
-    const instance = mount(StoryBuilderTopBar, {
-      target,
-      props: {
-        story: controller.story,
-        isPreviewing: controller.isPreviewing,
-        saveState: controller.saveState,
-        saveConfigured: controller.saveConfigured,
-        dirty: controller.dirty,
-        canUndo: controller.canUndo,
-        canRedo: controller.canRedo,
-        language: controller.language,
-        onUndo: controller.undo,
-        onRedo: controller.redo,
-        onNarration: controller.openNarration,
-        onPreview: controller.startPreview,
-        onStopPreview: controller.stopPreview,
-        onSave: () => void controller.saveStory(),
-        onExport: controller.exportStory,
-      },
-    });
-    return { destroy: () => unmount(instance) };
-  });
+  const topBar = makePlugin(
+    "story-builder-topbar",
+    "Story Builder Actions",
+    "top",
+    (target) => {
+      const instance = mount(StoryBuilderTopBar, {
+        target,
+        props: {
+          story: controller.story,
+          isPreviewing: controller.isPreviewing,
+          saveState: controller.saveState,
+          saveConfigured: controller.saveConfigured,
+          dirty: controller.dirty,
+          canUndo: controller.canUndo,
+          canRedo: controller.canRedo,
+          language: controller.language,
+          onUndo: controller.undo,
+          onRedo: controller.redo,
+          onNarration: controller.openNarration,
+          onPreview: controller.startPreview,
+          onStopPreview: controller.stopPreview,
+          onSave: () => void controller.saveStory(),
+          onExport: controller.exportStory,
+        },
+      });
+      return { destroy: () => unmount(instance) };
+    },
+  );
 
-  const createEditorSurface = (target: HTMLElement, surface: 'overlay' | 'inspector') => {
+  const createEditorSurface = (
+    target: HTMLElement,
+    surface: "overlay" | "inspector",
+  ) => {
     const instance = mount(StoryBuilderOverlay, {
       target,
       props: {
@@ -112,11 +130,16 @@ export const createStoryBuilderPlugins = (options: StoryBuilderOptions = {}): Vi
         transitionDelayDefault: controller.transitionDelayDefault,
         annotationLanguage: controller.annotationLanguage,
         annotationTool: controller.chapterAnnotationTool,
+        selectedDrawingAnnotationId: controller.selectedDrawingAnnotationId,
         saveModalOpen: controller.saveModalOpen,
         saveModalPayload: controller.saveModalPayload,
         onCloseSaveModal: controller.closeSaveModal,
         onSetAnnotationLanguage: controller.setAnnotationLanguage,
         onSetAnnotationTool: controller.setChapterAnnotationTool,
+        onSetDrawingAnnotationLabel:
+          controller.setChapterDrawingAnnotationLabel,
+        onSetDrawingAnnotationStyle:
+          controller.setChapterDrawingAnnotationStyle,
         language: controller.language,
         languages: controller.languages,
         onBackNarration: controller.backFromNarration,
@@ -160,7 +183,8 @@ export const createStoryBuilderPlugins = (options: StoryBuilderOptions = {}): Vi
         onPreviewMotion: controller.previewMotion,
         onStopMotionPreview: controller.stopMotionPreview,
         onStartMotionPointPositioning: controller.startMotionPointPositioning,
-        onConfirmMotionPointPositioning: controller.confirmMotionPointPositioning,
+        onConfirmMotionPointPositioning:
+          controller.confirmMotionPointPositioning,
         onCancelMotionPointPositioning: controller.cancelMotionPointPositioning,
         positioningLanguage: controller.positioningLanguage,
         onStartAnnotationPositioning: controller.startAnnotationPositioning,
@@ -171,27 +195,31 @@ export const createStoryBuilderPlugins = (options: StoryBuilderOptions = {}): Vi
     return { destroy: () => unmount(instance) };
   };
 
-  const inspector = makePlugin('story-builder-inspector', 'Chapter Inspector', 'right', (target) =>
-    createEditorSurface(target, 'inspector'),
+  const inspector = makePlugin(
+    "story-builder-inspector",
+    "Chapter Inspector",
+    "right",
+    (target) => createEditorSurface(target, "inspector"),
   );
 
   const overlay = makePlugin(
-    'story-builder-overlay',
-    'Story Builder Overlay',
-    'overlay',
-    (target) => createEditorSurface(target, 'overlay'),
+    "story-builder-overlay",
+    "Story Builder Overlay",
+    "overlay",
+    (target) => createEditorSurface(target, "overlay"),
   );
 
   const wideAuthoring = makePlugin(
-    'story-builder-wide-authoring',
-    'Chapter timeline',
-    'bottom',
+    "story-builder-wide-authoring",
+    "Chapter timeline",
+    "bottom",
     (target) => {
       const instance = mount(StoryBuilderWideAuthoring, {
         target,
         props: {
           story: controller.story,
           selectedChapterId: controller.selectedChapterId,
+          selectedDrawingAnnotationId: controller.selectedDrawingAnnotationId,
           activeTask: controller.activeChapterTask,
           mediaType: controller.mediaType,
           mediaSources: controller.mediaSources,
@@ -205,9 +233,7 @@ export const createStoryBuilderPlugins = (options: StoryBuilderOptions = {}): Vi
           onPreviewMediaSegment: controller.previewMediaSegment,
           onStopPreviewMediaSegment: controller.stopPreviewMediaSegment,
           onDeleteDrawingAnnotation: controller.deleteChapterDrawingAnnotation,
-          onDeleteTextAnnotation: controller.deleteChapterTextAnnotation,
           onEditDrawingAnnotation: controller.editChapterDrawingAnnotation,
-          onEditTextAnnotation: controller.editChapterTextAnnotation,
           onAddPoint: () => controller.startMotionPointPositioning(),
           onDeletePoint: controller.deleteMotionPoint,
           onGoToPoint: controller.goToMotionPoint,

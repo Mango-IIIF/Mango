@@ -61,9 +61,14 @@ const interpolateCatmullRomViewBox = (
   const rawW = catmullRom(p0.w, p1.w, p2.w, p3.w, t);
   const w = clampMonotonic(rawW, p1.w, p2.w, 0.05);
 
-  // Lock aspect ratio A = p1.w / p1.h to prevent canvas distortion
-  const aspect = p1.h > 0 ? p1.w / p1.h : 1;
-  const h = Math.max(1, w / aspect);
+  // Interpolate the aspect ratio from the segment start (p1) towards the
+  // segment end (p2) so the height actually reaches p2.h at t=1. Locking to
+  // p1's aspect caused a vertical "pop" at segment ends whenever consecutive
+  // keyframes were captured at different viewer aspect ratios.
+  const aspect1 = p1.h > 0 ? p1.w / p1.h : 1;
+  const aspect2 = p2.h > 0 ? p2.w / p2.h : aspect1;
+  const aspect = lerp(aspect1, aspect2, t);
+  const h = Math.max(1, w / (aspect || 1));
 
   return { x, y, w, h };
 };
@@ -299,15 +304,19 @@ export const configureCameraTrackPreset = (
   };
 };
 
-/** Deterministically samples an in-chapter camera path at a presentation time. */
-export const sampleCameraTrack = (
-  track: ChapterCameraTrack,
-  timeMs: number,
+/**
+ * Samples the raw (un-eased) camera path at an absolute presentation time.
+ * Segments are traversed with LINEAR time progress; global easing is applied
+ * separately by {@link sampleCameraTrack} via a time-warp. Keeping the
+ * per-segment progress linear is what removes the "dead stop" the camera used
+ * to make at every interior keyframe (each segment previously eased 0→1, so
+ * ease-in-out drove velocity to zero at both ends of every segment).
+ */
+const samplePositionAtTime = (
+  points: ChapterCameraKeyframe[],
+  pathType: ChapterCameraTrack['pathType'],
+  time: number,
 ): CameraTrackSample | null => {
-  const points = [...track.keyframes].sort((a, b) => a.timeMs - b.timeMs);
-  if (!points.length) return null;
-  const time = Math.max(0, Math.min(track.durationMs, Number.isFinite(timeMs) ? timeMs : 0));
-
   let toIndex = points.findIndex((point) => point.timeMs > time);
   if (toIndex === -1) {
     toIndex = points.length - 1;
@@ -345,8 +354,7 @@ export const sampleCameraTrack = (
 
   const effectiveStart = from.timeMs + dwell;
   const span = Math.max(1, to.timeMs - effectiveStart);
-  const rawProgress = Math.max(0, Math.min(1, (time - effectiveStart) / span));
-  const progress = ease(rawProgress, track.easing ?? 'ease-in-out');
+  const progress = Math.max(0, Math.min(1, (time - effectiveStart) / span));
 
   const layerIds = new Set([
     ...Object.keys(from.layerOpacities ?? {}),
@@ -361,7 +369,7 @@ export const sampleCameraTrack = (
 
   let viewBoxResult: ViewBox | undefined = undefined;
   if (from.viewBox && to.viewBox) {
-    const isSpline = track.pathType ? track.pathType === 'spline' : points.length >= 3;
+    const isSpline = pathType ? pathType === 'spline' : points.length >= 3;
     if (isSpline) {
       const p1 = from.viewBox;
       const p2 = to.viewBox;
@@ -382,4 +390,30 @@ export const sampleCameraTrack = (
     model: progress >= 1 ? (to.model ?? from.model) : (from.model ?? to.model),
     ...(layerIds.size ? { layerOpacities } : {}),
   };
+};
+
+/**
+ * Deterministically samples an in-chapter camera path at a presentation time.
+ *
+ * Easing is applied once, across the whole track, by warping the presentation
+ * time before locating the position. This produces a smooth acceleration at
+ * the very start and deceleration at the very end of the chapter's motion while
+ * keeping a continuous, non-zero velocity through interior keyframes — unlike
+ * the previous per-segment easing, which decelerated to a full stop at every
+ * intermediate camera point.
+ */
+export const sampleCameraTrack = (
+  track: ChapterCameraTrack,
+  timeMs: number,
+): CameraTrackSample | null => {
+  const points = [...track.keyframes].sort((a, b) => a.timeMs - b.timeMs);
+  if (!points.length) return null;
+
+  const duration = Math.max(1, track.durationMs);
+  const time = Math.max(0, Math.min(duration, Number.isFinite(timeMs) ? timeMs : 0));
+
+  const easedProgress = ease(time / duration, track.easing ?? 'ease-in-out');
+  const warpedTime = easedProgress * duration;
+
+  return samplePositionAtTime(points, track.pathType, warpedTime);
 };

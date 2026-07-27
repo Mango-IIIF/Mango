@@ -105,7 +105,13 @@ describe('StoryAnnotationOverlay', () => {
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 100, h: 100 },
           drawingAnnotations: [
-            { id: 'rect', type: 'rectangle', rect: { x: 10, y: 20, w: 30, h: 25 } },
+            {
+              id: 'rect',
+              type: 'rectangle',
+              label: { en: 'Rectangle label' },
+              color: '#39b57e',
+              rect: { x: 10, y: 20, w: 30, h: 25 },
+            },
             { id: 'point', type: 'point', point: { x: 50, y: 60 } },
             {
               id: 'line',
@@ -132,6 +138,10 @@ describe('StoryAnnotationOverlay', () => {
     expect(target.querySelectorAll('.story-annotation-overlay__shape')).toHaveLength(1);
     expect(target.querySelectorAll('.story-annotation-overlay__point')).toHaveLength(1);
     expect(target.querySelectorAll('.story-annotation-overlay__line')).toHaveLength(1);
+    const rectangleLabel = target.querySelector(
+      '.story-annotation-overlay__label--rectangle',
+    );
+    expect(rectangleLabel?.textContent?.trim()).toBe('Rectangle label');
     unmount(instance);
     target.remove();
   });

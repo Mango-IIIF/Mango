@@ -2472,14 +2472,20 @@
   }
 
   .viewer--story-viewer .viewer__top-title {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     overflow: hidden;
     color: var(--viewer-text);
     font-size: 18px;
     font-weight: 700;
     line-height: 1.2;
-    text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .viewer--story-viewer .viewer__top-title span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .viewer--story-viewer .viewer__fullscreen-btn {

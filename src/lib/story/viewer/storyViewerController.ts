@@ -37,6 +37,7 @@ type RuntimeDeps = {
   clearIntervalFn?: typeof clearInterval;
   requestAnimationFrame?: (callback: FrameRequestCallback) => number;
   cancelAnimationFrame?: (handle: number) => void;
+  prefersReducedMotion?: boolean;
   posePaintedTimeoutMs?: number;
   sourceOpenTimeoutMs?: number;
   onTransitionEvent?: <K extends keyof TransitionEventMap>(
@@ -160,17 +161,67 @@ export const createStoryViewerRuntime = (
       : createNarrationPlayer({
           onBufferingChange: (isBuffering) => playbackClock.setBuffering(isBuffering),
         }));
-  const unsubscribeClock = playbackClock.subscribe((value) => {
-    playbackState.set(value);
+  const prefersReducedMotion =
+    deps.prefersReducedMotion ??
+    (typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false);
+
+  // Applies the camera track for the active chapter at a given presentation
+  // time. With reduced motion we jump straight to the final framing and hold.
+  const applyCameraSample = (currentTimeSec: number) => {
     const chapter = story?.chapters?.[chapterIndexValue];
-    if (!chapter?.cameraTrack || value.isBuffering) return;
-    const sample = sampleCameraTrack(chapter.cameraTrack, value.currentTime * 1000);
-    if (sample?.viewBox) viewer.setViewBox?.(sample.viewBox);
-    if (sample?.model) viewer.setModelPose?.(sample.model);
-    if (sample?.layerOpacities) {
+    if (!chapter?.cameraTrack) return;
+    const timeMs = prefersReducedMotion
+      ? chapter.cameraTrack.durationMs
+      : currentTimeSec * 1000;
+    const sample = sampleCameraTrack(chapter.cameraTrack, timeMs);
+    if (!sample) return;
+    if (sample.viewBox) viewer.setViewBox?.(sample.viewBox);
+    if (sample.model) viewer.setModelPose?.(sample.model);
+    if (sample.layerOpacities) {
       for (const [id, opacity] of Object.entries(sample.layerOpacities)) {
         viewer.updateLayerOpacity?.(id, opacity);
       }
+    }
+  };
+
+  // During playback the camera is driven by requestAnimationFrame (display
+  // refresh rate, ~60fps) rather than the 20fps clock tick, using a wall-clock
+  // derived time so motion is smooth. The clock still owns phase/timing.
+  let cameraFrameHandle: number | null = null;
+  const stopCameraLoop = () => {
+    if (cameraFrameHandle == null) return;
+    cancelAnimationFrameFn(cameraFrameHandle);
+    cameraFrameHandle = null;
+  };
+  const cameraLoop = () => {
+    cameraFrameHandle = null;
+    const value = playbackClock.getState();
+    if (value.playState !== 'playing') return;
+    if (!value.isBuffering) {
+      const liveTime =
+        typeof playbackClock.getLiveCurrentTime === 'function'
+          ? playbackClock.getLiveCurrentTime()
+          : value.currentTime;
+      applyCameraSample(liveTime);
+    }
+    cameraFrameHandle = requestAnimationFrameFn(cameraLoop);
+  };
+  const startCameraLoop = () => {
+    if (cameraFrameHandle == null) cameraFrameHandle = requestAnimationFrameFn(cameraLoop);
+  };
+
+  const unsubscribeClock = playbackClock.subscribe((value) => {
+    playbackState.set(value);
+    if (value.playState === 'playing' && !value.isBuffering && !prefersReducedMotion) {
+      // Hand ongoing motion to the animation-frame loop.
+      startCameraLoop();
+    } else {
+      // Idle / paused / buffering / reduced-motion: apply a single frame so the
+      // camera reflects the current time (chapter load, scrub, pause) and hold.
+      stopCameraLoop();
+      applyCameraSample(value.currentTime);
     }
   });
 
@@ -711,6 +762,7 @@ export const createStoryViewerRuntime = (
     }
 
     narrationPlayer.stop();
+    stopCameraLoop();
     playbackClock.destroy();
     unsubscribeClock();
 

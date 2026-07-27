@@ -1,22 +1,31 @@
-import { derived, get, writable, type Readable, type Writable } from 'svelte/store';
-import type { MediaSource, MediaType } from '../iiif/mediaResolver';
-import type { PluginContext } from '../core/types/plugin';
-import { createStoryStore } from '../state/story.svelte';
-import { createMediaMarks, type MediaMarksState } from './mediaMarks';
-import { createModelPose } from './modelPose';
-import { createNarrationPlayer } from './narrationPlayer';
-import { captureAudioVideo, captureImagePdf, captureModel } from './capture';
-import { resolveManifestForNewChapter } from './manifestResolver';
-import { animateViewBoxTransition, animateLayerOpacities } from './viewBoxAnimation';
-import { cloneStoryValue, createStoryHistory } from './storyHistory';
-import { createChapterActions } from './chapterActions';
-import { createStoryPreviewOrchestrator } from './previewOrchestrator';
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
+import type { MediaSource, MediaType } from "../iiif/mediaResolver";
+import type { PluginContext } from "../core/types/plugin";
+import { createStoryStore } from "../state/story.svelte";
+import { createMediaMarks, type MediaMarksState } from "./mediaMarks";
+import { createModelPose } from "./modelPose";
+import { createNarrationPlayer } from "./narrationPlayer";
+import { captureAudioVideo, captureImagePdf, captureModel } from "./capture";
+import { resolveManifestForNewChapter } from "./manifestResolver";
+import {
+  animateViewBoxTransition,
+  animateLayerOpacities,
+} from "./viewBoxAnimation";
+import { cloneStoryValue, createStoryHistory } from "./storyHistory";
+import { createChapterActions } from "./chapterActions";
+import { createStoryPreviewOrchestrator } from "./previewOrchestrator";
 import {
   configureCameraTrackPreset,
   generateCameraPreset,
   retimeCameraKeyframes,
   sampleCameraTrack,
-} from './cameraTrack';
+} from "./cameraTrack";
 import {
   buildExportEnvelope,
   loadStoryIntoStore,
@@ -26,22 +35,25 @@ import {
   type SaveConfig,
   type SaveResult,
   type SaveState,
-} from './storySerializer';
+} from "./storySerializer";
 import type {
   AnnotationPlacement,
   Chapter,
   ChapterCameraTrack,
   ChapterAnnotationTool,
+  ChapterAnnotationStrokeWidth,
   ChapterDrawingAnnotation,
   ChapterAdvance,
   ChapterModel,
   NarrationSegment,
   StoryState,
-} from '../core/types/story';
-import type { ViewBox } from '../core/types/viewer';
-import type { ViewerConfig } from '../core/types/config';
-import type { ChapterTaskId } from './chapterTasks';
-import type { ResolvedAnnotation } from '../iiif/annotationResolver';
+} from "../core/types/story";
+import { ANNOTATION_STROKE_WIDTH_PX } from "../core/types/story";
+import type { ViewBox } from "../core/types/viewer";
+import type { ViewerConfig } from "../core/types/config";
+import type { ChapterTaskId } from "./chapterTasks";
+import type { ResolvedAnnotation } from "../iiif/annotationResolver";
+import { normalizeStoryAnnotations } from "./normalizeAnnotations";
 
 export type StoryBuilderController = {
   story: Readable<StoryState>;
@@ -50,6 +62,7 @@ export type StoryBuilderController = {
   viewerCanvasCount: Readable<number>;
   selectedChapterId: Writable<string | null>;
   activeChapterTask: Writable<ChapterTaskId | null>;
+  selectedDrawingAnnotationId: Writable<string | null>;
   chapterAnnotationTool: Writable<ChapterAnnotationTool>;
   uiMode: Writable<UIMode>;
   drawerOpen: Readable<boolean>;
@@ -72,7 +85,7 @@ export type StoryBuilderController = {
   saveModalOpen: Readable<boolean>;
   saveModalPayload: Readable<ExportEnvelope | null>;
   setSaveConfig: (
-    config: ViewerConfig['story'] extends infer S
+    config: ViewerConfig["story"] extends infer S
       ? S extends { save?: infer T }
         ? T
         : Record<string, never>
@@ -90,6 +103,19 @@ export type StoryBuilderController = {
   deleteChapterTextAnnotation: (lang: string) => void;
   editChapterDrawingAnnotation: (annotationId: string) => void;
   editChapterTextAnnotation: (lang: string) => void;
+  setChapterDrawingAnnotationLabel: (
+    annotationId: string,
+    lang: string,
+    value: string,
+  ) => void;
+  setChapterDrawingAnnotationStyle: (
+    annotationId: string,
+    style: {
+      color?: string | null;
+      strokeWidth?: ChapterAnnotationStrokeWidth;
+      fillMode?: ChapterDrawingAnnotation["fillMode"];
+    },
+  ) => void;
   addChapter: () => void;
   updateChapter: () => void;
   updateChapterPosition: () => void;
@@ -98,7 +124,7 @@ export type StoryBuilderController = {
   reorderChapter: (
     chapterId: string,
     targetChapterId: string,
-    position?: 'before' | 'after',
+    position?: "before" | "after",
   ) => void;
   selectChapter: (chapterId: string | null) => void;
   openNarration: () => void;
@@ -115,14 +141,21 @@ export type StoryBuilderController = {
   setNarrationTrack: (lang: string, src: string) => void;
   updateStoryTitle: (lang: string, value: string) => void;
   updateStoryIdentifiers: (id: string, annotationBase: string) => void;
-  captureMotionPoint: (keyframeId?: string, focus?: { x: number; y: number }) => void;
+  captureMotionPoint: (
+    keyframeId?: string,
+    focus?: { x: number; y: number },
+  ) => void;
   deleteMotionPoint: (keyframeId: string) => void;
   updateMotionDuration: (durationMs: number) => void;
-  updateMotionPathType: (pathType: 'linear' | 'spline') => void;
+  updateMotionPathType: (pathType: "linear" | "spline") => void;
   updateMotionInitialDwell: (dwellMs: number) => void;
-  updateMotionEasing: (easing: NonNullable<ChapterCameraTrack['easing']>) => void;
+  updateMotionEasing: (
+    easing: NonNullable<ChapterCameraTrack["easing"]>,
+  ) => void;
   goToMotionPoint: (keyframeId: string) => void;
-  applyMotionPreset: (preset: NonNullable<Chapter['cameraTrack']>['preset']) => void;
+  applyMotionPreset: (
+    preset: NonNullable<Chapter["cameraTrack"]>["preset"],
+  ) => void;
   motionPreviewing: Readable<boolean>;
   previewMotion: () => void;
   stopMotionPreview: () => void;
@@ -135,8 +168,11 @@ export type StoryBuilderController = {
   assignNarrationSegment: (lang: string, start: number, end: number) => void;
   skipNarration: (lang: string) => void;
   updateAnnotationText: (lang: string, text: string) => void;
-  updateAnnotationPlacement: (lang: string, placement: AnnotationPlacement) => void;
-  updateAdvanceMode: (mode: ChapterAdvance['mode']) => void;
+  updateAnnotationPlacement: (
+    lang: string,
+    placement: AnnotationPlacement,
+  ) => void;
+  updateAdvanceMode: (mode: ChapterAdvance["mode"]) => void;
   updateDelay: (delayMs?: number) => void;
   updateManifest: (manifest: string) => void;
   reloadManifest: (manifest: string, canvasIndex: number) => void;
@@ -158,7 +194,11 @@ export type StoryBuilderController = {
 };
 
 export type UIMode =
-  'idle' | 'chapterEdit' | 'narrationPanel' | 'annotationPositioning' | 'motionPointPositioning';
+  | "idle"
+  | "chapterEdit"
+  | "narrationPanel"
+  | "annotationPositioning"
+  | "motionPointPositioning";
 
 export type MotionPointDraft = {
   keyframeId?: string;
@@ -179,7 +219,9 @@ export const collectLatestNarrationSegments = (
 ): Record<string, NarrationSegment> => {
   const latest: Record<string, NarrationSegment> = {};
   for (const chapter of story.chapters) {
-    for (const [language, segment] of Object.entries(chapter.narrationSegment ?? {})) {
+    for (const [language, segment] of Object.entries(
+      chapter.narrationSegment ?? {},
+    )) {
       if (
         Number.isFinite(segment.start) &&
         Number.isFinite(segment.end) &&
@@ -198,7 +240,11 @@ export const collectLatestTransitionDelay = (story: StoryState): number => {
   let latest = DEFAULT_CHAPTER_TRANSITION_DELAY_MS;
   for (const chapter of story.chapters) {
     const delay = chapter.advance?.delayMs;
-    if (chapter.advance?.mode === 'auto' && Number.isFinite(delay) && (delay as number) >= 0) {
+    if (
+      chapter.advance?.mode === "auto" &&
+      Number.isFinite(delay) &&
+      (delay as number) >= 0
+    ) {
       latest = delay as number;
     }
   }
@@ -208,27 +254,35 @@ export const collectLatestTransitionDelay = (story: StoryState): number => {
 export const createStoryBuilderController = (
   options: StoryBuilderOptions = {},
 ): StoryBuilderController => {
-  const initialStoryData: StoryState = options.initialStory
-    ? {
-        ...options.initialStory,
-        id: options.annotationPageId ?? options.initialStory.id,
-        publication: {
-          ...options.initialStory.publication,
-          ...(options.annotationBase ? { annotationBase: options.annotationBase } : {}),
-          ...(options.identifiersLocked ? { identifiersLocked: true } : {}),
+  const initialStoryData: StoryState = normalizeStoryAnnotations(
+    options.initialStory
+      ? {
+          ...options.initialStory,
+          id: options.annotationPageId ?? options.initialStory.id,
+          publication: {
+            ...options.initialStory.publication,
+            ...(options.annotationBase
+              ? { annotationBase: options.annotationBase }
+              : {}),
+            ...(options.identifiersLocked ? { identifiersLocked: true } : {}),
+          },
+        }
+      : {
+          id: options.annotationPageId,
+          publication:
+            options.annotationBase || options.identifiersLocked
+              ? {
+                  ...(options.annotationBase
+                    ? { annotationBase: options.annotationBase }
+                    : {}),
+                  ...(options.identifiersLocked
+                    ? { identifiersLocked: true }
+                    : {}),
+                }
+              : undefined,
+          chapters: [],
         },
-      }
-    : {
-        id: options.annotationPageId,
-        publication:
-          options.annotationBase || options.identifiersLocked
-            ? {
-                ...(options.annotationBase ? { annotationBase: options.annotationBase } : {}),
-                ...(options.identifiersLocked ? { identifiersLocked: true } : {}),
-              }
-            : undefined,
-        chapters: [],
-      };
+  );
 
   const runesStore = createStoryStore(initialStoryData);
 
@@ -237,7 +291,9 @@ export const createStoryBuilderController = (
   const dirty = writable(false);
 
   const wrapMutation =
-    <Payload>(mutation: (payload: Payload) => void): ((payload: Payload) => void) =>
+    <Payload>(
+      mutation: (payload: Payload) => void,
+    ): ((payload: Payload) => void) =>
     (payload) => {
       mutation(payload);
       storyStore.set(runesStore.story);
@@ -267,7 +323,7 @@ export const createStoryBuilderController = (
     setLayerOpacities: wrapMutation(runesStore.setLayerOpacities),
     exportStory: () => runesStore.exportStory(),
     loadStory: (next: StoryState) => {
-      runesStore.loadStory(next);
+      runesStore.loadStory(normalizeStoryAnnotations(next));
       storyStore.set(runesStore.story);
       dirty.set(false);
     },
@@ -275,28 +331,33 @@ export const createStoryBuilderController = (
 
   const selectedChapterId = writable<string | null>(null);
   const activeChapterTask = writable<ChapterTaskId | null>(null);
-  const chapterAnnotationTool = writable<ChapterAnnotationTool>('select');
-  const uiMode = writable<UIMode>('idle');
+  const selectedDrawingAnnotationId = writable<string | null>(null);
+  const chapterAnnotationTool = writable<ChapterAnnotationTool>("select");
+  const uiMode = writable<UIMode>("idle");
   const positioningLanguage = writable<string | null>(null);
   const motionPointDraft = writable<MotionPointDraft | null>(null);
   const motionPreviewing = writable(false);
   const drawerOpen = derived(
     uiMode,
     (mode) =>
-      mode !== 'idle' && mode !== 'annotationPositioning' && mode !== 'motionPointPositioning',
+      mode !== "idle" &&
+      mode !== "annotationPositioning" &&
+      mode !== "motionPointPositioning",
   );
   const viewBox = writable<ViewBox | null>(null);
   const mediaType = writable<MediaType | null>(null);
   const avMarksValid = writable(true);
-  const transitionDelayDefault = writable(collectLatestTransitionDelay(initialStoryData));
+  const transitionDelayDefault = writable(
+    collectLatestTransitionDelay(initialStoryData),
+  );
   const error = writable<string | null>(null);
   const validationErrors = writable<string[]>([]);
   const currentManifest = writable<string | null>(null);
   const viewerCanvasIndex = writable(0);
   const viewerCanvasCount = writable(0);
   const modelPoseDebug = writable<string | null>(null);
-  const annotationLanguage = writable(options.language ?? 'en');
-  const saveState = writable<SaveState>({ status: 'idle' });
+  const annotationLanguage = writable(options.language ?? "en");
+  const saveState = writable<SaveState>({ status: "idle" });
   const saveConfigured = writable(false);
   const canUndo = writable(false);
   const canRedo = writable(false);
@@ -311,12 +372,13 @@ export const createStoryBuilderController = (
   const modelPose = createModelPose();
   const narrationPlayer = createNarrationPlayer();
 
-  const language = options.language ?? 'en';
-  const languages = options.languages ?? ['en'];
+  const language = options.language ?? "en";
+  const languages = options.languages ?? ["en"];
   const history = createStoryHistory(initialStoryData);
-  let latestNarrationSegments = collectLatestNarrationSegments(initialStoryData);
+  let latestNarrationSegments =
+    collectLatestNarrationSegments(initialStoryData);
 
-  let viewer: PluginContext['viewer'] | null = null;
+  let viewer: PluginContext["viewer"] | null = null;
   let attachedCount = 0;
   let detachEvents: (() => void) | null = null;
   let lastManifest: string | null = null;
@@ -332,30 +394,59 @@ export const createStoryBuilderController = (
   let pendingMediaSyncToken = 0; // Token for media type sync (safety timeout only)
   let motionPreviewFrame: number | null = null;
 
+  const annotationFillColor = (color: string): string => {
+    const hex = color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    if (!hex) return `color-mix(in srgb, ${color} 16%, transparent)`;
+    return `rgba(${parseInt(hex[1], 16)}, ${parseInt(hex[2], 16)}, ${parseInt(hex[3], 16)}, 0.16)`;
+  };
+
+  const drawingLabel = (drawing: ChapterDrawingAnnotation): string => {
+    const labels = drawing.label ?? {};
+    return (
+      labels[get(annotationLanguage)] ??
+      labels[language] ??
+      labels.en ??
+      Object.values(labels)[0] ??
+      drawing.text ??
+      ""
+    );
+  };
+
   const syncEditableStoryAnnotations = () => {
     const chapterId = get(selectedChapterId);
-    const chapter = get(storyStore).chapters.find((entry) => entry.id === chapterId);
-    const annotations: ResolvedAnnotation[] = (chapter?.drawingAnnotations ?? []).map(
-      (drawing) => ({
+    const chapter = get(storyStore).chapters.find(
+      (entry) => entry.id === chapterId,
+    );
+    const annotations: ResolvedAnnotation[] = (
+      chapter?.drawingAnnotations ?? []
+    ).map((drawing) => {
+      const color = drawing.color?.trim() || "#e07a3f";
+      const strokeWidth =
+        ANNOTATION_STROKE_WIDTH_PX[drawing.strokeWidth ?? "medium"];
+      const label = drawingLabel(drawing);
+      return {
         id: drawing.id,
-        shapeType: drawing.type === 'rectangle' ? 'rect' : drawing.type,
+        shapeType: drawing.type === "rectangle" ? "rect" : drawing.type,
+        ...(label ? { label } : {}),
         ...(drawing.text ? { text: drawing.text } : {}),
+        targetStyle: `stroke: ${color}; stroke-width: ${strokeWidth}; fill: ${drawing.fillMode === "solid" ? color : annotationFillColor(color)};`,
         ...(drawing.rect ? { rect: drawing.rect } : {}),
         ...(drawing.point ? { point: drawing.point } : {}),
         ...(drawing.points ? { polygon: { points: drawing.points } } : {}),
-      }),
-    );
+      };
+    });
     viewer?.setStoryAnnotations?.(annotations);
   };
 
   activeChapterTask.subscribe((task) => {
-    if (task === 'focus') {
+    if (task === "focus") {
       viewer?.setStoryAnnotationEditing?.(true);
       syncEditableStoryAnnotations();
       return;
     }
-    chapterAnnotationTool.set('select');
-    viewer?.setAnnotationTool?.('select');
+    chapterAnnotationTool.set("select");
+    selectedDrawingAnnotationId.set(null);
+    viewer?.setAnnotationTool?.("select");
     viewer?.setStoryAnnotationEditing?.(false);
   });
 
@@ -367,7 +458,7 @@ export const createStoryBuilderController = (
     getNarrationSegment: (chapter) => getNarrationSegment(chapter),
     closeEditors: () => {
       activeChapterTask.set(null);
-      uiMode.set('idle');
+      uiMode.set("idle");
     },
     stopPlayback: () => stopChapterPlayback(),
   });
@@ -381,32 +472,37 @@ export const createStoryBuilderController = (
     const validation = saveExport();
     if (!validation.ok) {
       saveState.set({
-        status: 'error',
-        message: validation.errors.join(' · '),
+        status: "error",
+        message: validation.errors.join(" · "),
       });
-      return { ok: false, message: validation.errors.join(' · ') };
+      return { ok: false, message: validation.errors.join(" · ") };
     }
     const payload = buildExportEnvelope(storyStoreWrapper.exportStory());
-    const hasEndpoint = saveConfig?.endpoint && (saveConfig.enabled ?? true) ? true : false;
+    const hasEndpoint =
+      saveConfig?.endpoint && (saveConfig.enabled ?? true) ? true : false;
     if (hasEndpoint && !get(storyStore).id) {
-      const message = 'Set a canonical Story ID in Story settings before publishing.';
-      saveState.set({ status: 'error', message, code: 'missing_public_id' });
-      return { ok: false, message, code: 'missing_public_id' };
+      const message =
+        "Set a canonical Story ID in Story settings before publishing.";
+      saveState.set({ status: "error", message, code: "missing_public_id" });
+      return { ok: false, message, code: "missing_public_id" };
     }
     if (!hasEndpoint) {
       saveModalPayload.set(payload);
       saveModalOpen.set(true);
-      saveState.set({ status: 'idle' });
+      saveState.set({ status: "idle" });
       return { ok: true };
     }
-    saveState.set({ status: 'saving' });
-    const result = await performFetchWithTimeout(saveConfig as SaveConfig, payload);
+    saveState.set({ status: "saving" });
+    const result = await performFetchWithTimeout(
+      saveConfig as SaveConfig,
+      payload,
+    );
     if (result.ok) {
-      saveState.set({ status: 'success', message: result.message });
+      saveState.set({ status: "success", message: result.message });
       dirty.set(false);
     } else {
       saveState.set({
-        status: 'error',
+        status: "error",
         message: result.message,
         code: result.code,
       });
@@ -425,23 +521,31 @@ export const createStoryBuilderController = (
 
   const setAnnotationLanguage = (lang: string) => {
     annotationLanguage.set(lang);
+    if (get(activeChapterTask) === "focus") syncEditableStoryAnnotations();
   };
 
   const setChapterAnnotationTool = (tool: ChapterAnnotationTool) => {
-    if (tool !== 'select' && (!get(selectedChapterId) || get(activeChapterTask) !== 'focus'))
+    if (
+      tool !== "select" &&
+      (!get(selectedChapterId) || get(activeChapterTask) !== "focus")
+    )
       return;
     chapterAnnotationTool.set(tool);
-    viewer?.setStoryAnnotationEditing?.(get(activeChapterTask) === 'focus');
+    viewer?.setStoryAnnotationEditing?.(get(activeChapterTask) === "focus");
     viewer?.setAnnotationTool?.(tool);
   };
 
   const mutateChapterDrawingAnnotations = (
-    transform: (items: ChapterDrawingAnnotation[]) => ChapterDrawingAnnotation[],
+    transform: (
+      items: ChapterDrawingAnnotation[],
+    ) => ChapterDrawingAnnotation[],
   ) => {
     const chapterId = get(selectedChapterId);
     if (!chapterId) return;
     const current = storyStoreWrapper.exportStory();
-    const chapterIndex = current.chapters.findIndex((entry) => entry.id === chapterId);
+    const chapterIndex = current.chapters.findIndex(
+      (entry) => entry.id === chapterId,
+    );
     if (chapterIndex < 0) return;
     pushHistorySnapshot();
     const next = cloneStoryValue(current);
@@ -458,45 +562,59 @@ export const createStoryBuilderController = (
     createdTool?: ChapterAnnotationTool,
   ) => {
     const tool = createdTool ?? get(chapterAnnotationTool);
-    if (tool === 'select') return;
+    if (tool === "select") return;
     const drawing: ChapterDrawingAnnotation = {
       id: annotation.id,
       type: tool,
       ...(annotation.text ? { text: annotation.text } : {}),
       ...(annotation.rect ? { rect: annotation.rect } : {}),
       ...(annotation.point ? { point: annotation.point } : {}),
-      ...(annotation.polygon?.points ? { points: annotation.polygon.points } : {}),
+      ...(annotation.polygon?.points
+        ? { points: annotation.polygon.points }
+        : {}),
     };
     if (!drawing.rect && !drawing.point && !drawing.points?.length) return;
     mutateChapterDrawingAnnotations((items) => [
       ...items.filter((entry) => entry.id !== drawing.id),
       drawing,
     ]);
-    chapterAnnotationTool.set('select');
+    selectedDrawingAnnotationId.set(drawing.id);
+    viewer?.setStoryAnnotationSelection?.(drawing.id);
+    chapterAnnotationTool.set("select");
   };
 
   const deleteChapterDrawingAnnotation = (annotationId: string) => {
-    mutateChapterDrawingAnnotations((items) => items.filter((entry) => entry.id !== annotationId));
+    mutateChapterDrawingAnnotations((items) =>
+      items.filter((entry) => entry.id !== annotationId),
+    );
+    if (get(selectedDrawingAnnotationId) === annotationId) {
+      selectedDrawingAnnotationId.set(null);
+      viewer?.setStoryAnnotationSelection?.(null);
+    }
   };
 
   const deleteChapterTextAnnotation = (lang: string) => {
     const chapterId = get(selectedChapterId);
     if (!chapterId) return;
     const current = storyStoreWrapper.exportStory();
-    const chapterIndex = current.chapters.findIndex((entry) => entry.id === chapterId);
-    if (chapterIndex < 0 || !current.chapters[chapterIndex].annotations?.[lang]) return;
+    const chapterIndex = current.chapters.findIndex(
+      (entry) => entry.id === chapterId,
+    );
+    if (chapterIndex < 0 || !current.chapters[chapterIndex].annotations?.[lang])
+      return;
     pushHistorySnapshot();
     const next = cloneStoryValue(current);
     const annotations = { ...(next.chapters[chapterIndex].annotations ?? {}) };
     delete annotations[lang];
-    if (Object.keys(annotations).length > 0) next.chapters[chapterIndex].annotations = annotations;
+    if (Object.keys(annotations).length > 0)
+      next.chapters[chapterIndex].annotations = annotations;
     else delete next.chapters[chapterIndex].annotations;
     runesStore.loadStory(next);
     storyStore.set(runesStore.story);
     dirty.set(true);
     if (get(positioningLanguage) === lang) {
       positioningLanguage.set(null);
-      uiMode.set('chapterEdit');
+      uiMode.set("chapterEdit");
     }
   };
 
@@ -520,35 +638,30 @@ export const createStoryBuilderController = (
     });
   };
 
-  const drawingBounds = (drawing: ChapterDrawingAnnotation): ViewBox | null => {
-    if (drawing.rect) return drawing.rect;
-    if (drawing.point) return { x: drawing.point.x, y: drawing.point.y, w: 0, h: 0 };
-    if (!drawing.points?.length) return null;
-    const xs = drawing.points.map((point) => point.x);
-    const ys = drawing.points.map((point) => point.y);
-    const x = Math.min(...xs);
-    const y = Math.min(...ys);
-    return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
-  };
-
   const editChapterDrawingAnnotation = (annotationId: string) => {
     const chapterId = get(selectedChapterId);
     const drawing = get(storyStore)
       .chapters.find((entry) => entry.id === chapterId)
       ?.drawingAnnotations?.find((entry) => entry.id === annotationId);
-    if (!drawing || get(activeChapterTask) !== 'focus') return;
-    setChapterAnnotationTool('select');
+    if (!drawing || get(activeChapterTask) !== "focus") return;
+    setChapterAnnotationTool("select");
+    selectedDrawingAnnotationId.set(annotationId);
     syncEditableStoryAnnotations();
     viewer?.setStoryAnnotationSelection?.(annotationId);
-    const bounds = drawingBounds(drawing);
-    if (bounds) focusViewerOnBounds(bounds);
   };
 
   const editChapterTextAnnotation = (lang: string) => {
     const chapterId = get(selectedChapterId);
-    const chapter = get(storyStore).chapters.find((entry) => entry.id === chapterId);
+    const chapter = get(storyStore).chapters.find(
+      (entry) => entry.id === chapterId,
+    );
     const annotation = chapter?.annotations?.[lang];
-    if (!chapter || !annotation?.text?.trim() || get(activeChapterTask) !== 'focus') return;
+    if (
+      !chapter ||
+      !annotation?.text?.trim() ||
+      get(activeChapterTask) !== "focus"
+    )
+      return;
     setAnnotationLanguage(lang);
     const placement = annotation.placement ?? chapter.annotationPlacement;
     if (placement) {
@@ -566,7 +679,7 @@ export const createStoryBuilderController = (
       if (absolute) focusViewerOnBounds(absolute);
     }
     viewer?.setStoryAnnotationSelection?.(null);
-    uiMode.set('annotationPositioning');
+    uiMode.set("annotationPositioning");
     positioningLanguage.set(lang);
   };
 
@@ -577,31 +690,91 @@ export const createStoryBuilderController = (
     mutateChapterDrawingAnnotations((items) =>
       items.map((drawing) => {
         if (drawing.id !== annotationId) return drawing;
+        // Spread the existing drawing so styling/label metadata (label, color,
+        // strokeWidth, text) survives a geometry edit; only the geometry keys
+        // are swapped out for the shape that was actually changed.
         if (patch.rect) {
-          return {
-            id: drawing.id,
-            type: 'rectangle',
+          const next = {
+            ...drawing,
+            type: "rectangle" as const,
             rect: patch.rect,
-            text: drawing.text,
           };
+          delete next.point;
+          delete next.points;
+          return next;
         }
         if (patch.point) {
-          return {
-            id: drawing.id,
-            type: 'point',
+          const next = {
+            ...drawing,
+            type: "point" as const,
             point: patch.point,
-            text: drawing.text,
           };
+          delete next.rect;
+          delete next.points;
+          return next;
         }
         if (patch.polygon?.points) {
-          return {
-            id: drawing.id,
-            type: drawing.type === 'line' || drawing.type === 'freehand' ? drawing.type : 'polygon',
+          const polygonType: ChapterDrawingAnnotation["type"] =
+            drawing.type === "line" || drawing.type === "freehand"
+              ? drawing.type
+              : "polygon";
+          const next = {
+            ...drawing,
+            type: polygonType,
             points: patch.polygon.points,
-            text: drawing.text,
           };
+          delete next.rect;
+          delete next.point;
+          return next;
         }
         return drawing;
+      }),
+    );
+  };
+
+  const setChapterDrawingAnnotationLabel = (
+    annotationId: string,
+    lang: string,
+    value: string,
+  ) => {
+    const text = value.trim();
+    mutateChapterDrawingAnnotations((items) =>
+      items.map((drawing) => {
+        if (drawing.id !== annotationId) return drawing;
+        const label: Record<string, string> = { ...(drawing.label ?? {}) };
+        if (text) label[lang] = text;
+        else delete label[lang];
+        const next = { ...drawing };
+        if (Object.keys(label).length > 0) next.label = label;
+        else delete next.label;
+        // A per-language label supersedes the legacy single-language `text`.
+        delete next.text;
+        return next;
+      }),
+    );
+  };
+
+  const setChapterDrawingAnnotationStyle = (
+    annotationId: string,
+    style: {
+      color?: string | null;
+      strokeWidth?: ChapterAnnotationStrokeWidth;
+      fillMode?: ChapterDrawingAnnotation["fillMode"];
+    },
+  ) => {
+    mutateChapterDrawingAnnotations((items) =>
+      items.map((drawing) => {
+        if (drawing.id !== annotationId) return drawing;
+        const next = { ...drawing };
+        if (style.color !== undefined) {
+          const color = style.color?.trim();
+          if (color) next.color = color;
+          else delete next.color;
+        }
+        if (style.strokeWidth !== undefined)
+          next.strokeWidth = style.strokeWidth;
+        if (style.fillMode !== undefined) next.fillMode = style.fillMode;
+        return next;
       }),
     );
   };
@@ -619,8 +792,12 @@ export const createStoryBuilderController = (
     storyStore.set(runesStore.story);
     dirty.set(true);
     const selectedId = get(selectedChapterId);
-    const selectedStillExists = next.chapters.some((chapter) => chapter.id === selectedId);
-    const nextSelection = selectedStillExists ? selectedId : (next.chapters[0]?.id ?? null);
+    const selectedStillExists = next.chapters.some(
+      (chapter) => chapter.id === selectedId,
+    );
+    const nextSelection = selectedStillExists
+      ? selectedId
+      : (next.chapters[0]?.id ?? null);
     selectedChapterId.set(nextSelection);
     if (nextSelection) {
       const chapter = next.chapters.find((entry) => entry.id === nextSelection);
@@ -630,8 +807,10 @@ export const createStoryBuilderController = (
     canRedo.set(history.canRedo());
   };
 
-  const undo = () => restoreHistoryStory(history.undo(storyStoreWrapper.exportStory()));
-  const redo = () => restoreHistoryStory(history.redo(storyStoreWrapper.exportStory()));
+  const undo = () =>
+    restoreHistoryStory(history.undo(storyStoreWrapper.exportStory()));
+  const redo = () =>
+    restoreHistoryStory(history.redo(storyStoreWrapper.exportStory()));
 
   const chapterActions = createChapterActions({
     getSelectedChapterId: () => get(selectedChapterId),
@@ -644,13 +823,16 @@ export const createStoryBuilderController = (
   };
 
   const isValidSegment = (start?: number, end?: number) =>
-    Number.isFinite(start) && Number.isFinite(end) && (end as number) > (start as number);
+    Number.isFinite(start) &&
+    Number.isFinite(end) &&
+    (end as number) > (start as number);
 
   const getNarrationSegment = (chapter: Chapter) => {
     const lang = get(annotationLanguage);
     const segment = chapter.narrationSegment?.[lang];
-    const src = get(storyStore).narration?.tracks?.[lang]?.src ?? '';
-    if (!src || !segment || !isValidSegment(segment.start, segment.end)) return null;
+    const src = get(storyStore).narration?.tracks?.[lang]?.src ?? "";
+    if (!src || !segment || !isValidSegment(segment.start, segment.end))
+      return null;
     return { src, start: segment.start, end: segment.end };
   };
 
@@ -666,7 +848,8 @@ export const createStoryBuilderController = (
   const startMediaSegment = (chapter: Chapter) => {
     if (!viewer || !chapter.media) return;
     const currentType = viewer.getMediaType?.() ?? null;
-    if (currentType && currentType !== 'audio' && currentType !== 'video') return;
+    if (currentType && currentType !== "audio" && currentType !== "video")
+      return;
     if (!isValidSegment(chapter.media.start, chapter.media.end)) return;
     activeMediaEnd = chapter.media.end;
     activePlaybackChapterId = chapter.id;
@@ -709,18 +892,20 @@ export const createStoryBuilderController = (
 
   const updateMediaType = (next: MediaType | null) => {
     mediaType.set(next);
-    if (next !== 'audio' && next !== 'video') {
+    if (next !== "audio" && next !== "video") {
       mediaMarks.clear();
     } else {
       // When media type is audio/video, restore marks from the selected chapter if available
       const id = get(selectedChapterId);
       const storyValue = get(storyStore);
-      const chapter = id ? storyValue.chapters.find((item) => item.id === id) : null;
+      const chapter = id
+        ? storyValue.chapters.find((item) => item.id === id)
+        : null;
       if (chapter?.media) {
         mediaMarks.setSegment(chapter.media.start, chapter.media.end);
       }
     }
-    if (next !== 'model') {
+    if (next !== "model") {
       modelPose.clear();
     }
     syncMediaMarks();
@@ -776,7 +961,8 @@ export const createStoryBuilderController = (
 
   const syncManifestFromViewer = () => {
     if (!viewer) return;
-    const manifest = viewer.getManifestId?.() ?? viewer.getState?.()?.manifestId ?? null;
+    const manifest =
+      viewer.getManifestId?.() ?? viewer.getState?.()?.manifestId ?? null;
     if (manifest) {
       lastManifest = manifest;
       currentManifest.set(manifest);
@@ -790,7 +976,7 @@ export const createStoryBuilderController = (
     }
     if (chapter.model) {
       if (viewer.setModelPose) {
-        viewer.setModelPose(chapter.model, { transition: 'interpolate' });
+        viewer.setModelPose(chapter.model, { transition: "interpolate" });
       } else {
         if (chapter.model.cameraOrbit) {
           viewer.setModelOrbit(chapter.model.cameraOrbit);
@@ -824,11 +1010,15 @@ export const createStoryBuilderController = (
   const getCurrentModelPose = (): ChapterModel | null => {
     if (!viewer) return null;
     const pose = viewer.getModelPose?.() ?? null;
-    const cameraOrbit = pose?.cameraOrbit ?? viewer.getModelOrbit?.() ?? undefined;
-    const cameraTarget = pose?.cameraTarget ?? viewer.getModelTarget?.() ?? undefined;
+    const cameraOrbit =
+      pose?.cameraOrbit ?? viewer.getModelOrbit?.() ?? undefined;
+    const cameraTarget =
+      pose?.cameraTarget ?? viewer.getModelTarget?.() ?? undefined;
     const fieldOfView = pose?.fieldOfView ?? undefined;
-    const orientation = pose?.orientation ?? viewer.getModelOrientation?.() ?? undefined;
-    if (!cameraOrbit && !cameraTarget && !orientation && !fieldOfView) return null;
+    const orientation =
+      pose?.orientation ?? viewer.getModelOrientation?.() ?? undefined;
+    if (!cameraOrbit && !cameraTarget && !orientation && !fieldOfView)
+      return null;
     return { cameraOrbit, cameraTarget, fieldOfView, orientation };
   };
 
@@ -886,7 +1076,7 @@ export const createStoryBuilderController = (
       setTimeout(attempt, 80);
     };
 
-    if (typeof window !== 'undefined' && 'requestAnimationFrame' in window) {
+    if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
       window.requestAnimationFrame(() => attempt());
     } else {
       setTimeout(attempt, 0);
@@ -899,7 +1089,8 @@ export const createStoryBuilderController = (
       cancelLayersAnimation();
       cancelLayersAnimation = null;
     }
-    const viewerManifest = viewer.getManifestId?.() ?? viewer.getState?.()?.manifestId ?? null;
+    const viewerManifest =
+      viewer.getManifestId?.() ?? viewer.getState?.()?.manifestId ?? null;
     if (chapter.manifest && chapter.manifest !== viewerManifest) {
       pendingChapterApply = chapter;
       viewer.setManifest(chapter.manifest);
@@ -907,7 +1098,10 @@ export const createStoryBuilderController = (
       return;
     }
     const currentIndex = viewer.getCanvasIndex?.() ?? -1;
-    if (typeof chapter.canvasIndex === 'number' && chapter.canvasIndex !== currentIndex) {
+    if (
+      typeof chapter.canvasIndex === "number" &&
+      chapter.canvasIndex !== currentIndex
+    ) {
       pendingChapterApply = chapter;
       viewer.setCanvasByIndex(chapter.canvasIndex);
       return;
@@ -916,7 +1110,11 @@ export const createStoryBuilderController = (
 
     if (chapter.layerOpacities) {
       const fromOpacities = viewer.getLayerOpacities?.() ?? {};
-      cancelLayersAnimation = animateLayerOpacities(viewer, fromOpacities, chapter.layerOpacities);
+      cancelLayersAnimation = animateLayerOpacities(
+        viewer,
+        fromOpacities,
+        chapter.layerOpacities,
+      );
     }
 
     if (chapter.viewBox) {
@@ -964,10 +1162,10 @@ export const createStoryBuilderController = (
 
   const handleCaptureResult = (result: ReturnType<typeof capture>) => {
     if (!result.ok) {
-      if (result.reason === 'missing-manifest') {
+      if (result.reason === "missing-manifest") {
         setError(null);
         selectedChapterId.set(null);
-        uiMode.set('chapterEdit');
+        uiMode.set("chapterEdit");
       } else {
         setError(`Capture blocked: ${result.reason}`);
       }
@@ -981,7 +1179,7 @@ export const createStoryBuilderController = (
     const storyValue = get(storyStore);
     const lastId = storyValue.chapters[storyValue.chapters.length - 1]?.id;
     if (lastId) {
-      storyStoreWrapper.setAdvanceMode({ chapterId: lastId, mode: 'auto' });
+      storyStoreWrapper.setAdvanceMode({ chapterId: lastId, mode: "auto" });
       storyStoreWrapper.setDelay({
         chapterId: lastId,
         delayMs: transitionDelay,
@@ -998,17 +1196,20 @@ export const createStoryBuilderController = (
     }
     setTimeout(() => {
       if (get(selectedChapterId) === lastId) {
-        uiMode.set('chapterEdit');
+        uiMode.set("chapterEdit");
       }
     }, 0);
     return true;
   };
 
-  const handleUpdateResult = (result: ReturnType<typeof capture>, chapterId: string) => {
+  const handleUpdateResult = (
+    result: ReturnType<typeof capture>,
+    chapterId: string,
+  ) => {
     if (!result.ok) {
-      if (result.reason === 'missing-manifest') {
+      if (result.reason === "missing-manifest") {
         setError(null);
-        uiMode.set('chapterEdit');
+        uiMode.set("chapterEdit");
       } else {
         setError(`Capture blocked: ${result.reason}`);
       }
@@ -1019,10 +1220,12 @@ export const createStoryBuilderController = (
       chapterId,
       capture: result.capture,
     });
-    const updatedChapter = get(storyStore).chapters.find((chapter) => chapter.id === chapterId);
+    const updatedChapter = get(storyStore).chapters.find(
+      (chapter) => chapter.id === chapterId,
+    );
     const track = updatedChapter?.cameraTrack;
     const stableViewBox = result.capture.viewBox;
-    if (track?.preset && track.preset !== 'custom' && stableViewBox) {
+    if (track?.preset && track.preset !== "custom" && stableViewBox) {
       storyStoreWrapper.setChapterCameraTrack({
         chapterId,
         cameraTrack: configureCameraTrackPreset(
@@ -1039,7 +1242,7 @@ export const createStoryBuilderController = (
 
   const resolveManifest = () => {
     if (!viewer) {
-      return { ok: false as const, reason: 'missing-manifest' as const };
+      return { ok: false as const, reason: "missing-manifest" as const };
     }
     const storyValue = get(storyStore);
     const previousChapterManifest =
@@ -1047,32 +1250,45 @@ export const createStoryBuilderController = (
     const viewerManifest = viewer.getManifestId?.() ?? null;
     const stateManifest = viewer.getState?.()?.manifestId ?? null;
     const effectiveManifest =
-      viewerManifest || stateManifest || lastManifest || get(currentManifest) || null;
-    return resolveManifestForNewChapter(effectiveManifest, previousChapterManifest);
+      viewerManifest ||
+      stateManifest ||
+      lastManifest ||
+      get(currentManifest) ||
+      null;
+    return resolveManifestForNewChapter(
+      effectiveManifest,
+      previousChapterManifest,
+    );
   };
 
   const capture = () => {
-    if (!viewer) return { ok: false as const, reason: 'missing-manifest' as const };
+    if (!viewer)
+      return { ok: false as const, reason: "missing-manifest" as const };
     const manifestResolution = resolveManifest();
     if (!manifestResolution.ok) {
-      return { ok: false as const, reason: 'missing-manifest' as const };
+      return { ok: false as const, reason: "missing-manifest" as const };
     }
-    const manifestOverride = viewer.getManifestId() ? undefined : manifestResolution.manifest;
+    const manifestOverride = viewer.getManifestId()
+      ? undefined
+      : manifestResolution.manifest;
 
     const type = viewer.getMediaType();
-    if (type === 'audio' || type === 'video') {
+    if (type === "audio" || type === "video") {
       const markedSegment = mediaMarks.getSegment();
-      const availableSources = viewer.getMediaSources?.() ?? get(mediaSourcesStore);
+      const availableSources =
+        viewer.getMediaSources?.() ?? get(mediaSourcesStore);
       mediaSourcesStore.set(availableSources);
       const sourceDuration = availableSources.find(
         (source) => source.type === type && Number.isFinite(source.duration),
       )?.duration;
       const segment =
         markedSegment ??
-        (sourceDuration != null && sourceDuration > 0 ? { start: 0, end: sourceDuration } : null);
+        (sourceDuration != null && sourceDuration > 0
+          ? { start: 0, end: sourceDuration }
+          : null);
       return captureAudioVideo(viewer, segment, manifestOverride);
     }
-    if (type === 'model') {
+    if (type === "model") {
       return captureModel(viewer, modelPose.getPose(), manifestOverride);
     }
     return captureImagePdf(viewer, manifestOverride);
@@ -1083,13 +1299,18 @@ export const createStoryBuilderController = (
       return () => undefined;
     }
     viewer = ctx.viewer;
-    viewer.setStoryAnnotationEditing?.(get(activeChapterTask) === 'focus');
+    viewer.setStoryAnnotationEditing?.(get(activeChapterTask) === "focus");
     syncEditableStoryAnnotations();
-    lastManifest = ctx.viewer.getManifestId?.() ?? ctx.viewer.getState?.()?.manifestId ?? null;
+    lastManifest =
+      ctx.viewer.getManifestId?.() ??
+      ctx.viewer.getState?.()?.manifestId ??
+      null;
     currentManifest.set(lastManifest);
     viewerCanvasIndex.set(ctx.viewer.getCanvasIndex?.() ?? 0);
     viewerCanvasCount.set(ctx.viewer.getCanvasCount?.() ?? 0);
-    viewBox.set(ctx.viewer.getViewBox?.() ?? ctx.viewer.getState?.()?.viewBox ?? null);
+    viewBox.set(
+      ctx.viewer.getViewBox?.() ?? ctx.viewer.getState?.()?.viewBox ?? null,
+    );
     mediaSourcesStore.set(ctx.viewer.getMediaSources?.() ?? []);
     layerOpacitiesStore.set(ctx.viewer.getLayerOpacities?.() ?? {});
     const initialMediaType = ctx.viewer.getMediaType?.() ?? null;
@@ -1100,16 +1321,20 @@ export const createStoryBuilderController = (
     // No mediaTypePolling interval - use event-driven updates via stateChange/mediaChange
     attachedCount += 1;
     if (attachedCount === 1) {
-      const offState = ctx.events.on('stateChange', ({ snapshot }) => {
+      const offState = ctx.events.on("stateChange", ({ snapshot }) => {
         updateMediaType(snapshot.mediaType);
         lastManifest = snapshot.manifestId || null;
         currentManifest.set(lastManifest);
-        viewerCanvasIndex.set(snapshot.canvasIndex ?? ctx.viewer.getCanvasIndex?.() ?? 0);
+        viewerCanvasIndex.set(
+          snapshot.canvasIndex ?? ctx.viewer.getCanvasIndex?.() ?? 0,
+        );
         viewerCanvasCount.set(ctx.viewer.getCanvasCount?.() ?? 0);
-        viewBox.set(snapshot.viewBox ?? ctx.viewer.getViewBox?.() ?? get(viewBox));
+        viewBox.set(
+          snapshot.viewBox ?? ctx.viewer.getViewBox?.() ?? get(viewBox),
+        );
         mediaSourcesStore.set(ctx.viewer.getMediaSources?.() ?? []);
         layerOpacitiesStore.set(ctx.viewer.getLayerOpacities?.() ?? {});
-        if (snapshot.mediaType === 'model') {
+        if (snapshot.mediaType === "model") {
           updateModelPoseDebug(getCurrentModelPose() ?? modelPose.getPose());
         }
         if (pendingChapterApply && snapshot.manifestId) {
@@ -1125,18 +1350,21 @@ export const createStoryBuilderController = (
         }
         setError(null);
       });
-      const offManifest = ctx.events.on('manifestChange', ({ manifestId }) => {
+      const offManifest = ctx.events.on("manifestChange", ({ manifestId }) => {
         lastManifest = manifestId || null;
         currentManifest.set(lastManifest);
         viewerCanvasCount.set(ctx.viewer.getCanvasCount?.() ?? 0);
         updateMediaType(null);
         scheduleMediaTypeSync();
-        if (pendingChapterApply && pendingChapterApply.manifest === manifestId) {
+        if (
+          pendingChapterApply &&
+          pendingChapterApply.manifest === manifestId
+        ) {
           viewer?.setCanvasByIndex(pendingChapterApply.canvasIndex);
         }
         setError(null);
       });
-      const offPage = ctx.events.on('pageChange', ({ index }) => {
+      const offPage = ctx.events.on("pageChange", ({ index }) => {
         viewerCanvasIndex.set(index);
         viewerCanvasCount.set(ctx.viewer.getCanvasCount?.() ?? 0);
         // Update media type when navigating to different canvas
@@ -1148,13 +1376,19 @@ export const createStoryBuilderController = (
           beginPendingApply(pending);
         }
       });
-      const offViewBox = ctx.events.on('viewBoxChange', ({ viewBox: nextViewBox }) => {
-        viewBox.set(nextViewBox ?? null);
-      });
-      const offZoom = ctx.events.on('zoomChange', ({ viewBox: nextViewBox }) => {
-        viewBox.set(nextViewBox ?? null);
-      });
-      const offTime = ctx.events.on('mediaTimeUpdate', ({ time }) => {
+      const offViewBox = ctx.events.on(
+        "viewBoxChange",
+        ({ viewBox: nextViewBox }) => {
+          viewBox.set(nextViewBox ?? null);
+        },
+      );
+      const offZoom = ctx.events.on(
+        "zoomChange",
+        ({ viewBox: nextViewBox }) => {
+          viewBox.set(nextViewBox ?? null);
+        },
+      );
+      const offTime = ctx.events.on("mediaTimeUpdate", ({ time }) => {
         mediaMarks.updateTime(time);
         syncMediaMarks();
         if (
@@ -1167,7 +1401,7 @@ export const createStoryBuilderController = (
         }
       });
       const offModel = ctx.events.on(
-        'modelChange',
+        "modelChange",
         ({ cameraOrbit, cameraTarget, fieldOfView, orientation }) => {
           modelPose.updateFromEvent({
             cameraOrbit,
@@ -1178,16 +1412,18 @@ export const createStoryBuilderController = (
           updateModelPoseDebug(modelPose.getPose());
         },
       );
-      const offMedia = ctx.events.on('mediaChange', ({ mediaType }) => {
+      const offMedia = ctx.events.on("mediaChange", ({ mediaType }) => {
         mediaSourcesStore.set(ctx.viewer.getMediaSources?.() ?? []);
         updateMediaType(mediaType);
       });
 
-      const offMediaPlay = ctx.events.on('mediaPlay', ({ time }) => {
+      const offMediaPlay = ctx.events.on("mediaPlay", ({ time }) => {
         // When user manually starts audio/video playback, seek to Mark In if set
         const id = get(selectedChapterId);
         const storyValue = get(storyStore);
-        const chapter = id ? storyValue.chapters.find((item) => item.id === id) : null;
+        const chapter = id
+          ? storyValue.chapters.find((item) => item.id === id)
+          : null;
 
         if (chapter?.media && time < chapter.media.start) {
           // If playback started before Mark In, seek to Mark In
@@ -1200,20 +1436,34 @@ export const createStoryBuilderController = (
           activePlaybackChapterId = chapter.id;
         }
       });
-      const offAnnotationCreate = ctx.events.on('annotationCreate', ({ annotation, tool }) => {
-        if (get(activeChapterTask) !== 'focus' || !annotation || typeof annotation !== 'object') {
-          return;
-        }
-        addChapterDrawingAnnotation(annotation as ResolvedAnnotation, tool);
-      });
-      const offAnnotationUpdate = ctx.events.on('annotationUpdate', ({ annotationId, patch }) => {
-        if (get(activeChapterTask) === 'focus') {
-          updateChapterDrawingAnnotation(annotationId, patch);
-        }
-      });
-      const offAnnotationDelete = ctx.events.on('annotationDelete', ({ annotationId }) => {
-        if (get(activeChapterTask) === 'focus') deleteChapterDrawingAnnotation(annotationId);
-      });
+      const offAnnotationCreate = ctx.events.on(
+        "annotationCreate",
+        ({ annotation, tool }) => {
+          if (
+            get(activeChapterTask) !== "focus" ||
+            !annotation ||
+            typeof annotation !== "object"
+          ) {
+            return;
+          }
+          addChapterDrawingAnnotation(annotation as ResolvedAnnotation, tool);
+        },
+      );
+      const offAnnotationUpdate = ctx.events.on(
+        "annotationUpdate",
+        ({ annotationId, patch }) => {
+          if (get(activeChapterTask) === "focus") {
+            updateChapterDrawingAnnotation(annotationId, patch);
+          }
+        },
+      );
+      const offAnnotationDelete = ctx.events.on(
+        "annotationDelete",
+        ({ annotationId }) => {
+          if (get(activeChapterTask) === "focus")
+            deleteChapterDrawingAnnotation(annotationId);
+        },
+      );
 
       detachEvents = () => {
         offState();
@@ -1253,7 +1503,7 @@ export const createStoryBuilderController = (
       handleCaptureResult(result);
       return;
     }
-    if (result.reason !== 'missing-manifest') {
+    if (result.reason !== "missing-manifest") {
       handleCaptureResult(result);
       return;
     }
@@ -1276,7 +1526,7 @@ export const createStoryBuilderController = (
       handleUpdateResult(result, id);
       return;
     }
-    if (result.reason !== 'missing-manifest') {
+    if (result.reason !== "missing-manifest") {
       handleUpdateResult(result, id);
       return;
     }
@@ -1295,14 +1545,22 @@ export const createStoryBuilderController = (
     if (!chapterId || !viewBox) return;
     pushHistorySnapshot();
     storyStoreWrapper.setChapterViewBox({ chapterId, viewBox });
-    const chapter = get(storyStore).chapters.find((entry) => entry.id === chapterId);
+    const chapter = get(storyStore).chapters.find(
+      (entry) => entry.id === chapterId,
+    );
     const track = chapter?.cameraTrack;
-    if (track?.preset && track.preset !== 'custom') {
+    if (track?.preset && track.preset !== "custom") {
       storyStoreWrapper.setChapterCameraTrack({
         chapterId,
-        cameraTrack: configureCameraTrackPreset(track, track.preset, viewBox, track.durationMs, {
-          preservePoints: true,
-        }),
+        cameraTrack: configureCameraTrackPreset(
+          track,
+          track.preset,
+          viewBox,
+          track.durationMs,
+          {
+            preservePoints: true,
+          },
+        ),
       });
     }
     setError(null);
@@ -1312,8 +1570,11 @@ export const createStoryBuilderController = (
     activeChapterTask.set(null);
     pushHistorySnapshot();
     const chapters = get(storyStore).chapters;
-    const deletedIndex = chapters.findIndex((chapter) => chapter.id === chapterId);
-    const fallbackId = chapters[deletedIndex + 1]?.id ?? chapters[deletedIndex - 1]?.id ?? null;
+    const deletedIndex = chapters.findIndex(
+      (chapter) => chapter.id === chapterId,
+    );
+    const fallbackId =
+      chapters[deletedIndex + 1]?.id ?? chapters[deletedIndex - 1]?.id ?? null;
     chapterActions.deleteChapter(chapterId, () => {
       selectedChapterId.set(fallbackId);
       if (fallbackId) selectChapter(fallbackId);
@@ -1322,13 +1583,15 @@ export const createStoryBuilderController = (
 
   const duplicateChapter = (chapterId: string) => {
     const current = storyStoreWrapper.exportStory();
-    const sourceIndex = current.chapters.findIndex((chapter) => chapter.id === chapterId);
+    const sourceIndex = current.chapters.findIndex(
+      (chapter) => chapter.id === chapterId,
+    );
     const source = current.chapters[sourceIndex];
     if (!source) return;
     activeChapterTask.set(null);
     pushHistorySnapshot();
     const duplicateId =
-      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `chapter-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const duplicate: Chapter = {
@@ -1336,7 +1599,10 @@ export const createStoryBuilderController = (
       id: duplicateId,
       title: source.title
         ? Object.fromEntries(
-            Object.entries(source.title).map(([lang, value]) => [lang, `${value} copy`]),
+            Object.entries(source.title).map(([lang, value]) => [
+              lang,
+              `${value} copy`,
+            ]),
           )
         : undefined,
     };
@@ -1347,13 +1613,13 @@ export const createStoryBuilderController = (
     dirty.set(true);
     selectedChapterId.set(duplicateId);
     applyChapter(duplicate);
-    uiMode.set('chapterEdit');
+    uiMode.set("chapterEdit");
   };
 
   const reorderChapter = (
     chapterId: string,
     targetChapterId: string,
-    position: 'before' | 'after' = 'before',
+    position: "before" | "after" = "before",
   ) => {
     pushHistorySnapshot();
     chapterActions.reorderChapter(chapterId, targetChapterId, position);
@@ -1378,7 +1644,7 @@ export const createStoryBuilderController = (
     stopMotionPreview();
     motionPointDraft.set(null);
     activeChapterTask.set(null);
-    setChapterAnnotationTool('select');
+    setChapterAnnotationTool("select");
     selectedChapterId.set(chapterId);
     syncEditableStoryAnnotations();
     if (!chapterId) {
@@ -1403,14 +1669,15 @@ export const createStoryBuilderController = (
 
   const openNarration = () => {
     activeChapterTask.set(null);
-    uiMode.set('narrationPanel');
+    uiMode.set("narrationPanel");
   };
-  const backFromNarration = () => uiMode.set(get(selectedChapterId) ? 'chapterEdit' : 'idle');
-  const closeNarration = () => uiMode.set('idle');
+  const backFromNarration = () =>
+    uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
+  const closeNarration = () => uiMode.set("idle");
   const openChapter = () => {
     setTimeout(() => {
       if (get(selectedChapterId)) {
-        uiMode.set('chapterEdit');
+        uiMode.set("chapterEdit");
       }
     }, 0);
   };
@@ -1418,7 +1685,7 @@ export const createStoryBuilderController = (
     stopMotionPreview();
     motionPointDraft.set(null);
     activeChapterTask.set(null);
-    uiMode.set('idle');
+    uiMode.set("idle");
   };
 
   const startPreview = preview.start;
@@ -1440,13 +1707,21 @@ export const createStoryBuilderController = (
   };
 
   const assignMediaSegment = (start: number, end: number) => {
-    if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start) return;
+    if (
+      !Number.isFinite(start) ||
+      !Number.isFinite(end) ||
+      start < 0 ||
+      end <= start
+    )
+      return;
     setMediaMarks(start, end);
     viewer?.setMediaSegment?.(start, end);
     const chapterId = get(selectedChapterId);
     if (!chapterId) return;
     const current = storyStoreWrapper.exportStory();
-    const chapterIndex = current.chapters.findIndex((entry) => entry.id === chapterId);
+    const chapterIndex = current.chapters.findIndex(
+      (entry) => entry.id === chapterId,
+    );
     if (chapterIndex < 0) return;
     pushHistorySnapshot();
     const next = cloneStoryValue(current);
@@ -1463,7 +1738,7 @@ export const createStoryBuilderController = (
     const end = state.markOut;
     if (start == null || end == null || end <= start) return;
     const currentType = viewer.getMediaType?.() ?? null;
-    if (currentType !== 'audio' && currentType !== 'video') return;
+    if (currentType !== "audio" && currentType !== "video") return;
 
     // Set the active playback chapter ID so the time update handler works
     const currentChapterId = get(selectedChapterId);
@@ -1507,15 +1782,17 @@ export const createStoryBuilderController = (
   };
 
   const motionPointId = (): string =>
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID()
       : `camera-point-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
   const updateCameraTrack = (
-    transform: (chapter: Chapter) => Chapter['cameraTrack'] | undefined,
+    transform: (chapter: Chapter) => Chapter["cameraTrack"] | undefined,
   ) => {
     const chapterId = get(selectedChapterId);
-    const chapter = get(storyStore).chapters.find((item) => item.id === chapterId);
+    const chapter = get(storyStore).chapters.find(
+      (item) => item.id === chapterId,
+    );
     if (!chapterId || !chapter) return;
     pushHistorySnapshot();
     storyStoreWrapper.setChapterCameraTrack({
@@ -1524,11 +1801,16 @@ export const createStoryBuilderController = (
     });
   };
 
-  const captureMotionPoint = (keyframeId?: string, focus?: { x: number; y: number }) => {
+  const captureMotionPoint = (
+    keyframeId?: string,
+    focus?: { x: number; y: number },
+  ) => {
     updateCameraTrack((chapter) => {
       const durationMs = Math.max(
         1,
-        chapter.cameraTrack?.durationMs ?? chapter.presentationDurationMs ?? 5000,
+        chapter.cameraTrack?.durationMs ??
+          chapter.presentationDurationMs ??
+          5000,
       );
       const existing = chapter.cameraTrack?.keyframes ?? [];
       const existingPoint = keyframeId
@@ -1536,9 +1818,9 @@ export const createStoryBuilderController = (
         : undefined;
       const currentViewBox = viewer?.getViewBox?.() ?? chapter.viewBox;
       const stableViewBox = chapter.viewBox ?? currentViewBox;
-      const activePreset = chapter.cameraTrack?.preset ?? 'custom';
+      const activePreset = chapter.cameraTrack?.preset ?? "custom";
       const referenceViewBox =
-        activePreset === 'custom'
+        activePreset === "custom"
           ? (currentViewBox ?? existingPoint?.viewBox ?? stableViewBox)
           : (existingPoint?.viewBox ?? stableViewBox);
       const viewBox =
@@ -1550,9 +1832,12 @@ export const createStoryBuilderController = (
               h: referenceViewBox.h,
             }
           : referenceViewBox;
-      const model = existingPoint?.model ?? viewer?.getModelPose?.() ?? chapter.model;
+      const model =
+        existingPoint?.model ?? viewer?.getModelPose?.() ?? chapter.model;
       const capturedLayers =
-        existingPoint?.layerOpacities ?? viewer?.getLayerOpacities?.() ?? chapter.layerOpacities;
+        existingPoint?.layerOpacities ??
+        viewer?.getLayerOpacities?.() ??
+        chapter.layerOpacities;
       const point = {
         ...existingPoint,
         id: keyframeId ?? motionPointId(),
@@ -1565,17 +1850,23 @@ export const createStoryBuilderController = (
       const nextPoints = keyframeId
         ? existing.map((entry) => (entry.id === keyframeId ? point : entry))
         : [...existing, point];
-      const nextTrack: NonNullable<Chapter['cameraTrack']> = {
+      const nextTrack: NonNullable<Chapter["cameraTrack"]> = {
         ...chapter.cameraTrack,
         durationMs,
         preset: activePreset,
-        easing: chapter.cameraTrack?.easing ?? 'ease-in-out',
+        easing: chapter.cameraTrack?.easing ?? "ease-in-out",
         keyframes: retimeCameraKeyframes(nextPoints, durationMs),
       };
-      return activePreset !== 'custom' && stableViewBox
-        ? configureCameraTrackPreset(nextTrack, activePreset, stableViewBox, durationMs, {
-            preservePoints: true,
-          })
+      return activePreset !== "custom" && stableViewBox
+        ? configureCameraTrackPreset(
+            nextTrack,
+            activePreset,
+            stableViewBox,
+            durationMs,
+            {
+              preservePoints: true,
+            },
+          )
         : nextTrack;
     });
   };
@@ -1583,34 +1874,47 @@ export const createStoryBuilderController = (
   const deleteMotionPoint = (keyframeId: string) => {
     updateCameraTrack((chapter) => {
       if (!chapter.cameraTrack) return undefined;
-      const keyframes = chapter.cameraTrack.keyframes.filter((point) => point.id !== keyframeId);
+      const keyframes = chapter.cameraTrack.keyframes.filter(
+        (point) => point.id !== keyframeId,
+      );
       return {
         ...chapter.cameraTrack,
-        preset: 'custom',
-        keyframes: retimeCameraKeyframes(keyframes, chapter.cameraTrack.durationMs),
+        preset: "custom",
+        keyframes: retimeCameraKeyframes(
+          keyframes,
+          chapter.cameraTrack.durationMs,
+        ),
       };
     });
   };
 
   const updateMotionDuration = (durationMs: number) => {
     updateCameraTrack((chapter) => {
-      const safeDuration = Math.max(1, Number.isFinite(durationMs) ? durationMs : 5000);
+      const safeDuration = Math.max(
+        1,
+        Number.isFinite(durationMs) ? durationMs : 5000,
+      );
       return {
         ...chapter.cameraTrack,
         durationMs: safeDuration,
-        preset: chapter.cameraTrack?.preset ?? 'ken-burns',
-        easing: chapter.cameraTrack?.easing ?? 'ease-in-out',
-        keyframes: retimeCameraKeyframes(chapter.cameraTrack?.keyframes ?? [], safeDuration),
+        preset: chapter.cameraTrack?.preset ?? "ken-burns",
+        easing: chapter.cameraTrack?.easing ?? "ease-in-out",
+        keyframes: retimeCameraKeyframes(
+          chapter.cameraTrack?.keyframes ?? [],
+          safeDuration,
+        ),
       };
     });
   };
 
-  const updateMotionPathType = (pathType: 'linear' | 'spline') => {
+  const updateMotionPathType = (pathType: "linear" | "spline") => {
     updateCameraTrack((chapter) => {
       const currentView = chapter.viewBox ?? viewer?.getViewBox?.();
       const track =
         chapter.cameraTrack ??
-        (currentView ? generateCameraPreset('ken-burns', currentView, 5000) : undefined);
+        (currentView
+          ? generateCameraPreset("ken-burns", currentView, 5000)
+          : undefined);
       if (!track) return undefined;
       return {
         ...track,
@@ -1624,7 +1928,9 @@ export const createStoryBuilderController = (
       const currentView = chapter.viewBox ?? viewer?.getViewBox?.();
       const track =
         chapter.cameraTrack ??
-        (currentView ? generateCameraPreset('ken-burns', currentView, 5000) : undefined);
+        (currentView
+          ? generateCameraPreset("ken-burns", currentView, 5000)
+          : undefined);
       if (!track || !track.keyframes.length) return track;
       const keyframes = track.keyframes.map((point, index) => {
         if (index !== 0) return point;
@@ -1638,7 +1944,9 @@ export const createStoryBuilderController = (
     });
   };
 
-  const updateMotionEasing = (easing: NonNullable<ChapterCameraTrack['easing']>) => {
+  const updateMotionEasing = (
+    easing: NonNullable<ChapterCameraTrack["easing"]>,
+  ) => {
     updateCameraTrack((chapter) => {
       if (!chapter.cameraTrack) return undefined;
       return {
@@ -1662,18 +1970,31 @@ export const createStoryBuilderController = (
     }
   };
 
-  const applyMotionPreset = (preset: NonNullable<Chapter['cameraTrack']>['preset']) => {
+  const applyMotionPreset = (
+    preset: NonNullable<Chapter["cameraTrack"]>["preset"],
+  ) => {
     if (!preset) return;
     updateCameraTrack((chapter) => {
       const currentView = chapter.viewBox ?? viewer?.getViewBox?.();
       if (!currentView) return chapter.cameraTrack;
-      const duration = chapter.cameraTrack?.durationMs ?? chapter.presentationDurationMs ?? 5000;
-      return configureCameraTrackPreset(chapter.cameraTrack, preset, currentView, duration);
+      const duration =
+        chapter.cameraTrack?.durationMs ??
+        chapter.presentationDurationMs ??
+        5000;
+      return configureCameraTrackPreset(
+        chapter.cameraTrack,
+        preset,
+        currentView,
+        duration,
+      );
     });
   };
 
   const stopMotionPreview = () => {
-    if (motionPreviewFrame !== null && typeof cancelAnimationFrame === 'function') {
+    if (
+      motionPreviewFrame !== null &&
+      typeof cancelAnimationFrame === "function"
+    ) {
       cancelAnimationFrame(motionPreviewFrame);
     }
     motionPreviewFrame = null;
@@ -1682,13 +2003,20 @@ export const createStoryBuilderController = (
 
   const previewMotion = () => {
     const chapterId = get(selectedChapterId);
-    const chapter = get(storyStore).chapters.find((item) => item.id === chapterId);
+    const chapter = get(storyStore).chapters.find(
+      (item) => item.id === chapterId,
+    );
     if (!chapter) return;
     startMotionTrackPlayback(chapter);
   };
 
   const startMotionTrackPlayback = (chapter: Chapter) => {
-    if (!chapter.cameraTrack || chapter.cameraTrack.keyframes.length < 2 || !viewer) return;
+    if (
+      !chapter.cameraTrack ||
+      chapter.cameraTrack.keyframes.length < 2 ||
+      !viewer
+    )
+      return;
     stopMotionPreview();
     pendingApplyToken += 1;
     if (cancelAnimation) {
@@ -1696,16 +2024,20 @@ export const createStoryBuilderController = (
       cancelAnimation = null;
     }
     const track = chapter.cameraTrack;
-    const reduceMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const reduceMotion = globalThis.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     const applySample = (elapsedMs: number) => {
       const sample = sampleCameraTrack(track, elapsedMs);
       if (sample?.viewBox) viewer?.setViewBox?.(sample.viewBox);
       if (sample?.model) viewer?.setModelPose?.(sample.model);
-      for (const [id, opacity] of Object.entries(sample?.layerOpacities ?? {})) {
+      for (const [id, opacity] of Object.entries(
+        sample?.layerOpacities ?? {},
+      )) {
         viewer?.updateLayerOpacity?.(id, opacity);
       }
     };
-    if (reduceMotion || typeof requestAnimationFrame !== 'function') {
+    if (reduceMotion || typeof requestAnimationFrame !== "function") {
       applySample(track.durationMs);
       return;
     }
@@ -1715,7 +2047,8 @@ export const createStoryBuilderController = (
     const frame = (time: number) => {
       const elapsed = Math.min(track.durationMs, time - startedAt);
       applySample(elapsed);
-      if (elapsed < track.durationMs) motionPreviewFrame = requestAnimationFrame(frame);
+      if (elapsed < track.durationMs)
+        motionPreviewFrame = requestAnimationFrame(frame);
       else {
         motionPreviewFrame = null;
         motionPreviewing.set(false);
@@ -1740,25 +2073,27 @@ export const createStoryBuilderController = (
         : undefined) ??
       (() => {
         const view = viewer?.getViewBox?.();
-        return view ? { x: view.x + view.w / 2, y: view.y + view.h / 2 } : undefined;
+        return view
+          ? { x: view.x + view.w / 2, y: view.y + view.h / 2 }
+          : undefined;
       })();
     motionPointDraft.set({
       ...(keyframeId ? { keyframeId } : {}),
       ...(focus ? { focus } : {}),
     });
-    uiMode.set('motionPointPositioning');
+    uiMode.set("motionPointPositioning");
   };
 
   const confirmMotionPointPositioning = (focus: { x: number; y: number }) => {
     const draft = get(motionPointDraft);
     if (draft) captureMotionPoint(draft.keyframeId, focus);
     motionPointDraft.set(null);
-    uiMode.set('chapterEdit');
+    uiMode.set("chapterEdit");
   };
 
   const cancelMotionPointPositioning = () => {
     motionPointDraft.set(null);
-    uiMode.set('chapterEdit');
+    uiMode.set("chapterEdit");
   };
 
   const updateChapterTitle = (lang: string, value: string) => {
@@ -1792,12 +2127,15 @@ export const createStoryBuilderController = (
     chapterActions.updateAnnotationText(lang, text);
   };
 
-  const updateAnnotationPlacement = (lang: string, placement: AnnotationPlacement) => {
+  const updateAnnotationPlacement = (
+    lang: string,
+    placement: AnnotationPlacement,
+  ) => {
     pushHistorySnapshot();
     chapterActions.updateAnnotationPlacement(lang, placement);
   };
 
-  const updateAdvanceMode = (mode: ChapterAdvance['mode']) => {
+  const updateAdvanceMode = (mode: ChapterAdvance["mode"]) => {
     pushHistorySnapshot();
     chapterActions.updateAdvanceMode(mode);
   };
@@ -1811,17 +2149,17 @@ export const createStoryBuilderController = (
   };
 
   const startAnnotationPositioning = (lang: string) => {
-    uiMode.set('annotationPositioning');
+    uiMode.set("annotationPositioning");
     positioningLanguage.set(lang);
   };
 
   const confirmAnnotationPositioning = () => {
-    uiMode.set('chapterEdit');
+    uiMode.set("chapterEdit");
     positioningLanguage.set(null);
   };
 
   const cancelAnnotationPositioning = () => {
-    uiMode.set('chapterEdit');
+    uiMode.set("chapterEdit");
     positioningLanguage.set(null);
   };
 
@@ -1848,11 +2186,11 @@ export const createStoryBuilderController = (
 
   const reloadManifest = (manifest: string, canvasIndex: number) => {
     if (!viewer) {
-      setError('Viewer not ready.');
+      setError("Viewer not ready.");
       return;
     }
     if (!manifest.trim()) {
-      setError('Manifest URL is required.');
+      setError("Manifest URL is required.");
       return;
     }
     viewer.setManifest(manifest);
@@ -1862,7 +2200,11 @@ export const createStoryBuilderController = (
   const selectCanvas = (canvasIndex: number) => {
     if (!viewer) return;
     const count = viewer.getCanvasCount?.() ?? 0;
-    if (!Number.isInteger(canvasIndex) || canvasIndex < 0 || (count > 0 && canvasIndex >= count)) {
+    if (
+      !Number.isInteger(canvasIndex) ||
+      canvasIndex < 0 ||
+      (count > 0 && canvasIndex >= count)
+    ) {
       return;
     }
     viewerCanvasIndex.set(canvasIndex);
@@ -1871,12 +2213,12 @@ export const createStoryBuilderController = (
 
   const loadManifest = (manifest: string) => {
     if (!viewer) {
-      setError('Viewer not ready.');
+      setError("Viewer not ready.");
       return;
     }
     const trimmed = manifest.trim();
     if (!trimmed) {
-      setError('Manifest URL is required.');
+      setError("Manifest URL is required.");
       return;
     }
     viewer.setManifest(trimmed);
@@ -1887,8 +2229,14 @@ export const createStoryBuilderController = (
 
   const saveChapterSettings = () => {
     setError(null);
+    if (get(activeChapterTask) === "focus") {
+      selectedDrawingAnnotationId.set(null);
+      viewer?.setStoryAnnotationSelection?.(null);
+      uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
+      return;
+    }
     activeChapterTask.set(null);
-    uiMode.set(get(selectedChapterId) ? 'chapterEdit' : 'idle');
+    uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
   };
 
   const saveExport = () => {
@@ -1913,16 +2261,21 @@ export const createStoryBuilderController = (
   };
 
   const loadStory = (storyToLoad: StoryState) => {
+    const normalizedStory = normalizeStoryAnnotations(storyToLoad);
     pushHistorySnapshot();
-    loadStoryIntoStore(storyToLoad, storyStoreWrapper);
-    latestNarrationSegments = collectLatestNarrationSegments(storyStoreWrapper.exportStory());
-    transitionDelayDefault.set(collectLatestTransitionDelay(storyStoreWrapper.exportStory()));
+    loadStoryIntoStore(normalizedStory, storyStoreWrapper);
+    latestNarrationSegments = collectLatestNarrationSegments(
+      storyStoreWrapper.exportStory(),
+    );
+    transitionDelayDefault.set(
+      collectLatestTransitionDelay(storyStoreWrapper.exportStory()),
+    );
 
     // Load the first chapter's manifest if available
-    const firstChapter = storyToLoad.chapters?.[0];
+    const firstChapter = normalizedStory.chapters?.[0];
     if (firstChapter?.manifest && viewer) {
       viewer.setManifest?.(firstChapter.manifest);
-      if (typeof firstChapter.canvasIndex === 'number') {
+      if (typeof firstChapter.canvasIndex === "number") {
         viewer.setCanvasByIndex?.(firstChapter.canvasIndex);
       }
     }
@@ -1942,6 +2295,7 @@ export const createStoryBuilderController = (
     viewerCanvasCount,
     selectedChapterId,
     activeChapterTask,
+    selectedDrawingAnnotationId,
     chapterAnnotationTool,
     uiMode,
     drawerOpen,
@@ -2027,6 +2381,8 @@ export const createStoryBuilderController = (
     deleteChapterTextAnnotation,
     editChapterDrawingAnnotation,
     editChapterTextAnnotation,
+    setChapterDrawingAnnotationLabel,
+    setChapterDrawingAnnotationStyle,
     annotationLanguage,
     modelPoseDebug,
     loadStory,
