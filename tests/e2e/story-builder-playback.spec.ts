@@ -57,20 +57,21 @@ test("previews saved chapter motion without showing authoring pins", async ({
   await page.getByRole("button", { name: "Save motion", exact: true }).click();
   await expect(page.locator(".story-wide-authoring")).toHaveCount(0);
 
+  const viewer = page.locator("mango-viewer");
+  const viewBeforePreview = await viewer.evaluate((element: any) =>
+    element.getViewBox(),
+  );
   await page
     .getByRole("button", { name: "Preview story", exact: true })
     .click();
-  await page.waitForTimeout(1_200);
   await expect(page.locator(".story-builder-motion-marker")).toHaveCount(0);
 
-  const viewAtStart = await page
-    .locator("mango-viewer")
-    .evaluate((element: any) => element.getViewBox());
-  await page.waitForTimeout(1_000);
-  const viewDuringMotion = await page
-    .locator("mango-viewer")
-    .evaluate((element: any) => element.getViewBox());
-  expect(viewDuringMotion).not.toEqual(viewAtStart);
+  await expect
+    .poll(() => viewer.evaluate((element: any) => element.getViewBox()), {
+      timeout: 5_000,
+      message: "expected the saved camera motion to change the preview view",
+    })
+    .not.toEqual(viewBeforePreview);
 
   await page.getByRole("button", { name: "Exit preview", exact: true }).click();
 });

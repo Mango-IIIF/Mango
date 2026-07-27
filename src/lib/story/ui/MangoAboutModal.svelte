@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ExternalLink, X, Compass, Film, Mic, FileCode2 } from '@lucide/svelte';
+  import { ExternalLink, X } from '@lucide/svelte';
   import MangoLogoIcon from './MangoLogoIcon.svelte';
   import pkg from '../../../../package.json';
 
@@ -166,14 +166,6 @@
     letter-spacing: 0.03em;
   }
 
-  .mango-about-modal__tagline {
-    display: block;
-    margin-top: 4px;
-    font-size: 13px;
-    color: var(--accent, #e07a3f);
-    font-weight: 600;
-  }
-
   .mango-about-modal__body {
     display: grid;
     gap: 16px;
@@ -185,46 +177,6 @@
   .mango-about-modal__body p {
     margin: 0;
     text-align: center;
-  }
-
-  .mango-about-modal__features {
-    display: grid;
-    gap: 10px;
-    margin-top: 4px;
-  }
-
-  .mango-about-modal__feature {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  .mango-about-modal__feature :global(.mango-about-modal__icon) {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: var(--accent, #e07a3f);
-  }
-
-  .mango-about-modal__feature div {
-    display: grid;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .mango-about-modal__feature strong {
-    font-size: 13px;
-    font-weight: 700;
-    color: white;
-  }
-
-  .mango-about-modal__feature span {
-    font-size: 12px;
-    color: var(--viewer-muted, #9aa6b2);
-    overflow-wrap: anywhere;
   }
 
   .mango-about-modal__footer {

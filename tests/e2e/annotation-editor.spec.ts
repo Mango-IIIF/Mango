@@ -220,9 +220,11 @@ test("opens and deletes a Mango annotation from the story footer", async ({
   const zoomBefore = Number((await zoom.inputValue()).replace(/[^0-9.]/g, ""));
   await page.getByRole("button", { name: /Edit Rectangle annotation/ }).click();
   await expect(editor.locator("[data-handle]")).toHaveCount(8);
-  expect(Number((await zoom.inputValue()).replace(/[^0-9.]/g, ""))).toBe(
-    zoomBefore,
-  );
+  const zoomAfter = Number((await zoom.inputValue()).replace(/[^0-9.]/g, ""));
+  // Opening the editor changes the available canvas width, which can adjust
+  // the displayed fit percentage by a few points. Guard against an unwanted
+  // zoom-to-annotation jump without requiring pixel-identical layout timing.
+  expect(Math.abs(zoomAfter - zoomBefore)).toBeLessThanOrEqual(5);
 
   await page
     .getByRole("button", { name: /Delete Rectangle annotation/ })
