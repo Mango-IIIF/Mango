@@ -11,6 +11,36 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe('NarrationOverlay', () => {
+  it('updates the whole-story title for the active language', async () => {
+    const store = createStoryStoreForTest({ title: { en: 'Old title' }, chapters: [] });
+    const target = createTarget();
+
+    const instance = mount(NarrationOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        language: 'en',
+        languages: ['en'],
+        onUpdateStoryTitle: (lang: string, value: string) =>
+          store.setStoryTitle({ language: lang, value }),
+      },
+    });
+
+    const input = target.querySelector('[data-testid="story-title"]') as HTMLInputElement;
+    expect(input.value).toBe('Old title');
+    input.value = 'The whole story';
+    input.dispatchEvent(new Event('input'));
+    await tick();
+
+    let storyValue: any;
+    store.story.subscribe((value) => (storyValue = value))();
+    expect(storyValue.title.en).toBe('The whole story');
+
+    unmount(instance);
+    target.remove();
+  });
+
   it('updates narration track at story level', async () => {
     const store = createStoryStoreForTest({
       narration: {
@@ -34,14 +64,10 @@ describe('NarrationOverlay', () => {
       },
     });
 
-    const input = target.querySelector(
-      '[data-testid="narration-url"]',
-    ) as HTMLInputElement;
+    const input = target.querySelector('[data-testid="narration-url"]') as HTMLInputElement;
     input.value = 'https://example.org/audio.mp3';
     input.dispatchEvent(new Event('input'));
-    const save = target.querySelector(
-      '[data-testid="narration-assign"]',
-    ) as HTMLButtonElement;
+    const save = target.querySelector('[data-testid="narration-assign"]') as HTMLButtonElement;
     save.click();
 
     await tick();
@@ -49,9 +75,7 @@ describe('NarrationOverlay', () => {
       store.story.subscribe((value) => resolve(value))();
     });
 
-    expect((storyValue as any).narration.tracks.en.src).toBe(
-      'https://example.org/audio.mp3',
-    );
+    expect((storyValue as any).narration.tracks.en.src).toBe('https://example.org/audio.mp3');
 
     unmount(instance);
     target.remove();
@@ -81,17 +105,14 @@ describe('NarrationOverlay', () => {
       },
     });
 
-    const select = target.querySelector(
-      '[data-testid="narration-language"]',
-    ) as HTMLSelectElement;
-    const input = target.querySelector(
-      '[data-testid="narration-url"]',
-    ) as HTMLInputElement;
+    const languageButtons = Array.from(target.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const english = languageButtons.find((button) => button.textContent?.trim() === 'EN');
+    const welsh = languageButtons.find((button) => button.textContent?.trim() === 'CY');
+    const input = target.querySelector('[data-testid="narration-url"]') as HTMLInputElement;
 
     expect(input.value).toBe('https://example.org/en.mp3');
 
-    select.value = 'cy';
-    select.dispatchEvent(new Event('change'));
+    welsh?.click();
     await tick();
     expect(input.value).toBe('https://example.org/cy.mp3');
 
@@ -99,8 +120,7 @@ describe('NarrationOverlay', () => {
     input.dispatchEvent(new Event('input'));
     await tick();
 
-    select.value = 'en';
-    select.dispatchEvent(new Event('change'));
+    english?.click();
     await tick();
     expect(input.value).toBe('https://example.org/en.mp3');
 

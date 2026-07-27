@@ -1,6 +1,6 @@
 /**
  * Plugin Manager
- * 
+ *
  * Manages plugin deduplication and slot-based organization.
  * Extracted from Viewer.svelte to reduce complexity and improve testability.
  * Part of CODE_REVIEW.md Priority 2.1: Decompose Viewer.svelte
@@ -12,6 +12,7 @@ import type { ViewerPlugin } from '../../core/types/plugin';
  * Plugins organized by their render slot
  */
 export type PluginsBySlot = {
+  top: ViewerPlugin[];
   left: ViewerPlugin[];
   right: ViewerPlugin[];
   bottom: ViewerPlugin[];
@@ -20,10 +21,10 @@ export type PluginsBySlot = {
 
 /**
  * Deduplicate and organize plugins by slot
- * 
+ *
  * Combines registered plugins (from global store) with local plugins (from props),
  * deduplicates by ID (later plugins override earlier ones), and organizes by slot.
- * 
+ *
  * @param registeredPlugins - Plugins from global registry
  * @param localPlugins - Plugins passed as props
  * @returns Plugins organized by slot
@@ -35,16 +36,17 @@ export const organizePluginsBySlot = (
   // Deduplicate plugins by ID
   // Local plugins come after registered ones, so they override if IDs match
   const deduped = new Map<string, ViewerPlugin>();
-  
+
   for (const plugin of [...registeredPlugins, ...localPlugins]) {
     if (!plugin?.id) continue; // Skip plugins without IDs
     deduped.set(plugin.id, plugin);
   }
-  
+
   const allPlugins = Array.from(deduped.values());
-  
+
   // Organize by slot
   return {
+    top: allPlugins.filter((plugin) => plugin.slot === 'top'),
     left: allPlugins.filter((plugin) => plugin.slot === 'left'),
     right: allPlugins.filter((plugin) => plugin.slot === 'right'),
     bottom: allPlugins.filter((plugin) => plugin.slot === 'bottom'),
@@ -55,7 +57,10 @@ export const organizePluginsBySlot = (
 /**
  * Check if any plugins exist for a given slot
  */
-export const hasPluginsInSlot = (pluginsBySlot: PluginsBySlot, slot: keyof PluginsBySlot): boolean => {
+export const hasPluginsInSlot = (
+  pluginsBySlot: PluginsBySlot,
+  slot: keyof PluginsBySlot,
+): boolean => {
   return pluginsBySlot[slot].length > 0;
 };
 
@@ -64,6 +69,7 @@ export const hasPluginsInSlot = (pluginsBySlot: PluginsBySlot, slot: keyof Plugi
  */
 export const getTotalPluginCount = (pluginsBySlot: PluginsBySlot): number => {
   return (
+    pluginsBySlot.top.length +
     pluginsBySlot.left.length +
     pluginsBySlot.right.length +
     pluginsBySlot.bottom.length +

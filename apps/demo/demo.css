@@ -15,7 +15,12 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   background: radial-gradient(circle at top, var(--bg-start), var(--bg-end));
   color: var(--ink);
 }
@@ -167,6 +172,11 @@ body {
   min-height: 0;
 }
 
+.page--viewer .viewer-shell {
+  height: min(880px, calc(100dvh - 40px));
+  min-height: 680px;
+}
+
 .page--editor .viewer-shell {
   height: auto;
   min-height: 0;
@@ -184,17 +194,38 @@ body {
 }
 
 @media (min-width: 701px) {
-  .page--story-viewer .viewer-shell mango-viewer[mode='story-viewer'] {
+  .page--story-viewer .viewer-shell mango-viewer[mode="story-viewer"] {
     min-height: 580px;
   }
 }
 
 @media (max-width: 700px) {
+  .page--editor {
+    height: auto;
+    max-height: none;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .page--editor .viewer-shell {
+    height: auto;
+    overflow: visible;
+  }
+
+  .page--editor .viewer-shell mango-viewer[mode="story-builder"] {
+    min-height: 1080px;
+  }
+
   .viewer-shell {
     min-height: auto;
   }
 
-  .viewer-shell mango-viewer:not([mode='workspace']) {
+  .page--viewer .viewer-shell {
+    height: auto;
+    min-height: auto;
+  }
+
+  .viewer-shell mango-viewer:not([mode="workspace"]) {
     flex: 0 0 auto;
     height: auto;
   }
@@ -236,7 +267,7 @@ body {
   background: #f8f8f8;
   padding: 10px;
   border-radius: 4px;
-  font-family: Monaco, 'Courier New', monospace;
+  font-family: Monaco, "Courier New", monospace;
   font-size: 14px;
   overflow-x: auto;
 }
@@ -330,7 +361,9 @@ body {
 
 .cookbook-summary dd {
   margin: 0;
-  font: 600 30px Georgia, serif;
+  font:
+    600 30px Georgia,
+    serif;
 }
 
 .cookbook-viewer {
@@ -441,19 +474,29 @@ body {
   align-items: baseline;
   margin: 12px 0 0;
   color: var(--accent-dark);
-  font: 500 22px Georgia, serif;
+  font:
+    500 22px Georgia,
+    serif;
 }
 
 .cookbook-pass-rate a {
   color: var(--ink);
-  font: 700 12px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font:
+    700 12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .cookbook-filters {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(210px, 0.55fr) minmax(180px, 0.4fr);
+  grid-template-columns: minmax(280px, 1fr) minmax(210px, 0.55fr) minmax(
+      180px,
+      0.4fr
+    );
   gap: 18px;
   padding: 24px;
   border: 1px solid rgba(43, 37, 32, 0.14);
@@ -481,7 +524,12 @@ body {
   border-radius: 4px;
   background: #fffaf6;
   color: var(--ink);
-  font: 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font:
+    14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
 .cookbook-result-count {
@@ -515,7 +563,13 @@ body {
 
 .cookbook-recipe__number {
   color: var(--accent-dark);
-  font: 500 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font:
+    500 13px ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
 }
 
 .cookbook-recipe h3 {

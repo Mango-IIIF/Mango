@@ -49,6 +49,10 @@ export type ViewerConfig = {
     languages?: string[];
     /** Public HTTP(S) identifier used for new story AnnotationPage exports. */
     annotationPageId?: string;
+    /** Optional chapter Annotation base. Defaults to `${annotationPageId}/annotation/`. */
+    annotationBase?: string;
+    /** Prevent authors from changing host-supplied canonical identifiers. */
+    identifiersLocked?: boolean;
     save?: {
       endpoint?: string;
       method?: 'POST' | 'PUT';

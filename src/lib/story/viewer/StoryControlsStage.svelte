@@ -125,7 +125,7 @@
     
     // Select the active chapter element (the buttons are children of the footer)
     const activeBtn = footerRef.children[activeIndex] as HTMLElement | undefined;
-    if (activeBtn) {
+    if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
       activeBtn.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
@@ -274,6 +274,7 @@
 </div>
 
 <style>
+
   .story-shell {
     --story-bg: #07101e;
     --story-line: rgba(255, 255, 255, 0.14);

@@ -19,7 +19,11 @@
   import type { LayerItem } from '../../features/annotations/workspace/LeftSidebar.svelte';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
   import { VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
-  import type { ActiveLayoutImage, RendererComponent, RendererInstance } from '../../core/types/renderer';
+  import type {
+    ActiveLayoutImage,
+    RendererComponent,
+    RendererInstance,
+  } from '../../core/types/renderer';
   import type OpenSeadragon from 'openseadragon';
 
   type DockPanel =
@@ -73,22 +77,28 @@
     canZoom?: boolean;
     onviewboxchange?: ((payload: { viewBox: ViewBox }) => void) | undefined;
     onzoomchange?:
-      | ((payload: { zoom: number; viewBox: ViewBox; homeZoom?: number }) => void)
-      | undefined;
+      ((payload: { zoom: number; viewBox: ViewBox; homeZoom?: number }) => void) | undefined;
     onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
     onpaneltoggle?: ((payload: { panel: DockPanel; open: boolean }) => void) | undefined;
     annotationTool?: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
     annotationEditorEnabled?: boolean;
+    annotationEditorAnnotations?: ResolvedAnnotation[];
     annotationLayers?: LayerItem[];
     canvasId?: string | null;
-    onannotationcreate?: ((payload: { annotation: unknown }) => void) | undefined;
-    onannotationupdate?:
-      | ((payload: { id: string; patch: Record<string, unknown> }) => void)
+    onannotationcreate?:
+      | ((payload: {
+          annotation: unknown;
+          tool?: 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
+        }) => void)
       | undefined;
+    onannotationupdate?:
+      ((payload: { id: string; patch: Record<string, unknown> }) => void) | undefined;
     onannotationdelete?: ((payload: { id: string }) => void) | undefined;
     onannotationselect?: ((payload: { id: string }) => void) | undefined;
     onannotationtoolchange?:
-      | ((payload: { tool: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line' }) => void)
+      | ((payload: {
+          tool: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
+        }) => void)
       | undefined;
     layoutMode?: 'single' | 'two-page' | 'continuous';
     activeLayoutImages?: ActiveLayoutImage[];
@@ -139,6 +149,7 @@
     onpaneltoggle = undefined,
     annotationTool = 'select',
     annotationEditorEnabled = false,
+    annotationEditorAnnotations = undefined,
     annotationLayers = [],
     canvasId = null,
     onannotationcreate = undefined,
@@ -147,13 +158,11 @@
     onannotationselect = undefined,
     onannotationtoolchange = undefined,
     layoutMode = 'single',
-    activeLayoutImages = []
+    activeLayoutImages = [],
   }: Props = $props();
   const viewportState = getContext<ViewportState | undefined>(VIEWPORT_STATE_CONTEXT_KEY);
   let effectiveCanvasId = $derived(canvasId ?? viewportState?.manifestId ?? null);
-  let useConstrainedMedia = $derived(
-    constrainMediaHeight && !fillHeight && mediaType !== 'video',
-  );
+  let useConstrainedMedia = $derived(constrainMediaHeight && !fillHeight && mediaType !== 'video');
   let isFixedStage = $derived(
     !fillHeight && (!mediaSource || mediaType !== 'video') && !useConstrainedMedia,
   );
@@ -170,8 +179,7 @@
   let pendingModelPose: ModelPose | null = $state(null);
   let pendingModelPoseOptions: ModelPoseOptions = $state({});
   let rendererError = $state('');
-  export const getViewBox = (): ViewBox | null =>
-    rendererInstance?.getViewBox?.() ?? null;
+  export const getViewBox = (): ViewBox | null => rendererInstance?.getViewBox?.() ?? null;
 
   export const setViewBox = (box: ViewBox): void => {
     rendererInstance?.setViewBox?.(box);
@@ -239,19 +247,13 @@
   };
 
   export const getModelOrbit = (): string | null =>
-    rendererInstance?.getCameraOrbit?.() ??
-    pendingModelPose?.cameraOrbit ??
-    null;
+    rendererInstance?.getCameraOrbit?.() ?? pendingModelPose?.cameraOrbit ?? null;
 
   export const getModelTarget = (): string | null =>
-    rendererInstance?.getCameraTarget?.() ??
-    pendingModelPose?.cameraTarget ??
-    null;
+    rendererInstance?.getCameraTarget?.() ?? pendingModelPose?.cameraTarget ?? null;
 
   export const getModelOrientation = (): string | null =>
-    rendererInstance?.getOrientation?.() ??
-    pendingModelPose?.orientation ??
-    null;
+    rendererInstance?.getOrientation?.() ?? pendingModelPose?.orientation ?? null;
 
   export const getModelPose = (): ModelPose | null =>
     rendererInstance?.getModelPose?.() ?? pendingModelPose ?? null;
@@ -338,7 +340,7 @@
       .map((item) => resolvedToW3C(item, canvasId ?? ''))
       .filter((item): item is NonNullable<typeof item> => Boolean(item))
       .map((item) => w3cToResolved(item))
-      .filter((item): item is ResolvedAnnotation => Boolean(item))
+      .filter((item): item is ResolvedAnnotation => Boolean(item)),
   );
 </script>
 
@@ -444,7 +446,7 @@
       canvasWidth={annotationCanvasSize.width || mediaSource?.width || 0}
       canvasHeight={annotationCanvasSize.height || mediaSource?.height || 0}
       canvasId={effectiveCanvasId}
-      {annotations}
+      annotations={annotationEditorAnnotations ?? annotations}
       {activeAnnotationId}
       layers={annotationLayers}
       onannotationcreate={(payload) => onannotationcreate?.(payload)}
@@ -455,11 +457,14 @@
     />
 
     {#if overlayPlugins.length > 0}
-      <div class:stage__overlay--flush={fillHeight} class="stage__overlay">
+      <div
+        class:stage__overlay--flush={fillHeight}
+        class:stage__overlay--annotation-editing={annotationEditorEnabled}
+        class="stage__overlay"
+      >
         <PluginSlot slot="overlay" plugins={overlayPlugins} context={pluginContext} />
       </div>
     {/if}
-
   </div>
 </div>
 
@@ -564,6 +569,16 @@
 
   .stage__overlay :global(.plugin-panel--overlay) {
     pointer-events: auto;
+  }
+
+  /*
+   * Overlay plugins fill the stage and normally own its pointer input. While the
+   * annotation editor is open, that transparent panel must not sit in front of
+   * the editor's SVG handles. Interactive overlay children can still opt back
+   * in with pointer-events: auto (for example, story placement controls).
+   */
+  .stage__overlay--annotation-editing :global(.plugin-panel--overlay) {
+    pointer-events: none;
   }
 
   @container mango-viewer (max-width: 1024px) {

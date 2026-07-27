@@ -2,7 +2,7 @@ import type { ViewerConfig } from './config';
 import type { EventBus, ViewerEventMap } from './events';
 import type { ViewerApi } from './viewer-api';
 
-export type PluginSlot = 'left' | 'right' | 'bottom' | 'overlay';
+export type PluginSlot = 'top' | 'left' | 'right' | 'bottom' | 'overlay';
 
 export type PluginCapabilities = {
   requiresManifest?: boolean;

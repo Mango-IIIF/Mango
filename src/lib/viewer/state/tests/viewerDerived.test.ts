@@ -1,219 +1,221 @@
-import { describe, it, expect } from 'vitest';
-import { manifestsStore } from '../../../state/manifests';
-import { createViewerDerived } from '../viewerDerived';
-import { createViewerState } from '../viewerState';
+import { describe, it, expect } from "vitest";
+import { get } from "svelte/store";
+import * as manifesto from "manifesto.js";
+import { manifestsStore } from "../../../state/manifests";
+import { createViewerDerived } from "../viewerDerived";
+import { createViewerState } from "../viewerState";
 
-describe('viewerDerived - activeLayoutImages', () => {
+describe("viewerDerived - activeLayoutImages", () => {
   const mockCanvases = [
     {
-      id: 'c0',
+      id: "c0",
       index: 0,
       width: 800,
       height: 1200,
       getImages: () => [
         {
           getResource: () => ({
-            id: 'img-c0',
-            type: 'dctypes:Image',
-            format: 'image/jpeg',
+            id: "img-c0",
+            type: "dctypes:Image",
+            format: "image/jpeg",
             service: {
-              id: 'service-c0'
-            }
-          })
-        }
-      ]
+              id: "service-c0",
+            },
+          }),
+        },
+      ],
     },
     {
-      id: 'c1',
+      id: "c1",
       index: 1,
       width: 800,
       height: 1200,
       getImages: () => [
         {
           getResource: () => ({
-            id: 'img-c1',
-            type: 'dctypes:Image',
-            format: 'image/jpeg',
+            id: "img-c1",
+            type: "dctypes:Image",
+            format: "image/jpeg",
             service: {
-              id: 'service-c1'
-            }
-          })
-        }
-      ]
+              id: "service-c1",
+            },
+          }),
+        },
+      ],
     },
     {
-      id: 'c2',
+      id: "c2",
       index: 2,
       width: 800,
       height: 1200,
       getImages: () => [
         {
           getResource: () => ({
-            id: 'img-c2',
-            type: 'dctypes:Image',
-            format: 'image/jpeg',
+            id: "img-c2",
+            type: "dctypes:Image",
+            format: "image/jpeg",
             service: {
-              id: 'service-c2'
-            }
-          })
-        }
-      ]
+              id: "service-c2",
+            },
+          }),
+        },
+      ],
     },
     {
-      id: 'c3',
+      id: "c3",
       index: 3,
       width: 800,
       height: 1200,
       getImages: () => [
         {
           getResource: () => ({
-            id: 'img-c3',
-            type: 'dctypes:Image',
-            format: 'image/jpeg',
+            id: "img-c3",
+            type: "dctypes:Image",
+            format: "image/jpeg",
             service: {
-              id: 'service-c3'
-            }
-          })
-        }
-      ]
+              id: "service-c3",
+            },
+          }),
+        },
+      ],
     },
     {
-      id: 'c4',
+      id: "c4",
       index: 4,
       width: 800,
       height: 1200,
       getImages: () => [
         {
           getResource: () => ({
-            id: 'img-c4',
-            type: 'dctypes:Image',
-            format: 'image/jpeg',
+            id: "img-c4",
+            type: "dctypes:Image",
+            format: "image/jpeg",
             service: {
-              id: 'service-c4'
-            }
-          })
-        }
-      ]
-    }
+              id: "service-c4",
+            },
+          }),
+        },
+      ],
+    },
   ];
 
   const mockManifesto = {
     getSequences: () => [
       {
-        getCanvases: () => mockCanvases
-      }
-    ]
+        getCanvases: () => mockCanvases,
+      },
+    ],
   };
 
-  it('should return single canvas in single layout mode', () => {
+  it("should return single canvas in single layout mode", () => {
     // Populate the global manifestsStore with pre-parsed canvases array
     manifestsStore.set({
-      'test-manifest': {
-        id: 'test-manifest',
+      "test-manifest": {
+        id: "test-manifest",
         manifesto: mockManifesto as any,
         canvases: mockCanvases as any,
         isFetching: false,
-        error: ''
-      }
+        error: "",
+      },
     });
 
-    const state = createViewerState({ manifestId: 'test-manifest' });
+    const state = createViewerState({ manifestId: "test-manifest" });
     const derivedStore = createViewerDerived(state);
 
     state.selectedCanvasIndex.set(2);
-    state.layoutMode.set('single');
+    state.layoutMode.set("single");
 
     let value: any[] = [];
-    derivedStore.activeLayoutImages.subscribe(val => {
+    derivedStore.activeLayoutImages.subscribe((val) => {
       value = val;
     })();
 
     expect(value.length).toBe(1);
-    expect(value[0].id).toBe('c2');
+    expect(value[0].id).toBe("c2");
     expect(value[0].index).toBe(2);
   });
 
-  it('should return cover page at index 0 in two-page mode', () => {
+  it("should return cover page at index 0 in two-page mode", () => {
     manifestsStore.set({
-      'test-manifest': {
-        id: 'test-manifest',
+      "test-manifest": {
+        id: "test-manifest",
         manifesto: mockManifesto as any,
         canvases: mockCanvases as any,
         isFetching: false,
-        error: ''
-      }
+        error: "",
+      },
     });
 
-    const state = createViewerState({ manifestId: 'test-manifest' });
+    const state = createViewerState({ manifestId: "test-manifest" });
     const derivedStore = createViewerDerived(state);
 
     state.selectedCanvasIndex.set(0);
-    state.layoutMode.set('two-page');
+    state.layoutMode.set("two-page");
 
     let value: any[] = [];
-    derivedStore.activeLayoutImages.subscribe(val => {
+    derivedStore.activeLayoutImages.subscribe((val) => {
       value = val;
     })();
 
     expect(value.length).toBe(1);
-    expect(value[0].id).toBe('c0');
+    expect(value[0].id).toBe("c0");
     expect(value[0].index).toBe(0);
   });
 
-  it('should return paired canvases for pages 1 and 2 in two-page mode', () => {
+  it("should return paired canvases for pages 1 and 2 in two-page mode", () => {
     manifestsStore.set({
-      'test-manifest': {
-        id: 'test-manifest',
+      "test-manifest": {
+        id: "test-manifest",
         manifesto: mockManifesto as any,
         canvases: mockCanvases as any,
         isFetching: false,
-        error: ''
-      }
+        error: "",
+      },
     });
 
-    const state = createViewerState({ manifestId: 'test-manifest' });
+    const state = createViewerState({ manifestId: "test-manifest" });
     const derivedStore = createViewerDerived(state);
 
     state.selectedCanvasIndex.set(1);
-    state.layoutMode.set('two-page');
+    state.layoutMode.set("two-page");
 
     let value: any[] = [];
-    derivedStore.activeLayoutImages.subscribe(val => {
+    derivedStore.activeLayoutImages.subscribe((val) => {
       value = val;
     })();
 
     expect(value.length).toBe(2);
-    expect(value[0].id).toBe('c1');
-    expect(value[1].id).toBe('c2');
+    expect(value[0].id).toBe("c1");
+    expect(value[1].id).toBe("c2");
   });
 
-  it('should return all canvases in continuous scroll mode', () => {
+  it("should return all canvases in continuous scroll mode", () => {
     manifestsStore.set({
-      'test-manifest': {
-        id: 'test-manifest',
+      "test-manifest": {
+        id: "test-manifest",
         manifesto: mockManifesto as any,
         canvases: mockCanvases as any,
         isFetching: false,
-        error: ''
-      }
+        error: "",
+      },
     });
 
-    const state = createViewerState({ manifestId: 'test-manifest' });
+    const state = createViewerState({ manifestId: "test-manifest" });
     const derivedStore = createViewerDerived(state);
 
     state.selectedCanvasIndex.set(0);
-    state.layoutMode.set('continuous');
+    state.layoutMode.set("continuous");
 
     let value: any[] = [];
-    derivedStore.activeLayoutImages.subscribe(val => {
+    derivedStore.activeLayoutImages.subscribe((val) => {
       value = val;
     })();
 
     expect(value.length).toBe(5);
-    expect(value.map(v => v.id)).toEqual(['c0', 'c1', 'c2', 'c3', 'c4']);
+    expect(value.map((v) => v.id)).toEqual(["c0", "c1", "c2", "c3", "c4"]);
   });
 
-  it('keeps thumbnail navigation available on a missing image canvas', () => {
+  it("keeps thumbnail navigation available on a missing image canvas", () => {
     const canvasesWithMissing = mockCanvases.map((canvas, index) =>
       index === 1 ? { ...canvas, getImages: () => [] } : canvas,
     );
@@ -226,32 +228,90 @@ describe('viewerDerived - activeLayoutImages', () => {
     };
 
     manifestsStore.set({
-      'missing-image-manifest': {
-        id: 'missing-image-manifest',
+      "missing-image-manifest": {
+        id: "missing-image-manifest",
         manifesto: manifestoWithMissing as any,
         canvases: canvasesWithMissing as any,
         isFetching: false,
-        error: '',
+        error: "",
       },
     });
 
-    const state = createViewerState({ manifestId: 'missing-image-manifest' });
+    const state = createViewerState({ manifestId: "missing-image-manifest" });
     const derivedStore = createViewerDerived(state);
     state.selectedCanvasIndex.set(1);
 
-    let mediaType: string | null = 'image';
+    let mediaType: string | null = "image";
     let allowThumbnails = false;
     const unsubscribeMedia = derivedStore.mediaType.subscribe((value) => {
       mediaType = value;
     });
-    const unsubscribeThumbnails = derivedStore.allowThumbnails.subscribe((value) => {
-      allowThumbnails = value;
-    });
+    const unsubscribeThumbnails = derivedStore.allowThumbnails.subscribe(
+      (value) => {
+        allowThumbnails = value;
+      },
+    );
 
     expect(mediaType).toBeNull();
     expect(allowThumbnails).toBe(true);
 
     unsubscribeMedia();
     unsubscribeThumbnails();
+  });
+
+  it("exposes manifest audio while the AV model is still resolving", () => {
+    const canvasId = "https://example.org/canvas/audio";
+    const audioUrl = "https://example.org/media/audio.mp3";
+    const manifest = manifesto.parseManifest({
+      "@context": "http://iiif.io/api/presentation/3/context.json",
+      id: "audio-manifest",
+      type: "Manifest",
+      label: { en: ["Audio"] },
+      items: [
+        {
+          id: canvasId,
+          type: "Canvas",
+          duration: 183,
+          items: [
+            {
+              id: `${canvasId}/page`,
+              type: "AnnotationPage",
+              items: [
+                {
+                  id: `${canvasId}/annotation`,
+                  type: "Annotation",
+                  motivation: "painting",
+                  target: canvasId,
+                  body: {
+                    id: audioUrl,
+                    type: "Sound",
+                    format: "audio/mpeg",
+                    duration: 183,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    manifestsStore.set({
+      "audio-manifest": {
+        id: "audio-manifest",
+        manifesto: manifest,
+        canvases: [{ id: canvasId, index: 0, duration: 183 } as any],
+        isFetching: false,
+        error: "",
+      },
+    });
+
+    const derivedStore = createViewerDerived(
+      createViewerState({ manifestId: "audio-manifest" }),
+    );
+
+    expect(get(derivedStore.mediaSources)).toEqual([
+      expect.objectContaining({ type: "audio", src: audioUrl, duration: 183 }),
+    ]);
   });
 });

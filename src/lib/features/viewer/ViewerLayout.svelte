@@ -5,11 +5,13 @@
   import { normaliseViewerConfig } from '../../config/normalise';
   import type { ViewerEventMap } from '../../core/types/events';
   import type { ViewerConfig } from '../../core/types/config';
+  import type { ChapterAnnotationTool } from '../../core/types/story';
   import type { ViewBox } from '../../core/types/viewer';
   import type { ViewerPlugin } from '../../core/types/plugin';
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
   import type { ViewerApi } from '../../core/types/viewer-api';
   import PluginSlot from '../../plugins/PluginSlot.svelte';
+  import MangoFooterBrand from '../../story/ui/MangoFooterBrand.svelte';
   import { createAnnotationFocusPlugin } from '../../plugins/annotationFocus';
   import ViewerHeader from '../../viewer/ui/ViewerHeader.svelte';
   import LeftPanelStack from '../../viewer/ui/LeftPanelStack.svelte';
@@ -18,7 +20,7 @@
   import StageToolbar from '../../viewer/ui/StageToolbar.svelte';
   import Gallery from '../../viewer/ui/Gallery.svelte';
   import type { LayerItem } from '../annotations/workspace/LeftSidebar.svelte';
-  import { w3cToResolved } from '../annotations/w3c';
+  import { w3cShapeTool, w3cToResolved } from '../annotations/w3c';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import { createViewerState } from '../../viewer/state/viewerState';
   import { createViewerDerived } from '../../viewer/state/viewerDerived';
@@ -62,17 +64,15 @@
 
   const DEFAULT_LAYER_COLOR = '#a78bfa';
   const LAYER_FILL_OPACITY = 0.18;
-  const NEW_LAYER_COLORS = [
-    '#fb7185',
-    '#2ac7ff',
-    '#22c55e',
-    '#06b6d4',
-    '#818cf8',
-    '#ec4899',
-  ];
+  const NEW_LAYER_COLORS = ['#fb7185', '#2ac7ff', '#22c55e', '#06b6d4', '#818cf8', '#ec4899'];
   const DEFAULT_ANNOTATION_LAYERS: LayerItem[] = [
     { id: 'research', name: 'Research Notes', color: '#fb7185', visible: true },
-    { id: 'transcription', name: 'Transcription', color: '#60a5fa', visible: true },
+    {
+      id: 'transcription',
+      name: 'Transcription',
+      color: '#60a5fa',
+      visible: true,
+    },
     { id: 'highlights', name: 'Highlights', color: '#34d399', visible: true },
     { id: 'mine', name: 'My Annotations', color: '#a78bfa', visible: true },
   ];
@@ -157,8 +157,7 @@
     });
   const viewerState = createInitialViewerState();
   const viewerDerived = createViewerDerived(viewerState);
-  const initialReportedCanvasIndex = () =>
-    canvasIndex ?? get(viewerState.selectedCanvasIndex);
+  const initialReportedCanvasIndex = () => canvasIndex ?? get(viewerState.selectedCanvasIndex);
   let lastReportedCanvasIndex = initialReportedCanvasIndex();
   let stageRef: ReturnType<typeof Stage> | null = $state(null);
   const controller = createViewerController({
@@ -222,8 +221,6 @@
     AnnotationWorkspaceComponent = workspace.default;
     annotationWorkspaceLoading = false;
   };
-
-  const enableRightPanel = false;
 
   const {
     selectedCanvasIndex,
@@ -295,6 +292,9 @@
   let annotationEditorTool = $state<
     'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line'
   >('rectangle');
+  let storyBuilderAnnotations = $state<ResolvedAnnotation[]>([]);
+  let storyAnnotationEditing = $state(false);
+  let storyBuilderActiveAnnotationId = $state<string | null>(null);
   let effectiveAnnotationMode = $derived(canDrawAnnotations ? $annotationMode : 'edit');
   let viewerSettingsLayout = $state<'1x1' | '1x2' | '2x1' | '1x2-panel' | '2x2'>('1x1');
   let contentsPanelTab = $state<'toc' | 'transcript'>('toc');
@@ -335,7 +335,17 @@
   };
 
   const handleViewerPanelToggle = (
-    panel: 'collection' | 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers' | 'thumbnails' | 'compare',
+    panel:
+      | 'collection'
+      | 'annotations'
+      | 'tools'
+      | 'search'
+      | 'metadata'
+      | 'contents'
+      | 'settings'
+      | 'layers'
+      | 'thumbnails'
+      | 'compare',
     open: boolean,
   ) => {
     showManifestManager = false;
@@ -389,11 +399,7 @@
   let zoomPercent = $derived(
     $zoom > 0 && zoomBaseline > 0 ? Math.max(10, Math.round(($zoom / zoomBaseline) * 100)) : 100,
   );
-  const handleStageZoomChange = (detail: {
-    zoom: number;
-    viewBox: ViewBox;
-    homeZoom?: number;
-  }) => {
+  const handleStageZoomChange = (detail: { zoom: number; viewBox: ViewBox; homeZoom?: number }) => {
     if (detail.homeZoom && detail.homeZoom > 0) {
       zoomBaseline = detail.homeZoom;
       zoomBaselineCanvasIndex = $selectedCanvasIndex;
@@ -423,6 +429,10 @@
     const activeChapter = storyData?.chapters?.[storyCurrentChapterIndex];
     const resolvedTitle = resolveLanguageValue(activeChapter?.title, storyLanguage);
     return resolvedTitle || (storyChapters > 0 ? `Chapter ${storyCurrentChapterIndex + 1}` : '');
+  });
+  let storyTitle = $derived.by(() => {
+    const resolvedTitle = resolveLanguageValue(storyData?.title, storyLanguage);
+    return resolvedTitle || 'Untitled story';
   });
   let chapterDescription = $derived(
     resolveLanguageValue(
@@ -460,9 +470,7 @@
   $effect(() => {
     const configuredTheme = normalisedConfig.theme?.toLowerCase();
     viewerSettingsTheme =
-      configuredTheme === 'light' ||
-      configuredTheme === 'sepia' ||
-      configuredTheme === 'midnight'
+      configuredTheme === 'light' || configuredTheme === 'sepia' || configuredTheme === 'midnight'
         ? configuredTheme
         : 'dark';
   });
@@ -493,9 +501,7 @@
     ...args: TArgs
   ): TResult {
     const host = getShadowHost();
-    const method = host
-      ? (host as unknown as Record<string, unknown>)[name]
-      : undefined;
+    const method = host ? (host as unknown as Record<string, unknown>)[name] : undefined;
     if (typeof method === 'function') {
       return method.apply(host, args) as TResult;
     }
@@ -746,7 +752,10 @@
   });
   onDestroy(unsubscribeActiveId);
 
-  const handleAnnotationCreate = async (payload: { annotation: unknown }) => {
+  const handleAnnotationCreate = async (payload: {
+    annotation: unknown;
+    tool?: ChapterAnnotationTool;
+  }) => {
     const annotation = payload?.annotation;
     if (!annotation || typeof annotation !== 'object') return;
 
@@ -761,11 +770,25 @@
         ? resolved.motivation
         : ['oa:commenting'];
 
+    if (isStoryBuilder) {
+      controller.emitEvent('annotationCreate', {
+        annotation: resolved,
+        tool: payload.tool ?? w3cShapeTool(annotation) ?? undefined,
+      });
+      annotationEditorTool = 'select';
+      controller.setAnnotationMode('edit');
+      return;
+    }
+
     draftAnno = resolved;
     controller.handleAnnotationSelect({ id: resolved.id, preventZoom: true });
   };
 
   const handleAnnotationDelete = async (id: string) => {
+    if (isStoryBuilder) {
+      controller.emitEvent('annotationDelete', { annotationId: id });
+      return;
+    }
     if (draftAnno && draftAnno.id === id) {
       draftAnno = null;
       controller.handleAnnotationClear();
@@ -775,6 +798,10 @@
   };
 
   const handleAnnotationUpdate = (id: string, patch: Partial<ResolvedAnnotation>) => {
+    if (isStoryBuilder) {
+      controller.emitEvent('annotationUpdate', { annotationId: id, patch });
+      return;
+    }
     if (draftAnno && draftAnno.id === id) {
       draftAnno = { ...draftAnno, ...patch };
       return;
@@ -863,6 +890,30 @@
     getModelPose,
     addAnnotation,
     removeAnnotation,
+    setAnnotationTool: (tool) => {
+      annotationEditorTool = tool;
+      controller.setAnnotationMode(tool === 'select' ? 'edit' : 'create');
+    },
+    setStoryAnnotations: (annotations) => {
+      storyBuilderAnnotations = annotations;
+      if (
+        storyBuilderActiveAnnotationId &&
+        !annotations.some((annotation) => annotation.id === storyBuilderActiveAnnotationId)
+      ) {
+        storyBuilderActiveAnnotationId = null;
+      }
+    },
+    setStoryAnnotationEditing: (enabled) => {
+      storyAnnotationEditing = enabled;
+      if (!enabled) {
+        storyBuilderActiveAnnotationId = null;
+        annotationEditorTool = 'select';
+        controller.setAnnotationMode('edit');
+      }
+    },
+    setStoryAnnotationSelection: (annotationId) => {
+      storyBuilderActiveAnnotationId = annotationId;
+    },
     updateLayerOpacity: (id: string, opacity: number) => {
       controller.updateLayerOpacity(id, opacity);
     },
@@ -1340,14 +1391,16 @@
       ? false
       : $leftVisible || showComparePanel,
   );
-  let rightVisibleEffective = $derived(isStoryViewer ? false : enableRightPanel && $rightVisible);
+  let rightVisibleEffective = $derived(isStoryBuilder && $rightVisible);
   let showThumbnailsEffectiveStory = $derived(isStoryViewer ? false : showThumbnailsEffective);
   let showSearchEffectiveStory = $derived(isStoryViewer ? false : showSearchEffective);
   let showAnnotationsEffectiveStory = $derived(isStoryViewer ? false : showAnnotationsEffective);
   let showToolsEffectiveStory = $derived(isStoryViewer ? false : showToolsEffective);
   let showSettingsEffectiveStory = $derived(isPlainViewerMode ? $showSettings : false);
   let allowSettingsStory = $derived(isPlainViewerMode && normalisedConfig.showSettings !== false);
-  let showContentsEffectiveStory = $derived(isStoryViewer ? false : $showContents);
+  let showContentsEffectiveStory = $derived(
+    isStoryViewer || isStoryBuilder ? false : $showContents,
+  );
   let showCollectionEffectiveStory = $derived(
     isPlainViewerMode ? $showCollection && $allowCollection : false,
   );
@@ -1360,24 +1413,20 @@
   let allowAnnotationsStory = $derived(isStoryViewer ? false : $allowAnnotations);
   let allowToolsStory = $derived(isStoryViewer ? false : $allowTools);
   let allowLayersStory = $derived(isStoryViewer || isStoryBuilder ? false : $allowLayers);
-  let allowContentsStory = $derived(isStoryViewer ? false : $contentsAvailable);
+  let allowContentsStory = $derived(
+    isStoryViewer || isStoryBuilder ? false : $contentsAvailable,
+  );
   let allowChaptersStory = $derived(
-    !isStoryViewer &&
-      ($mediaType === 'audio' || $mediaType === 'video') &&
-      $avChaptersAvailable,
+    !isStoryViewer && ($mediaType === 'audio' || $mediaType === 'video') && $avChaptersAvailable,
   );
   let allowTranscriptStory = $derived(
-    !isStoryViewer &&
-      ($mediaType === 'audio' || $mediaType === 'video') &&
-      $avTranscriptAvailable,
+    !isStoryViewer && ($mediaType === 'audio' || $mediaType === 'video') && $avTranscriptAvailable,
   );
   // StoryState annotation overlay reactive variables
   $effect(() => {
     storyDataStore.set(storyData ?? EMPTY_STORY);
   });
-  let storyCurrentChapterId = $derived(
-    storyData?.chapters[storyCurrentChapterIndex]?.id ?? null,
-  );
+  let storyCurrentChapterId = $derived(storyData?.chapters[storyCurrentChapterIndex]?.id ?? null);
   setViewerContext({
     state: viewerState,
     derived: viewerDerived,
@@ -1439,7 +1488,7 @@
   aria-live="polite"
   bind:this={viewerRoot}
 >
-  {#if leftVisibleEffective && !isStoryViewer}
+  {#if leftVisibleEffective && !isStoryViewer && !isStoryBuilder}
     <button
       type="button"
       class="viewer__backdrop viewer__backdrop--active"
@@ -1450,12 +1499,22 @@
 
   <div class="viewer__top-row">
     <div class="viewer__top-title">
-      {#if !isStoryViewer}
+      {#if isStoryViewer}
+        <MangoFooterBrand position="inline" />
+        {#if storyTitle}
+          <span class="viewer__title-divider" aria-hidden="true">|</span>
+          <span>{storyTitle}</span>
+        {/if}
+      {:else if !isStoryBuilder}
         <ViewerHeader {manifestId} manifestEntry={$manifestEntry} />
       {/if}
     </div>
 
     <div class="viewer__top-actions">
+      {#if $pluginSlots.top.length > 0}
+        <PluginSlot slot="top" plugins={$pluginSlots.top} {pluginContext} />
+      {/if}
+
       {#if isAnnotationEditor}
         <button type="button" class="viewer__export-btn" onclick={handleExportAnnotations}>
           {$t('viewer.panels.annotations.export') || 'Export Annotations'}
@@ -1464,22 +1523,17 @@
 
       <button
         type="button"
-        class="viewer__fullscreen-btn"
-        class:viewer__fullscreen-btn--labelled={isPlainViewerMode}
+        class="viewer__fullscreen-btn viewer__fullscreen-btn--labelled"
         onclick={handleStoryFullscreen}
         aria-label={isViewerFullscreen ? 'Close fullscreen' : 'Enter fullscreen'}
         title={isViewerFullscreen ? 'Close fullscreen' : 'Enter fullscreen'}
       >
-        {#if isPlainViewerMode}
-          {#if isViewerFullscreen}
-            <Shrink aria-hidden="true" />
-          {:else}
-            <Expand aria-hidden="true" />
-          {/if}
-          <span>{isViewerFullscreen ? 'Close fullscreen' : 'Fullscreen'}</span>
+        {#if isViewerFullscreen}
+          <Shrink aria-hidden="true" />
         {:else}
-          ⛶
+          <Expand aria-hidden="true" />
         {/if}
+        <span>{isViewerFullscreen ? 'Close fullscreen' : 'Fullscreen'}</span>
       </button>
     </div>
   </div>
@@ -1499,7 +1553,9 @@
   <div
     class="viewer__grid"
     class:viewer__grid--controls={showControlRail}
-    class:viewer__grid--nav-compact={showControlRail && (leftVisibleEffective || showManifestManager) && !isMobileLayout}
+    class:viewer__grid--nav-compact={showControlRail &&
+      (leftVisibleEffective || showManifestManager) &&
+      !isMobileLayout}
     class:viewer__grid--left={leftVisibleEffective}
     class:viewer__grid--right={rightVisibleEffective}
     class:viewer__grid--sidebar-right={sidebarPosition === 'right'}
@@ -1537,14 +1593,11 @@
           {showManifestManager}
           multiView={isMultiView}
           oncollapse={collapseViewerSidebar}
-          ongalleryopen={() =>
-            controller.setPanelOpen('thumbnails', !showThumbnailsEffectiveStory)}
+          ongalleryopen={() => controller.setPanelOpen('thumbnails', !showThumbnailsEffectiveStory)}
           oncontentsopen={openContentsPanel}
-          oncomparetoggle={() =>
-            handleViewerPanelToggle('compare', !showComparePanel)}
+          oncomparetoggle={() => handleViewerPanelToggle('compare', !showComparePanel)}
           onmanifesttoggle={toggleManifestManager}
-          onpanelToggle={(detail) =>
-            handleViewerPanelToggle(detail.panel, detail.open)}
+          onpanelToggle={(detail) => handleViewerPanelToggle(detail.panel, detail.open)}
         />
       </aside>
     {/if}
@@ -1812,8 +1865,16 @@
       <main
         class="stage"
         class:stage--viewer={isPlainViewerMode}
-        class:stage--joined-sidebar-left={isPlainViewerMode && showControlRail && !leftVisibleEffective && !isMobileLayout && sidebarPosition === 'left'}
-        class:stage--joined-sidebar-right={isPlainViewerMode && showControlRail && !leftVisibleEffective && !isMobileLayout && sidebarPosition === 'right'}
+        class:stage--joined-sidebar-left={isPlainViewerMode &&
+          showControlRail &&
+          !leftVisibleEffective &&
+          !isMobileLayout &&
+          sidebarPosition === 'left'}
+        class:stage--joined-sidebar-right={isPlainViewerMode &&
+          showControlRail &&
+          !leftVisibleEffective &&
+          !isMobileLayout &&
+          sidebarPosition === 'right'}
         class:stage--story-builder={isStoryBuilder}
         class:stage--with-bottom-toolbar={!toolbarAboveMedia}
         class:stage--workspace={!!workspace && viewerSettingsLayout !== '1x1'}
@@ -1821,138 +1882,154 @@
       >
         {#if viewerSettingsLayout === '1x1'}
           <div class:stage__viewer-frame={isPlainViewerMode} class="stage__primary">
-          {#if toolbarAboveMedia && $layoutMode !== 'gallery'}
-            <StageToolbar
-              {canZoom}
-              {hasSource}
-              placement="above"
-              mediaType={$mediaType}
-              selectedCanvasIndex={$selectedCanvasIndex}
-              totalCanvases={$canvases.length}
-              {zoomPercent}
-              rotation={$rotation}
-              onhome={handleHome}
-              onzoomIn={handleZoomIn}
-              onzoomOut={handleZoomOut}
-              onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
-              onrotate={handleRotate}
-              onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
-              onprevCanvas={handlePrevCanvas}
-              onnextCanvas={handleNextCanvas}
-            />
-          {/if}
+            {#if toolbarAboveMedia && $layoutMode !== 'gallery'}
+              <StageToolbar
+                {canZoom}
+                {hasSource}
+                placement="above"
+                mediaType={$mediaType}
+                selectedCanvasIndex={$selectedCanvasIndex}
+                totalCanvases={$canvases.length}
+                {zoomPercent}
+                rotation={$rotation}
+                onhome={handleHome}
+                onzoomIn={handleZoomIn}
+                onzoomOut={handleZoomOut}
+                onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
+                onrotate={handleRotate}
+                onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
+                onprevCanvas={handlePrevCanvas}
+                onnextCanvas={handleNextCanvas}
+              />
+            {/if}
 
-          {#if $layoutMode === 'gallery'}
-            <div class="stage-gallery-view">
-              <div class="stage-gallery-view__grid">
-                {#each $canvases as canvas (canvas.id)}
-                  <button
-                    class="stage-gallery-view__card"
-                    class:stage-gallery-view__card--active={canvas.index === $selectedCanvasIndex}
-                    type="button"
-                    onclick={() => {
-                      controller.setCanvasByIndex(canvas.index);
-                      controller.setLayoutMode('single');
-                    }}
-                  >
-                    <div class="stage-gallery-view__thumb-wrapper">
-                      {#if $canvasThumbnails[canvas.index]}
-                        <img
-                          class="stage-gallery-view__img"
-                          src={$canvasThumbnails[canvas.index]}
-                          alt={canvas.label || `Page ${canvas.index + 1}`}
-                          loading="lazy"
-                        />
-                      {:else}
-                        <div
-                          class="stage-gallery-view__placeholder"
-                          aria-label={$t('viewer.gallery.unavailable')}
-                        >
-                          <ImageOff aria-hidden="true" />
-                          <span class="stage-gallery-view__index">{canvas.index + 1}</span>
-                        </div>
-                      {/if}
-                    </div>
-                    <div class="stage-gallery-view__label">
-                      {canvas.label || `Page ${canvas.index + 1}`}
-                    </div>
-                  </button>
-                {/each}
+            {#if $layoutMode === 'gallery'}
+              <div class="stage-gallery-view">
+                <div class="stage-gallery-view__grid">
+                  {#each $canvases as canvas (canvas.id)}
+                    <button
+                      class="stage-gallery-view__card"
+                      class:stage-gallery-view__card--active={canvas.index === $selectedCanvasIndex}
+                      type="button"
+                      onclick={() => {
+                        controller.setCanvasByIndex(canvas.index);
+                        controller.setLayoutMode('single');
+                      }}
+                    >
+                      <div class="stage-gallery-view__thumb-wrapper">
+                        {#if $canvasThumbnails[canvas.index]}
+                          <img
+                            class="stage-gallery-view__img"
+                            src={$canvasThumbnails[canvas.index]}
+                            alt={canvas.label || `Page ${canvas.index + 1}`}
+                            loading="lazy"
+                          />
+                        {:else}
+                          <div
+                            class="stage-gallery-view__placeholder"
+                            aria-label={$t('viewer.gallery.unavailable')}
+                          >
+                            <ImageOff aria-hidden="true" />
+                            <span class="stage-gallery-view__index">{canvas.index + 1}</span>
+                          </div>
+                        {/if}
+                      </div>
+                      <div class="stage-gallery-view__label">
+                        {canvas.label || `Page ${canvas.index + 1}`}
+                      </div>
+                    </button>
+                  {/each}
+                </div>
               </div>
-            </div>
-          {:else}
-            <Stage
-              bind:this={stageRef}
-              bind:canZoom
-              fillHeight={isStoryBuilder}
-              rendererComponent={$rendererComponent}
-              {avController}
-              mediaSource={$mediaSource}
-              layoutMode={$layoutMode}
-              activeLayoutImages={$activeLayoutImages}
-              annotations={$overlayAnnotations}
-              highlightIds={$highlightIds}
-              activeAnnotationId={$activeAnnotationId}
-              hoverAnnotationId={$hoverAnnotationId}
-              overlayPlugins={$pluginSlots.overlay}
-              {pluginContext}
-              {rendererHandlers}
-              isFetching={$manifestEntry?.isFetching ?? false}
-              error={$manifestEntry?.error ?? ''}
-              imageFilters={$imageFilters}
-              mediaType={$mediaType}
-              viewerConfig={normalisedConfig}
-              rotation={$rotation}
-              initialViewBox={initialViewState.viewBox}
-              allowThumbnails={allowThumbnailsStory}
-              allowSearch={allowSearchStory}
-              allowMetadata={allowMetadataStory}
-              allowAnnotations={allowAnnotationsStory}
-              allowTools={allowToolsStory}
-              allowLayers={allowLayersStory}
-              allowContents={allowContentsStory}
-              showDock={stageDockVisible}
-              constrainMediaHeight={!toolbarAboveMedia}
-              showThumbnails={showThumbnailsEffectiveStory}
-              showSearch={showSearchEffectiveStory}
-              showMetadata={$showMetadata}
-              showAnnotations={showAnnotationsEffectiveStory}
-              showTools={showToolsEffectiveStory}
-              showContents={showContentsEffectiveStory}
-              showLayers={showLayersEffectiveStory}
-              layers={$mediaSources}
-              layerOpacities={$layerOpacities}
-              canvasId={activeCanvasId}
-              onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
-              onzoomchange={handleStageZoomChange}
-              onrotationchange={(detail) => controller.handleRotationChange(detail)}
-              onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
-              onannotationcreate={handleAnnotationCreate}
-              onannotationupdate={(payload) =>
-                handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
-            />
-          {/if}
+            {:else}
+              <Stage
+                bind:this={stageRef}
+                bind:canZoom
+                fillHeight={isStoryBuilder}
+                rendererComponent={$rendererComponent}
+                {avController}
+                mediaSource={$mediaSource}
+                layoutMode={$layoutMode}
+                activeLayoutImages={$activeLayoutImages}
+                annotations={$overlayAnnotations}
+                highlightIds={$highlightIds}
+                activeAnnotationId={isStoryBuilder && storyAnnotationEditing
+                  ? storyBuilderActiveAnnotationId
+                  : $activeAnnotationId}
+                hoverAnnotationId={$hoverAnnotationId}
+                overlayPlugins={$pluginSlots.overlay}
+                {pluginContext}
+                {rendererHandlers}
+                isFetching={$manifestEntry?.isFetching ?? false}
+                error={$manifestEntry?.error ?? ''}
+                imageFilters={$imageFilters}
+                mediaType={$mediaType}
+                viewerConfig={normalisedConfig}
+                rotation={$rotation}
+                initialViewBox={initialViewState.viewBox}
+                allowThumbnails={allowThumbnailsStory}
+                allowSearch={allowSearchStory}
+                allowMetadata={allowMetadataStory}
+                allowAnnotations={allowAnnotationsStory}
+                allowTools={allowToolsStory}
+                allowLayers={allowLayersStory}
+                allowContents={allowContentsStory}
+                showDock={stageDockVisible}
+                constrainMediaHeight={!toolbarAboveMedia}
+                showThumbnails={showThumbnailsEffectiveStory}
+                showSearch={showSearchEffectiveStory}
+                showMetadata={$showMetadata}
+                showAnnotations={showAnnotationsEffectiveStory}
+                showTools={showToolsEffectiveStory}
+                showContents={showContentsEffectiveStory}
+                showLayers={showLayersEffectiveStory}
+                layers={$mediaSources}
+                layerOpacities={$layerOpacities}
+                canvasId={activeCanvasId}
+                onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
+                onzoomchange={handleStageZoomChange}
+                onrotationchange={(detail) => controller.handleRotationChange(detail)}
+                onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
+                onannotationcreate={handleAnnotationCreate}
+                onannotationupdate={(payload) =>
+                  handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
+                annotationTool={annotationEditorTool}
+                annotationEditorEnabled={isStoryBuilder && storyAnnotationEditing}
+                annotationEditorAnnotations={storyBuilderAnnotations}
+                {annotationLayers}
+                onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
+                onannotationselect={(payload) => {
+                  if (isStoryBuilder && storyAnnotationEditing) {
+                    storyBuilderActiveAnnotationId = payload.id;
+                  }
+                }}
+                onannotationtoolchange={(detail) => {
+                  annotationEditorTool = detail.tool;
+                  controller.setAnnotationMode(detail.tool === 'select' ? 'edit' : 'create');
+                }}
+              />
+            {/if}
 
-          {#if !toolbarAboveMedia && $layoutMode !== 'gallery'}
-            <StageToolbar
-              {canZoom}
-              {hasSource}
-              placement="below"
-              mediaType={$mediaType}
-              selectedCanvasIndex={$selectedCanvasIndex}
-              totalCanvases={$canvases.length}
-              {zoomPercent}
-              rotation={$rotation}
-              onhome={handleHome}
-              onzoomIn={handleZoomIn}
-              onzoomOut={handleZoomOut}
-              onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
-              onrotate={handleRotate}
-              onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
-              onprevCanvas={handlePrevCanvas}
-              onnextCanvas={handleNextCanvas}
-            />
-          {/if}
+            {#if !toolbarAboveMedia && $layoutMode !== 'gallery'}
+              <StageToolbar
+                {canZoom}
+                {hasSource}
+                placement="below"
+                mediaType={$mediaType}
+                selectedCanvasIndex={$selectedCanvasIndex}
+                totalCanvases={$canvases.length}
+                {zoomPercent}
+                rotation={$rotation}
+                onhome={handleHome}
+                onzoomIn={handleZoomIn}
+                onzoomOut={handleZoomOut}
+                onsetZoomPercent={(detail) => handleSetZoomPercent(detail)}
+                onrotate={handleRotate}
+                onsetCanvasIndex={(detail) => handleSetCanvasIndex(detail)}
+                onprevCanvas={handlePrevCanvas}
+                onnextCanvas={handleNextCanvas}
+              />
+            {/if}
           </div>
 
           {#if showThumbnailsEffectiveStory && $layoutMode !== 'gallery'}
@@ -1963,9 +2040,7 @@
               selectedCanvasIndex={$selectedCanvasIndex}
               onpanelToggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
               oncanvasSelect={(detail) => controller.setCanvasByIndex(detail.index)}
-              onviewall={isPlainViewerMode
-                ? () => controller.setLayoutMode('gallery')
-                : undefined}
+              onviewall={isPlainViewerMode ? () => controller.setLayoutMode('gallery') : undefined}
             />
           {/if}
 
@@ -1992,8 +2067,7 @@
             }}
             oncanvaschange={(detail) =>
               workspace?.setWindowCanvasIndex(detail.id, detail.canvasIndex)}
-            onresizesplit={(detail) =>
-              workspace?.updateSplitSizes(detail.targetId, detail.sizes)}
+            onresizesplit={(detail) => workspace?.updateSplitSizes(detail.targetId, detail.sizes)}
             onopenmanifestmanager={(id) => {
               workspace?.setActiveWindow(id);
               closeLeftPanelStores();
@@ -2011,10 +2085,12 @@
         {/if}
       </aside>
     {/if}
+
   </div>
 </div>
 
 <style>
+
   .stage-gallery-view {
     width: 100%;
     min-width: 0;
@@ -2136,8 +2212,20 @@
   }
 
   .viewer__top-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     flex: 1 1 auto;
     min-width: 0;
+  }
+
+  .viewer__title-divider {
+    color: var(--viewer-muted, rgba(255, 255, 255, 0.35));
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1;
+    user-select: none;
+    flex-shrink: 0;
   }
 
   .viewer__top-actions {
@@ -2332,6 +2420,34 @@
 
   .viewer.viewer--story-builder {
     min-height: 0;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .viewer--story-builder .viewer__top-row {
+    align-items: center;
+  }
+
+  .viewer--story-builder .viewer__top-title {
+    display: none;
+  }
+
+  .viewer--story-builder .viewer__top-actions {
+    flex: 1 1 auto;
+  }
+
+  .viewer--story-builder .viewer__top-actions :global(.plugin-slot) {
+    flex: 1 1 auto;
+  }
+
+  .viewer--story-builder .viewer__top-actions :global(.plugin-panel__panel) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .viewer--story-builder .viewer__top-actions :global(.plugin-panel__title) {
+    display: none;
   }
 
   .viewer.viewer--story-viewer {
@@ -2356,11 +2472,24 @@
   }
 
   .viewer--story-viewer .viewer__top-title {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    color: var(--viewer-text);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .viewer--story-viewer .viewer__top-title span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .viewer--story-viewer .viewer__fullscreen-btn {
-    width: 36px;
+    width: auto;
     height: 36px;
   }
 
@@ -2527,12 +2656,7 @@
     );
     border-color: #d8c7aa;
     box-shadow: var(--viewer-frame-shadow, 0 24px 52px rgba(76, 58, 35, 0.16));
-    background: radial-gradient(
-      135% 135% at 10% 0%,
-      #f5ead7 0%,
-      #eee4d2 48%,
-      #e5d7bf 100%
-    );
+    background: radial-gradient(135% 135% at 10% 0%, #f5ead7 0%, #eee4d2 48%, #e5d7bf 100%);
   }
 
   .viewer[data-theme='midnight'] {
@@ -2558,12 +2682,7 @@
     );
     border-color: #142b46;
     box-shadow: var(--viewer-frame-shadow, 0 30px 76px rgba(0, 3, 10, 0.72));
-    background: radial-gradient(
-      130% 130% at 8% 0%,
-      #142a46 0%,
-      #07111f 50%,
-      #020711 100%
-    );
+    background: radial-gradient(130% 130% at 8% 0%, #142a46 0%, #07111f 50%, #020711 100%);
   }
 
   .viewer__grid {
@@ -2658,6 +2777,55 @@
 
   .viewer__grid.viewer__grid--left.viewer__grid--right {
     grid-template-columns: minmax(240px, 300px) 1fr minmax(220px, 280px);
+  }
+
+  .viewer--story-builder .viewer__grid.viewer__grid--left.viewer__grid--right {
+    grid-template-columns: minmax(250px, 310px) minmax(430px, 1fr) minmax(330px, 370px);
+    column-gap: 14px;
+  }
+
+  .viewer--story-builder .viewer__grid {
+    row-gap: 14px;
+  }
+
+  .viewer--story-builder .panel-stack--right {
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--viewer-panel-border);
+    border-radius: 18px;
+    background: var(--viewer-panel);
+  }
+
+  .viewer--story-builder .panel-stack--right :global(.plugin-slot),
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel),
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel__panel),
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel__body) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel__panel) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .viewer--story-builder .panel-stack--right :global(.plugin-panel__title) {
+    display: none;
+  }
+
+  :global(.viewer--story-preview) .viewer__grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :global(.viewer--story-preview) .viewer__grid :global(.panel-stack--left),
+  :global(.viewer--story-preview) .panel-stack--right {
+    display: none !important;
+  }
+
+  :global(.viewer--story-preview) .viewer__grid > .stage {
+    grid-column: 1 !important;
+    grid-row: 1 / -1 !important;
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--right {
@@ -2798,6 +2966,12 @@
     padding-top: 8px;
   }
 
+  .stage--story-builder {
+    grid-template-rows: minmax(300px, 1fr) auto;
+    align-content: stretch;
+    overflow: hidden;
+  }
+
   .stage--with-bottom-toolbar {
     grid-template-rows: minmax(0, 1fr);
     grid-auto-rows: auto;
@@ -2867,6 +3041,21 @@
       padding: 0;
     }
 
+    .viewer.viewer--story-builder {
+      height: min(900px, 100dvh);
+      min-height: 680px;
+      max-height: 100dvh;
+      overflow: hidden;
+    }
+
+    .viewer--story-builder .viewer__top-row {
+      flex-wrap: wrap;
+    }
+
+    .viewer--story-builder .viewer__top-actions {
+      width: 100%;
+    }
+
     .viewer__grid {
       grid-template-columns: 1fr;
       grid-template-rows: minmax(0, 1fr) auto;
@@ -2875,6 +3064,41 @@
       max-height: none;
       min-height: 0;
       overflow: visible;
+    }
+
+    .viewer--story-builder .viewer__grid {
+      grid-template-columns: minmax(220px, 36%) minmax(0, 1fr) !important;
+      grid-template-rows: minmax(320px, 1fr) minmax(260px, 42%);
+      gap: 8px;
+      height: 100%;
+      max-height: 100%;
+      overflow: hidden;
+    }
+
+    .viewer--story-builder .viewer__grid > .stage {
+      grid-row: 1;
+      grid-column: 1 / -1;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
+      position: relative;
+      inset: auto;
+      grid-row: 2;
+      grid-column: 1;
+      width: 100%;
+      max-width: none;
+      height: 100%;
+      transform: none;
+      animation: none;
+      box-shadow: none;
+    }
+
+    .viewer--story-builder .panel-stack--right {
+      grid-row: 2;
+      grid-column: 2;
+      height: 100%;
     }
 
     .viewer__grid.viewer__grid--left.viewer__grid--right,
@@ -3027,6 +3251,56 @@
       --mango-viewer-av-player-aspect-ratio: 16 / 9;
       --mango-viewer-audio-art-aspect-ratio: 16 / 7;
       --mango-viewer-audio-art-min-height: 0;
+    }
+  }
+
+  @container mango-viewer (max-width: 700px) {
+    .viewer.viewer--story-builder {
+      height: auto;
+      min-height: 1080px;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .viewer--story-builder .viewer__grid {
+      grid-template-columns: 1fr !important;
+      grid-template-rows: 360px 280px 440px;
+      height: auto;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .viewer--story-builder .viewer__grid > .stage {
+      grid-row: 1;
+      grid-column: 1;
+    }
+
+    .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
+      grid-row: 2;
+      grid-column: 1;
+    }
+
+    .viewer--story-builder .panel-stack--right {
+      grid-row: 3;
+      grid-column: 1;
+    }
+  }
+
+  @media (min-width: 701px) and (max-width: 1024px) {
+    .viewer.viewer--story-builder {
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
+      overflow: hidden;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .viewer.viewer--story-builder {
+      height: auto;
+      min-height: 1080px;
+      max-height: none;
+      overflow: visible;
     }
   }
 

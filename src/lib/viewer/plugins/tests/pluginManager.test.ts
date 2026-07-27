@@ -1,19 +1,39 @@
 import { describe, it, expect } from 'vitest';
-import {
-  organizePluginsBySlot,
-  hasPluginsInSlot,
-  getTotalPluginCount,
-} from '../pluginManager';
+import { organizePluginsBySlot, hasPluginsInSlot, getTotalPluginCount } from '../pluginManager';
 import type { ViewerPlugin } from '../../../core/types/plugin';
 
 describe('Plugin Manager', () => {
   describe('organizePluginsBySlot', () => {
     it('should organize plugins by slot', () => {
       const plugins: ViewerPlugin[] = [
-        { id: 'plugin-1', label: 'Plugin 1', slot: 'left', init: async () => {}, destroy: async () => {} },
-        { id: 'plugin-2', label: 'Plugin 2', slot: 'right', init: async () => {}, destroy: async () => {} },
-        { id: 'plugin-3', label: 'Plugin 3', slot: 'bottom', init: async () => {}, destroy: async () => {} },
-        { id: 'plugin-4', label: 'Plugin 4', slot: 'overlay', init: async () => {}, destroy: async () => {} },
+        {
+          id: 'plugin-1',
+          label: 'Plugin 1',
+          slot: 'left',
+          init: async () => {},
+          destroy: async () => {},
+        },
+        {
+          id: 'plugin-2',
+          label: 'Plugin 2',
+          slot: 'right',
+          init: async () => {},
+          destroy: async () => {},
+        },
+        {
+          id: 'plugin-3',
+          label: 'Plugin 3',
+          slot: 'bottom',
+          init: async () => {},
+          destroy: async () => {},
+        },
+        {
+          id: 'plugin-4',
+          label: 'Plugin 4',
+          slot: 'overlay',
+          init: async () => {},
+          destroy: async () => {},
+        },
       ];
 
       const organized = organizePluginsBySlot(plugins, []);
@@ -30,10 +50,22 @@ describe('Plugin Manager', () => {
 
     it('should deduplicate plugins by ID, keeping later ones', () => {
       const registeredPlugins: ViewerPlugin[] = [
-        { id: 'plugin-1', label: 'Registered Plugin', slot: 'left', init: async () => {}, destroy: async () => {} },
+        {
+          id: 'plugin-1',
+          label: 'Registered Plugin',
+          slot: 'left',
+          init: async () => {},
+          destroy: async () => {},
+        },
       ];
       const localPlugins: ViewerPlugin[] = [
-        { id: 'plugin-1', label: 'Local Plugin', slot: 'right', init: async () => {}, destroy: async () => {} },
+        {
+          id: 'plugin-1',
+          label: 'Local Plugin',
+          slot: 'right',
+          init: async () => {},
+          destroy: async () => {},
+        },
       ];
 
       const organized = organizePluginsBySlot(registeredPlugins, localPlugins);
@@ -46,9 +78,26 @@ describe('Plugin Manager', () => {
 
     it('should skip plugins without IDs', () => {
       const plugins: ViewerPlugin[] = [
-        { id: 'plugin-1', label: 'Plugin 1', slot: 'left', init: async () => {}, destroy: async () => {} },
-        { id: '', label: 'Invalid Plugin', slot: 'left', init: async () => {}, destroy: async () => {} } as any,
-        { label: 'No ID Plugin', slot: 'left', init: async () => {}, destroy: async () => {} } as any,
+        {
+          id: 'plugin-1',
+          label: 'Plugin 1',
+          slot: 'left',
+          init: async () => {},
+          destroy: async () => {},
+        },
+        {
+          id: '',
+          label: 'Invalid Plugin',
+          slot: 'left',
+          init: async () => {},
+          destroy: async () => {},
+        } as any,
+        {
+          label: 'No ID Plugin',
+          slot: 'left',
+          init: async () => {},
+          destroy: async () => {},
+        } as any,
       ];
 
       const organized = organizePluginsBySlot(plugins, []);
@@ -68,9 +117,27 @@ describe('Plugin Manager', () => {
 
     it('should combine multiple plugins in same slot', () => {
       const plugins: ViewerPlugin[] = [
-        { id: 'plugin-1', label: 'Plugin 1', slot: 'left', init: async () => {}, destroy: async () => {} },
-        { id: 'plugin-2', label: 'Plugin 2', slot: 'left', init: async () => {}, destroy: async () => {} },
-        { id: 'plugin-3', label: 'Plugin 3', slot: 'left', init: async () => {}, destroy: async () => {} },
+        {
+          id: 'plugin-1',
+          label: 'Plugin 1',
+          slot: 'left',
+          init: async () => {},
+          destroy: async () => {},
+        },
+        {
+          id: 'plugin-2',
+          label: 'Plugin 2',
+          slot: 'left',
+          init: async () => {},
+          destroy: async () => {},
+        },
+        {
+          id: 'plugin-3',
+          label: 'Plugin 3',
+          slot: 'left',
+          init: async () => {},
+          destroy: async () => {},
+        },
       ];
 
       const organized = organizePluginsBySlot(plugins, []);
@@ -82,7 +149,16 @@ describe('Plugin Manager', () => {
   describe('hasPluginsInSlot', () => {
     it('should return true when plugins exist in slot', () => {
       const pluginsBySlot = {
-        left: [{ id: 'plugin-1', label: 'Plugin 1', slot: 'left' as const, init: async () => {}, destroy: async () => {} }],
+        top: [],
+        left: [
+          {
+            id: 'plugin-1',
+            label: 'Plugin 1',
+            slot: 'left' as const,
+            init: async () => {},
+            destroy: async () => {},
+          },
+        ],
         right: [],
         bottom: [],
         overlay: [],
@@ -93,6 +169,7 @@ describe('Plugin Manager', () => {
 
     it('should return false when no plugins in slot', () => {
       const pluginsBySlot = {
+        top: [],
         left: [],
         right: [],
         bottom: [],
@@ -107,16 +184,41 @@ describe('Plugin Manager', () => {
   describe('getTotalPluginCount', () => {
     it('should return total plugin count across all slots', () => {
       const pluginsBySlot = {
+        top: [],
         left: [
-          { id: 'plugin-1', label: 'Plugin 1', slot: 'left' as const, init: async () => {}, destroy: async () => {} },
-          { id: 'plugin-2', label: 'Plugin 2', slot: 'left' as const, init: async () => {}, destroy: async () => {} },
+          {
+            id: 'plugin-1',
+            label: 'Plugin 1',
+            slot: 'left' as const,
+            init: async () => {},
+            destroy: async () => {},
+          },
+          {
+            id: 'plugin-2',
+            label: 'Plugin 2',
+            slot: 'left' as const,
+            init: async () => {},
+            destroy: async () => {},
+          },
         ],
         right: [
-          { id: 'plugin-3', label: 'Plugin 3', slot: 'right' as const, init: async () => {}, destroy: async () => {} },
+          {
+            id: 'plugin-3',
+            label: 'Plugin 3',
+            slot: 'right' as const,
+            init: async () => {},
+            destroy: async () => {},
+          },
         ],
         bottom: [],
         overlay: [
-          { id: 'plugin-4', label: 'Plugin 4', slot: 'overlay' as const, init: async () => {}, destroy: async () => {} },
+          {
+            id: 'plugin-4',
+            label: 'Plugin 4',
+            slot: 'overlay' as const,
+            init: async () => {},
+            destroy: async () => {},
+          },
         ],
       };
 
@@ -125,6 +227,7 @@ describe('Plugin Manager', () => {
 
     it('should return 0 for empty slots', () => {
       const pluginsBySlot = {
+        top: [],
         left: [],
         right: [],
         bottom: [],

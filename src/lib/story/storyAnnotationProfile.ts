@@ -3,18 +3,20 @@ import type {
   Chapter,
   ChapterAdvance,
   ChapterModel,
-} from '../core/types/story';
-import type { ViewBox } from '../core/types/viewer';
-import type { ModelPoseOptions } from '../core/types/model';
+  ChapterDrawingAnnotation,
+} from "../core/types/story";
+import { resolveChapterTiming } from "./timing";
+import type { ViewBox } from "../core/types/viewer";
+import type { ModelPoseOptions } from "../core/types/model";
 
 export const IIIF_PRESENTATION_3_CONTEXT =
-  'http://iiif.io/api/presentation/3/context.json' as const;
+  "http://iiif.io/api/presentation/3/context.json" as const;
 export const MANGO_STORY_NAMESPACE =
-  'https://mango-iiif.github.io/ns/story#' as const;
-export const MANGO_STORY_VERSION = '1.0' as const;
-export const MANGO_VIEWER_STATE_TYPE = 'mango:ViewerState' as const;
+  "https://mango-iiif.github.io/ns/story#" as const;
+export const MANGO_STORY_VERSION = "1.0" as const;
+export const MANGO_VIEWER_STATE_TYPE = "mango:ViewerState" as const;
 export const MANGO_VIEWER_STATE_FORMAT =
-  'application/vnd.mango.story-state+json' as const;
+  "application/vnd.mango.story-state+json" as const;
 
 /**
  * Inline context for Mango's viewer-only story state. Keeping the extension
@@ -24,14 +26,17 @@ export const MANGO_VIEWER_STATE_FORMAT =
 export const MANGO_STORY_CONTEXT = {
   mango: MANGO_STORY_NAMESPACE,
   mangoState: {
-    '@id': 'mango:state',
-    '@type': '@json',
+    "@id": "mango:state",
+    "@type": "@json",
   },
 } as const;
 
 export type MangoStoryPlayback = {
-  advance?: ChapterAdvance['mode'];
+  advance?: ChapterAdvance["mode"];
   delayMs?: number;
+  entryTransition?: Chapter["entryTransition"];
+  presentationDurationMs?: number;
+  /** @deprecated Mango story profile v1 compatibility. */
   transitionMs?: number;
 };
 
@@ -45,20 +50,22 @@ export type MangoViewerState = {
   layerOpacities?: Record<string, number>;
   annotationPlacement?: AnnotationPlacement;
   playback?: MangoStoryPlayback;
+  cameraTrack?: Chapter["cameraTrack"];
+  drawingAnnotations?: ChapterDrawingAnnotation[];
 };
 
 export type MangoViewerStateBody = {
   type: typeof MANGO_VIEWER_STATE_TYPE;
   format: typeof MANGO_VIEWER_STATE_FORMAT;
-  'mango:storyVersion': typeof MANGO_STORY_VERSION;
+  "mango:storyVersion": typeof MANGO_STORY_VERSION;
   mangoState: MangoViewerState;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const finiteNumber = (value: unknown): number | undefined =>
-  typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+  typeof value === "number" && Number.isFinite(value) ? value : undefined;
 
 const nonNegativeNumber = (value: unknown): number | undefined => {
   const parsed = finiteNumber(value);
@@ -92,12 +99,12 @@ const parseModelPose = (value: unknown): ChapterModel | undefined => {
   if (!isRecord(value)) return undefined;
   const pose: ChapterModel = {};
   for (const key of [
-    'cameraOrbit',
-    'cameraTarget',
-    'fieldOfView',
-    'orientation',
+    "cameraOrbit",
+    "cameraTarget",
+    "fieldOfView",
+    "orientation",
   ] as const) {
-    if (typeof value[key] === 'string' && value[key].length > 0) {
+    if (typeof value[key] === "string" && value[key].length > 0) {
       pose[key] = value[key];
     }
   }
@@ -107,7 +114,7 @@ const parseModelPose = (value: unknown): ChapterModel | undefined => {
 const parseModelOptions = (value: unknown): ModelPoseOptions | undefined => {
   if (!isRecord(value)) return undefined;
   const options: ModelPoseOptions = {};
-  if (value.transition === 'interpolate' || value.transition === 'jump') {
+  if (value.transition === "interpolate" || value.transition === "jump") {
     options.transition = value.transition;
   }
   const interpolationDecay = nonNegativeNumber(value.interpolationDecay);
@@ -115,6 +122,77 @@ const parseModelOptions = (value: unknown): ModelPoseOptions | undefined => {
     options.interpolationDecay = interpolationDecay;
   }
   return Object.keys(options).length > 0 ? options : undefined;
+};
+
+const parseDrawingAnnotations = (
+  value: unknown,
+): ChapterDrawingAnnotation[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  const tools = new Set(["rectangle", "polygon", "point", "freehand", "line"]);
+  const entries = value.flatMap((entry): ChapterDrawingAnnotation[] => {
+    if (
+      !isRecord(entry) ||
+      typeof entry.id !== "string" ||
+      !tools.has(String(entry.type))
+    )
+      return [];
+    const rect = parseViewBox(entry.rect);
+    const point = isRecord(entry.point)
+      ? { x: finiteNumber(entry.point.x), y: finiteNumber(entry.point.y) }
+      : null;
+    const points = Array.isArray(entry.points)
+      ? entry.points.flatMap((candidate) => {
+          if (!isRecord(candidate)) return [];
+          const x = finiteNumber(candidate.x);
+          const y = finiteNumber(candidate.y);
+          return x === undefined || y === undefined ? [] : [{ x, y }];
+        })
+      : undefined;
+    if (
+      !rect &&
+      (point?.x === undefined || point.y === undefined) &&
+      !points?.length
+    )
+      return [];
+    const label: Record<string, string> = {};
+    if (isRecord(entry.label)) {
+      for (const [lang, labelValue] of Object.entries(entry.label)) {
+        if (typeof labelValue === "string") label[lang] = labelValue;
+      }
+    }
+    const hasLabel = Object.keys(label).length > 0;
+    const color =
+      typeof entry.color === "string" && entry.color.trim()
+        ? entry.color.trim()
+        : undefined;
+    const strokeWidth =
+      entry.strokeWidth === "thin" ||
+      entry.strokeWidth === "medium" ||
+      entry.strokeWidth === "thick"
+        ? entry.strokeWidth
+        : undefined;
+    const fillMode =
+      entry.fillMode === "solid" || entry.fillMode === "transparent"
+        ? entry.fillMode
+        : undefined;
+    return [
+      {
+        id: entry.id,
+        type: entry.type as ChapterDrawingAnnotation["type"],
+        ...(typeof entry.text === "string" ? { text: entry.text } : {}),
+        ...(hasLabel ? { label } : {}),
+        ...(color ? { color } : {}),
+        ...(strokeWidth ? { strokeWidth } : {}),
+        ...(fillMode ? { fillMode } : {}),
+        ...(rect ? { rect } : {}),
+        ...(point?.x !== undefined && point.y !== undefined
+          ? { point: { x: point.x, y: point.y } }
+          : {}),
+        ...(points?.length ? { points } : {}),
+      },
+    ];
+  });
+  return entries.length ? entries : undefined;
 };
 
 const parseLayerOpacities = (
@@ -155,9 +233,9 @@ const parsePlayback = (value: unknown): MangoStoryPlayback | undefined => {
   if (!isRecord(value)) return undefined;
   const playback: MangoStoryPlayback = {};
   if (
-    value.advance === 'manual' ||
-    value.advance === 'auto' ||
-    value.advance === 'both'
+    value.advance === "manual" ||
+    value.advance === "auto" ||
+    value.advance === "both"
   ) {
     playback.advance = value.advance;
   }
@@ -165,16 +243,109 @@ const parsePlayback = (value: unknown): MangoStoryPlayback | undefined => {
   if (delayMs !== undefined) playback.delayMs = delayMs;
   const transitionMs = nonNegativeNumber(value.transitionMs);
   if (transitionMs !== undefined) playback.transitionMs = transitionMs;
+  const presentationDurationMs = nonNegativeNumber(
+    value.presentationDurationMs,
+  );
+  if (presentationDurationMs !== undefined)
+    playback.presentationDurationMs = presentationDurationMs;
+  if (isRecord(value.entryTransition)) {
+    const type = value.entryTransition.type;
+    const durationMs = nonNegativeNumber(value.entryTransition.durationMs);
+    const easing = value.entryTransition.easing;
+    if (
+      (type === "cut" || type === "tween" || type === "crossfade") &&
+      durationMs !== undefined
+    ) {
+      playback.entryTransition = {
+        type,
+        durationMs,
+        ...(easing === "linear" ||
+        easing === "ease-in" ||
+        easing === "ease-out" ||
+        easing === "ease-in-out"
+          ? { easing }
+          : {}),
+      };
+    }
+  }
   return Object.keys(playback).length > 0 ? playback : undefined;
+};
+
+const parseCameraTrack = (
+  value: unknown,
+): Chapter["cameraTrack"] | undefined => {
+  if (!isRecord(value) || !Array.isArray(value.keyframes)) return undefined;
+  const durationMs = nonNegativeNumber(value.durationMs);
+  if (durationMs === undefined) return undefined;
+  const keyframes = value.keyframes.flatMap((raw) => {
+    if (!isRecord(raw) || typeof raw.id !== "string" || !raw.id) return [];
+    const timeMs = nonNegativeNumber(raw.timeMs);
+    if (timeMs === undefined) return [];
+    const dwellMs = nonNegativeNumber(raw.dwellMs);
+    const viewBox = parseViewBox(raw.viewBox);
+    const focus = isRecord(raw.focus)
+      ? { x: finiteNumber(raw.focus.x), y: finiteNumber(raw.focus.y) }
+      : undefined;
+    const validFocus =
+      focus?.x !== undefined && focus?.y !== undefined
+        ? { x: focus.x, y: focus.y }
+        : undefined;
+    const model = parseModelPose(raw.model);
+    const layerOpacities = parseLayerOpacities(raw.layerOpacities);
+    if (!validFocus && !viewBox && !model && !layerOpacities) return [];
+    return [
+      {
+        id: raw.id,
+        timeMs,
+        ...(dwellMs !== undefined ? { dwellMs } : {}),
+        ...(validFocus ? { focus: validFocus } : {}),
+        ...(viewBox ? { viewBox } : {}),
+        ...(model ? { model } : {}),
+        ...(layerOpacities ? { layerOpacities } : {}),
+      },
+    ];
+  });
+  const preset = value.preset;
+  const pathType = value.pathType;
+  const easing = value.easing;
+  return {
+    durationMs,
+    keyframes: keyframes.sort((a, b) => a.timeMs - b.timeMs),
+    ...(preset === "static" ||
+    preset === "zoom-in" ||
+    preset === "zoom-out" ||
+    preset === "pan" ||
+    preset === "drift-zoom" ||
+    preset === "custom" ||
+    preset === "ken-burns" ||
+    preset === "hero-reveal" ||
+    preset === "arc-sweep"
+      ? { preset }
+      : {}),
+    ...(pathType === "linear" || pathType === "spline" ? { pathType } : {}),
+    ...(easing === "linear" ||
+    easing === "ease-in" ||
+    easing === "ease-out" ||
+    easing === "ease-in-out"
+      ? { easing }
+      : {}),
+  };
 };
 
 export const createMangoViewerStateBody = (
   chapter: Chapter,
 ): MangoViewerStateBody => {
-  const transitionMs =
-    chapter.transitionTimeMs ?? chapter.advance?.delayMs ?? 2000;
+  const timing = resolveChapterTiming(chapter);
   const playback: MangoStoryPlayback = {
-    transitionMs,
+    ...(chapter.entryTransition
+      ? { entryTransition: timing.entryTransition }
+      : {}),
+    ...(chapter.presentationDurationMs !== undefined
+      ? { presentationDurationMs: timing.presentationDurationMs }
+      : {}),
+    ...(chapter.transitionTimeMs !== undefined
+      ? { transitionMs: chapter.transitionTimeMs }
+      : {}),
     ...(chapter.advance?.mode ? { advance: chapter.advance.mode } : {}),
     ...(chapter.advance?.delayMs !== undefined
       ? { delayMs: chapter.advance.delayMs }
@@ -184,7 +355,7 @@ export const createMangoViewerStateBody = (
   return {
     type: MANGO_VIEWER_STATE_TYPE,
     format: MANGO_VIEWER_STATE_FORMAT,
-    'mango:storyVersion': MANGO_STORY_VERSION,
+    "mango:storyVersion": MANGO_STORY_VERSION,
     mangoState: {
       chapterId: chapter.id,
       canvasIndex: chapter.canvasIndex,
@@ -197,6 +368,10 @@ export const createMangoViewerStateBody = (
         : {}),
       ...(chapter.annotationPlacement
         ? { annotationPlacement: chapter.annotationPlacement }
+        : {}),
+      ...(chapter.cameraTrack ? { cameraTrack: chapter.cameraTrack } : {}),
+      ...(chapter.drawingAnnotations
+        ? { drawingAnnotations: chapter.drawingAnnotations }
         : {}),
       playback,
     },
@@ -215,17 +390,17 @@ export const parseMangoViewerStateBody = (
     return undefined;
   }
 
-  if (value['mango:storyVersion'] !== MANGO_STORY_VERSION) {
+  if (value["mango:storyVersion"] !== MANGO_STORY_VERSION) {
     return undefined;
   }
 
-  const rawState = value.mangoState ?? value['mango:state'];
+  const rawState = value.mangoState ?? value["mango:state"];
   if (!isRecord(rawState)) return undefined;
   const chapterId =
-    typeof rawState.chapterId === 'string' ? rawState.chapterId : '';
+    typeof rawState.chapterId === "string" ? rawState.chapterId : "";
   const canvasIndex = nonNegativeInteger(rawState.canvasIndex) ?? 0;
   const canvasId =
-    typeof rawState.canvasId === 'string' && rawState.canvasId.length > 0
+    typeof rawState.canvasId === "string" && rawState.canvasId.length > 0
       ? rawState.canvasId
       : undefined;
   const viewBox = parseViewBox(rawState.viewBox);
@@ -236,6 +411,10 @@ export const parseMangoViewerStateBody = (
     rawState.annotationPlacement,
   );
   const playback = parsePlayback(rawState.playback);
+  const cameraTrack = parseCameraTrack(rawState.cameraTrack);
+  const drawingAnnotations = parseDrawingAnnotations(
+    rawState.drawingAnnotations,
+  );
 
   return {
     chapterId,
@@ -247,5 +426,7 @@ export const parseMangoViewerStateBody = (
     ...(layerOpacities ? { layerOpacities } : {}),
     ...(annotationPlacement ? { annotationPlacement } : {}),
     ...(playback ? { playback } : {}),
+    ...(cameraTrack ? { cameraTrack } : {}),
+    ...(drawingAnnotations ? { drawingAnnotations } : {}),
   };
 };

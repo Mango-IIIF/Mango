@@ -1,7 +1,9 @@
-import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
-import type { ModelPose, ModelPoseOptions } from "./model";
-import type { ViewerEventMap } from "./events";
-import type { ViewBox, ViewerStateSnapshot } from "./viewer";
+import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
+import type { ModelPose, ModelPoseOptions } from './model';
+import type { ViewerEventMap } from './events';
+import type { ViewBox, ViewerStateSnapshot } from './viewer';
+import type { ChapterAnnotationTool } from './story';
+import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
 
 export type ViewerApi = {
   getViewBox: () => ViewBox | null;
@@ -32,6 +34,10 @@ export type ViewerApi = {
   getModelOrientation?: () => string | null;
   addAnnotation: (annotation: unknown) => Promise<void>;
   removeAnnotation: (annotationId: string) => Promise<void>;
+  setAnnotationTool?: (tool: ChapterAnnotationTool) => void;
+  setStoryAnnotations?: (annotations: ResolvedAnnotation[]) => void;
+  setStoryAnnotationEditing?: (enabled: boolean) => void;
+  setStoryAnnotationSelection?: (annotationId: string | null) => void;
   updateLayerOpacity?: (id: string, opacity: number) => void;
   getLayerOpacities?: () => Record<string, number>;
   getMediaSources?: () => MediaSource[];

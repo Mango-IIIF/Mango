@@ -1,19 +1,18 @@
 import { get } from 'svelte/store';
 import { describe, expect, it, vi } from 'vitest';
 import type { StoryState } from '../../core/types/story';
-import {
-  createStoryPreviewOrchestrator,
-  getPreviewChapterDuration,
-} from '../previewOrchestrator';
+import { createStoryPreviewOrchestrator, getPreviewChapterDuration } from '../previewOrchestrator';
 
 const story: StoryState = {
-  chapters: [{
-    id: 'chapter-1',
-    manifest: 'manifest',
-    canvasIndex: 0,
-    media: { start: 1, end: 3 },
-    advance: { mode: 'auto', delayMs: 500 },
-  }],
+  chapters: [
+    {
+      id: 'chapter-1',
+      manifest: 'manifest',
+      canvasIndex: 0,
+      media: { start: 1, end: 3 },
+      advance: { mode: 'auto', delayMs: 500 },
+    },
+  ],
 };
 
 describe('story preview orchestration', () => {
@@ -23,6 +22,7 @@ describe('story preview orchestration', () => {
     const wait = vi.fn(async () => undefined);
     const preview = createStoryPreviewOrchestrator({
       getStory: () => story,
+      getSelectedChapterId: () => 'chapter-1',
       selectChapter,
       applyChapter,
       getNarrationSegment: () => ({ start: 0, end: 1 }),
@@ -41,10 +41,15 @@ describe('story preview orchestration', () => {
   });
 
   it('uses a visible default duration for silent chapters', () => {
-    expect(getPreviewChapterDuration({
-      id: 'silent',
-      manifest: 'manifest',
-      canvasIndex: 0,
-    }, null)).toBe(2000);
+    expect(
+      getPreviewChapterDuration(
+        {
+          id: 'silent',
+          manifest: 'manifest',
+          canvasIndex: 0,
+        },
+        null,
+      ),
+    ).toBe(2000);
   });
 });

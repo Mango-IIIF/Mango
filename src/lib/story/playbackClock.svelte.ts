@@ -79,6 +79,23 @@ export class StoryPlaybackClock {
     };
   }
 
+  /**
+   * Returns the current presentation time recomputed from the wall clock at the
+   * moment of the call, without mutating state or notifying listeners. The
+   * ticking loop only updates `state.currentTime` ~20×/s; a render loop can call
+   * this every animation frame to drive the camera at the display refresh rate.
+   */
+  getLiveCurrentTime(): number {
+    const phase = this.phase;
+    if (!phase || this.state.playState !== 'playing' || this.state.isBuffering) {
+      return this.state.currentTime;
+    }
+    const phaseDurationSec = toFiniteNonNegative(phase.durationSec);
+    const offsetSec = toFiniteNonNegative(phase.offsetSec);
+    const elapsedSec = clamp(this.computePhaseElapsedSec(phase), 0, phaseDurationSec);
+    return clamp(offsetSec + elapsedSec, 0, this.state.duration);
+  }
+
   subscribe(listener: StateListener): () => void {
     listener(this.getState());
     this.listeners.add(listener);

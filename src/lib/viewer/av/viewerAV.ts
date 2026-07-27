@@ -94,7 +94,9 @@ export const toViewerMediaSource = (
   ...(source.format ? { format: source.format } : {}),
   ...(source.width != null ? { width: source.width } : {}),
   ...(source.height != null ? { height: source.height } : {}),
-  ...(source.duration != null ? { duration: source.duration } : {}),
+  ...((source.duration ?? canvas.duration) != null
+    ? { duration: source.duration ?? canvas.duration }
+    : {}),
   ...(canvas.poster ? { poster: canvas.poster } : {}),
   ...(source.label ? { label: source.label } : {}),
 });

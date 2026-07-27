@@ -12,6 +12,25 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe('MainSidebar', () => {
+  it('shows one guided starting point for an empty story', () => {
+    const target = createTarget();
+    const instance = mount(MainSidebar, {
+      target,
+      props: {
+        story: createStoryStoreForTest({ chapters: [] }).story,
+        onAddChapter: vi.fn(),
+      },
+    });
+
+    expect(target.textContent).toContain('Start your story');
+    expect(target.textContent).toContain('Load a IIIF Manifest in the setup panel');
+    expect(target.querySelector('[data-testid="add-chapter"]')).toBeNull();
+    expect(target.querySelector('[data-testid="capture-current-view"]')).toBeNull();
+
+    unmount(instance);
+    target.remove();
+  });
+
   it('updates chapter thumbnails when manifest cache resolves', async () => {
     const manifestId = 'https://example.org/manifest-thumb.json';
     manifestsStore.set({});
@@ -116,6 +135,7 @@ describe('MainSidebar', () => {
 
     await tick();
     expect(target.querySelectorAll('[data-testid^="chapter-row-"]')).toHaveLength(1);
+    expect(target.querySelector('[data-testid="add-chapter"]')).toBeTruthy();
     expect(target.querySelector('[data-testid="chapter-title-chapter-1"]')?.textContent).toBe(
       'Chapter 1',
     );
@@ -231,6 +251,35 @@ describe('MainSidebar', () => {
 
     await tick();
     expect(onReorderChapter).toHaveBeenCalledWith('chapter-a', 'chapter-b', 'after');
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it('offers keyboard-accessible move actions in the chapter menu', async () => {
+    const target = createTarget();
+    const onReorderChapter = vi.fn();
+    const instance = mount(MainSidebar, {
+      target,
+      props: {
+        story: createStoryStoreForTest({
+          chapters: [
+            { id: 'chapter-a', manifest: 'https://example.org/a', canvasIndex: 0 },
+            { id: 'chapter-b', manifest: 'https://example.org/b', canvasIndex: 0 },
+          ],
+        }).story,
+        onReorderChapter,
+      },
+    });
+
+    (target.querySelector('[data-testid="chapter-menu-chapter-b"]') as HTMLButtonElement).click();
+    await tick();
+    const moveUp = Array.from(
+      target.querySelectorAll<HTMLButtonElement>('.story-sidebar__menu-action'),
+    ).find((button) => button.textContent?.trim() === 'Move up');
+    moveUp?.click();
+
+    expect(onReorderChapter).toHaveBeenCalledWith('chapter-b', 'chapter-a', 'before');
 
     unmount(instance);
     target.remove();

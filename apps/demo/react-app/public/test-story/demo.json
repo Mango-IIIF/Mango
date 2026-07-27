@@ -13,9 +13,7 @@
   "type": "AnnotationPage",
   "mango:storyVersion": "1.0",
   "label": {
-    "en": [
-      "Story Annotation Track"
-    ]
+    "en": ["Story Annotation Track"]
   },
   "items": [
     {
@@ -23,20 +21,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 1"
-        ],
-        "cy": [
-          "Pennod 1"
-        ]
+        "en": ["Chapter 1"],
+        "cy": ["Pennod 1"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 1."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 1."
-        ]
+        "en": ["Description for chapter 1."],
+        "cy": ["Disgrifiad ar gyfer pennod 1."]
       },
       "body": [
         {
@@ -83,20 +73,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 2"
-        ],
-        "cy": [
-          "Pennod 2"
-        ]
+        "en": ["Chapter 2"],
+        "cy": ["Pennod 2"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 2."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 2."
-        ]
+        "en": ["Description for chapter 2."],
+        "cy": ["Disgrifiad ar gyfer pennod 2."]
       },
       "body": [
         {
@@ -143,20 +125,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 3"
-        ],
-        "cy": [
-          "Pennod 3"
-        ]
+        "en": ["Chapter 3"],
+        "cy": ["Pennod 3"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 3."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 3."
-        ]
+        "en": ["Description for chapter 3."],
+        "cy": ["Disgrifiad ar gyfer pennod 3."]
       },
       "body": [
         {
@@ -203,20 +177,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 4"
-        ],
-        "cy": [
-          "Pennod 4"
-        ]
+        "en": ["Chapter 4"],
+        "cy": ["Pennod 4"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 4."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 4."
-        ]
+        "en": ["Description for chapter 4."],
+        "cy": ["Disgrifiad ar gyfer pennod 4."]
       },
       "body": {
         "type": "mango:ViewerState",
@@ -255,20 +221,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 5"
-        ],
-        "cy": [
-          "Pennod 5"
-        ]
+        "en": ["Chapter 5"],
+        "cy": ["Pennod 5"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 5."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 5."
-        ]
+        "en": ["Description for chapter 5."],
+        "cy": ["Disgrifiad ar gyfer pennod 5."]
       },
       "body": [
         {
@@ -315,20 +273,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 6"
-        ],
-        "cy": [
-          "Pennod 6"
-        ]
+        "en": ["Chapter 6"],
+        "cy": ["Pennod 6"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 6."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 6."
-        ]
+        "en": ["Description for chapter 6."],
+        "cy": ["Disgrifiad ar gyfer pennod 6."]
       },
       "body": [
         {
@@ -350,6 +300,19 @@
               "w": 2493.969001980678,
               "h": 1245.0020137073654
             },
+            "drawingAnnotations": [
+              {
+                "id": "chapter_6-annotation",
+                "type": "rectangle",
+                "rect": { "x": 4500, "y": 6500, "w": 800, "h": 300 },
+                "label": {
+                  "en": "Annotations appear in context, helping explain objects, people, and moments without interrupting the story."
+                },
+                "color": "#e07a3f",
+                "strokeWidth": "medium",
+                "fillMode": "solid"
+              }
+            ],
             "playback": {
               "transitionMs": 2000
             }
@@ -371,47 +334,16 @@
       }
     },
     {
-      "id": "https://mango-iiif.github.io/examples/stories/react-demo/chapters/annotation/chapter_6/overlay/en",
-      "type": "Annotation",
-      "motivation": "describing",
-      "mango:role": "overlay",
-      "mango:chapterId": "chapter_6",
-      "body": {
-        "type": "TextualBody",
-        "value": "Annotations appear in context, helping explain objects, people, and moments without interrupting the story.",
-        "format": "text/plain",
-        "purpose": "describing",
-        "language": "en"
-      },
-      "target": {
-        "type": "SpecificResource",
-        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
-        "selector": {
-          "type": "FragmentSelector",
-          "conformsTo": "http://www.w3.org/TR/media-frags/",
-          "value": "xywh=4500,6500,800,300"
-        }
-      }
-    },
-    {
       "id": "https://mango-iiif.github.io/examples/stories/react-demo/chapters/annotation/chapter_7",
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 7"
-        ],
-        "cy": [
-          "Pennod 7"
-        ]
+        "en": ["Chapter 7"],
+        "cy": ["Pennod 7"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 7."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 7."
-        ]
+        "en": ["Description for chapter 7."],
+        "cy": ["Disgrifiad ar gyfer pennod 7."]
       },
       "body": [
         {
@@ -433,6 +365,19 @@
               "w": 2493.969001980678,
               "h": 1245.0020137073654
             },
+            "drawingAnnotations": [
+              {
+                "id": "chapter_7-annotation",
+                "type": "rectangle",
+                "rect": { "x": 4500, "y": 6500, "w": 800, "h": 300 },
+                "label": {
+                  "en": "Place annotations exactly where they are needed."
+                },
+                "color": "#3aa0e0",
+                "strokeWidth": "medium",
+                "fillMode": "solid"
+              }
+            ],
             "playback": {
               "transitionMs": 2000
             }
@@ -454,47 +399,16 @@
       }
     },
     {
-      "id": "https://mango-iiif.github.io/examples/stories/react-demo/chapters/annotation/chapter_7/overlay/en",
-      "type": "Annotation",
-      "motivation": "describing",
-      "mango:role": "overlay",
-      "mango:chapterId": "chapter_7",
-      "body": {
-        "type": "TextualBody",
-        "value": "Place annotations exactly where they are needed.",
-        "format": "text/plain",
-        "purpose": "describing",
-        "language": "en"
-      },
-      "target": {
-        "type": "SpecificResource",
-        "source": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
-        "selector": {
-          "type": "FragmentSelector",
-          "conformsTo": "http://www.w3.org/TR/media-frags/",
-          "value": "xywh=4500,6500,800,300"
-        }
-      }
-    },
-    {
       "id": "https://mango-iiif.github.io/examples/stories/react-demo/chapters/annotation/chapter_8",
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 8"
-        ],
-        "cy": [
-          "Pennod 8"
-        ]
+        "en": ["Chapter 8"],
+        "cy": ["Pennod 8"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 8."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 8."
-        ]
+        "en": ["Description for chapter 8."],
+        "cy": ["Disgrifiad ar gyfer pennod 8."]
       },
       "body": [
         {
@@ -541,20 +455,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 9"
-        ],
-        "cy": [
-          "Pennod 9"
-        ]
+        "en": ["Chapter 9"],
+        "cy": ["Pennod 9"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 9."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 9."
-        ]
+        "en": ["Description for chapter 9."],
+        "cy": ["Disgrifiad ar gyfer pennod 9."]
       },
       "body": {
         "type": "mango:ViewerState",
@@ -593,20 +499,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 10"
-        ],
-        "cy": [
-          "Pennod 10"
-        ]
+        "en": ["Chapter 10"],
+        "cy": ["Pennod 10"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 10."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 10."
-        ]
+        "en": ["Description for chapter 10."],
+        "cy": ["Disgrifiad ar gyfer pennod 10."]
       },
       "body": {
         "type": "mango:ViewerState",
@@ -645,20 +543,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 11"
-        ],
-        "cy": [
-          "Pennod 11"
-        ]
+        "en": ["Chapter 11"],
+        "cy": ["Pennod 11"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 11."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 11."
-        ]
+        "en": ["Description for chapter 11."],
+        "cy": ["Disgrifiad ar gyfer pennod 11."]
       },
       "body": [
         {
@@ -699,20 +589,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 12"
-        ],
-        "cy": [
-          "Pennod 12"
-        ]
+        "en": ["Chapter 12"],
+        "cy": ["Pennod 12"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 12."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 12."
-        ]
+        "en": ["Description for chapter 12."],
+        "cy": ["Disgrifiad ar gyfer pennod 12."]
       },
       "body": [
         {
@@ -753,20 +635,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 13"
-        ],
-        "cy": [
-          "Pennod 13"
-        ]
+        "en": ["Chapter 13"],
+        "cy": ["Pennod 13"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 13."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 13."
-        ]
+        "en": ["Description for chapter 13."],
+        "cy": ["Disgrifiad ar gyfer pennod 13."]
       },
       "body": {
         "type": "mango:ViewerState",
@@ -799,20 +673,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 14"
-        ],
-        "cy": [
-          "Pennod 14"
-        ]
+        "en": ["Chapter 14"],
+        "cy": ["Pennod 14"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 14."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 14."
-        ]
+        "en": ["Description for chapter 14."],
+        "cy": ["Disgrifiad ar gyfer pennod 14."]
       },
       "body": [
         {
@@ -859,20 +725,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 15"
-        ],
-        "cy": [
-          "Pennod 15"
-        ]
+        "en": ["Chapter 15"],
+        "cy": ["Pennod 15"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 15."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 15."
-        ]
+        "en": ["Description for chapter 15."],
+        "cy": ["Disgrifiad ar gyfer pennod 15."]
       },
       "body": [
         {
@@ -919,20 +777,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 16"
-        ],
-        "cy": [
-          "Pennod 16"
-        ]
+        "en": ["Chapter 16"],
+        "cy": ["Pennod 16"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 16."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 16."
-        ]
+        "en": ["Description for chapter 16."],
+        "cy": ["Disgrifiad ar gyfer pennod 16."]
       },
       "body": [
         {
@@ -979,20 +829,12 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": [
-          "Chapter 17"
-        ],
-        "cy": [
-          "Pennod 17"
-        ]
+        "en": ["Chapter 17"],
+        "cy": ["Pennod 17"]
       },
       "summary": {
-        "en": [
-          "Description for chapter 17."
-        ],
-        "cy": [
-          "Disgrifiad ar gyfer pennod 17."
-        ]
+        "en": ["Description for chapter 17."],
+        "cy": ["Disgrifiad ar gyfer pennod 17."]
       },
       "body": [
         {

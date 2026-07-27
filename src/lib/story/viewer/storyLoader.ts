@@ -9,6 +9,7 @@ import {
   MANGO_STORY_VERSION,
   parseMangoViewerStateBody,
 } from "../storyAnnotationProfile";
+import { normalizeChapterAnnotations } from "../normalizeAnnotations";
 
 export type StoryWithDefaults = StoryState & {
   chapters: Array<Chapter & { transitionTimeMs: number }>;
@@ -44,6 +45,7 @@ type IiifStoryPage = {
   id?: string;
   type: "AnnotationPage";
   "mango:storyVersion"?: string;
+  "mango:draft"?: boolean;
   label?: Record<string, unknown>;
   items?: IiifStoryItem[];
 };
@@ -116,7 +118,10 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
       }
     }
 
-    const transitionTimeMs = viewerState?.playback?.transitionMs ?? 2000;
+    const transitionTimeMs = viewerState?.playback?.transitionMs;
+    const entryTransition = viewerState?.playback?.entryTransition;
+    const presentationDurationMs =
+      viewerState?.playback?.presentationDurationMs;
 
     // Parse target (canvas and viewBox)
     let targetCanvasId = "";
@@ -282,30 +287,53 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
         }
       : undefined;
 
-    return {
+    return normalizeChapterAnnotations({
       id: chapterId,
       title,
       description,
       manifest,
       canvasIndex,
       canvasId,
-      transitionTimeMs,
+      ...(transitionTimeMs !== undefined ? { transitionTimeMs } : {}),
+      ...(entryTransition ? { entryTransition } : {}),
+      ...(presentationDurationMs !== undefined
+        ? { presentationDurationMs }
+        : {}),
       viewBox,
       media,
       model: viewerState?.modelPose,
       modelOptions: viewerState?.modelOptions,
       layerOpacities: viewerState?.layerOpacities,
       annotationPlacement: viewerState?.annotationPlacement,
+      cameraTrack: viewerState?.cameraTrack,
+      drawingAnnotations: viewerState?.drawingAnnotations,
       advance,
       narrationSegment:
         Object.keys(narrationSegment).length > 0 ? narrationSegment : undefined,
       annotations:
         Object.keys(annotations).length > 0 ? annotations : undefined,
-    };
+    });
   });
 
+  const firstChapter = chapters[0];
+  const firstAnnotationId = chapterItems[0]?.id;
+  let customAnnotationBase: string | undefined;
+  if (!input["mango:draft"] && firstChapter && firstAnnotationId) {
+    const suffix = encodeURIComponent(firstChapter.id);
+    if (firstAnnotationId.endsWith(suffix)) {
+      const candidate = firstAnnotationId.slice(0, -suffix.length);
+      const derived = input.id
+        ? `${input.id.replace(/\/$/, "")}/annotation/`
+        : undefined;
+      if (candidate && candidate !== derived) customAnnotationBase = candidate;
+    }
+  }
+
   return {
-    id: input.id,
+    id: input["mango:draft"] ? undefined : input.id,
+    ...(customAnnotationBase
+      ? { publication: { annotationBase: customAnnotationBase } }
+      : {}),
     title: titleMap,
     narration:
       Object.keys(narrationTracks).length > 0
@@ -319,7 +347,8 @@ const withChapterDefaults = (story: StoryState): StoryWithDefaults => ({
   ...story,
   chapters: (story.chapters ?? []).map((chapter) => ({
     ...chapter,
-    transitionTimeMs: chapter.transitionTimeMs ?? 2000,
+    transitionTimeMs:
+      chapter.transitionTimeMs ?? chapter.entryTransition?.durationMs ?? 2000,
   })),
 });
 
