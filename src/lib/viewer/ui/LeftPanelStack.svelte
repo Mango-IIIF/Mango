@@ -201,13 +201,6 @@
     overscroll-behavior: contain;
   }
 
-  .left-panel-stack__footer {
-    margin-top: auto;
-    padding-top: 12px;
-    display: flex;
-    align-items: center;
-  }
-
   .panel-stack--left.panel-stack--redesigned {
     padding: 18px 24px 28px;
     border-radius: 0 18px 18px 0;
