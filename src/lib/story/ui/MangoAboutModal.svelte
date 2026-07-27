@@ -43,47 +43,12 @@
         </div>
         <h2 id="mango-about-title">Mango Viewer</h2>
         <span class="mango-about-modal__version">v{version}</span>
-        <span class="mango-about-modal__tagline">Interactive IIIF Storytelling & Deep Zoom Suite</span>
       </div>
 
       <div class="mango-about-modal__body">
         <p>
           Mango is an open-source, W3C Annotation and IIIF-compliant deep zoom viewer and interactive story creation suite designed for high-resolution manuscript, artwork, and spatial media exploration.
         </p>
-
-        <div class="mango-about-modal__features">
-          <div class="mango-about-modal__feature">
-            <Compass size={18} class="mango-about-modal__icon" />
-            <div>
-              <strong>Deep Zoom Canvas Navigation</strong>
-              <span>Smooth multi-tile IIIF image rendering and spatial panning.</span>
-            </div>
-          </div>
-
-          <div class="mango-about-modal__feature">
-            <Film size={18} class="mango-about-modal__icon" />
-            <div>
-              <strong>Cinematic Camera Motion</strong>
-              <span>Ken Burns effects, spline paths, and keyframe hold times.</span>
-            </div>
-          </div>
-
-          <div class="mango-about-modal__feature">
-            <Mic size={18} class="mango-about-modal__icon" />
-            <div>
-              <strong>Multi-Language Audio Narration</strong>
-              <span>Synchronized media markers and multi-lingual voiceover tracks.</span>
-            </div>
-          </div>
-
-          <div class="mango-about-modal__feature">
-            <FileCode2 size={18} class="mango-about-modal__icon" />
-            <div>
-              <strong>W3C Standard Annotations</strong>
-              <span>Full interoperability with W3C AnnotationPage standards.</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="mango-about-modal__footer">

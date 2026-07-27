@@ -262,6 +262,62 @@
   let isStoryBuilder = $derived(mode === 'story-builder');
   let isAnnotationEditor = $derived(mode === 'annotation-editor');
   let isPlainViewerMode = $derived(!mode || mode === 'viewer');
+  const VIEWER_CONTROLS_IDLE_MS = 2800;
+  let viewerControlsVisible = $state(true);
+  let viewerControlsIdleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const clearViewerControlsIdleTimer = () => {
+    if (viewerControlsIdleTimer !== undefined) {
+      clearTimeout(viewerControlsIdleTimer);
+      viewerControlsIdleTimer = undefined;
+    }
+  };
+
+  const scheduleViewerControlsFade = () => {
+    if (!isPlainViewerMode) return;
+    clearViewerControlsIdleTimer();
+    viewerControlsIdleTimer = setTimeout(() => {
+      viewerControlsVisible = false;
+      viewerControlsIdleTimer = undefined;
+    }, VIEWER_CONTROLS_IDLE_MS);
+  };
+
+  const revealViewerControls = () => {
+    if (!isPlainViewerMode) return;
+    viewerControlsVisible = true;
+    scheduleViewerControlsFade();
+  };
+
+  const handleViewerControlsFocusIn = () => {
+    if (!isPlainViewerMode) return;
+    viewerControlsVisible = true;
+    clearViewerControlsIdleTimer();
+  };
+
+  const handleViewerControlsFocusOut = (event: FocusEvent) => {
+    const frame = event.currentTarget as HTMLElement;
+    if (event.relatedTarget instanceof Node && frame.contains(event.relatedTarget)) return;
+    scheduleViewerControlsFade();
+  };
+
+  const trackViewerControlsActivity = (frame: HTMLElement) => {
+    const handleFocusOut = (event: FocusEvent) => handleViewerControlsFocusOut(event);
+    frame.addEventListener('pointermove', revealViewerControls);
+    frame.addEventListener('pointerdown', revealViewerControls);
+    frame.addEventListener('keydown', revealViewerControls);
+    frame.addEventListener('focusin', handleViewerControlsFocusIn);
+    frame.addEventListener('focusout', handleFocusOut);
+
+    return {
+      destroy: () => {
+        frame.removeEventListener('pointermove', revealViewerControls);
+        frame.removeEventListener('pointerdown', revealViewerControls);
+        frame.removeEventListener('keydown', revealViewerControls);
+        frame.removeEventListener('focusin', handleViewerControlsFocusIn);
+        frame.removeEventListener('focusout', handleFocusOut);
+      },
+    };
+  };
   $effect(() => {
     if (isStoryViewer) {
       void loadStoryViewerComponents();
@@ -644,7 +700,9 @@
       },
       onEnterMobile: enterMobileLayout,
     });
+    revealViewerControls();
     return () => {
+      clearViewerControlsIdleTimer();
       detachResponsiveLayout();
       detachFullscreen();
     };
@@ -1881,7 +1939,13 @@
         aria-label={$t('viewer.stage.label')}
       >
         {#if viewerSettingsLayout === '1x1'}
-          <div class:stage__viewer-frame={isPlainViewerMode} class="stage__primary">
+          <div
+            class:stage__viewer-frame={isPlainViewerMode}
+            class:stage__viewer-frame--controls-visible={isPlainViewerMode &&
+              viewerControlsVisible}
+            class="stage__primary"
+            use:trackViewerControlsActivity
+          >
             {#if toolbarAboveMedia && $layoutMode !== 'gallery'}
               <StageToolbar
                 {canZoom}
@@ -2916,33 +2980,63 @@
   }
 
   .stage__viewer-frame {
+    position: relative;
+    grid-template-rows: minmax(0, 1fr);
     gap: 0;
     box-sizing: border-box;
     padding: 0;
     border: 0;
     border-radius: 16px;
     background: transparent;
+    overflow: hidden;
   }
 
   .stage__viewer-frame :global(.stage__media) {
     border: 0;
-    border-radius: 16px 16px 0 0;
+    border-radius: 16px;
   }
 
   .stage__viewer-frame :global(.stage__toolbar--below) {
-    margin-top: 0;
-    padding: 8px;
-    border: 0;
-    border-radius: 0 0 16px 16px;
-    background: transparent;
+    position: absolute;
+    z-index: 12;
+    left: 50%;
+    bottom: 14px;
+    width: min(calc(100% - 24px), 560px);
+    margin: 0;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    background: rgba(9, 14, 21, 0.78);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 8px);
+    transition:
+      opacity 220ms ease,
+      transform 220ms ease;
+  }
+
+  .stage__viewer-frame--controls-visible :global(.stage__toolbar--below),
+  .stage__viewer-frame :global(.stage__toolbar--below:focus-within) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage__viewer-frame :global(.stage__toolbar--below) {
+      transition: none;
+    }
   }
 
   .stage--joined-sidebar-left .stage__viewer-frame :global(.stage__media) {
-    border-radius: 0 16px 0 0;
+    border-radius: 0 16px 16px 0;
   }
 
   .stage--joined-sidebar-right .stage__viewer-frame :global(.stage__media) {
-    border-radius: 16px 0 0 0;
+    border-radius: 16px 0 0 16px;
   }
 
   .stage--joined-sidebar-left {
@@ -3238,13 +3332,31 @@
       overflow: hidden;
     }
 
+    .stage__viewer-frame {
+      grid-template-rows: minmax(0, 1fr) auto;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
     .stage__viewer-frame :global(.stage__media) {
       border-radius: 14px 14px 0 0;
     }
 
     .stage__viewer-frame :global(.stage__toolbar--below) {
+      position: static;
+      width: 100%;
+      margin: 0;
       padding: 6px;
+      border: 0;
       border-radius: 0 0 14px 14px;
+      background: var(--viewer-panel);
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+      transition: none;
     }
 
     .stage--viewer {

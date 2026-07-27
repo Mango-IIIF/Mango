@@ -125,7 +125,7 @@
                 </span>
               {/if}
             </span>
-            <span class="gallery__label">{canvas.label}</span>
+            <span class="gallery__label" title={canvas.label}>{canvas.label}</span>
           </button>
         </li>
       {/each}
@@ -273,7 +273,7 @@
     display: grid;
     place-items: center;
     width: 100%;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 1 / 1;
     border-radius: 10px;
     overflow: hidden;
     background: var(--viewer-gallery-thumb-bg, rgba(255, 255, 255, 0.06));
@@ -292,6 +292,12 @@
   }
 
   .gallery__label {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-size: 11px;
     color: var(--viewer-muted);
   }
@@ -305,7 +311,7 @@
   }
 
   .gallery--redesigned .gallery__list {
-    grid-auto-columns: minmax(82px, 112px);
+    grid-auto-columns: minmax(112px, 144px);
     gap: 18px;
   }
 

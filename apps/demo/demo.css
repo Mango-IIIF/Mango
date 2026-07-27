@@ -181,10 +181,12 @@ body {
 
 .page--viewer .viewer-shell {
   /* Fill the space under the hero on tall screens, but never shrink below a
-     height that keeps the image stage large. On short viewports the page
-     scrolls instead of the image collapsing. */
+     height that keeps the image stage large. The viewport-relative minimum
+     gives multi-canvas manifests a little more room for the image above their
+     page strip, while the cap avoids an excessively tall viewer. On short
+     viewports the page scrolls instead of the image collapsing. */
   height: 100%;
-  min-height: 840px;
+  min-height: clamp(840px, 92dvh, 960px);
 }
 
 /* At/below the viewer's own MOBILE_LAYOUT_WIDTH (1024px) the component switches
