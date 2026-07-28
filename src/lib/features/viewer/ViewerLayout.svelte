@@ -43,7 +43,10 @@
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
   import { ChevronsRight, Expand, ImageOff, Shrink } from '@lucide/svelte';
   import { setViewerContext } from '../../viewer/context';
-  import { createViewerFullscreenController } from '../../viewer/lifecycle/fullscreen';
+  import {
+    createViewerFullscreenController,
+    isIPadLikeDevice,
+  } from '../../viewer/lifecycle/fullscreen';
   import { observeResponsiveLayout } from '../../viewer/lifecycle/responsiveLayout';
   import type { Component } from 'svelte';
   import { findFirstManifestId } from '../../viewer/iiif/collectionNavigation';
@@ -663,6 +666,7 @@
   const fullscreenController = createViewerFullscreenController({
     getRoot: () => viewerRoot,
     getShadowHost,
+    preferFallback: () => typeof navigator !== 'undefined' && isIPadLikeDevice(navigator),
     onChange: ({ active, fallback }) => {
       isViewerFullscreen = active;
       isViewerFullscreenFallback = fallback;
@@ -3372,6 +3376,31 @@
       min-height: 0;
       max-height: 100%;
       overflow: hidden;
+    }
+
+    .viewer--story-builder .viewer__top-actions {
+      min-width: 0;
+      justify-content: flex-start;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .viewer--story-builder .viewer__top-actions::-webkit-scrollbar {
+      display: none;
+    }
+
+    .viewer--story-builder .viewer__fullscreen-btn {
+      width: 40px;
+      min-width: 40px;
+      height: 40px;
+      padding: 0;
+      flex: 0 0 40px;
+    }
+
+    .viewer--story-builder .viewer__fullscreen-btn span {
+      display: none;
     }
 
     .viewer--story-builder .viewer__grid {

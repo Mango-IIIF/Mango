@@ -8,6 +8,15 @@ export type ViewerFullscreenController = {
   attach: () => () => void;
 };
 
+export const isIPadLikeDevice = (
+  navigatorLike: Pick<
+    Navigator,
+    "userAgent" | "platform" | "maxTouchPoints"
+  > = navigator,
+): boolean =>
+  /iPad/i.test(navigatorLike.userAgent) ||
+  (navigatorLike.platform === "MacIntel" && navigatorLike.maxTouchPoints > 1);
+
 const allowsTouchInteraction = (target: EventTarget): boolean =>
   target instanceof Element &&
   (target.classList.contains("gallery__list") ||
@@ -21,10 +30,12 @@ export const createViewerFullscreenController = ({
   getRoot,
   getShadowHost,
   onChange,
+  preferFallback = () => false,
 }: {
   getRoot: () => HTMLElement | null;
   getShadowHost: () => Element | null;
   onChange: (state: ViewerFullscreenState) => void;
+  preferFallback?: () => boolean;
 }): ViewerFullscreenController => {
   let fallback = false;
   let restoreDocumentOverflow: (() => void) | null = null;
@@ -76,6 +87,13 @@ export const createViewerFullscreenController = ({
     }
     const root = getRoot();
     if (!root) return;
+    // iPad Safari adds its own large top-left close control in native
+    // fullscreen. Mango already provides a labelled close button, so use the
+    // fixed-position fallback there to avoid duplicate fullscreen chrome.
+    if (preferFallback()) {
+      setFallback(true);
+      return;
+    }
     if (root.requestFullscreen && document.fullscreenEnabled !== false) {
       try {
         await root.requestFullscreen({ navigationUI: "hide" });

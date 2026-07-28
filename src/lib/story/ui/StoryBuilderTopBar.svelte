@@ -76,6 +76,8 @@
   <button
     class="story-topbar__button story-topbar__button--preview"
     type="button"
+    aria-label={$isPreviewing ? 'Exit preview' : 'Preview story'}
+    title={$isPreviewing ? 'Exit preview' : 'Preview story'}
     disabled={$story.chapters.length === 0}
     on:click={() => ($isPreviewing ? onStopPreview?.() : onPreview?.())}
   >
@@ -92,6 +94,8 @@
     <button
       class="story-topbar__button story-topbar__button--primary"
       type="button"
+      aria-label="Save"
+      title="Save"
       disabled={$saveState.status === 'saving' || $story.chapters.length === 0}
       on:click={onSave}
     >
@@ -103,6 +107,8 @@
   <button
     class="story-topbar__button story-topbar__button--export"
     type="button"
+    aria-label="Export"
+    title="Export"
     disabled={$story.chapters.length === 0}
     on:click={onExport}
   >
@@ -113,6 +119,8 @@
   <button
     class="story-topbar__button story-topbar__button--narration"
     type="button"
+    aria-label="Story settings"
+    title="Story settings"
     on:click={onNarration}
   >
     <Settings2 aria-hidden="true" />
@@ -237,6 +245,12 @@
 
     .story-topbar__title {
       font-size: 15px;
+    }
+  }
+
+  @container mango-viewer (max-width: 500px) {
+    .story-topbar__title {
+      display: none;
     }
   }
 

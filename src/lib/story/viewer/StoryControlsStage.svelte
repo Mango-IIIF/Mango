@@ -583,16 +583,18 @@
 
   @container mango-viewer (max-width: 1024px) {
     .story-shell {
-      grid-template-rows: auto auto auto;
-      overflow-y: auto;
-      overscroll-behavior-y: contain;
-      -webkit-overflow-scrolling: touch;
+      grid-template-rows: minmax(0, 1fr) auto auto;
+      overflow: hidden;
     }
 
     .story-shell__body {
       grid-template-columns: 1fr;
-      height: max-content;
-      overflow: visible;
+      grid-template-rows: auto auto;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
     }
 
     .story-shell__stage-wrap {
