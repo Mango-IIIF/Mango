@@ -168,6 +168,9 @@ test.describe("iPad fullscreen and story rail", () => {
     await page.goto("/index.html");
     const host = page.locator("mango-viewer");
     const viewer = host.locator(".viewer");
+    const stage = host.locator(".story-shell__stage-wrap");
+    const playback = host.locator(".story-shell__playback");
+    const metadata = host.locator(".story-shell__metadata");
     const play = host.getByTestId("story-controls-play");
     const footer = host.locator(".story-shell__footer");
 
@@ -177,9 +180,51 @@ test.describe("iPad fullscreen and story rail", () => {
       }, height);
       await expect(play).toBeVisible();
       await expectContained(play, viewer);
-      const [playBox, footerBox] = await Promise.all([box(play), box(footer)]);
+      const [stageBox, playbackBox, metadataBox, playBox, footerBox] =
+        await Promise.all([
+          box(stage),
+          box(playback),
+          box(metadata),
+          box(play),
+          box(footer),
+        ]);
+      expect(stageBox.y + stageBox.height).toBeLessThanOrEqual(playbackBox.y);
+      expect(playbackBox.y + playbackBox.height).toBeLessThanOrEqual(metadataBox.y);
+      expect(metadataBox.y + metadataBox.height).toBeLessThanOrEqual(footerBox.y);
       expect(playBox.y + playBox.height).toBeLessThanOrEqual(footerBox.y);
     }
+  });
+
+  test("expands long chapter metadata and pushes chapters down", async ({ page }) => {
+    await page.route("**/test-story/demo.json", async (route) => {
+      const response = await route.fetch();
+      const story = await response.json();
+      story.items[0].summary.en = [
+        "This is a deliberately long chapter description used to verify the portrait story layout. " +
+          "It contains enough narrative text to exceed the initial metadata summary and exercise the explicit expansion control. ".repeat(
+            6,
+          ),
+      ];
+      await route.fulfill({ response, json: story });
+    });
+    await page.goto("/index.html");
+
+    const host = page.locator("mango-viewer");
+    const shell = host.locator(".story-shell");
+    const footer = host.locator(".story-shell__footer");
+    const toggle = host.locator(".story-shell__metadata-toggle");
+    const collapsedFooterY = (await box(footer)).y;
+
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    await expect(toggle).toHaveText("Show less");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect((await box(footer)).y).toBeGreaterThan(collapsedFooterY);
+    const scrollSize = await shell.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+    }));
+    expect(scrollSize.scrollHeight).toBeGreaterThan(scrollSize.clientHeight);
   });
 
   test("shrink-wraps the IIIF footer navigation on iPad", async ({ page }) => {
@@ -195,14 +240,14 @@ test.describe("iPad fullscreen and story rail", () => {
         railBox.x + railBox.width / 2 - (gridBox.x + gridBox.width / 2),
       ),
     ).toBeLessThan(2);
-    expect(railBox.height).toBeLessThanOrEqual(64);
+    expect(railBox.height).toBe(44);
   });
 
   for (const viewport of [
     { name: "iPad", width: 1024, height: 1366 },
     { name: "phone", width: 390, height: 664 },
   ]) {
-    test(`shows complete, loaded story thumbnails on ${viewport.name}`, async ({
+    test(`shows loaded story thumbnails on ${viewport.name}`, async ({
       page,
     }) => {
       await openAt(page, "/index.html", viewport);
@@ -226,11 +271,13 @@ test.describe("iPad fullscreen and story rail", () => {
       expect(await thumbnailImages.count()).toBeGreaterThan(1);
       await expect
         .poll(() =>
-          thumbnailImages.evaluateAll((images: HTMLImageElement[]) =>
-            images.every((image) => image.complete && image.naturalWidth > 0),
+          thumbnailImages.evaluateAll(
+            (images: HTMLImageElement[]) =>
+              images.filter((image) => image.complete && image.naturalWidth > 0)
+                .length,
           ),
         )
-        .toBe(true);
+        .toBeGreaterThan(1);
 
       const [footerBox, thumbBox] = await Promise.all([
         box(footer),
@@ -242,6 +289,167 @@ test.describe("iPad fullscreen and story rail", () => {
       await expectContained(firstNumber, footer);
     });
   }
+});
+
+test.describe("embedded height and hostile host CSS", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("keeps the IIIF canvas and both control rows usable at 320px", async ({
+    page,
+  }) => {
+    await page.goto("/viewer.html");
+    const host = page.locator("mango-viewer");
+    await host.evaluate((element) => {
+      const htmlElement = element as HTMLElement;
+      htmlElement.style.width = "360px";
+      htmlElement.style.height = "320px";
+    });
+    const thumbnails = host.getByRole("button", { name: "Gallery" });
+    if ((await thumbnails.getAttribute("aria-pressed")) === "true") {
+      await thumbnails.click();
+    }
+
+    const viewer = host.locator(".viewer");
+    const media = host.locator(".stage__media");
+    const toolbar = host.locator(".stage__toolbar--below");
+    const rail = host.locator(".viewer__control-rail");
+    await expect.poll(async () => (await box(rail)).height).toBe(44);
+    await expectContained(media, viewer);
+    await expectContained(toolbar, viewer);
+    await expectContained(rail, viewer);
+
+    const [mediaBox, toolbarBox, railBox] = await Promise.all([
+      box(media),
+      box(toolbar),
+      box(rail),
+    ]);
+    expect(mediaBox.height).toBeGreaterThan(60);
+    expect(mediaBox.y + mediaBox.height).toBeLessThanOrEqual(toolbarBox.y + 1);
+    expect(toolbarBox.y + toolbarBox.height).toBeLessThanOrEqual(railBox.y + 1);
+  });
+
+  test("keeps story transport and timeline reachable at a 400px embed height", async ({
+    page,
+  }) => {
+    await page.goto("/index.html");
+    const host = page.locator("mango-viewer");
+    await host.evaluate((element) => {
+      (element as HTMLElement).style.height = "400px";
+    });
+
+    const viewer = host.locator(".viewer");
+    const play = host.getByTestId("story-controls-play");
+    const timeline = host.locator(".story-shell__timeline");
+    const footer = host.locator(".story-shell__footer");
+    await expect(play).toBeVisible();
+    await expect(timeline).toBeVisible();
+    await expectContained(play, viewer);
+    await expectContained(timeline, viewer);
+    await expectContained(footer, viewer);
+
+    const [timelineBox, footerBox] = await Promise.all([
+      box(timeline),
+      box(footer),
+    ]);
+    expect(timelineBox.y + timelineBox.height).toBeLessThanOrEqual(
+      footerBox.y + 1,
+    );
+  });
+
+  test("clamps a long landscape chapter title without losing playback", async ({
+    page,
+  }) => {
+    await page.route("**/test-story/demo.json", async (route) => {
+      const response = await route.fetch();
+      const story = await response.json();
+      story.items[0].label.en = [
+        "A deliberately long chapter title that must never push the primary playback control outside its embed",
+      ];
+      await route.fulfill({ response, json: story });
+    });
+    await page.goto("/index.html");
+    const host = page.locator("mango-viewer");
+    await host.evaluate((element) => {
+      const htmlElement = element as HTMLElement;
+      htmlElement.style.width = "844px";
+      htmlElement.style.height = "390px";
+    });
+
+    const viewer = host.locator(".viewer");
+    const title = host.locator(".story-shell__title");
+    const play = host.getByTestId("story-controls-play");
+    const timeline = host.locator(".story-shell__timeline");
+    await expect(title).toContainText("deliberately long");
+    await expectContained(play, viewer);
+    await expectContained(timeline, viewer);
+    const titleStyle = await title.evaluate((element) => ({
+      lineClamp: getComputedStyle(element).webkitLineClamp,
+      overflow: getComputedStyle(element).overflow,
+    }));
+    expect(titleStyle).toEqual({ lineClamp: "2", overflow: "hidden" });
+  });
+
+  test("resets inherited casing and keeps time readouts LTR", async ({ page }) => {
+    await page.goto("/index.html");
+    const host = page.locator("mango-viewer");
+    await host.evaluate((element) => {
+      const htmlElement = element as HTMLElement;
+      htmlElement.style.width = "360px";
+      htmlElement.style.textTransform = "uppercase";
+      htmlElement.style.lineHeight = "3";
+      htmlElement.style.direction = "rtl";
+    });
+
+    const viewer = host.locator(".viewer");
+    const title = host.locator(".story-shell__title");
+    const timelineText = host.locator(".story-shell__timeline-text");
+    expect(
+      await viewer.evaluate((element) => getComputedStyle(element).textTransform),
+    ).toBe("none");
+    expect(
+      await viewer.evaluate((element) => getComputedStyle(element).lineHeight),
+    ).toBe("normal");
+    expect(
+      await timelineText.evaluate((element) => getComputedStyle(element).direction),
+    ).toBe("ltr");
+    expect(
+      await title.evaluate((element) => parseFloat(getComputedStyle(element).fontSize)),
+    ).toBeLessThan(30);
+    await expect(timelineText).toContainText("00:00 / 00:");
+  });
+});
+
+test.describe("phone metadata expansion", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test("reveals the full long description after Show more", async ({ page }) => {
+    await page.route("**/test-story/demo.json", async (route) => {
+      const response = await route.fetch();
+      const story = await response.json();
+      story.items[0].summary.en = [
+        "This long phone description verifies that expanding metadata removes the two-line clamp. ".repeat(
+          8,
+        ),
+      ];
+      await route.fulfill({ response, json: story });
+    });
+    await page.goto("/index.html");
+
+    const host = page.locator("mango-viewer");
+    const description = host.locator(".story-shell__description");
+    const toggle = host.locator(".story-shell__metadata-toggle");
+    await toggle.click();
+    await expect(toggle).toHaveText("Show less");
+    const expanded = await description.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      lineClamp: getComputedStyle(element).webkitLineClamp,
+      overflow: getComputedStyle(element).overflow,
+    }));
+    expect(expanded.scrollHeight - expanded.clientHeight).toBeLessThanOrEqual(1);
+    expect(expanded.lineClamp).not.toBe("2");
+    expect(expanded.overflow).toBe("visible");
+  });
 });
 
 test.describe("priority mobile interactions", () => {

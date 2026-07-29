@@ -728,23 +728,17 @@
     width: max-content;
     max-width: 100%;
     box-sizing: border-box;
-    padding: 2px 3px 5px;
+    padding: 0;
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--viewer-panel-border) transparent;
+    scrollbar-width: none;
     touch-action: pan-x;
     -webkit-overflow-scrolling: touch;
   }
 
   .viewer-mobile-nav::-webkit-scrollbar {
-    height: 4px;
-  }
-
-  .viewer-mobile-nav::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: var(--viewer-panel-border);
+    display: none;
   }
 
   .viewer-mobile-nav__group {
@@ -1125,7 +1119,7 @@
     color: var(--viewer-dock-active-chip-text, #0b0f14);
   }
 
-  @media (max-width: 900px) {
+  @container mango-viewer (max-width: 900px) {
     .viewer__dock {
       top: auto;
       bottom: 16px;

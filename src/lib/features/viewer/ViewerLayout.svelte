@@ -82,6 +82,7 @@
   // Portrait tablets need the same single-column treatment as phones. Keeping
   // the desktop rail at iPad widths leaves a narrow stage inside a tall host.
   const MOBILE_LAYOUT_WIDTH = 1024;
+  const SHORT_LAYOUT_HEIGHT = 500;
 
   const matchesInitialMobileLayout = (): boolean =>
     typeof window !== 'undefined' &&
@@ -250,6 +251,7 @@
   setContext(VIEWPORT_STATE_CONTEXT_KEY, viewportState);
 
   let isMobileLayout = $state(initialMobileLayout);
+  let isShortLayout = $state(false);
   let sidebarCollapsed = $state(false);
   let sidebarEnabled = $derived(normalisedConfig.sidebar?.enabled !== false);
   let sidebarPosition = $derived(normalisedConfig.sidebar?.position ?? 'left');
@@ -703,6 +705,10 @@
         isMobileLayout = value;
       },
       onEnterMobile: enterMobileLayout,
+      blockBreakpoint: SHORT_LAYOUT_HEIGHT,
+      onBlockChange: (value) => {
+        isShortLayout = value;
+      },
     });
     revealViewerControls();
     return () => {
@@ -1545,6 +1551,7 @@
   class="viewer"
   class:viewer--story-viewer={isStoryViewer}
   class:viewer--story-builder={isStoryBuilder}
+  class:viewer--annotation-editor={isAnnotationEditor}
   class:viewer--fullscreen-fallback={isViewerFullscreenFallback}
   data-theme={viewerSettingsTheme}
   aria-live="polite"
@@ -1627,7 +1634,7 @@
         <ViewerDock
           compact={true}
           variant="sidebar"
-          mobile={isMobileLayout}
+          mobile={isMobileLayout || isShortLayout}
           iconOnly={leftVisibleEffective || showManifestManager}
           galleryActive={showThumbnailsEffectiveStory}
           contentsTab={contentsPanelTab}
@@ -2467,9 +2474,26 @@
     background: radial-gradient(120% 120% at 10% 0%, #1d2632 0%, #111720 55%, #0b0f14 100%);
     color: var(--viewer-text);
     font-family: sans-serif;
+    /* Shadow DOM blocks selector leakage, but inherited text properties still
+       cross the host boundary. Keep host typography and bidi choices from
+       silently rewriting viewer labels or rearranging time values. */
+    font-style: normal;
+    font-variant: normal;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: normal;
+    word-spacing: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+    white-space: normal;
+    text-align: left;
+    text-indent: 0;
+    text-transform: none;
+    direction: var(--mango-viewer-direction, ltr);
     border: 1px solid #1c2530;
     box-shadow: var(--viewer-frame-shadow, 0 28px 70px rgba(0, 0, 0, 0.55));
-    container-type: inline-size;
+    container-type: size;
     container-name: mango-viewer;
     position: relative;
 
@@ -3279,9 +3303,9 @@
       height: auto;
       box-sizing: border-box;
       justify-self: center;
-      padding: 3px 6px max(3px, env(safe-area-inset-bottom));
-      border: 1px solid var(--viewer-panel-border);
-      border-radius: 12px;
+      padding: 0;
+      border: 0;
+      border-radius: 9px;
       background: var(--viewer-panel);
       display: grid;
       align-items: center;
@@ -3429,6 +3453,77 @@
     .viewer--story-builder .panel-stack--right {
       grid-row: 3;
       grid-column: 1;
+    }
+  }
+
+  @container mango-viewer (max-height: 500px) {
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__grid {
+      position: relative;
+      grid-template-columns: minmax(0, 1fr) !important;
+      grid-template-rows: minmax(0, 1fr) auto;
+      row-gap: 6px;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__grid
+      > .stage {
+      grid-column: 1;
+      grid-row: 1;
+      height: 100%;
+      min-height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__control-rail {
+      grid-column: 1;
+      grid-row: 2;
+      width: fit-content;
+      max-width: 100%;
+      height: 44px;
+      justify-self: center;
+      padding: 0;
+      border: 0;
+      border-radius: 9px;
+      overflow: hidden;
+    }
+
+    .stage--viewer .stage__viewer-frame {
+      grid-template-rows: minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+
+    .stage--viewer .stage__viewer-frame :global(.stage__media) {
+      min-height: 0;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .stage--viewer .stage__viewer-frame :global(.stage__toolbar--below) {
+      position: static;
+      width: 100%;
+      margin: 0;
+      padding: 4px;
+      border: 0;
+      border-radius: 0 0 12px 12px;
+      background: var(--viewer-panel);
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+      transition: none;
     }
   }
 

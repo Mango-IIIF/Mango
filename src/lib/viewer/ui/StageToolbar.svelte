@@ -563,8 +563,8 @@
       --stage-toolbar-value-padding: clamp(3px, 1.2cqw, 6px);
       --stage-toolbar-icon-size: clamp(15px, 5.2cqw, 18px);
       --stage-toolbar-radius: clamp(8px, 2.8cqw, 10px);
-      width: min(100% + 24px, 100vw - 28px);
-      max-width: min(100% + 24px, 100vw - 28px);
+      width: min(100% + 24px, 100cqw - 28px);
+      max-width: min(100% + 24px, 100cqw - 28px);
       position: relative;
       left: 50%;
       transform: translateX(-50%);

@@ -4,12 +4,16 @@ export const observeResponsiveLayout = ({
   wasMobile,
   onChange,
   onEnterMobile,
+  blockBreakpoint,
+  onBlockChange,
 }: {
   root: HTMLElement | null;
   breakpoint: number;
   wasMobile: boolean;
   onChange: (isMobile: boolean) => void;
   onEnterMobile: () => void;
+  blockBreakpoint?: number;
+  onBlockChange?: (isShort: boolean) => void;
 }): (() => void) => {
   if (!root) return () => undefined;
   let previous = wasMobile;
@@ -25,17 +29,30 @@ export const observeResponsiveLayout = ({
       parseFloat(style.paddingLeft || "0") + parseFloat(style.paddingRight || "0");
     return root.clientWidth - (Number.isFinite(padding) ? padding : 0);
   };
-  const evaluate = (inlineSize: number) => {
+  const contentBlockSize = (): number => {
+    const style = getComputedStyle(root);
+    const padding =
+      parseFloat(style.paddingTop || "0") + parseFloat(style.paddingBottom || "0");
+    return root.clientHeight - (Number.isFinite(padding) ? padding : 0);
+  };
+  const evaluate = (inlineSize: number, blockSize: number) => {
     const next = inlineSize <= breakpoint;
     if (next && !previous) onEnterMobile();
     previous = next;
     onChange(next);
+    if (typeof blockBreakpoint === "number") {
+      onBlockChange?.(blockSize <= blockBreakpoint);
+    }
   };
-  evaluate(contentInlineSize());
+  evaluate(contentInlineSize(), contentBlockSize());
   if (typeof ResizeObserver === "undefined") return () => undefined;
   const observer = new ResizeObserver((entries) => {
     const inline = entries[0]?.contentBoxSize?.[0]?.inlineSize;
-    evaluate(typeof inline === "number" ? inline : contentInlineSize());
+    const block = entries[0]?.contentBoxSize?.[0]?.blockSize;
+    evaluate(
+      typeof inline === "number" ? inline : contentInlineSize(),
+      typeof block === "number" ? block : contentBlockSize(),
+    );
   });
   observer.observe(root);
   return () => observer.disconnect();

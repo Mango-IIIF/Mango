@@ -1184,7 +1184,7 @@
     color: #f1f5f9;
     font-size: 11px;
     line-height: 1.2;
-    max-width: min(220px, 60vw);
+    max-width: min(220px, 60cqw);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -118,6 +118,19 @@
     Boolean(src) && !brokenThumbnailUrls.has(src ?? '');
 
   let footerRef = $state<HTMLElement | null>(null);
+  let metadataExpanded = $state(false);
+  let expandedChapterIndex = $state(-1);
+  // Keep the full text reachable on narrow phones as well as tablets. Around
+  // 96 characters is where the two-line phone summary commonly starts to
+  // clamp, while the control remains unobtrusive for genuinely short copy.
+  const hasExpandableMetadata = () => chapterDescription.trim().length > 96;
+
+  $effect(() => {
+    if (expandedChapterIndex !== currentChapterIndex) {
+      expandedChapterIndex = currentChapterIndex;
+      metadataExpanded = false;
+    }
+  });
 
   $effect(() => {
     const activeIndex = safeActiveIndex();
@@ -135,7 +148,11 @@
   });
 </script>
 
-<div class="story-shell" data-testid="story-controls-stage">
+<div
+  class="story-shell"
+  class:story-shell--metadata-expanded={metadataExpanded}
+  data-testid="story-controls-stage"
+>
   <div class="story-shell__body">
     <section class="story-shell__stage-wrap">
       <div class="story-shell__stage-frame">
@@ -146,23 +163,38 @@
     </section>
 
     <aside class="story-shell__sidebar">
-      <p class="story-shell__chapter-label">
-        {#if loading}
-          <span class="story-shell__loading">
-            <span class="story-shell__spinner"></span>
-            Loading chapter...
-          </span>
-        {:else}
-          Chapter {safeActiveIndex() + 1} of {chapterCount()}
-        {/if}
-      </p>
-      <h2 class="story-shell__title">{chapterTitle}</h2>
-      <div class="story-shell__accent" aria-hidden="true"></div>
-      {#if chapterDescription}
-        <p class="story-shell__description">
-          {chapterDescription}
+      <div class="story-shell__metadata">
+        <p class="story-shell__chapter-label">
+          {#if loading}
+            <span class="story-shell__loading">
+              <span class="story-shell__spinner"></span>
+              Loading chapter...
+            </span>
+          {:else}
+            Chapter {safeActiveIndex() + 1} of {chapterCount()}
+          {/if}
         </p>
-      {/if}
+        <h2 class="story-shell__title">{chapterTitle}</h2>
+        <div class="story-shell__accent" aria-hidden="true"></div>
+        {#if chapterDescription}
+          <p
+            class="story-shell__description"
+            class:story-shell__description--expanded={metadataExpanded}
+          >
+            {chapterDescription}
+          </p>
+          {#if hasExpandableMetadata()}
+            <button
+              type="button"
+              class="story-shell__metadata-toggle"
+              aria-expanded={metadataExpanded}
+              onclick={() => (metadataExpanded = !metadataExpanded)}
+            >
+              {metadataExpanded ? 'Show less' : 'Show more'}
+            </button>
+          {/if}
+        {/if}
+      </div>
 
       <div class="story-shell__playback">
         <div class="story-shell__transport">
@@ -322,7 +354,7 @@
 
   .story-shell__title {
     margin: 10px 0 10px;
-    font-size: clamp(32px, 2.6vw, 58px);
+    font-size: clamp(32px, 2.6cqw, 58px);
     line-height: 1.03;
     color: var(--story-text);
     font-family: Georgia, 'Times New Roman', serif;
@@ -339,8 +371,26 @@
   .story-shell__description {
     margin: 0 0 18px;
     color: var(--story-muted);
-    font-size: clamp(15px, 1.15vw, 20px);
+    font-size: clamp(15px, 1.15cqw, 20px);
     line-height: 1.55;
+  }
+
+  .story-shell__metadata-toggle {
+    margin: 2px 0 0;
+    padding: 6px 0;
+    border: 0;
+    background: transparent;
+    color: #be8dff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .story-shell__metadata-toggle:hover,
+  .story-shell__metadata-toggle:focus-visible {
+    color: #d8bcff;
+    text-decoration: underline;
   }
 
   .story-shell__playback {
@@ -428,6 +478,9 @@
     text-align: right;
     font-size: 12px;
     color: #d0dcf0;
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
   }
 
   .story-shell__stage-wrap {
@@ -478,7 +531,7 @@
   .story-shell__footer {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: clamp(68px, 6vw, 82px);
+    grid-auto-columns: clamp(68px, 6cqw, 82px);
     gap: 10px;
     overflow-x: auto;
     align-items: start;
@@ -605,34 +658,48 @@
       border-left: 0;
     }
 
+    .story-shell__playback {
+      order: -1;
+    }
+
     .story-shell__title {
-      font-size: clamp(32px, 8vw, 48px);
+      font-size: clamp(32px, 8cqw, 48px);
     }
 
     .story-shell__description {
-      font-size: clamp(15px, 3.2vw, 20px);
+      font-size: clamp(15px, 3.2cqw, 20px);
     }
   }
 
   @container mango-viewer (min-width: 701px) and (max-width: 1024px) {
     .story-shell__sidebar {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(280px, 38%);
-      grid-template-rows: auto auto auto 1fr;
-      column-gap: 24px;
-      padding: 12px 16px;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      padding: 10px 16px 12px;
     }
 
-    .story-shell__chapter-label,
-    .story-shell__title,
-    .story-shell__accent,
-    .story-shell__description {
+    .story-shell__playback {
       grid-column: 1;
+      grid-row: 1;
+      align-self: auto;
+      min-width: 0;
+      width: 100%;
+      margin-top: 0;
+      padding: 0 0 8px;
+      border-bottom: 1px solid var(--story-line);
+    }
+
+    .story-shell__metadata {
+      grid-column: 1;
+      grid-row: 2;
+      min-width: 0;
+      padding-top: 10px;
     }
 
     .story-shell__title {
       margin: 4px 0 6px;
-      font-size: clamp(30px, 4cqw, 42px);
+      font-size: clamp(30px, 4cqw, 36px);
     }
 
     .story-shell__accent {
@@ -646,17 +713,28 @@
       font-size: clamp(14px, 1.8cqw, 18px);
       line-height: 1.4;
       -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 3;
     }
 
-    .story-shell__playback {
-      grid-column: 2;
-      grid-row: 1 / -1;
-      align-self: center;
-      min-width: 0;
-      margin-top: 0;
-      padding-top: 0;
+    .story-shell__play-btn {
+      width: 58px;
+      height: 58px;
     }
+
+    .story-shell__transport-btn {
+      width: 42px;
+      height: 42px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 8px;
+    }
+
+    .story-shell__footer {
+      grid-auto-columns: 72px;
+      padding: 8px 10px 6px;
+    }
+
   }
 
   @container mango-viewer (max-width: 700px) {
@@ -689,7 +767,7 @@
 
     .story-shell__title {
       margin: 4px 0 6px;
-      font-size: clamp(27px, 8vw, 34px);
+      font-size: clamp(27px, 8cqw, 34px);
     }
 
     .story-shell__accent {
@@ -708,8 +786,14 @@
     }
 
     .story-shell__playback {
+      order: -1;
       margin-top: 0;
-      padding-top: 3px;
+      padding: 3px 0 9px;
+      border-bottom: 1px solid var(--story-line);
+    }
+
+    .story-shell__metadata {
+      padding-top: 8px;
     }
 
     .story-shell__transport {
@@ -726,7 +810,33 @@
     }
   }
 
-  @media (max-height: 500px) {
+  @container mango-viewer (max-width: 1024px) {
+    .story-shell__description--expanded {
+      display: block;
+      overflow: visible;
+      -webkit-line-clamp: unset;
+    }
+
+    .story-shell--metadata-expanded {
+      grid-template-rows: auto auto auto;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .story-shell--metadata-expanded .story-shell__body {
+      grid-template-rows: minmax(260px, 45cqw) auto;
+      height: max-content;
+      min-height: max-content;
+      overflow: visible;
+    }
+
+    .story-shell--metadata-expanded .story-shell__sidebar {
+      overflow: visible;
+    }
+  }
+
+  @container mango-viewer (max-height: 500px) {
     .story-shell__body {
       grid-template-columns: minmax(0, 1fr) minmax(280px, 38%);
       grid-template-rows: minmax(0, 1fr);
@@ -751,8 +861,12 @@
     }
 
     .story-shell__title {
+      display: -webkit-box;
       margin: 2px 0 4px;
+      overflow: hidden;
       font-size: 26px;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
     }
 
     .story-shell__accent {
@@ -770,12 +884,20 @@
       -webkit-line-clamp: 1;
     }
 
+    .story-shell__description--expanded {
+      display: block;
+      overflow: visible;
+      -webkit-line-clamp: unset;
+    }
+
     .story-shell__playback {
       grid-column: auto;
       grid-row: auto;
       align-self: auto;
+      order: initial;
       margin-top: auto;
       padding-top: 2px;
+      border-bottom: 0;
     }
 
     .story-shell__transport-btn {
