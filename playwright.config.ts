@@ -25,7 +25,7 @@ export default defineConfig({
       ? [
           {
             name: 'mobile-webkit',
-            grep: /handheld viewer layout|responsive mode matrix|iPad fullscreen and story rail|embedded height and hostile host CSS|phone metadata expansion|priority mobile interactions/,
+            grep: /handheld viewer layout|responsive mode matrix|iPad fullscreen and story rail|embedded height and hostile host CSS|phone metadata expansion|iPhone SE touch rails|priority mobile interactions/,
             use: {
               ...devices['iPhone 13'],
             },

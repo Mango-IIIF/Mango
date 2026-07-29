@@ -97,6 +97,38 @@
   } | null = $state(null);
   let fallbackText = $derived($t('viewer.panels.annotations.fallback'));
   let renderFrameId: number | null = null;
+  let centeringAtHome = false;
+
+  const keepHomeViewportCentered = (): void => {
+    const viewport = viewer?.viewport;
+    if (
+      !viewport ||
+      centeringAtHome ||
+      typeof viewport.getHomeZoom !== 'function' ||
+      typeof viewport.getHomeBounds !== 'function' ||
+      typeof viewport.getCenter !== 'function' ||
+      typeof viewport.panTo !== 'function'
+    ) {
+      return;
+    }
+    const zoom = viewport.getZoom(true);
+    const homeZoom = viewport.getHomeZoom();
+    if (!Number.isFinite(zoom) || !Number.isFinite(homeZoom) || zoom > homeZoom * 1.001) {
+      return;
+    }
+    const center = viewport.getCenter(true);
+    const homeCenter = viewport.getHomeBounds().getCenter();
+    if (
+      Math.abs(center.x - homeCenter.x) < 0.000001 &&
+      Math.abs(center.y - homeCenter.y) < 0.000001
+    ) {
+      return;
+    }
+    centeringAtHome = true;
+    viewport.panTo(homeCenter, true);
+    viewport.applyConstraints?.();
+    centeringAtHome = false;
+  };
 
   const buildFilterCss = (filters: ImageFilters): string => {
     const parts: string[] = [];
@@ -543,8 +575,11 @@
         minZoomImageRatio: 0.1,
         // Ensure consistent viewport behavior across devices
         homeFillsViewer: false,
-        visibilityRatio: 0.5,
-        constrainDuringPan: false,
+        // Do not let a casual one-finger drag leave a small portrait image
+        // parked against one edge with a large empty gutter. Zoomed images
+        // remain pannable, while the viewport is constrained to real content.
+        visibilityRatio: 1,
+        constrainDuringPan: true,
         gestureSettingsMouse: {
           clickToZoom: legacyOsdConfig?.clickToZoomEnabled ?? false,
         },
@@ -572,6 +607,7 @@
           resizeFrameId = requestAnimationFrame(() => {
             resizeFrameId = null;
             viewer?.forceResize();
+            keepHomeViewportCentered();
             viewer?.viewport?.applyConstraints?.();
             scheduleRenderedUpdate();
           });
@@ -580,6 +616,7 @@
       }
 
       const handleViewportChange = () => {
+        keepHomeViewportCentered();
         emitViewBox();
         scheduleRenderedUpdate();
       };

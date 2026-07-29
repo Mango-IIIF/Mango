@@ -534,10 +534,19 @@
     grid-auto-columns: clamp(68px, 6cqw, 82px);
     gap: 10px;
     overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
     align-items: start;
     min-height: 0;
     padding: 12px 12px 10px;
     border-top: 0;
+  }
+
+  .story-shell__footer::-webkit-scrollbar {
+    display: none;
   }
 
   .story-shell__chapter {

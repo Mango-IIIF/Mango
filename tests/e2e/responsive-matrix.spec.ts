@@ -243,6 +243,30 @@ test.describe("iPad fullscreen and story rail", () => {
     expect(railBox.height).toBe(44);
   });
 
+  test("keeps the cookbook viewer at a useful definite height on iPad", async ({
+    page,
+  }) => {
+    await page.goto("/cookbook.html");
+    const frame = page.locator(".cookbook-viewer__frame");
+    const host = frame.locator("mango-viewer");
+    const viewer = host.locator(".viewer");
+    const stage = host.locator(".stage");
+    await expect(host).toBeVisible();
+    await expect(stage).toBeVisible();
+
+    const [frameBox, hostBox, viewerBox, stageBox] = await Promise.all([
+      box(frame),
+      box(host),
+      box(viewer),
+      box(stage),
+    ]);
+    expect(frameBox.height).toBeGreaterThanOrEqual(650);
+    expect(hostBox.height).toBeGreaterThanOrEqual(648);
+    expect(viewerBox.height).toBe(hostBox.height);
+    expect(stageBox.height).toBeGreaterThan(300);
+    await expectContained(stage, viewer);
+  });
+
   for (const viewport of [
     { name: "iPad", width: 1024, height: 1366 },
     { name: "phone", width: 390, height: 664 },
@@ -449,6 +473,106 @@ test.describe("phone metadata expansion", () => {
     expect(expanded.scrollHeight - expanded.clientHeight).toBeLessThanOrEqual(1);
     expect(expanded.lineClamp).not.toBe("2");
     expect(expanded.overflow).toBe("visible");
+  });
+});
+
+test.describe("iPhone SE touch rails", () => {
+  test("keeps every IIIF control reachable and the home image centred", async ({
+    page,
+  }) => {
+    await openAt(page, "/viewer.html", { width: 375, height: 553 });
+    const host = page.locator("mango-viewer");
+    const toolbar = host.locator(".stage__toolbar--below");
+    const rail = host.locator(".viewer__control-rail");
+    const lastDockButton = host.locator(".viewer-mobile-nav__button").last();
+
+    const toolbarSize = await toolbar.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }));
+    expect(toolbarSize.scrollWidth).toBeLessThanOrEqual(toolbarSize.clientWidth);
+
+    const railStyle = await rail.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      overflowX: getComputedStyle(element).overflowX,
+      touchAction: getComputedStyle(element).touchAction,
+    }));
+    expect(railStyle.scrollWidth).toBeGreaterThan(railStyle.clientWidth);
+    expect(railStyle.overflowX).toBe("auto");
+    expect(railStyle.touchAction).toBe("pan-x");
+    await rail.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+    await expectContained(lastDockButton, rail);
+
+    const canvas = host.locator(".openseadragon-canvas");
+    await expect(canvas).toBeVisible();
+    const before = await host.evaluate((element: any) => element.getViewBox());
+    const canvasBox = await box(canvas);
+    await page.mouse.move(
+      canvasBox.x + canvasBox.width / 2,
+      canvasBox.y + canvasBox.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      canvasBox.x + canvasBox.width / 2 + 100,
+      canvasBox.y + canvasBox.height / 2,
+      { steps: 8 },
+    );
+    await page.mouse.up();
+    const after = await host.evaluate((element: any) => element.getViewBox());
+    expect(after.x).toBeCloseTo(before.x, 3);
+    expect(after.y).toBeCloseTo(before.y, 3);
+  });
+
+  test("keeps the complete primary toolbar reachable at 320px", async ({ page }) => {
+    await openAt(page, "/viewer.html", { width: 320, height: 568 });
+    const host = page.locator("mango-viewer");
+    const toolbar = host.locator(".stage__toolbar--below");
+    const home = host.getByRole("button", { name: "Home" });
+    const style = await toolbar.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      overflowX: getComputedStyle(element).overflowX,
+      touchAction: getComputedStyle(element).touchAction,
+    }));
+    expect(style.scrollWidth).toBeGreaterThan(style.clientWidth);
+    expect(style.overflowX).toBe("auto");
+    expect(style.touchAction).toBe("pan-x");
+    await toolbar.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+    await expectContained(home, toolbar);
+  });
+
+  test("keeps story chapters swipeable in fullscreen", async ({ page }) => {
+    await openAt(page, "/index.html", { width: 320, height: 568 });
+    const host = page.locator("mango-viewer");
+    const viewer = host.locator(".viewer");
+    const footer = host.locator(".story-shell__footer");
+    await host.getByRole("button", { name: "Enter fullscreen" }).click();
+    await expect(
+      host.getByRole("button", { name: "Close fullscreen" }),
+    ).toBeVisible();
+
+    const styles = await footer.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      overflowX: getComputedStyle(element).overflowX,
+      touchAction: getComputedStyle(element).touchAction,
+      viewerTouchAction: getComputedStyle(element.closest(".viewer")!).touchAction,
+    }));
+    expect(styles.scrollWidth).toBeGreaterThan(styles.clientWidth);
+    expect(styles.overflowX).toBe("auto");
+    expect(styles.touchAction).toBe("pan-x");
+    expect(styles.viewerTouchAction).toBe("auto");
+
+    await footer.evaluate((element) => {
+      element.scrollLeft = 240;
+    });
+    expect(await footer.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+    await expectContained(footer, viewer);
   });
 });
 

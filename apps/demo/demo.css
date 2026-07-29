@@ -674,12 +674,13 @@ body {
   }
 
   .cookbook-viewer__frame {
-    height: auto;
+    height: clamp(320px, calc(100vh - 32px), 720px);
+    height: clamp(320px, calc(100svh - 32px), 720px);
     min-height: 0;
   }
 
   .cookbook-viewer__frame mango-viewer {
-    height: auto;
+    height: 100%;
   }
 }
 
@@ -714,12 +715,13 @@ body {
   }
 
   .cookbook-viewer__frame {
-    height: auto;
+    height: clamp(320px, calc(100vh - 24px), 664px);
+    height: clamp(320px, calc(100svh - 24px), 664px);
     min-height: 0;
   }
 
   .cookbook-viewer__frame mango-viewer {
-    height: auto;
+    height: 100%;
   }
 
   .cookbook-filters {

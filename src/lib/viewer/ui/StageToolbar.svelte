@@ -563,17 +563,16 @@
       --stage-toolbar-value-padding: clamp(3px, 1.2cqw, 6px);
       --stage-toolbar-icon-size: clamp(15px, 5.2cqw, 18px);
       --stage-toolbar-radius: clamp(8px, 2.8cqw, 10px);
-      width: min(100% + 24px, 100cqw - 28px);
-      max-width: min(100% + 24px, 100cqw - 28px);
+      width: 100%;
+      max-width: 100%;
       position: relative;
       left: 50%;
       transform: translateX(-50%);
       margin-inline: auto;
       padding: 0;
-      /* Keep the controls centred; `safe` falls back to start-alignment only if
-         they ever overflow, so the row never gets its leading controls clipped
-         beyond the scroll origin on ultra-narrow screens. */
-      justify-content: safe center;
+      /* This row fits at common phone widths. Ultra-narrow embeds switch to
+         start alignment below so every control remains reachable by scrolling. */
+      justify-content: center;
       overflow-x: auto;
       overflow-y: hidden;
       overscroll-behavior-x: contain;
@@ -627,6 +626,12 @@
       height: var(--stage-toolbar-icon-size);
     }
 
+  }
+
+  @container (max-width: 300px) {
+    .stage__toolbar--below {
+      justify-content: flex-start;
+    }
   }
 
 </style>

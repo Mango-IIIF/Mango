@@ -2507,7 +2507,7 @@
     min-height: 0;
     border-radius: 0;
     overscroll-behavior: none;
-    touch-action: none;
+    touch-action: auto;
   }
 
   .viewer.viewer--story-builder {
@@ -2597,7 +2597,7 @@
     min-height: 0;
     border-radius: 0;
     overscroll-behavior: none;
-    touch-action: none;
+    touch-action: auto;
   }
 
   .viewer.viewer--fullscreen-fallback {
@@ -2613,7 +2613,7 @@
     border: 0;
     border-radius: 0;
     overscroll-behavior: none;
-    touch-action: none;
+    touch-action: auto;
   }
 
   .viewer--story-viewer:fullscreen,
@@ -3309,6 +3309,16 @@
       background: var(--viewer-panel);
       display: grid;
       align-items: center;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      touch-action: pan-x;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .viewer__control-rail::-webkit-scrollbar {
+      display: none;
     }
 
     .viewer__grid > .stage {
@@ -3496,7 +3506,12 @@
       padding: 0;
       border: 0;
       border-radius: 9px;
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      touch-action: pan-x;
+      -webkit-overflow-scrolling: touch;
     }
 
     .stage--viewer .stage__viewer-frame {
