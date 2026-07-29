@@ -3274,9 +3274,11 @@
       grid-row: 2;
       grid-column: 1;
 
-      width: 100%;
+      width: fit-content;
+      max-width: 100%;
       height: auto;
       box-sizing: border-box;
+      justify-self: center;
       padding: 3px 6px max(3px, env(safe-area-inset-bottom));
       border: 1px solid var(--viewer-panel-border);
       border-radius: 12px;

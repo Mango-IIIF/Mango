@@ -91,6 +91,12 @@ test.describe("responsive mode matrix", () => {
         });
         await expect(fullscreen).toBeVisible();
         await expectContained(fullscreen, viewer);
+
+        if (mode.name === "story viewer") {
+          const play = host.getByTestId("story-controls-play");
+          await expect(play).toBeVisible();
+          await expectContained(play, viewer);
+        }
       });
     }
   }
@@ -154,6 +160,42 @@ test.describe("iPad fullscreen and story rail", () => {
       host.getByRole("button", { name: "Close fullscreen" }),
       viewer,
     );
+  });
+
+  test("keeps story playback visible at default and site-overridden heights", async ({
+    page,
+  }) => {
+    await page.goto("/index.html");
+    const host = page.locator("mango-viewer");
+    const viewer = host.locator(".viewer");
+    const play = host.getByTestId("story-controls-play");
+    const footer = host.locator(".story-shell__footer");
+
+    for (const height of [720, 900]) {
+      await host.evaluate((element, value) => {
+        (element as HTMLElement).style.height = `${value}px`;
+      }, height);
+      await expect(play).toBeVisible();
+      await expectContained(play, viewer);
+      const [playBox, footerBox] = await Promise.all([box(play), box(footer)]);
+      expect(playBox.y + playBox.height).toBeLessThanOrEqual(footerBox.y);
+    }
+  });
+
+  test("shrink-wraps the IIIF footer navigation on iPad", async ({ page }) => {
+    await page.goto("/viewer.html");
+    const host = page.locator("mango-viewer");
+    const grid = host.locator(".viewer__grid");
+    const rail = host.locator(".viewer__control-rail");
+    const [gridBox, railBox] = await Promise.all([box(grid), box(rail)]);
+
+    expect(railBox.width).toBeLessThan(gridBox.width * 0.75);
+    expect(
+      Math.abs(
+        railBox.x + railBox.width / 2 - (gridBox.x + gridBox.width / 2),
+      ),
+    ).toBeLessThan(2);
+    expect(railBox.height).toBeLessThanOrEqual(64);
   });
 
   for (const viewport of [

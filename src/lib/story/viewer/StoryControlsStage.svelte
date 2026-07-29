@@ -589,21 +589,18 @@
 
     .story-shell__body {
       grid-template-columns: 1fr;
-      grid-template-rows: auto auto;
+      grid-template-rows: minmax(220px, 1fr) auto;
       height: 100%;
-      overflow-x: hidden;
-      overflow-y: auto;
-      overscroll-behavior-y: contain;
-      -webkit-overflow-scrolling: touch;
+      overflow: hidden;
     }
 
     .story-shell__stage-wrap {
       flex: none;
-      min-height: clamp(240px, 56cqw, 520px);
+      min-height: 0;
     }
 
     .story-shell__sidebar {
-      overflow: visible;
+      overflow: hidden;
       border-top: 1px solid var(--story-line);
       border-left: 0;
     }
@@ -614,6 +611,51 @@
 
     .story-shell__description {
       font-size: clamp(15px, 3.2vw, 20px);
+    }
+  }
+
+  @container mango-viewer (min-width: 701px) and (max-width: 1024px) {
+    .story-shell__sidebar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 38%);
+      grid-template-rows: auto auto auto 1fr;
+      column-gap: 24px;
+      padding: 12px 16px;
+    }
+
+    .story-shell__chapter-label,
+    .story-shell__title,
+    .story-shell__accent,
+    .story-shell__description {
+      grid-column: 1;
+    }
+
+    .story-shell__title {
+      margin: 4px 0 6px;
+      font-size: clamp(30px, 4cqw, 42px);
+    }
+
+    .story-shell__accent {
+      margin-bottom: 8px;
+    }
+
+    .story-shell__description {
+      display: -webkit-box;
+      margin: 0;
+      overflow: hidden;
+      font-size: clamp(14px, 1.8cqw, 18px);
+      line-height: 1.4;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .story-shell__playback {
+      grid-column: 2;
+      grid-row: 1 / -1;
+      align-self: center;
+      min-width: 0;
+      margin-top: 0;
+      padding-top: 0;
     }
   }
 
@@ -630,7 +672,44 @@
     }
 
     .story-shell__stage-wrap {
-      min-height: clamp(220px, 60cqw, 420px);
+      min-height: 0;
+    }
+
+    .story-shell__body {
+      grid-template-rows: minmax(180px, 1fr) auto;
+    }
+
+    .story-shell__sidebar {
+      padding: 10px 12px;
+    }
+
+    .story-shell__chapter-label {
+      font-size: 15px;
+    }
+
+    .story-shell__title {
+      margin: 4px 0 6px;
+      font-size: clamp(27px, 8vw, 34px);
+    }
+
+    .story-shell__accent {
+      height: 3px;
+      margin-bottom: 7px;
+    }
+
+    .story-shell__description {
+      display: -webkit-box;
+      margin: 0 0 7px;
+      overflow: hidden;
+      font-size: 14px;
+      line-height: 1.35;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .story-shell__playback {
+      margin-top: 0;
+      padding-top: 3px;
     }
 
     .story-shell__transport {
@@ -640,6 +719,97 @@
     .story-shell__play-btn {
       width: 58px;
       height: 58px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 8px;
+    }
+  }
+
+  @media (max-height: 500px) {
+    .story-shell__body {
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 38%);
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .story-shell__stage-wrap {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .story-shell__sidebar {
+      grid-column: 2;
+      grid-row: 1;
+      display: flex;
+      padding: 8px 12px;
+      border-top: 0;
+      border-left: 1px solid var(--story-line);
+    }
+
+    .story-shell__chapter-label {
+      font-size: 14px;
+    }
+
+    .story-shell__title {
+      margin: 2px 0 4px;
+      font-size: 26px;
+    }
+
+    .story-shell__accent {
+      height: 3px;
+      margin-bottom: 5px;
+    }
+
+    .story-shell__description {
+      display: -webkit-box;
+      margin: 0;
+      overflow: hidden;
+      font-size: 13px;
+      line-height: 1.3;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+    }
+
+    .story-shell__playback {
+      grid-column: auto;
+      grid-row: auto;
+      align-self: auto;
+      margin-top: auto;
+      padding-top: 2px;
+    }
+
+    .story-shell__transport-btn {
+      width: 38px;
+      height: 38px;
+    }
+
+    .story-shell__play-btn {
+      width: 50px;
+      height: 50px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 5px;
+    }
+
+    .story-shell__footer {
+      grid-auto-columns: 56px;
+      gap: 8px;
+      padding: 6px 10px 4px;
+    }
+
+    .story-shell__chapter-thumb {
+      min-height: 56px;
+      border-radius: 10px;
+    }
+
+    .story-shell__chapter-number {
+      margin-top: 3px;
+      font-size: 12px;
+    }
+
+    .story-shell__dot {
+      margin-top: 2px;
     }
   }
 </style>

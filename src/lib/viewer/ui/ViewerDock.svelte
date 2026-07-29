@@ -725,7 +725,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%;
+    width: max-content;
     max-width: 100%;
     box-sizing: border-box;
     padding: 2px 3px 5px;
