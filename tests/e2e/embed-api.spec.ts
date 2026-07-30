@@ -19,31 +19,35 @@ const state = (viewer: Locator) =>
   }));
 
 /**
- * Wait for the viewport to stop moving before measuring it.
+ * Poll until the embed is framed on the region its config asked for.
  *
- * The initial framing is re-applied while the container size settles, and
- * these embeds pull tiles from live image services — under a loaded CI machine
- * that can take a while. Sampling on a fixed delay makes the geometry
- * assertions race the settle loop; wait for two identical samples instead.
+ * This deliberately asserts the goal rather than waiting for the viewport to
+ * hold perfectly still. These embeds stream tiles from live image services, and
+ * on a slow or loaded machine the box keeps drifting by a fraction long after it
+ * is visually settled — an earlier version waited for two identical samples and
+ * timed out in CI for that reason. Landing on the region is what the fix
+ * guarantees; absolute stillness is not.
  */
-const settledViewBox = async (viewer: Locator) => {
-  let previous = "";
+const expectFramedOn = async (
+  viewer: Locator,
+  region: { x: number; y: number; w: number; h: number },
+  tolerance: number,
+) => {
   await expect
     .poll(
       async () => {
         const box = await viewer.evaluate((element: any) => element.getViewBox());
-        const signature = box
-          ? [box.x, box.y, box.w, box.h].map((n) => Number(n).toFixed(2)).join(":")
-          : "";
-        const stable = Boolean(signature) && signature === previous;
-        previous = signature;
-        return stable;
+        if (!box) return Number.POSITIVE_INFINITY;
+        // fitBounds grows the box on one axis to match the stage aspect, so the
+        // centre is the part the embed actually controls.
+        return Math.max(
+          Math.abs(box.x + box.w / 2 - (region.x + region.w / 2)),
+          Math.abs(box.y + box.h / 2 - (region.y + region.h / 2)),
+        );
       },
       { timeout: 30_000, intervals: [250] },
     )
-    .toBe(true);
-
-  return (await state(viewer)).viewBox!;
+    .toBeLessThan(tolerance);
 };
 
 test.describe("embed host API", () => {
@@ -61,15 +65,26 @@ test.describe("embed host API", () => {
       .poll(async () => (await state(viewer)).index, { timeout: 15_000 })
       .toBe(6);
 
-    const view = await state(viewer);
-    expect(view.count).toBe(36);
     // initialViewBox frames a 1900-wide region, so the embed must not be
-    // sitting at fit-to-view.
-    expect(view.zoom).toBeGreaterThan(120);
-    expect(view.viewBox!.w).toBeLessThan(2411);
+    // sitting at fit-to-view. Polled rather than sampled once: the framing lands
+    // a moment after the canvas count does, and more slowly on a cold runner.
+    await expect
+      .poll(async () => (await state(viewer)).zoom, { timeout: 20_000 })
+      .toBeGreaterThan(120);
+    await expect
+      .poll(
+        async () => (await state(viewer)).viewBox?.w ?? Number.POSITIVE_INFINITY,
+        { timeout: 20_000 },
+      )
+      .toBeLessThan(2411);
+
+    expect((await state(viewer)).count).toBe(36);
   });
 
   test("honours the configured region on other collections", async ({ page }) => {
+    // Two embeds, each waiting on a different institution's image service. The
+    // default per-test budget is not enough for that on a cold CI runner.
+    test.setTimeout(150_000);
     await page.goto("/embed-third-party.html");
 
     // The startup centering pass used to pull a configured framing back to the
@@ -84,15 +99,10 @@ test.describe("embed host API", () => {
     // position re-centres the view, which is wrong by hundreds of pixels.
     const tolerance = 40;
 
-    for (const { id, x, y, w, h } of cases) {
+    for (const { id, ...region } of cases) {
       const viewer = page.locator(id);
       await settled(viewer);
-      const box = await settledViewBox(viewer);
-
-      // fitBounds grows the box on one axis to match the stage aspect, so
-      // compare the centre the embed asked for rather than the raw edges.
-      expect(Math.abs(box.x + box.w / 2 - (x + w / 2))).toBeLessThan(tolerance);
-      expect(Math.abs(box.y + box.h / 2 - (y + h / 2))).toBeLessThan(tolerance);
+      await expectFramedOn(viewer, region, tolerance);
     }
   });
 

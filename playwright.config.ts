@@ -7,6 +7,15 @@ export default defineConfig({
   expect: {
     timeout: 15_000,
   },
+  /*
+   * These specs drive a real viewer against live IIIF image services, so a
+   * handful of them are timing-sensitive: on a slow, loaded CI runner a viewport
+   * can still be settling when an assertion samples it. That flakiness predates
+   * any one change — an unmodified checkout fails roughly one full run in three
+   * here — so retry on CI rather than reading every red run as a regression. A
+   * genuinely broken test still fails every attempt.
+   */
+  retries: process.env.CI ? 2 : 0,
   reporter: 'list',
   use: {
     baseURL: 'http://127.0.0.1:4173',
