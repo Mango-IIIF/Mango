@@ -2780,7 +2780,15 @@
   .viewer__grid {
     position: relative;
     display: grid;
-    grid-template-columns: 1fr;
+    /*
+     * `minmax(0, 1fr)`, never a bare `1fr`. A bare `1fr` is `minmax(auto, 1fr)`,
+     * so the track floors at the content's min-content width — and OSD's <canvas>
+     * carries an intrinsic width. On iOS that let the canvas pin the column at
+     * its own size: a 343px-wide element ended up with a 541px stage, so the
+     * image was laid out in a box wider than the viewer and appeared shoved right
+     * and cropped. Zero-floored tracks let the stage shrink to the element.
+     */
+    grid-template-columns: minmax(0, 1fr);
     row-gap: 18px;
     column-gap: 18px;
     align-items: stretch;
@@ -2992,6 +3000,9 @@
     gap: 12px;
     height: 100%;
     min-height: 0;
+    /* Same reason as the grid tracks above: the canvas inside must never be able
+       to push this column wider than the element that contains it. */
+    min-width: 0;
     overflow-x: hidden;
     overflow-y: auto;
     align-content: start;
@@ -3016,6 +3027,7 @@
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     min-height: 0;
+    min-width: 0;
   }
 
   .stage__viewer-frame {
@@ -3193,7 +3205,10 @@
     }
 
     .viewer__grid {
-      grid-template-columns: 1fr;
+      /* minmax(0, …): a bare 1fr floors the track at the content min-content
+         width, and the mobile dock rail is `max-content` (~541px), which dragged
+         the stage wider than the element on iOS. */
+      grid-template-columns: minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr) auto;
       row-gap: 8px;
       height: 100%;
@@ -3247,7 +3262,10 @@
     .viewer__grid.viewer__grid--right,
     .viewer__grid.viewer__grid--controls.viewer__grid--right,
     .viewer__grid.viewer__grid--controls {
-      grid-template-columns: 1fr;
+      /* minmax(0, …): a bare 1fr floors the track at the content min-content
+         width, and the mobile dock rail is `max-content` (~541px), which dragged
+         the stage wider than the element on iOS. */
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .viewer__grid.viewer__grid--controls.viewer__grid--left > .stage,
@@ -3436,6 +3454,22 @@
   }
 
   @container mango-viewer (max-width: 700px) {
+    /*
+     * The annotation editor carries a wide "Export Annotations" action. The top
+     * row is nowrap with non-shrinking actions, so on a phone the title collapsed
+     * to nothing, the Mango brand overflowed it, and the orange button — painted
+     * later — sat on top of the brand. Give the actions their own line instead.
+     */
+    .viewer--annotation-editor .viewer__top-row {
+      flex-wrap: wrap;
+      row-gap: 8px;
+    }
+
+    .viewer--annotation-editor .viewer__top-actions {
+      flex: 1 0 100%;
+      justify-content: flex-start;
+    }
+
     .viewer.viewer--story-builder {
       height: 100%;
       min-height: 0;

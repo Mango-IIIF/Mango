@@ -39,7 +39,7 @@
 
       <div class="mango-about-modal__header">
         <div class="mango-about-modal__badge">
-          <MangoLogoIcon size={48} color="var(--accent, #e07a3f)" />
+          <MangoLogoIcon size={48} color="var(--mango-about-accent)" />
         </div>
         <h2 id="mango-about-title">Mango Viewer</h2>
         <span class="mango-about-modal__version">v{version}</span>
@@ -75,6 +75,13 @@
 
 <style>
   .mango-about-backdrop {
+    --mango-about-accent: #e07a3f;
+    --mango-about-accent-hover: #e8864b;
+    --mango-about-surface: #18202c;
+    --mango-about-text: #e8edf4;
+    --mango-about-muted: #b3c0ce;
+    --mango-about-border: rgba(255, 255, 255, 0.12);
+
     position: fixed;
     inset: 0;
     z-index: 99999;
@@ -83,6 +90,11 @@
     padding: 16px;
     background: rgba(10, 14, 20, 0.75);
     backdrop-filter: blur(8px);
+    color-scheme: dark;
+    font-family: sans-serif;
+    font-style: normal;
+    letter-spacing: normal;
+    text-align: left;
     animation: mangoAboutFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -95,11 +107,11 @@
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    background: var(--viewer-card-bg, #18202c);
-    border: 1px solid var(--viewer-border, rgba(255, 255, 255, 0.12));
+    background: var(--mango-about-surface);
+    border: 1px solid var(--mango-about-border);
     border-radius: 16px;
     padding: 28px;
-    color: var(--viewer-text, #e8edf4);
+    color: var(--mango-about-text);
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(224, 122, 63, 0.15);
     animation: mangoAboutScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -115,7 +127,7 @@
     border: 0;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.06);
-    color: var(--viewer-muted, #9aa6b2);
+    color: var(--mango-about-muted);
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -162,7 +174,7 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
     font-size: 11px;
     font-weight: 600;
-    color: var(--viewer-muted, #9aa6b2);
+    color: var(--mango-about-muted);
     letter-spacing: 0.03em;
   }
 
@@ -171,7 +183,7 @@
     gap: 16px;
     font-size: 13px;
     line-height: 1.55;
-    color: var(--viewer-muted, #b3c0ce);
+    color: var(--mango-about-muted);
   }
 
   .mango-about-modal__body p {
@@ -195,7 +207,7 @@
     gap: 8px;
     padding: 10px 16px;
     border-radius: 10px;
-    background: var(--accent, #e07a3f);
+    background: var(--mango-about-accent);
     color: white;
     font-weight: 700;
     font-size: 13px;
@@ -231,7 +243,7 @@
   }
 
   .mango-about-modal__link:hover {
-    background: #e8864b;
+    background: var(--mango-about-accent-hover);
     transform: translateY(-1px);
   }
 

@@ -301,3 +301,53 @@ test.describe("viewer interaction regressions", () => {
     expect(state.lastControlVisible).toBe(true);
   });
 });
+
+test.describe("layout containment", () => {
+  /*
+   * The stage must never be wider than the element that contains it. It was:
+   * the mobile dock rail is `width: max-content` (~541px), and the single grid
+   * column was a bare `1fr` — which floors at the content's min-content width —
+   * so on iOS a 361px-wide element resolved a 541px column. The image was then
+   * laid out in a box wider than the viewer and appeared shoved right and
+   * cropped. Every track that holds the stage must be zero-floored.
+   */
+  for (const viewport of [
+    { name: "phone", width: 390, height: 664 },
+    { name: "small phone", width: 320, height: 568 },
+    { name: "tablet", width: 820, height: 1180 },
+  ]) {
+    test(`stage never outgrows the viewer on ${viewport.name}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("/viewer.html");
+      await page.locator("mango-viewer .stage__media").first().waitFor();
+      await page.waitForTimeout(3500);
+
+      const boxes = await page.evaluate(() => {
+        const root = document.querySelector("mango-viewer")!.shadowRoot!;
+        const width = (selector: string) => {
+          const element = root.querySelector(selector);
+          return element
+            ? Math.round(element.getBoundingClientRect().width)
+            : null;
+        };
+        const grid = root.querySelector(".viewer__grid")!;
+        return {
+          viewer: width(".viewer"),
+          grid: width(".viewer__grid"),
+          gridScrollWidth: grid.scrollWidth,
+          gridClientWidth: grid.clientWidth,
+          stage: width(".stage"),
+          media: width(".stage__media"),
+        };
+      });
+
+      expect(boxes.stage!).toBeLessThanOrEqual(boxes.viewer!);
+      expect(boxes.media!).toBeLessThanOrEqual(boxes.viewer!);
+      expect(boxes.gridScrollWidth).toBeLessThanOrEqual(
+        boxes.gridClientWidth + 1,
+      );
+    });
+  }
+});

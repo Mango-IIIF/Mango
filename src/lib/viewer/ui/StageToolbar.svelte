@@ -647,7 +647,15 @@
    * never moves under the finger. Short elements keep the single row (they are
    * wide enough for it) because height is the scarce resource there.
    */
-  @container mango-viewer (max-width: 380px) and (min-height: 501px) {
+  /*
+   * Width alone decides this: under ~380px the row physically cannot fit on one
+   * line (it is ~53px short at 320px). It was previously also gated on
+   * `min-height: 501px`, and real iOS Safari lands just under that once its
+   * chrome is subtracted — so on an actual iPhone the row fell back to a scroll
+   * port and the zoom controls sat clipped past the right edge. Landscape phones
+   * are all wider than 380px, so they never reach this rule anyway.
+   */
+  @container mango-viewer (max-width: 380px) {
     .stage__toolbar--below {
       flex-wrap: wrap;
       align-content: center;

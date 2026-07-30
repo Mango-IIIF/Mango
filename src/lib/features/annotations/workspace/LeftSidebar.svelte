@@ -169,6 +169,27 @@
     border-color: rgba(42, 199, 255, 0.75);
     background: rgba(42, 199, 255, 0.16);
   }
+
+  /*
+   * Compact the tool picker when the element is narrow: five full-width rows
+   * consumed the whole screen on a phone and pushed the canvas below the fold.
+   * As wrapping chips the same five tools take two short rows.
+   */
+  @container mango-viewer (max-width: 1024px) {
+    .left-sidebar__tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .left-sidebar__tool {
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 34px;
+      justify-content: center;
+      padding: 6px 10px;
+    }
+  }
   .left-sidebar__layers-head {
     display: flex;
     align-items: center;

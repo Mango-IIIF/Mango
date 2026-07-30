@@ -478,6 +478,9 @@
     gap: 16px;
     height: 100%;
     min-height: 0;
+    /* The OSD <canvas> has an intrinsic width; without a zero min-width it can
+       force this column — and therefore the whole stage — wider than the viewer. */
+    min-width: 0;
   }
 
   .stage__dock {
@@ -508,6 +511,7 @@
 
   .stage__media {
     height: auto;
+    min-width: 0;
     border-radius: 18px;
     overflow: hidden;
     background: var(--viewer-stage);

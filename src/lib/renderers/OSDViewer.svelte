@@ -605,25 +605,65 @@
     let resizeFrameId: number | null = null;
     let initialHomeFrameId: number | null = null;
 
-    const settleInitialHome = (remainingFrames = 2): void => {
-      if (!viewer || remainingFrames <= 0) {
+    /*
+     * Safari can deliver OSD's `open` before the custom element's final size has
+     * propagated, so the image fits against a stale container and ends up parked
+     * off-centre — cropped against one edge with dead space on the other.
+     *
+     * A fixed number of frames was not enough: on a real device the size can
+     * still be settling several frames later (fonts, image decode, the host
+     * page's own layout). Instead, keep refitting until OSD's own container size
+     * agrees with the DOM element's and has stopped changing for two consecutive
+     * frames, bounded by a deadline so this can never spin. Any real user
+     * gesture ends it immediately — the viewport is theirs from that point.
+     */
+    const settleInitialHome = (): void => {
+      const deadline =
+        (typeof performance !== 'undefined' ? performance.now() : 0) + 1500;
+      let stableFrames = 0;
+      let lastWidth = -1;
+      let lastHeight = -1;
+
+      const step = (): void => {
         initialHomeFrameId = null;
-        return;
-      }
-      initialHomeFrameId = requestAnimationFrame(() => {
-        initialHomeFrameId = null;
-        if (!viewer) return;
-        // Safari can deliver OSD's open event before the custom element's
-        // final container width has propagated. Refit on consecutive painted
-        // frames so a portrait image cannot initialise against a stale,
-        // wider viewport and appear parked on the right edge.
-        viewer.forceResize?.();
-        viewer.viewport?.goHome?.(true);
-        viewer.viewport?.applyConstraints?.();
-        keepHomeViewportCentered();
-        scheduleRenderedUpdate();
-        settleInitialHome(remainingFrames - 1);
-      });
+        if (!viewer || !container || userDrivingViewport) return;
+
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        if (width <= 0 || height <= 0) {
+          schedule();
+          return;
+        }
+
+        const osdSize = viewer.viewport?.getContainerSize?.();
+        const mismatched =
+          !osdSize ||
+          Math.abs(osdSize.x - width) > 1 ||
+          Math.abs(osdSize.y - height) > 1;
+        const resized = width !== lastWidth || height !== lastHeight;
+        lastWidth = width;
+        lastHeight = height;
+
+        if (mismatched || resized) {
+          viewer.forceResize?.();
+          viewer.viewport?.goHome?.(true);
+          viewer.viewport?.applyConstraints?.();
+          keepHomeViewportCentered();
+          scheduleRenderedUpdate();
+          stableFrames = 0;
+        } else {
+          stableFrames += 1;
+        }
+
+        const now = typeof performance !== 'undefined' ? performance.now() : deadline;
+        if (stableFrames < 2 && now < deadline) schedule();
+      };
+
+      const schedule = (): void => {
+        initialHomeFrameId = requestAnimationFrame(step);
+      };
+
+      schedule();
     };
 
     const init = async () => {
@@ -721,6 +761,32 @@
       viewer.addHandler('animation', handleAnimation);
       viewer.addHandler('animation-finish', handleViewportChange);
       viewer.addHandler('resize', handleViewportChange);
+      /*
+       * Backstop for the same Safari problem the settle loop covers: if OSD's
+       * container size still disagrees with the element once tiles are actually
+       * on screen — and no resize event ever fires to correct it — repair the
+       * fit then. One shot, and never while a gesture is in progress.
+       */
+      viewer.addHandler('fully-loaded-change', function verifyFit() {
+        if (!viewer || !container || userDrivingViewport) return;
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        if (width <= 0 || height <= 0) return;
+        const osdSize = viewer.viewport?.getContainerSize?.();
+        if (
+          osdSize &&
+          Math.abs(osdSize.x - width) <= 1 &&
+          Math.abs(osdSize.y - height) <= 1
+        ) {
+          return;
+        }
+        viewer.forceResize?.();
+        if (!initialViewBox || initialViewBoxApplied) {
+          viewer.viewport?.goHome?.(true);
+        }
+        viewer.viewport?.applyConstraints?.();
+        scheduleRenderedUpdate();
+      });
       // Gesture bookkeeping for `userDrivingViewport` — see its declaration.
       viewer.addHandler('canvas-press', markUserViewportActivity);
       viewer.addHandler('canvas-drag', markUserViewportActivity);

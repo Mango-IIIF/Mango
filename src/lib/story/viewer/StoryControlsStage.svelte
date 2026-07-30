@@ -977,23 +977,16 @@
   }
 
   /*
-   * Short AND narrow — the hardest case, e.g. a 400px-tall embed on a phone.
-   * There is no room for image + chapter text + transport + a thumbnail rail, so
-   * the rail sheds (prev/next still move between chapters) and the image floor
-   * drops. Without this the sidebar was squeezed to ~28px and the title, play
-   * button and scrubber were all clipped by it with no way to scroll to them.
+   * Narrow and not very tall — a phone in portrait whose element lands under
+   * ~560px, which is the common case on iOS once Safari's chrome is taken off
+   * the viewport. Everything compacts, but the chapter rail STAYS: this band was
+   * previously shedding it, which is why real phones showed a story with no
+   * chapters. Compacting the rail and the type buys back the ~40px that was
+   * clipping the chapter title here.
    */
-  @container mango-viewer (max-height: 500px) and (max-width: 559px) {
-    .story-shell {
-      grid-template-rows: minmax(0, 1fr) auto;
-    }
-
-    .story-shell__footer {
-      display: none;
-    }
-
+  @container mango-viewer (max-height: 560px) and (max-width: 559px) {
     .story-shell__body {
-      grid-template-rows: minmax(110px, 1fr) auto;
+      grid-template-rows: minmax(120px, 1fr) auto;
     }
 
     .story-shell__sidebar {
@@ -1008,6 +1001,69 @@
 
     .story-shell__accent {
       margin-bottom: 4px;
+    }
+
+    /* One line of summary at these heights; "Show more" still opens the rest. */
+    .story-shell__description {
+      margin: 0 0 4px;
+      -webkit-line-clamp: 1;
+    }
+
+    .story-shell__transport-btn {
+      width: 36px;
+      height: 36px;
+    }
+
+    .story-shell__play-btn {
+      width: 46px;
+      height: 46px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 4px;
+    }
+
+    .story-shell__footer {
+      grid-auto-columns: 46px;
+      gap: 6px;
+      padding: 4px 10px 3px;
+    }
+
+    .story-shell__chapter-thumb {
+      min-height: 46px;
+      border-radius: 8px;
+    }
+
+    .story-shell__chapter-number {
+      margin-top: 2px;
+      font-size: 11px;
+    }
+
+    .story-shell__dot {
+      width: 5px;
+      height: 5px;
+      margin-top: 2px;
+    }
+  }
+
+  /*
+   * Narrow AND genuinely short — e.g. a 400px-tall embed on a phone. Below this
+   * there is no room for image + chapter text + transport + a rail, so the rail
+   * is the thing that sheds; prev/next still move between chapters. Without it
+   * the sidebar was squeezed to ~28px and the title, play button and scrubber
+   * were all clipped by it with no way to scroll to them.
+   */
+  @container mango-viewer (max-height: 430px) and (max-width: 559px) {
+    .story-shell {
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .story-shell__footer {
+      display: none;
+    }
+
+    .story-shell__body {
+      grid-template-rows: minmax(110px, 1fr) auto;
     }
 
     .story-shell__transport-btn {
