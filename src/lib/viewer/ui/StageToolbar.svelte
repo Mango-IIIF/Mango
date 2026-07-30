@@ -552,8 +552,12 @@
          tap-friendly. overflow-x below remains only as a safety net for
          extremely narrow viewports. */
       --stage-toolbar-gap: clamp(2px, 1cqw, 4px);
-      --stage-toolbar-button-width: clamp(30px, 9.4cqw, 40px);
-      --stage-toolbar-button-height: 40px;
+      /* Height carries the tap target to the 44px guideline, which costs
+         nothing here — width is the constrained axis. Widening the buttons too
+         pushed the row past the frame on a 375px phone and hid controls behind
+         a scroll, so width still tracks the container. */
+      --stage-toolbar-button-width: clamp(30px, 9.4cqw, 44px);
+      --stage-toolbar-button-height: 44px;
       --stage-toolbar-group-height: calc(var(--stage-toolbar-button-height) + 2px);
       --stage-toolbar-value-width: clamp(44px, 15cqw, 58px);
       --stage-toolbar-zoom-width: clamp(40px, 14cqw, 54px);
@@ -631,6 +635,37 @@
   @container (max-width: 300px) {
     .stage__toolbar--below {
       justify-content: flex-start;
+    }
+  }
+
+  /*
+   * Narrow and tall (portrait phones under ~380px): the row cannot fit on one
+   * line — 53px short at 320px — and a scroll port here caused a visible jump.
+   * Tapping the rightmost control (Home) focused a partly off-screen button, so
+   * the browser scrolled it into view and the whole bar appeared to slide left.
+   * Wrapping keeps every control on screen with nothing to scroll, so the bar
+   * never moves under the finger. Short elements keep the single row (they are
+   * wide enough for it) because height is the scarce resource there.
+   */
+  @container mango-viewer (max-width: 380px) and (min-height: 501px) {
+    .stage__toolbar--below {
+      flex-wrap: wrap;
+      align-content: center;
+      row-gap: 4px;
+      overflow-x: clip;
+      overflow-y: clip;
+    }
+  }
+
+  /*
+   * Very short elements: give the height back to the image. The row stays above
+   * the 38px comfortable-tap floor and only applies where vertical space is the
+   * binding constraint.
+   */
+  @container mango-viewer (max-height: 360px) {
+    .stage__toolbar--below {
+      --stage-toolbar-button-height: 38px;
+      --stage-toolbar-group-height: 40px;
     }
   }
 

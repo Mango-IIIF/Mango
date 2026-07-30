@@ -399,6 +399,31 @@
     flex-shrink: 0;
   }
 
+  /*
+   * Wide layout only (the narrow and short layouts restack the sidebar below).
+   * The sidebar is two regions, not one scrolling column: chapter text that may
+   * be any length, and transport controls that must always be on screen. Giving
+   * the text its own scroll area stops a long title or description from pushing
+   * the play button past the bottom of the panel.
+   */
+  @container mango-viewer (min-width: 1025px) {
+    .story-shell__sidebar {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+
+    .story-shell__metadata {
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+    }
+
+    .story-shell__playback {
+      margin-top: 0;
+    }
+  }
+
   .story-shell__transport {
     display: flex;
     align-items: center;
@@ -845,7 +870,14 @@
     }
   }
 
-  @container mango-viewer (max-height: 500px) {
+  /*
+   * Short AND wide enough to afford a sidebar. The side-by-side layout reserves
+   * `minmax(280px, 38%)` for the text column, so on a 358px-wide short embed it
+   * left the image about 78px of width — a sliver in a mostly empty column.
+   * Narrow short elements keep the stacked layout, where the image gets the full
+   * width. 560px matches the threshold the IIIF rail uses for the same reason.
+   */
+  @container mango-viewer (max-height: 500px) and (min-width: 560px) {
     .story-shell__body {
       grid-template-columns: minmax(0, 1fr) minmax(280px, 38%);
       grid-template-rows: minmax(0, 1fr);
@@ -941,6 +973,115 @@
 
     .story-shell__dot {
       margin-top: 2px;
+    }
+  }
+
+  /*
+   * Short AND narrow — the hardest case, e.g. a 400px-tall embed on a phone.
+   * There is no room for image + chapter text + transport + a thumbnail rail, so
+   * the rail sheds (prev/next still move between chapters) and the image floor
+   * drops. Without this the sidebar was squeezed to ~28px and the title, play
+   * button and scrubber were all clipped by it with no way to scroll to them.
+   */
+  @container mango-viewer (max-height: 500px) and (max-width: 559px) {
+    .story-shell {
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .story-shell__footer {
+      display: none;
+    }
+
+    .story-shell__body {
+      grid-template-rows: minmax(110px, 1fr) auto;
+    }
+
+    .story-shell__sidebar {
+      padding: 6px 12px 8px;
+    }
+
+    .story-shell__title {
+      margin: 1px 0 3px;
+      font-size: 22px;
+      -webkit-line-clamp: 1;
+    }
+
+    .story-shell__accent {
+      margin-bottom: 4px;
+    }
+
+    .story-shell__transport-btn {
+      width: 34px;
+      height: 34px;
+    }
+
+    .story-shell__play-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 3px;
+    }
+  }
+
+  /*
+   * Very short elements (a phone in landscape with browser chrome, or a short
+   * embed). One more rung down: the transport and the chapter rail shrink so
+   * the play button and scrubber stay inside the sidebar instead of being
+   * clipped by its hidden overflow.
+   */
+  @container mango-viewer (max-height: 360px) {
+    .story-shell__sidebar {
+      padding: 6px 10px;
+    }
+
+    .story-shell__chapter-label {
+      font-size: 13px;
+    }
+
+    .story-shell__title {
+      margin: 1px 0 3px;
+      font-size: 22px;
+      -webkit-line-clamp: 1;
+    }
+
+    .story-shell__accent {
+      margin-bottom: 4px;
+    }
+
+    .story-shell__transport-btn {
+      width: 34px;
+      height: 34px;
+    }
+
+    .story-shell__play-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 3px;
+    }
+
+    .story-shell__timeline-text {
+      font-size: 11px;
+    }
+
+    .story-shell__footer {
+      grid-auto-columns: 46px;
+      gap: 6px;
+      padding: 4px 8px 3px;
+    }
+
+    .story-shell__chapter-thumb {
+      min-height: 46px;
+      border-radius: 8px;
+    }
+
+    .story-shell__chapter-number {
+      margin-top: 2px;
+      font-size: 11px;
     }
   }
 </style>

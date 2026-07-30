@@ -2997,8 +2997,19 @@
     align-content: start;
   }
 
+  /*
+   * Vertical priority ladder for the plain viewer.
+   *
+   * The image is the product, so it owns the flexible row and keeps a floor it
+   * can never be squeezed below. Everything else is `auto` and sheds in a fixed
+   * order as the element gets shorter (see the max-height container queries):
+   * the thumbnail strip goes first (the dock's Gallery button still reaches it),
+   * then the toolbar compacts. Without the floor the gallery's intrinsic
+   * min-content height wins and the image collapses to 0px.
+   */
   .stage--viewer {
     gap: 12px;
+    grid-template-rows: minmax(min(160px, 100%), 1fr) auto;
   }
 
   .stage__primary {
@@ -3089,12 +3100,25 @@
   }
 
   .stage--story-builder {
-    grid-template-rows: minmax(300px, 1fr) auto;
+    /* Preserve a useful viewer while allowing content-aware authoring panels
+       to grow below it. If both no longer fit, this column becomes the scroll
+       owner instead of clipping the bottom of the editor. */
+    grid-template-rows: minmax(clamp(220px, 42cqh, 420px), 1fr) auto;
     align-content: stretch;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .stage--with-bottom-toolbar {
+  /*
+   * The story builder opts out: it owns its own rows and scrolling (above), and
+   * this rule sits later in the sheet at equal specificity, so without the
+   * exclusion it silently reinstated `overflow: hidden` and clipped the bottom
+   * of the narration editor.
+   */
+  .stage--with-bottom-toolbar:not(.stage--story-builder) {
     grid-template-rows: minmax(0, 1fr);
     grid-auto-rows: auto;
     overflow: hidden;
@@ -3137,17 +3161,6 @@
     display: none;
   }
 
-  @media (max-width: 1024px) {
-    .viewer {
-      min-height: 0;
-      max-height: 100%;
-      height: 100%;
-      overflow: hidden;
-      padding: 12px;
-      border-radius: 16px;
-    }
-  }
-
   @container mango-viewer (max-width: 1024px) {
     .viewer {
       min-height: 0;
@@ -3155,6 +3168,7 @@
       height: 100%;
       overflow: hidden;
       padding: 12px;
+      border-radius: 16px;
       gap: 10px;
     }
 
@@ -3201,7 +3215,10 @@
       grid-row: 1;
       grid-column: 1 / -1;
       height: 100%;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
     }
 
     .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
@@ -3399,6 +3416,18 @@
       transition: none;
     }
 
+    /*
+     * The reveal animation belongs to the floating desktop toolbar, where
+     * `translate(-50%, …)` is what centres an absolutely positioned bar. Here the
+     * row is a static, full-width bar, so the revealed state must drop the
+     * translate as well: without this, any tap that reveals the controls (for
+     * example pressing Home) slid the whole bar left by half its width.
+     */
+    .stage__viewer-frame--controls-visible :global(.stage__toolbar--below),
+    .stage__viewer-frame :global(.stage__toolbar--below:focus-within) {
+      transform: none;
+    }
+
     .stage--viewer {
       --mango-viewer-av-player-aspect-ratio: 16 / 9;
       --mango-viewer-audio-art-aspect-ratio: 16 / 7;
@@ -3466,6 +3495,23 @@
     }
   }
 
+  /*
+   * Rung 1 of the vertical ladder (see `.stage--viewer`). Below this height the
+   * element cannot show both a usable image and the thumbnail strip, so the
+   * strip sheds first — the dock's Gallery button still opens the full gallery
+   * view, so nothing becomes unreachable. Keyed on the element's own height, so
+   * a short embed on a tall page compacts the same way a landscape phone does.
+   */
+  @container mango-viewer (max-height: 560px) {
+    .stage--viewer > :global(.gallery) {
+      display: none;
+    }
+
+    .stage--viewer {
+      grid-template-rows: minmax(min(120px, 100%), 1fr);
+    }
+  }
+
   @container mango-viewer (max-height: 500px) {
     .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
         .viewer--annotation-editor
@@ -3515,7 +3561,13 @@
     }
 
     .stage--viewer .stage__viewer-frame {
-      grid-template-rows: minmax(0, 1fr) auto;
+      /*
+       * Rung 2: media keeps a smaller floor and the toolbar stays put. The
+       * floor is capped at a share of the element (`26cqh`) so that on a box
+       * too small for both, the image yields rather than pushing the toolbar
+       * out of the frame's hidden overflow.
+       */
+      grid-template-rows: minmax(min(96px, 26cqh), 1fr) auto;
       overflow: hidden;
     }
 
@@ -3540,18 +3592,72 @@
       transform: none;
       transition: none;
     }
-  }
 
-  @media (min-width: 701px) and (max-width: 1024px) {
-    .viewer.viewer--story-builder {
-      height: 100%;
-      min-height: 0;
-      max-height: 100%;
-      overflow: hidden;
+    /* As above: a static bar must not inherit the floating bar's centring
+       translate when the controls are revealed. */
+    .stage--viewer
+      .stage__viewer-frame--controls-visible
+      :global(.stage__toolbar--below),
+    .stage--viewer
+      .stage__viewer-frame
+      :global(.stage__toolbar--below:focus-within) {
+      transform: none;
     }
   }
 
-  @media (max-width: 700px) {
+  /*
+   * Short but wide: stand the icon rail up beside the image instead of stacking
+   * it underneath. On a landscape phone that hands ~50px of scarce height back
+   * to the image and spends width that was empty anyway. ViewerDock owns the
+   * dock's own column flow under the same query.
+   */
+  @container mango-viewer (max-height: 500px) and (min-width: 560px) {
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__grid {
+      grid-template-columns: minmax(0, 1fr) max-content !important;
+      grid-template-rows: minmax(0, 1fr);
+      column-gap: 8px;
+      row-gap: 0;
+    }
+
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__grid
+      > .stage {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__control-rail {
+      grid-column: 2;
+      grid-row: 1;
+      width: max-content;
+      /* Floor matches the dock's fixed 44px icon button, so the column can
+         never collapse even if the intrinsic width resolves small. */
+      min-width: 44px;
+      max-width: 40%;
+      height: 100%;
+      justify-self: end;
+      align-self: stretch;
+      overflow-x: clip;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+    }
+  }
+
+  /*
+   * Element-relative, not viewport-relative: these two rules used to be
+   * `@media (max-width: 1024px)`, which is wrong for an embedded element whose
+   * width is decided by the host page rather than the window.
+   */
+  @container mango-viewer (max-width: 1024px) {
     .viewer.viewer--story-builder {
       height: 100%;
       min-height: 0;

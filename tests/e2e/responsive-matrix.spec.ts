@@ -501,6 +501,13 @@ test.describe("iPhone SE touch rails", () => {
     expect(railStyle.scrollWidth).toBeGreaterThan(railStyle.clientWidth);
     expect(railStyle.overflowX).toBe("auto");
     expect(railStyle.touchAction).toBe("pan-x");
+    await host.getByRole("button", { name: "Enter fullscreen" }).click();
+    const railTouchAllowed = await rail.evaluate((element) =>
+      element.dispatchEvent(
+        new Event("touchmove", { bubbles: true, cancelable: true, composed: true }),
+      ),
+    );
+    expect(railTouchAllowed).toBe(true);
     await rail.evaluate((element) => {
       element.scrollLeft = element.scrollWidth;
     });
@@ -522,8 +529,13 @@ test.describe("iPhone SE touch rails", () => {
     );
     await page.mouse.up();
     const after = await host.evaluate((element: any) => element.getViewBox());
-    expect(after.x).toBeCloseTo(before.x, 3);
-    expect(after.y).toBeCloseTo(before.y, 3);
+    // The responsive frame may finish resizing while fullscreen controls
+    // settle, so compare centres rather than view-box extents. This manifest's
+    // 2569 × 3543 canvas must remain centred at home before and after a drag.
+    expect(before.x + before.w / 2).toBeCloseTo(2569 / 2, 3);
+    expect(before.y + before.h / 2).toBeCloseTo(3543 / 2, 3);
+    expect(after.x + after.w / 2).toBeCloseTo(2569 / 2, 3);
+    expect(after.y + after.h / 2).toBeCloseTo(3543 / 2, 3);
   });
 
   test("keeps the complete primary toolbar reachable at 320px", async ({ page }) => {
@@ -531,18 +543,36 @@ test.describe("iPhone SE touch rails", () => {
     const host = page.locator("mango-viewer");
     const toolbar = host.locator(".stage__toolbar--below");
     const home = host.getByRole("button", { name: "Home" });
-    const style = await toolbar.evaluate((element) => ({
-      clientWidth: element.clientWidth,
-      scrollWidth: element.scrollWidth,
-      overflowX: getComputedStyle(element).overflowX,
-      touchAction: getComputedStyle(element).touchAction,
-    }));
-    expect(style.scrollWidth).toBeGreaterThan(style.clientWidth);
-    expect(style.overflowX).toBe("auto");
-    expect(style.touchAction).toBe("pan-x");
-    await toolbar.evaluate((element) => {
-      element.scrollLeft = element.scrollWidth;
+
+    /*
+     * This used to assert the row scrolled sideways at this width. It now wraps
+     * instead: scrolling put the trailing controls behind a scroll port, and
+     * tapping a partly visible one made the browser scroll it into view, which
+     * slid the whole bar under the user's finger. So assert the goal — every
+     * control on screen — rather than the mechanism, and allow either layout.
+     */
+    const state = await toolbar.evaluate((element) => {
+      const buttons = [...element.querySelectorAll("button")];
+      const box = element.getBoundingClientRect();
+      return {
+        overflows: element.scrollWidth > element.clientWidth + 1,
+        buttonCount: buttons.length,
+        outside: buttons.filter((button) => {
+          const rect = button.getBoundingClientRect();
+          return (
+            rect.width > 0 &&
+            (rect.x < box.x - 1 ||
+              rect.x + rect.width > box.x + box.width + 1 ||
+              rect.y < box.y - 1 ||
+              rect.y + rect.height > box.y + box.height + 1)
+          );
+        }).length,
+      };
     });
+    expect(state.buttonCount).toBeGreaterThan(4);
+    expect(state.outside).toBe(0);
+    expect(state.overflows).toBe(false);
+    await expect(home).toBeVisible();
     await expectContained(home, toolbar);
   });
 
@@ -567,6 +597,13 @@ test.describe("iPhone SE touch rails", () => {
     expect(styles.overflowX).toBe("auto");
     expect(styles.touchAction).toBe("pan-x");
     expect(styles.viewerTouchAction).toBe("auto");
+
+    const touchAllowed = await footer.evaluate((element) =>
+      element.dispatchEvent(
+        new Event("touchmove", { bubbles: true, cancelable: true, composed: true }),
+      ),
+    );
+    expect(touchAllowed).toBe(true);
 
     await footer.evaluate((element) => {
       element.scrollLeft = 240;

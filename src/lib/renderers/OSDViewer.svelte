@@ -98,14 +98,51 @@
   let fallbackText = $derived($t('viewer.panels.annotations.fallback'));
   let renderFrameId: number | null = null;
   let centeringAtHome = false;
+  /*
+   * Set while the pointer is driving the viewport (drag, wheel, pinch). OSD
+   * already keeps an axis centred when the content is narrower than the surface
+   * (`visibilityRatio: 1` + `constrainDuringPan: true`), so re-centering from
+   * inside `pan`/`zoom` handlers only fought the gesture: OSD moved the image on
+   * one frame and `panTo(..., true)` yanked it back on the next, which is the
+   * stutter users felt. Re-centering still runs for open, resize and
+   * animation-finish — every case where nobody is holding the image.
+   */
+  let userDrivingViewport = false;
+  let userIdleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const markUserViewportActivity = (): void => {
+    userDrivingViewport = true;
+    if (userIdleTimer !== undefined) clearTimeout(userIdleTimer);
+    // Wheel and pinch have no explicit end event; fall back to a short idle.
+    userIdleTimer = setTimeout(() => {
+      userIdleTimer = undefined;
+      userDrivingViewport = false;
+      keepHomeViewportCentered();
+    }, 220);
+  };
+
+  const endUserViewportActivity = (): void => {
+    if (userIdleTimer !== undefined) clearTimeout(userIdleTimer);
+    userIdleTimer = undefined;
+    if (!userDrivingViewport) return;
+    userDrivingViewport = false;
+    /*
+     * Settle explicitly when the gesture ends. Relying on `animation-finish`
+     * was not enough: an immediate pan can end without an animation to finish,
+     * which left the image resting off-centre on an axis that should be centred.
+     */
+    keepHomeViewportCentered();
+  };
 
   const keepHomeViewportCentered = (): void => {
     const viewport = viewer?.viewport;
     if (
       !viewport ||
       centeringAtHome ||
+      userDrivingViewport ||
       typeof viewport.getHomeZoom !== 'function' ||
       typeof viewport.getHomeBounds !== 'function' ||
+      typeof viewport.getBounds !== 'function' ||
       typeof viewport.getCenter !== 'function' ||
       typeof viewport.panTo !== 'function'
     ) {
@@ -113,19 +150,37 @@
     }
     const zoom = viewport.getZoom(true);
     const homeZoom = viewport.getHomeZoom();
-    if (!Number.isFinite(zoom) || !Number.isFinite(homeZoom) || zoom > homeZoom * 1.001) {
+    if (!Number.isFinite(zoom) || !Number.isFinite(homeZoom)) {
       return;
     }
     const center = viewport.getCenter(true);
     const homeCenter = viewport.getHomeBounds().getCenter();
+    const visibleBounds = viewport.getBounds(true);
+    const contentBounds = viewer?.world?.getHomeBounds?.();
+    const atHome = zoom <= homeZoom * 1.001;
+    const contentFitsHorizontally = Boolean(
+      contentBounds && contentBounds.width <= visibleBounds.width * 1.001,
+    );
+    const contentFitsVertically = Boolean(
+      contentBounds && contentBounds.height <= visibleBounds.height * 1.001,
+    );
+    if (!atHome && !contentFitsHorizontally && !contentFitsVertically) return;
+
+    // Constrain each axis independently. A tall portrait at modest zoom may
+    // be vertically pannable while still narrower than the surface; forcing
+    // both axes home would make legitimate reading/navigation impossible.
+    const targetCenter = {
+      x: atHome || contentFitsHorizontally ? homeCenter.x : center.x,
+      y: atHome || contentFitsVertically ? homeCenter.y : center.y,
+    };
     if (
-      Math.abs(center.x - homeCenter.x) < 0.000001 &&
-      Math.abs(center.y - homeCenter.y) < 0.000001
+      Math.abs(center.x - targetCenter.x) < 0.000001 &&
+      Math.abs(center.y - targetCenter.y) < 0.000001
     ) {
       return;
     }
     centeringAtHome = true;
-    viewport.panTo(homeCenter, true);
+    viewport.panTo(targetCenter, true);
     viewport.applyConstraints?.();
     centeringAtHome = false;
   };
@@ -548,6 +603,28 @@
     let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
     let resizeFrameId: number | null = null;
+    let initialHomeFrameId: number | null = null;
+
+    const settleInitialHome = (remainingFrames = 2): void => {
+      if (!viewer || remainingFrames <= 0) {
+        initialHomeFrameId = null;
+        return;
+      }
+      initialHomeFrameId = requestAnimationFrame(() => {
+        initialHomeFrameId = null;
+        if (!viewer) return;
+        // Safari can deliver OSD's open event before the custom element's
+        // final container width has propagated. Refit on consecutive painted
+        // frames so a portrait image cannot initialise against a stale,
+        // wider viewport and appear parked on the right edge.
+        viewer.forceResize?.();
+        viewer.viewport?.goHome?.(true);
+        viewer.viewport?.applyConstraints?.();
+        keepHomeViewportCentered();
+        scheduleRenderedUpdate();
+        settleInitialHome(remainingFrames - 1);
+      });
+    };
 
     const init = async () => {
       if (!container) return;
@@ -634,6 +711,8 @@
         if (initialViewBox && !initialViewBoxApplied) {
           initialViewBoxApplied = true;
           requestAnimationFrame(() => setViewBox(initialViewBox));
+        } else if (!legacyOsdConfig?.preserveViewport) {
+          settleInitialHome();
         }
         handleViewportChange();
       });
@@ -642,6 +721,13 @@
       viewer.addHandler('animation', handleAnimation);
       viewer.addHandler('animation-finish', handleViewportChange);
       viewer.addHandler('resize', handleViewportChange);
+      // Gesture bookkeeping for `userDrivingViewport` — see its declaration.
+      viewer.addHandler('canvas-press', markUserViewportActivity);
+      viewer.addHandler('canvas-drag', markUserViewportActivity);
+      viewer.addHandler('canvas-scroll', markUserViewportActivity);
+      viewer.addHandler('canvas-pinch', markUserViewportActivity);
+      viewer.addHandler('canvas-drag-end', endUserViewportActivity);
+      viewer.addHandler('canvas-release', endUserViewportActivity);
       viewer.addHandler('open-failed', (event) => {
         openingBaseCustomId = '';
         baseImageLoaded = false;
@@ -672,6 +758,11 @@
         cancelAnimationFrame(resizeFrameId);
         resizeFrameId = null;
       }
+      if (initialHomeFrameId !== null) {
+        cancelAnimationFrame(initialHomeFrameId);
+        initialHomeFrameId = null;
+      }
+      endUserViewportActivity();
       resizeObserver?.disconnect();
       cancelled = true;
       viewer?.destroy();

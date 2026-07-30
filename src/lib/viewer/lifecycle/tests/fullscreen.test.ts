@@ -80,4 +80,55 @@ describe("createViewerFullscreenController", () => {
     expect(document.body.style.overflow).toBe("hidden");
     root.remove();
   });
+
+  it("allows touch scrolling on story and viewer control rails in fallback fullscreen", async () => {
+    const root = document.createElement("div");
+    const allowedClasses = [
+      "story-shell__footer",
+      "stage__toolbar",
+      "viewer__control-rail",
+      "viewer__dock",
+    ];
+    const allowedTargets = allowedClasses.map((className) => {
+      const rail = document.createElement("div");
+      const child = document.createElement("button");
+      rail.className = className;
+      rail.append(child);
+      root.append(rail);
+      return child;
+    });
+    const blockedSurface = document.createElement("div");
+    root.append(blockedSurface);
+    document.body.append(root);
+
+    const controller = createViewerFullscreenController({
+      getRoot: () => root,
+      getShadowHost: () => null,
+      preferFallback: () => true,
+      onChange: () => undefined,
+    });
+    const detach = controller.attach();
+    await controller.toggle();
+
+    for (const target of allowedTargets) {
+      const railMove = new Event("touchmove", {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+      });
+      target.dispatchEvent(railMove);
+      expect(railMove.defaultPrevented).toBe(false);
+    }
+
+    const surfaceMove = new Event("touchmove", {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    blockedSurface.dispatchEvent(surfaceMove);
+    expect(surfaceMove.defaultPrevented).toBe(true);
+
+    detach();
+    root.remove();
+  });
 });

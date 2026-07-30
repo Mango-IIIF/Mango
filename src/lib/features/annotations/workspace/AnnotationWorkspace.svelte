@@ -134,14 +134,24 @@
     overflow: hidden;
   }
 
-  @container mango-viewer (max-width: 1200px) {
+  /*
+   * 1024px, not 1200px. The three columns need 240 + 280 + gaps = ~544px of
+   * chrome, so they still leave a ~480px canvas at 1025px wide; collapsing at
+   * 1200 threw away the multi-column editor on ordinary 1280px laptops. This
+   * also lines the editor up with the 1024px breakpoint every other surface uses.
+   *
+   * `overscroll-behavior` is deliberately left at the default so that reaching
+   * the end of this scroller passes the gesture to the stage instead of trapping
+   * it — a contained inner scroller is what made the authoring panel feel like it
+   * could not be scrolled to the bottom.
+   */
+  @container mango-viewer (max-width: 1024px) {
     .annotation-workspace {
       grid-template-columns: 1fr;
       grid-template-rows: minmax(220px, 32%) minmax(520px, 1fr) minmax(220px, 32%);
       height: 100%;
       overflow-x: hidden;
       overflow-y: auto;
-      overscroll-behavior-y: contain;
       -webkit-overflow-scrolling: touch;
     }
     .annotation-workspace__center {
