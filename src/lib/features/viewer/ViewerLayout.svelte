@@ -932,6 +932,11 @@
   const viewerApi: ViewerApi = {
     getViewBox,
     setViewBox,
+    getZoom,
+    setZoom,
+    zoomIn,
+    zoomOut,
+    panTo,
     getMediaType,
     getState,
     getCanvasIndex,
@@ -1087,6 +1092,44 @@
     controller.setCanvasByIndex(detail.index);
   };
   const handleHome = () => stageRef?.goHome?.();
+
+  /*
+   * Below this element height the thumbnail strip is shed by container query
+   * (the `max-height: 560px` rung further down this file). Keep the two in
+   * step: the dock's Gallery button has to know when the strip it toggles
+   * cannot be shown.
+   */
+  const THUMBNAIL_STRIP_MIN_HEIGHT = 560;
+
+  const thumbnailStripHidden = (): boolean => {
+    const height = viewerRoot?.clientHeight ?? 0;
+    return height > 0 && height <= THUMBNAIL_STRIP_MIN_HEIGHT;
+  };
+
+  /*
+   * Toggling the strip in a short embed flips state the reader can never see,
+   * which left the Gallery button doing nothing at all. Send it to the full
+   * gallery layout instead — the same destination the strip's own "View all"
+   * offers — so the canvases stay reachable at every height.
+   */
+  const handleGalleryOpen = () => {
+    // Showing the full gallery already: the button is the way back out of it.
+    if (isPlainViewerMode && $layoutMode === 'gallery') {
+      controller.setLayoutMode('single');
+      return;
+    }
+    // Closing the strip is meaningful at any height, so keep that path intact.
+    if (showThumbnailsEffectiveStory) {
+      controller.setPanelOpen('thumbnails', false);
+      return;
+    }
+    // Opening in a short embed, where the strip is shed by container query.
+    if (isPlainViewerMode && thumbnailStripHidden()) {
+      controller.setLayoutMode('gallery');
+      return;
+    }
+    controller.setPanelOpen('thumbnails', true);
+  };
   const handleRotate = () => stageRef?.rotateBy?.(90);
   export function on<K extends keyof ViewerEventMap>(
     event: K,
@@ -1112,6 +1155,30 @@
 
   export function setViewBox(box: ViewBox): void {
     stageRef?.setViewBox?.(box);
+  }
+
+  export function getZoom(): number {
+    return zoomPercent;
+  }
+
+  export function setZoom(percent: number): void {
+    if (!Number.isFinite(percent)) return;
+    handleSetZoomPercent({ percent });
+  }
+
+  export function zoomIn(): void {
+    handleZoomIn();
+  }
+
+  export function zoomOut(): void {
+    handleZoomOut();
+  }
+
+  export function panTo(x: number, y: number): void {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    const box = getViewBox();
+    if (!box) return;
+    setViewBox({ x: x - box.w / 2, y: y - box.h / 2, w: box.w, h: box.h });
   }
 
   export function getMediaType() {
@@ -1636,7 +1703,7 @@
           variant="sidebar"
           mobile={isMobileLayout || isShortLayout}
           iconOnly={leftVisibleEffective || showManifestManager}
-          galleryActive={showThumbnailsEffectiveStory}
+          galleryActive={showThumbnailsEffectiveStory || $layoutMode === 'gallery'}
           contentsTab={contentsPanelTab}
           allowThumbnails={allowThumbnailsStory}
           allowCollection={allowCollectionStory}
@@ -1662,7 +1729,7 @@
           {showManifestManager}
           multiView={isMultiView}
           oncollapse={collapseViewerSidebar}
-          ongalleryopen={() => controller.setPanelOpen('thumbnails', !showThumbnailsEffectiveStory)}
+          ongalleryopen={handleGalleryOpen}
           oncontentsopen={openContentsPanel}
           oncomparetoggle={() => handleViewerPanelToggle('compare', !showComparePanel)}
           onmanifesttoggle={toggleManifestManager}
@@ -2445,11 +2512,11 @@
     --viewer-stage-bottom-bg: rgba(12, 16, 22, 0.72);
     --viewer-toolbar-separator: rgba(255, 255, 255, 0.14);
     --viewer-toolbar-group-border: rgba(255, 255, 255, 0.1);
-    --viewer-toolbar-group-bg: rgba(20, 30, 45, 0.55);
+    --viewer-toolbar-group-bg: transparent;
     --viewer-toolbar-button-bg: rgba(255, 255, 255, 0.03);
     --viewer-toolbar-button-hover-bg: rgba(255, 255, 255, 0.08);
     --viewer-toolbar-value-text: rgba(230, 236, 246, 0.96);
-    --viewer-toolbar-value-bg: rgba(4, 11, 22, 0.55);
+    --viewer-toolbar-value-bg: transparent;
     --viewer-search-input-bg: rgba(10, 14, 19, 0.8);
     --viewer-search-clear-bg: rgba(255, 255, 255, 0.1);
     --viewer-search-item-bg: rgba(255, 255, 255, 0.06);
@@ -2492,7 +2559,7 @@
     text-transform: none;
     direction: var(--mango-viewer-direction, ltr);
     border: 1px solid #1c2530;
-    box-shadow: var(--viewer-frame-shadow, 0 28px 70px rgba(0, 0, 0, 0.55));
+    box-shadow: var(--viewer-frame-shadow, none);
     container-type: size;
     container-name: mango-viewer;
     position: relative;
@@ -2674,11 +2741,11 @@
     --viewer-stage-bottom-bg: rgba(241, 245, 251, 0.86);
     --viewer-toolbar-separator: rgba(34, 48, 65, 0.16);
     --viewer-toolbar-group-border: rgba(34, 48, 65, 0.16);
-    --viewer-toolbar-group-bg: rgba(235, 241, 248, 0.9);
+    --viewer-toolbar-group-bg: transparent;
     --viewer-toolbar-button-bg: rgba(255, 255, 255, 0.84);
     --viewer-toolbar-button-hover-bg: rgba(124, 150, 190, 0.2);
     --viewer-toolbar-value-text: #223041;
-    --viewer-toolbar-value-bg: rgba(224, 232, 241, 0.92);
+    --viewer-toolbar-value-bg: transparent;
     --viewer-search-input-bg: rgba(255, 255, 255, 0.92);
     --viewer-search-clear-bg: rgba(124, 150, 190, 0.2);
     --viewer-search-item-bg: rgba(255, 255, 255, 0.78);
@@ -2690,7 +2757,7 @@
       rgba(229, 236, 245, 0.95) 100%
     );
     border-color: #dbe2eb;
-    box-shadow: var(--viewer-frame-shadow, 0 24px 52px rgba(25, 40, 60, 0.12));
+    box-shadow: var(--viewer-frame-shadow, none);
     background: radial-gradient(135% 135% at 10% 0%, #e6f1ff 0%, #f5faff 45%, #ffffff 100%);
   }
 
@@ -2731,11 +2798,11 @@
     --viewer-stage-bottom-bg: rgba(241, 231, 212, 0.88);
     --viewer-toolbar-separator: rgba(76, 58, 35, 0.16);
     --viewer-toolbar-group-border: rgba(76, 58, 35, 0.16);
-    --viewer-toolbar-group-bg: rgba(235, 222, 199, 0.9);
+    --viewer-toolbar-group-bg: transparent;
     --viewer-toolbar-button-bg: rgba(255, 250, 240, 0.86);
     --viewer-toolbar-button-hover-bg: rgba(47, 133, 139, 0.15);
     --viewer-toolbar-value-text: #3d3023;
-    --viewer-toolbar-value-bg: rgba(224, 210, 185, 0.9);
+    --viewer-toolbar-value-bg: transparent;
     --viewer-search-input-bg: rgba(255, 250, 240, 0.94);
     --viewer-search-clear-bg: rgba(47, 133, 139, 0.14);
     --viewer-search-item-bg: rgba(255, 250, 240, 0.78);
@@ -2747,7 +2814,7 @@
       rgba(229, 214, 188, 0.96) 100%
     );
     border-color: #d8c7aa;
-    box-shadow: var(--viewer-frame-shadow, 0 24px 52px rgba(76, 58, 35, 0.16));
+    box-shadow: var(--viewer-frame-shadow, none);
     background: radial-gradient(135% 135% at 10% 0%, #f5ead7 0%, #eee4d2 48%, #e5d7bf 100%);
   }
 
@@ -2773,7 +2840,7 @@
       rgba(5, 15, 28, 0.96) 100%
     );
     border-color: #142b46;
-    box-shadow: var(--viewer-frame-shadow, 0 30px 76px rgba(0, 3, 10, 0.72));
+    box-shadow: var(--viewer-frame-shadow, none);
     background: radial-gradient(130% 130% at 8% 0%, #142a46 0%, #07111f 50%, #020711 100%);
   }
 
@@ -2806,6 +2873,14 @@
     inset: 0 0 0 72px;
     min-width: 0;
     min-height: 0;
+    /*
+     * The manifest manager is taller than a short embed. Without a scroller of
+     * its own everything below the fold — the manifest library, the rest of the
+     * form — was simply unreachable. `contain` keeps that scrolling inside the
+     * element instead of chaining to the host page.
+     */
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .viewer__manifest-overlay--right {
@@ -3055,6 +3130,13 @@
     width: min(calc(100% - 24px), 560px);
     margin: 0;
     padding: 6px;
+    /*
+     * This is the floating placement: the bar is absolutely positioned over the
+     * image, so it keeps its panel. Controls sitting on top of artwork need
+     * something behind them to stay legible, whatever the image happens to be.
+     * The static placements below the image drop the panel instead — see the
+     * two `position: static` overrides further down.
+     */
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 14px;
     background: rgba(9, 14, 21, 0.78);
@@ -3281,7 +3363,13 @@
     .viewer__backdrop {
       position: absolute;
       inset: 0;
-      z-index: 9;
+      /*
+       * Above the stage toolbar (z-index 12), not below it. A drawer in this
+       * regime is a modal surface with a dimmed backdrop, so the floating
+       * controls belong behind it — at z-index 9 the toolbar punched straight
+       * through the dim and sat on top of the panel's own text.
+       */
+      z-index: 13;
       border: 0;
       margin: 0;
       padding: 0;
@@ -3305,7 +3393,8 @@
       bottom: 0;
       width: min(280px, 85%);
       max-width: 85%;
-      z-index: 10;
+      /* Above the backdrop, which is itself above the floating stage controls. */
+      z-index: 14;
       transform: translateX(0);
       animation: viewer-slidein-left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
       box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
@@ -3424,7 +3513,8 @@
       padding: 6px;
       border: 0;
       border-radius: 0 0 14px 14px;
-      background: var(--viewer-panel);
+      /* Unfilled at this size too — see the desktop rule above. */
+      background: transparent;
       box-shadow: none;
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
@@ -3617,7 +3707,8 @@
       padding: 4px;
       border: 0;
       border-radius: 0 0 12px 12px;
-      background: var(--viewer-panel);
+      /* Unfilled at this size too — see the desktop rule above. */
+      background: transparent;
       box-shadow: none;
       backdrop-filter: none;
       -webkit-backdrop-filter: none;

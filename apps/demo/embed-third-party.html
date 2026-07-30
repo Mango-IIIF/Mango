@@ -162,6 +162,41 @@
         height: 400px;
       }
 
+      /*
+        Breaks out of the reading column. Half of a 46rem column is phone-sized,
+        which drops the viewer into its compact layout and wraps the control
+        rail onto extra rows. Two embeds side by side need real width, not
+        smaller controls.
+      */
+      .wide {
+        max-width: 76rem;
+        margin: 0 auto;
+        padding: 0 clamp(1rem, 4vw, 2rem);
+      }
+
+      /* Two equal embeds side by side, each from a different collection. */
+      .pair {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2rem;
+        margin: 2.5rem 0;
+      }
+
+      @media (min-width: 60rem) {
+        .pair {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          align-items: start;
+        }
+      }
+
+      .pair figure {
+        margin: 0;
+      }
+
+      .pair mango-viewer {
+        height: 460px;
+      }
+
       .callout {
         margin: 2rem 0;
         padding: 1rem 1.25rem;
@@ -170,6 +205,74 @@
         font-family: system-ui, sans-serif;
         font-size: 0.9rem;
         color: var(--muted);
+      }
+
+      /*
+        Host-page controls. These are the embedder's own buttons, not viewer
+        chrome — they drive <mango-viewer> purely through its public API.
+      */
+      .deck {
+        margin: 1rem 0 0;
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--rule);
+        background: #fff;
+        font-family: system-ui, sans-serif;
+      }
+
+      .deck__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.6rem;
+      }
+
+      .deck__row:last-child {
+        margin-bottom: 0;
+      }
+
+      .deck__label {
+        min-width: 5.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+
+      .deck button {
+        padding: 0.35rem 0.7rem;
+        border: 1px solid #c9ced8;
+        border-radius: 4px;
+        background: #f7f8fa;
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
+      .deck button:hover:not(:disabled) {
+        background: #eceff4;
+        border-color: var(--accent);
+      }
+
+      .deck button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .deck__readout {
+        margin: 0;
+        padding-top: 0.6rem;
+        border-top: 1px dashed var(--rule);
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+
+      .deck__readout code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.78rem;
+        color: var(--ink);
       }
 
       .site-footer {
@@ -191,6 +294,10 @@
         <a href="#story">Story</a>
         <a href="#sidebar">Notes</a>
         <a href="#short">Short embed</a>
+        <a href="#deep-link">Deep link</a>
+        <a href="#placement">Placement</a>
+        <a href="#narrow">Narrow</a>
+        <a href="#controlled">Controlled</a>
       </nav>
     </header>
 
@@ -302,6 +409,220 @@
           ></mango-viewer>
         </div>
 
+        <h2 id="deep-link">Opening on a chosen page and detail</h2>
+        <p>
+          An embedder often wants to point at one page, not the front cover —
+          the plate a paragraph is discussing, framed the way the author meant
+          it. That is a property of the embed, so it belongs in the
+          <code>config</code> attribute rather than in a script:
+          <code>initialCanvasIndex</code> picks the page and
+          <code>initialViewBox</code> frames a region of it, in image
+          coordinates.
+        </p>
+        <p>
+          The viewer below opens on page 7 of 36, already zoomed to a
+          <code>1900 × 1300</code> region of a <code>2411 × 3372</code> scan.
+          No host-page JavaScript runs at all — reload and it lands there
+          every time.
+        </p>
+
+        <figure>
+          <mango-viewer
+            id="deep-link-viewer"
+            mode="viewer"
+            manifest-id="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
+            config='{"initialCanvasIndex":6,"initialViewBox":{"x":250,"y":500,"w":1900,"h":1300}}'
+          ></mango-viewer>
+          <figcaption>
+            Deep-linked at embed time: page 7, framed on the upper illustration.
+          </figcaption>
+        </figure>
+
+      </article>
+
+      <section class="wide">
+        <h2 id="placement">The same recipe, other collections</h2>
+        <p>
+          Nothing above is specific to that one manifest. These two embeds come
+          from different institutions and open on different parts of their
+          canvas: the left one high up on the sitter's face, the right one well
+          past the midpoint of a tall canvas. Both are a single
+          <code>config</code> attribute, and the coordinates are in each
+          image's own pixel space — a <code>2087 × 2550</code> photograph and a
+          <code>4066 × 6684</code> one — so the same region numbers would mean
+          quite different things in each.
+        </p>
+
+        <div class="pair">
+          <figure>
+            <mango-viewer
+              id="harvard-viewer"
+              mode="viewer"
+              manifest-id="https://iiif.harvardartmuseums.org/manifests/object/299843"
+              config='{"initialViewBox":{"x":560,"y":880,"w":980,"h":800}}'
+            ></mango-viewer>
+            <figcaption>
+              Harvard Art Museums — Van Gogh, <em>Self-Portrait Dedicated to
+              Paul Gauguin</em>. Opened on <code>560, 880 · 980 × 800</code>.
+            </figcaption>
+          </figure>
+
+          <figure>
+            <mango-viewer
+              id="yale-viewer"
+              mode="viewer"
+              manifest-id="https://manifests.collections.yale.edu/ycba/obj/499"
+              config='{"initialViewBox":{"x":700,"y":3900,"w":2200,"h":1800}}'
+            ></mango-viewer>
+            <figcaption>
+              Yale Center for British Art — Hayman, <em>The Good Samaritan</em>.
+              Opened at <code>700, 3900 · 2200 × 1800</code>, well down a
+              <code>6684</code>-pixel-tall canvas.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Because the framing is expressed in image coordinates rather than
+          screen ones, each embed keeps pointing at the same part of the
+          painting whatever width the host column happens to be. Narrow the
+          window and the region stays put; only the surrounding margin changes.
+        </p>
+      </section>
+
+      <article class="wrap">
+        <h2 id="narrow">The same two settings, back in the column</h2>
+        <p>
+          Width is the variable worth watching. These two are the same recipe
+          again — different manifests, different regions — but back at reading
+          column width, so each element is about half as wide as the pair above.
+          The viewer swaps to its compact layout at this size: the control rail
+          wraps to a second row and the thumbnail strip sheds entirely.
+        </p>
+        <p>
+          The framing is unaffected by any of that. A region is a property of
+          the image, not of the surface it is drawn on, so both embeds open on
+          exactly the part they were told to — the manuscript on a painted
+          figure well down the page, the photograph on its right-hand side.
+        </p>
+
+        <div class="pair">
+          <figure>
+            <mango-viewer
+              id="bodleian-viewer"
+              mode="viewer"
+              manifest-id="https://iiif.bodleian.ox.ac.uk/iiif/manifest/e32a277e-91e2-4a6d-8ba6-cc4bad230410.json"
+              config='{"initialViewBox":{"x":900,"y":3000,"w":2600,"h":2200}}'
+            ></mango-viewer>
+            <figcaption>
+              Bodleian Library, MS. Ind. Inst. Misc. 22 — a
+              <code>5392 × 8158</code> page, opened at
+              <code>900, 3000 · 2600 × 2200</code>.
+            </figcaption>
+          </figure>
+
+          <figure>
+            <mango-viewer
+              id="cookbook-viewer"
+              mode="viewer"
+              manifest-id="https://iiif.io/api/cookbook/recipe/0005-image-service/manifest.json"
+              config='{"initialViewBox":{"x":2400,"y":900,"w":1500,"h":1300}}'
+            ></mango-viewer>
+            <figcaption>
+              IIIF Cookbook, recipe 0005 — a <code>4032 × 3024</code> landscape
+              image, opened on its right-hand side at
+              <code>2400, 900 · 1500 × 1300</code>.
+            </figcaption>
+          </figure>
+        </div>
+
+        <h2 id="controlled">Driving the viewer from the host page</h2>
+        <p>
+          The same three things are settable at any time through the element's
+          public API. The buttons below are ordinary host-page buttons — they
+          are not viewer chrome, and they reach the viewer only through the
+          methods on the element.
+        </p>
+        <p>
+          Pages move with <code>setCanvasByIndex(i)</code>, zoom with
+          <code>setZoom(percent)</code> where 100% is fit-to-view, and position
+          with <code>panTo(x, y)</code> or the fuller
+          <code>setViewBox({ x, y, w, h })</code>. The readout underneath is fed
+          by the <code>pageChange</code> and <code>zoomChange</code> events, so
+          it also tracks whatever you do with the viewer's own controls.
+        </p>
+        <p>
+          Panning is clamped to the edges of the image, which is why the
+          position buttons do most of their visible work vertically on a
+          portrait scan: at fit-to-view the whole page width is already on
+          screen, so there is nowhere sideways to go until you zoom in.
+        </p>
+
+        <figure>
+          <mango-viewer
+            id="controlled-viewer"
+            mode="viewer"
+            manifest-id="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
+          ></mango-viewer>
+
+          <div class="deck" id="control-deck">
+            <div class="deck__row">
+              <span class="deck__label">Page</span>
+              <button type="button" data-action="first">First</button>
+              <button type="button" data-action="prev">Previous</button>
+              <button type="button" data-action="next">Next</button>
+              <button type="button" data-action="page" data-index="6">
+                Go to page 7
+              </button>
+              <button type="button" data-action="last">Last</button>
+            </div>
+            <div class="deck__row">
+              <span class="deck__label">Zoom</span>
+              <button type="button" data-action="zoom" data-percent="100">
+                Fit (100%)
+              </button>
+              <button type="button" data-action="zoom" data-percent="200">
+                200%
+              </button>
+              <button type="button" data-action="zoom" data-percent="400">
+                400%
+              </button>
+              <button type="button" data-action="zoom-in">Zoom in</button>
+              <button type="button" data-action="zoom-out">Zoom out</button>
+            </div>
+            <div class="deck__row">
+              <span class="deck__label">Position</span>
+              <button type="button" data-action="pan" data-x="1205" data-y="600">
+                Head of page
+              </button>
+              <button
+                type="button"
+                data-action="pan"
+                data-x="1205"
+                data-y="1686"
+              >
+                Middle
+              </button>
+              <button type="button" data-action="pan" data-x="1205" data-y="2800">
+                Foot of page
+              </button>
+              <button type="button" data-action="detail">
+                Frame a detail
+              </button>
+            </div>
+            <p class="deck__readout">
+              Page <code id="readout-page">–</code> · zoom
+              <code id="readout-zoom">–</code> · viewBox
+              <code id="readout-viewbox">–</code>
+            </p>
+          </div>
+
+          <figcaption>
+            Every button above is host-page JavaScript calling the element's
+            public methods.
+          </figcaption>
+        </figure>
+
         <div class="callout">
           Checklist while resizing this page: nothing clipped, no horizontal page
           scrollbar, the play button and scrubber always visible, the icon rail
@@ -322,5 +643,82 @@
     </footer>
 
     <script type="module" src="dist/mango-viewer-element.js"></script>
+
+    <!--
+      Host-page control of the embed. Everything here is what a third-party
+      site would write: no imports from the library, just the element's public
+      methods and its bubbling DOM events.
+    -->
+    <script type="module">
+      const viewer = document.querySelector('#controlled-viewer');
+      const deck = document.querySelector('#control-deck');
+      const readout = {
+        page: document.querySelector('#readout-page'),
+        zoom: document.querySelector('#readout-zoom'),
+        viewBox: document.querySelector('#readout-viewbox'),
+      };
+
+      const buttons = [...deck.querySelectorAll('button')];
+      const setEnabled = (enabled) => {
+        buttons.forEach((button) => {
+          button.disabled = !enabled;
+        });
+      };
+      setEnabled(false);
+
+      const round = (value) => Math.round(value);
+      const refresh = () => {
+        const index = viewer.getCanvasIndex();
+        const count = viewer.getCanvasCount();
+        readout.page.textContent = count ? `${index + 1} of ${count}` : '–';
+        readout.zoom.textContent = `${round(viewer.getZoom())}%`;
+        const box = viewer.getViewBox();
+        readout.viewBox.textContent = box
+          ? `${round(box.x)}, ${round(box.y)} · ${round(box.w)} × ${round(box.h)}`
+          : '–';
+      };
+
+      // These events are dispatched with composed: true, so they cross the
+      // shadow boundary and can be listened for on the element itself.
+      viewer.addEventListener('pageChange', refresh);
+      viewer.addEventListener('zoomChange', refresh);
+      viewer.addEventListener('viewBoxChange', refresh);
+
+      const actions = {
+        first: () => viewer.setCanvasByIndex(0),
+        prev: () => viewer.setCanvasByIndex(Math.max(0, viewer.getCanvasIndex() - 1)),
+        next: () =>
+          viewer.setCanvasByIndex(
+            Math.min(viewer.getCanvasCount() - 1, viewer.getCanvasIndex() + 1),
+          ),
+        last: () => viewer.setCanvasByIndex(viewer.getCanvasCount() - 1),
+        page: (button) => viewer.setCanvasByIndex(Number(button.dataset.index)),
+        zoom: (button) => viewer.setZoom(Number(button.dataset.percent)),
+        'zoom-in': () => viewer.zoomIn(),
+        'zoom-out': () => viewer.zoomOut(),
+        pan: (button) => viewer.panTo(Number(button.dataset.x), Number(button.dataset.y)),
+        detail: () => viewer.setViewBox({ x: 250, y: 500, w: 1900, h: 1300 }),
+      };
+
+      deck.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        actions[button.dataset.action]?.(button);
+        // The viewer animates, so read back once the transition has settled
+        // rather than immediately after the call.
+        window.setTimeout(refresh, 400);
+      });
+
+      await customElements.whenDefined('mango-viewer');
+
+      // whenDefined only proves the class is registered; the viewer still has
+      // to resolve the manifest before the API reports anything useful.
+      const ready = window.setInterval(() => {
+        if (!viewer.getCanvasCount()) return;
+        window.clearInterval(ready);
+        setEnabled(true);
+        refresh();
+      }, 120);
+    </script>
   </body>
 </html>

@@ -87,6 +87,15 @@
   let lastViewBox: ViewBox | null = null;
   let lastZoom = 0;
   let initialViewBoxApplied = false;
+  /*
+   * Set while the configured initial viewBox is being settled onto the
+   * viewport. `keepHomeViewportCentered` must stand off during that window: at
+   * startup the container is often still being laid out, so `getHomeZoom()` is
+   * stale, the freshly framed viewport still looks "at home", and the centering
+   * pass pulls the framing back to the middle of the image — which is what
+   * config.initialViewBox and #xywh deep links used to lose.
+   */
+  let initialViewBoxSettling = false;
   let filterCss = $state('none');
   let tooltip: {
     id: string;
@@ -140,6 +149,7 @@
       !viewport ||
       centeringAtHome ||
       userDrivingViewport ||
+      initialViewBoxSettling ||
       typeof viewport.getHomeZoom !== 'function' ||
       typeof viewport.getHomeBounds !== 'function' ||
       typeof viewport.getBounds !== 'function' ||
@@ -604,6 +614,7 @@
     let resizeObserver: ResizeObserver | null = null;
     let resizeFrameId: number | null = null;
     let initialHomeFrameId: number | null = null;
+    let initialViewBoxFrameId: number | null = null;
 
     /*
      * Safari can deliver OSD's `open` before the custom element's final size has
@@ -663,6 +674,82 @@
         initialHomeFrameId = requestAnimationFrame(step);
       };
 
+      schedule();
+    };
+
+    /*
+     * The configured initial viewBox needs the same treatment as the initial
+     * home fit, for the same reason: applying it once from `open` lands it
+     * against a container that is still being laid out. Re-apply the box until
+     * OSD's container size holds still, then let the centering pass resume.
+     */
+    const settleInitialViewBox = (box: ViewBox): void => {
+      const deadline =
+        (typeof performance !== 'undefined' ? performance.now() : 0) + 1500;
+      let stableFrames = 0;
+      let lastWidth = -1;
+      let lastHeight = -1;
+
+      const finish = (): void => {
+        initialViewBoxSettling = false;
+      };
+
+      const step = (): void => {
+        initialViewBoxFrameId = null;
+        // A gesture during startup means the reader has taken over; leave the
+        // viewport where they put it rather than snapping back to the box.
+        if (!viewer || !container || userDrivingViewport) {
+          finish();
+          return;
+        }
+
+        // Apply on every pass, the first one included. A container that has
+        // not reported a size yet — hidden, detached, or simply not laid out —
+        // must not stop the configured framing from being applied at all.
+        setViewBox(box);
+        scheduleRenderedUpdate();
+
+        const now = typeof performance !== 'undefined' ? performance.now() : deadline;
+        if (now >= deadline) {
+          finish();
+          return;
+        }
+
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        if (width <= 0 || height <= 0) {
+          schedule();
+          return;
+        }
+
+        const osdSize = viewer.viewport?.getContainerSize?.();
+        const mismatched =
+          !osdSize ||
+          Math.abs(osdSize.x - width) > 1 ||
+          Math.abs(osdSize.y - height) > 1;
+        const resized = width !== lastWidth || height !== lastHeight;
+        lastWidth = width;
+        lastHeight = height;
+
+        if (mismatched || resized) {
+          viewer.forceResize?.();
+          stableFrames = 0;
+        } else {
+          stableFrames += 1;
+        }
+
+        if (stableFrames < 2) {
+          schedule();
+        } else {
+          finish();
+        }
+      };
+
+      const schedule = (): void => {
+        initialViewBoxFrameId = requestAnimationFrame(step);
+      };
+
+      initialViewBoxSettling = true;
       schedule();
     };
 
@@ -750,7 +837,7 @@
         setRotation(rotation);
         if (initialViewBox && !initialViewBoxApplied) {
           initialViewBoxApplied = true;
-          requestAnimationFrame(() => setViewBox(initialViewBox));
+          settleInitialViewBox(initialViewBox);
         } else if (!legacyOsdConfig?.preserveViewport) {
           settleInitialHome();
         }
@@ -781,7 +868,11 @@
           return;
         }
         viewer.forceResize?.();
-        if (!initialViewBox || initialViewBoxApplied) {
+        // Repairing the fit must not throw away a framing the embed asked for.
+        // Without an initial viewBox, refitting home is the right repair; with
+        // one, the settle loop above owns the viewport and goHome would just
+        // discard the configured region.
+        if (!initialViewBox) {
           viewer.viewport?.goHome?.(true);
         }
         viewer.viewport?.applyConstraints?.();
@@ -824,6 +915,11 @@
         cancelAnimationFrame(resizeFrameId);
         resizeFrameId = null;
       }
+      if (initialViewBoxFrameId !== null) {
+        cancelAnimationFrame(initialViewBoxFrameId);
+        initialViewBoxFrameId = null;
+      }
+      initialViewBoxSettling = false;
       if (initialHomeFrameId !== null) {
         cancelAnimationFrame(initialHomeFrameId);
         initialHomeFrameId = null;

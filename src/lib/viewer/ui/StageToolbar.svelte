@@ -44,6 +44,37 @@
     onsetZoomPercent = undefined,
   }: Props = $props();
   const viewportState = getContext<ViewportState | undefined>(VIEWPORT_STATE_CONTEXT_KEY);
+
+  /*
+   * On a narrow element the row is wider than the element and scrolls sideways.
+   * Left-aligned, that puts rotate under the thumb and hides Home off the right
+   * edge; centring on load lands on the page and zoom controls instead, with
+   * the outer two a short swipe away.
+   *
+   * Only re-centre when the overflow actually changes — re-running on every
+   * render would yank the row back while someone is scrolling it.
+   */
+  let toolbarElement: HTMLDivElement | null = $state(null);
+  let lastOverflow = -1;
+
+  const centreToolbarScroll = () => {
+    const element = toolbarElement;
+    if (!element) return;
+    const overflow = element.scrollWidth - element.clientWidth;
+    if (overflow === lastOverflow) return;
+    lastOverflow = overflow;
+    if (overflow > 0) element.scrollLeft = overflow / 2;
+  };
+
+  $effect(() => {
+    const element = toolbarElement;
+    if (!element) return;
+    centreToolbarScroll();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => centreToolbarScroll());
+    observer.observe(element);
+    return () => observer.disconnect();
+  });
   let effectiveSelectedCanvasIndex = $derived(
     viewportState?.selectedCanvasIndex ?? selectedCanvasIndex,
   );
@@ -184,6 +215,7 @@
     class:stage__toolbar--below={placement === 'below'}
     class="stage__toolbar"
     aria-label={$t('viewer.toolbar.label')}
+    bind:this={toolbarElement}
   >
     <div class="stage__toolbar-group stage__toolbar-group--single">
       <button
@@ -341,7 +373,6 @@
         />
       </button>
     </div>
-
   </div>
 {/if}
 
@@ -407,7 +438,8 @@
     border: 1px solid var(--viewer-toolbar-group-border, rgba(255, 255, 255, 0.1));
     border-radius: var(--stage-toolbar-radius);
     overflow: hidden;
-    background: var(--viewer-toolbar-group-bg, rgba(20, 30, 45, 0.55));
+    /* Unfilled by default; embedders can still paint it via the variable. */
+    background: var(--viewer-toolbar-group-bg, transparent);
     min-height: var(--stage-toolbar-group-height);
   }
 
@@ -464,7 +496,7 @@
     font-weight: 600;
     letter-spacing: 0.01em;
     color: var(--viewer-toolbar-value-text, rgba(230, 236, 246, 0.96));
-    background: var(--viewer-toolbar-value-bg, rgba(4, 11, 22, 0.55));
+    background: var(--viewer-toolbar-value-bg, transparent);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
@@ -655,13 +687,31 @@
    * port and the zoom controls sat clipped past the right edge. Landscape phones
    * are all wider than 380px, so they never reach this rule anyway.
    */
+  /*
+   * Narrow elements: the controls do not fit on one line — 53px short at 320px.
+   * Rather than wrap them into stacked rows, keep the single line and let it
+   * scroll sideways. The row is centred on load (see `centreToolbarScroll`), so
+   * the page and zoom controls are what you land on and the outer controls are
+   * a short swipe away in either direction.
+   */
   @container mango-viewer (max-width: 380px) {
     .stage__toolbar--below {
-      flex-wrap: wrap;
-      align-content: center;
-      row-gap: 4px;
-      overflow-x: clip;
-      overflow-y: clip;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .stage__toolbar--below::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Flex children in a scroll port must not be squeezed below their size. */
+    .stage__toolbar--below .stage__toolbar-group {
+      flex: 0 0 auto;
     }
   }
 

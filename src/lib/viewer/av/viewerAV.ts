@@ -108,6 +108,12 @@ export const createViewerAV = (state: ViewerStateStores): ViewerAV => {
   const unsubscribers: Array<() => void> = [];
   let loadToken = 0;
   let destroyed = false;
+  // While a manifest is loading the controller announces the canvas it starts
+  // on, which is always the first one. The viewer's own selection is
+  // authoritative at that point — it may come from config.initialCanvasIndex, a
+  // deep link, or an early setCanvasByIndex, none of which the controller knows
+  // about — so those announcements must not be adopted.
+  let loadingManifest = false;
 
   unsubscribers.push(
     state.config.subscribe((config) => controller.configure(avConfig(config))),
@@ -140,6 +146,7 @@ export const createViewerAV = (state: ViewerStateStores): ViewerAV => {
     }),
     controller.on('av-error', ({ detail }) => errorStore.set(detail.error)),
     controller.on('av-canvaschange', ({ detail }) => {
+      if (loadingManifest) return;
       if (get(state.selectedCanvasIndex) !== detail.canvasIndex) {
         state.selectedCanvasIndex.set(detail.canvasIndex);
       }
@@ -158,13 +165,17 @@ export const createViewerAV = (state: ViewerStateStores): ViewerAV => {
     // remain visible while the next manifest loads or if that load fails.
     manifestStore.set(undefined);
     errorStore.set(undefined);
+    // Read the viewer's canvas before the load: the controller emits its own
+    // canvas selection while loading, and reading afterwards would see that
+    // rather than what the embedder asked for.
+    const selectedCanvasIndex = get(state.selectedCanvasIndex);
+    loadingManifest = true;
     try {
       const manifest = await controller.load(input);
       includeRenderingTranscripts(manifest);
       if (destroyed || token !== loadToken) return undefined;
       manifestStore.set(manifest);
 
-      const selectedCanvasIndex = get(state.selectedCanvasIndex);
       if (
         selectedCanvasIndex > 0 &&
         selectedCanvasIndex < manifest.canvases.length &&
@@ -178,6 +189,8 @@ export const createViewerAV = (state: ViewerStateStores): ViewerAV => {
       const resolved = error instanceof Error ? error : new Error(String(error));
       errorStore.set(resolved);
       return undefined;
+    } finally {
+      loadingManifest = false;
     }
   };
 

@@ -56,6 +56,31 @@ export class Mango implements ViewerApi {
     instance?.setViewBox?.(box);
   }
 
+  getZoom(): number {
+    const instance = this.instance as { getZoom?: () => number };
+    return instance?.getZoom?.() ?? 100;
+  }
+
+  setZoom(percent: number): void {
+    const instance = this.instance as { setZoom?: (value: number) => void };
+    instance?.setZoom?.(percent);
+  }
+
+  zoomIn(): void {
+    const instance = this.instance as { zoomIn?: () => void };
+    instance?.zoomIn?.();
+  }
+
+  zoomOut(): void {
+    const instance = this.instance as { zoomOut?: () => void };
+    instance?.zoomOut?.();
+  }
+
+  panTo(x: number, y: number): void {
+    const instance = this.instance as { panTo?: (x: number, y: number) => void };
+    instance?.panTo?.(x, y);
+  }
+
   getMediaType(): MediaType | null {
     const instance = this.instance as { getMediaType?: () => MediaType | null };
     return instance?.getMediaType?.() ?? null;

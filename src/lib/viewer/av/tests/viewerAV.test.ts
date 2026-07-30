@@ -234,6 +234,33 @@ describe('viewer AV integration', () => {
     );
   });
 
+  it('keeps a canvas chosen before the load instead of the controller default', async () => {
+    // config.initialCanvasIndex, a #xywh deep link and an early
+    // setCanvasByIndex all select a canvas before any manifest exists, so the
+    // viewer -> controller subscription cannot reach the controller yet. While
+    // loading, the controller announces the canvas it came up on (the first
+    // one); adopting that announcement used to silently drag the viewer back to
+    // canvas 0 and discard the embedder's choice.
+    const state = createViewerState({ selectedCanvasIndex: 1 });
+    integration = createViewerAV(state);
+
+    await integration.load(manifest);
+
+    expect(get(state.selectedCanvasIndex)).toBe(1);
+    expect(integration.controller.canvas?.id).toBe('https://example.org/canvas/audio');
+  });
+
+  it('still follows controller-driven canvas changes after the load settles', async () => {
+    const state = createViewerState({ selectedCanvasIndex: 1 });
+    integration = createViewerAV(state);
+    await integration.load(manifest);
+
+    // Suppression is scoped to the load: ordinary AV navigation must still
+    // propagate back to the viewer afterwards.
+    integration.controller.selectCanvas(0);
+    expect(get(state.selectedCanvasIndex)).toBe(0);
+  });
+
   it('configures audio visualization defaults and allows overrides', () => {
     const state = createViewerState();
     integration = createViewerAV(state);

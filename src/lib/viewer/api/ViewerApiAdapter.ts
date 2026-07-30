@@ -35,6 +35,21 @@ export class ViewerApiAdapter {
   setViewBox(box: ViewBox): void {
     this.getTarget()?.setViewBox?.(box);
   }
+  getZoom(): number {
+    return this.getTarget()?.getZoom?.() ?? 100;
+  }
+  setZoom(percent: number): void {
+    this.getTarget()?.setZoom?.(percent);
+  }
+  zoomIn(): void {
+    this.getTarget()?.zoomIn?.();
+  }
+  zoomOut(): void {
+    this.getTarget()?.zoomOut?.();
+  }
+  panTo(x: number, y: number): void {
+    this.getTarget()?.panTo?.(x, y);
+  }
   getMediaType(): MediaType | null {
     return this.getTarget()?.getMediaType?.() ?? null;
   }

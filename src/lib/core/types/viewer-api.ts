@@ -8,6 +8,14 @@ import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
 export type ViewerApi = {
   getViewBox: () => ViewBox | null;
   setViewBox: (box: ViewBox) => void;
+  /** Current zoom as a percentage of the fit-to-view baseline (100 = fit). */
+  getZoom?: () => number;
+  /** Zoom to a percentage of the fit-to-view baseline. Clamped to 10–2000. */
+  setZoom?: (percent: number) => void;
+  zoomIn?: () => void;
+  zoomOut?: () => void;
+  /** Recentre on an image-space point, keeping the current zoom. */
+  panTo?: (x: number, y: number) => void;
   getMediaType: () => MediaType | null;
   getState: () => ViewerStateSnapshot | null;
   getCanvasIndex: () => number;

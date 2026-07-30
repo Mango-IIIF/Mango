@@ -545,33 +545,51 @@ test.describe("iPhone SE touch rails", () => {
     const home = host.getByRole("button", { name: "Home" });
 
     /*
-     * This used to assert the row scrolled sideways at this width. It now wraps
-     * instead: scrolling put the trailing controls behind a scroll port, and
-     * tapping a partly visible one made the browser scroll it into view, which
-     * slid the whole bar under the user's finger. So assert the goal — every
-     * control on screen — rather than the mechanism, and allow either layout.
+     * The layout here has been round-tripped. It scrolled, then wrapped —
+     * scrolling put trailing controls behind a scroll port, and tapping a
+     * partly visible one made the browser scroll it into view, sliding the bar
+     * under the finger. Wrapping fixed that but stacked the controls into rows
+     * that read poorly, so it is back to a single scrolling row, centred on
+     * load.
+     *
+     * That trade is deliberate: at 320px the row is ~53px wider than the
+     * element, so a control at each end sits partly out of view until scrolled.
+     * What must stay true is that the row is one line, that every control can
+     * be reached, and that none of them is clipped away with no way to get to
+     * it — so assert reachability through the scroll port rather than demanding
+     * everything be on screen at once.
      */
     const state = await toolbar.evaluate((element) => {
       const buttons = [...element.querySelectorAll("button")];
-      const box = element.getBoundingClientRect();
+      const rows = new Set(
+        buttons
+          .filter((button) => button.getBoundingClientRect().width > 0)
+          .map((button) => Math.round(button.getBoundingClientRect().y)),
+      );
+      const overflow = element.scrollWidth - element.clientWidth;
       return {
-        overflows: element.scrollWidth > element.clientWidth + 1,
         buttonCount: buttons.length,
-        outside: buttons.filter((button) => {
+        rowCount: rows.size,
+        overflow,
+        // Centred on load, so the hidden part is shared between both ends.
+        centred: overflow <= 0 || Math.abs(element.scrollLeft - overflow / 2) <= 2,
+        // Every control lies inside the scrollable extent, i.e. reachable.
+        reachable: buttons.every((button) => {
           const rect = button.getBoundingClientRect();
-          return (
-            rect.width > 0 &&
-            (rect.x < box.x - 1 ||
-              rect.x + rect.width > box.x + box.width + 1 ||
-              rect.y < box.y - 1 ||
-              rect.y + rect.height > box.y + box.height + 1)
-          );
-        }).length,
+          if (rect.width === 0) return true;
+          const box = element.getBoundingClientRect();
+          const left = rect.x - box.x + element.scrollLeft;
+          return left >= -1 && left + rect.width <= element.scrollWidth + 1;
+        }),
       };
     });
     expect(state.buttonCount).toBeGreaterThan(4);
-    expect(state.outside).toBe(0);
-    expect(state.overflows).toBe(false);
+    expect(state.rowCount).toBe(1);
+    expect(state.centred).toBe(true);
+    expect(state.reachable).toBe(true);
+
+    // Home is the last control, so it proves the far end of the row is usable.
+    await home.scrollIntoViewIfNeeded();
     await expect(home).toBeVisible();
     await expectContained(home, toolbar);
   });

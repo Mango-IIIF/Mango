@@ -123,9 +123,16 @@ describe('renderer pass-through config', () => {
       true,
     );
 
+    // Re-opening must not start the initial framing over again. The settle
+    // loop re-applies the same region until the container size stops moving,
+    // so the guarantee is about the region applied, not the call count: every
+    // fit must be the configured box, never a home fit or a stale rect.
     handlers.get('open')?.();
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    expect(viewport.fitBounds).toHaveBeenCalledTimes(1);
+    for (const [rect, immediately] of viewport.fitBounds.mock.calls) {
+      expect(rect).toEqual({ x: 10, y: 20, width: 300, height: 200 });
+      expect(immediately).toBe(true);
+    }
   });
 
   it('applies Model Viewer attributes', () => {

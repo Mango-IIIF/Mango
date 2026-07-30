@@ -544,6 +544,33 @@
     filter: none;
   }
 
+  /*
+   * A short embed has nothing useful to give the library once the form has
+   * taken its natural height: the `1fr` remainder collapses to zero, and
+   * because every row in this stack clips, the manifest list ended up with
+   * hundreds of pixels of content inside no height at all and no way to reach
+   * it. Below this height stop dividing the space — let the rows take their
+   * natural size and scroll the manager as a single column instead. Keyed to
+   * the same height rung the viewer uses to shed its thumbnail strip.
+   */
+  @container mango-viewer (max-height: 560px) {
+    .manifest-manager {
+      grid-template-rows: auto auto;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .manifest-manager__content,
+    .manifest-manager__library {
+      grid-template-rows: auto auto;
+      overflow: visible;
+    }
+
+    .manifest-manager__list {
+      overflow-y: visible;
+    }
+  }
+
   @media (max-width: 820px) {
     .manifest-manager__content {
       padding: 20px;

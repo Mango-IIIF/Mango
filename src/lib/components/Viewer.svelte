@@ -71,6 +71,26 @@
     api.setViewBox(box);
   }
 
+  export function getZoom(): number {
+    return api.getZoom();
+  }
+
+  export function setZoom(percent: number): void {
+    api.setZoom(percent);
+  }
+
+  export function zoomIn(): void {
+    api.zoomIn();
+  }
+
+  export function zoomOut(): void {
+    api.zoomOut();
+  }
+
+  export function panTo(x: number, y: number): void {
+    api.panTo(x, y);
+  }
+
   export function getMediaType() {
     return api.getMediaType();
   }
