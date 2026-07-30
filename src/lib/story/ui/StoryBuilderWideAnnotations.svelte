@@ -68,7 +68,7 @@
   .story-wide-annotations__header strong { display:flex; gap:7px; align-items:center; }
   .story-wide-annotations__header span { min-width:18px; height:18px; display:grid; place-items:center; border-radius:9px; background:rgba(255,255,255,.08); color:var(--viewer-muted, #9aa6b2); font-size:9px; }
   .story-wide-annotations__items { display:flex; gap:8px; overflow-x:auto; overflow-y:hidden; }
-  .story-wide-annotations__item { flex:0 0 min(250px,72vw); display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; padding:3px; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.08)); border-radius:10px; background:rgba(5,10,16,.2); }
+  .story-wide-annotations__item { flex:0 0 min(250px,72cqw); display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; padding:3px; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.08)); border-radius:10px; background:rgba(5,10,16,.2); }
   .story-wide-annotations__item--selected { border-color:var(--accent, #e07a3f); background:color-mix(in srgb, var(--accent, #e07a3f) 9%, transparent); }
   .story-wide-annotations__select { min-width:0; display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:9px; padding:7px; border:0; border-radius:7px; background:transparent; color:inherit; text-align:left; cursor:pointer; }
   .story-wide-annotations__select:hover, .story-wide-annotations__select:focus-visible { background:rgba(255,255,255,.06); outline:none; }

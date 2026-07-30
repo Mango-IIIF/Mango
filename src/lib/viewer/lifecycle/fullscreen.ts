@@ -8,11 +8,27 @@ export type ViewerFullscreenController = {
   attach: () => () => void;
 };
 
+export const isIPadLikeDevice = (
+  navigatorLike: Pick<
+    Navigator,
+    "userAgent" | "platform" | "maxTouchPoints"
+  > = navigator,
+): boolean =>
+  /iPad/i.test(navigatorLike.userAgent) ||
+  (navigatorLike.platform === "MacIntel" && navigatorLike.maxTouchPoints > 1);
+
 const allowsTouchInteraction = (target: EventTarget): boolean =>
   target instanceof Element &&
   (target.classList.contains("gallery__list") ||
     target.classList.contains("panel-stack--left") ||
     target.classList.contains("stage-gallery-view") ||
+    // These horizontal rails live inside nested shadow/layout boundaries on
+    // iOS. The fullscreen drag guard must not cancel their touchmove events;
+    // doing so makes overflow-x look correct while finger scrolling is dead.
+    target.classList.contains("story-shell__footer") ||
+    target.classList.contains("stage__toolbar") ||
+    target.classList.contains("viewer__control-rail") ||
+    target.classList.contains("viewer__dock") ||
     target.classList.contains("osd") ||
     target.classList.contains("osd__viewport") ||
     target.classList.contains("openseadragon-canvas"));
@@ -21,10 +37,12 @@ export const createViewerFullscreenController = ({
   getRoot,
   getShadowHost,
   onChange,
+  preferFallback = () => false,
 }: {
   getRoot: () => HTMLElement | null;
   getShadowHost: () => Element | null;
   onChange: (state: ViewerFullscreenState) => void;
+  preferFallback?: () => boolean;
 }): ViewerFullscreenController => {
   let fallback = false;
   let restoreDocumentOverflow: (() => void) | null = null;
@@ -76,6 +94,13 @@ export const createViewerFullscreenController = ({
     }
     const root = getRoot();
     if (!root) return;
+    // iPad Safari adds its own large top-left close control in native
+    // fullscreen. Mango already provides a labelled close button, so use the
+    // fixed-position fallback there to avoid duplicate fullscreen chrome.
+    if (preferFallback()) {
+      setFallback(true);
+      return;
+    }
     if (root.requestFullscreen && document.fullscreenEnabled !== false) {
       try {
         await root.requestFullscreen({ navigationUI: "hide" });

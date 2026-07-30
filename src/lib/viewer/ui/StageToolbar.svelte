@@ -552,8 +552,12 @@
          tap-friendly. overflow-x below remains only as a safety net for
          extremely narrow viewports. */
       --stage-toolbar-gap: clamp(2px, 1cqw, 4px);
-      --stage-toolbar-button-width: clamp(30px, 9.4cqw, 40px);
-      --stage-toolbar-button-height: 40px;
+      /* Height carries the tap target to the 44px guideline, which costs
+         nothing here — width is the constrained axis. Widening the buttons too
+         pushed the row past the frame on a 375px phone and hid controls behind
+         a scroll, so width still tracks the container. */
+      --stage-toolbar-button-width: clamp(30px, 9.4cqw, 44px);
+      --stage-toolbar-button-height: 44px;
       --stage-toolbar-group-height: calc(var(--stage-toolbar-button-height) + 2px);
       --stage-toolbar-value-width: clamp(44px, 15cqw, 58px);
       --stage-toolbar-zoom-width: clamp(40px, 14cqw, 54px);
@@ -563,17 +567,16 @@
       --stage-toolbar-value-padding: clamp(3px, 1.2cqw, 6px);
       --stage-toolbar-icon-size: clamp(15px, 5.2cqw, 18px);
       --stage-toolbar-radius: clamp(8px, 2.8cqw, 10px);
-      width: min(100% + 24px, 100vw - 28px);
-      max-width: min(100% + 24px, 100vw - 28px);
+      width: 100%;
+      max-width: 100%;
       position: relative;
       left: 50%;
       transform: translateX(-50%);
       margin-inline: auto;
       padding: 0;
-      /* Keep the controls centred; `safe` falls back to start-alignment only if
-         they ever overflow, so the row never gets its leading controls clipped
-         beyond the scroll origin on ultra-narrow screens. */
-      justify-content: safe center;
+      /* This row fits at common phone widths. Ultra-narrow embeds switch to
+         start alignment below so every control remains reachable by scrolling. */
+      justify-content: center;
       overflow-x: auto;
       overflow-y: hidden;
       overscroll-behavior-x: contain;
@@ -627,6 +630,51 @@
       height: var(--stage-toolbar-icon-size);
     }
 
+  }
+
+  @container (max-width: 300px) {
+    .stage__toolbar--below {
+      justify-content: flex-start;
+    }
+  }
+
+  /*
+   * Narrow and tall (portrait phones under ~380px): the row cannot fit on one
+   * line — 53px short at 320px — and a scroll port here caused a visible jump.
+   * Tapping the rightmost control (Home) focused a partly off-screen button, so
+   * the browser scrolled it into view and the whole bar appeared to slide left.
+   * Wrapping keeps every control on screen with nothing to scroll, so the bar
+   * never moves under the finger. Short elements keep the single row (they are
+   * wide enough for it) because height is the scarce resource there.
+   */
+  /*
+   * Width alone decides this: under ~380px the row physically cannot fit on one
+   * line (it is ~53px short at 320px). It was previously also gated on
+   * `min-height: 501px`, and real iOS Safari lands just under that once its
+   * chrome is subtracted — so on an actual iPhone the row fell back to a scroll
+   * port and the zoom controls sat clipped past the right edge. Landscape phones
+   * are all wider than 380px, so they never reach this rule anyway.
+   */
+  @container mango-viewer (max-width: 380px) {
+    .stage__toolbar--below {
+      flex-wrap: wrap;
+      align-content: center;
+      row-gap: 4px;
+      overflow-x: clip;
+      overflow-y: clip;
+    }
+  }
+
+  /*
+   * Very short elements: give the height back to the image. The row stays above
+   * the 38px comfortable-tap floor and only applies where vertical space is the
+   * binding constraint.
+   */
+  @container mango-viewer (max-height: 360px) {
+    .stage__toolbar--below {
+      --stage-toolbar-button-height: 38px;
+      --stage-toolbar-group-height: 40px;
+    }
   }
 
 </style>

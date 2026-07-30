@@ -43,7 +43,10 @@
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
   import { ChevronsRight, Expand, ImageOff, Shrink } from '@lucide/svelte';
   import { setViewerContext } from '../../viewer/context';
-  import { createViewerFullscreenController } from '../../viewer/lifecycle/fullscreen';
+  import {
+    createViewerFullscreenController,
+    isIPadLikeDevice,
+  } from '../../viewer/lifecycle/fullscreen';
   import { observeResponsiveLayout } from '../../viewer/lifecycle/responsiveLayout';
   import type { Component } from 'svelte';
   import { findFirstManifestId } from '../../viewer/iiif/collectionNavigation';
@@ -79,6 +82,7 @@
   // Portrait tablets need the same single-column treatment as phones. Keeping
   // the desktop rail at iPad widths leaves a narrow stage inside a tall host.
   const MOBILE_LAYOUT_WIDTH = 1024;
+  const SHORT_LAYOUT_HEIGHT = 500;
 
   const matchesInitialMobileLayout = (): boolean =>
     typeof window !== 'undefined' &&
@@ -247,6 +251,7 @@
   setContext(VIEWPORT_STATE_CONTEXT_KEY, viewportState);
 
   let isMobileLayout = $state(initialMobileLayout);
+  let isShortLayout = $state(false);
   let sidebarCollapsed = $state(false);
   let sidebarEnabled = $derived(normalisedConfig.sidebar?.enabled !== false);
   let sidebarPosition = $derived(normalisedConfig.sidebar?.position ?? 'left');
@@ -663,6 +668,7 @@
   const fullscreenController = createViewerFullscreenController({
     getRoot: () => viewerRoot,
     getShadowHost,
+    preferFallback: () => typeof navigator !== 'undefined' && isIPadLikeDevice(navigator),
     onChange: ({ active, fallback }) => {
       isViewerFullscreen = active;
       isViewerFullscreenFallback = fallback;
@@ -699,6 +705,10 @@
         isMobileLayout = value;
       },
       onEnterMobile: enterMobileLayout,
+      blockBreakpoint: SHORT_LAYOUT_HEIGHT,
+      onBlockChange: (value) => {
+        isShortLayout = value;
+      },
     });
     revealViewerControls();
     return () => {
@@ -1541,6 +1551,7 @@
   class="viewer"
   class:viewer--story-viewer={isStoryViewer}
   class:viewer--story-builder={isStoryBuilder}
+  class:viewer--annotation-editor={isAnnotationEditor}
   class:viewer--fullscreen-fallback={isViewerFullscreenFallback}
   data-theme={viewerSettingsTheme}
   aria-live="polite"
@@ -1623,7 +1634,7 @@
         <ViewerDock
           compact={true}
           variant="sidebar"
-          mobile={isMobileLayout}
+          mobile={isMobileLayout || isShortLayout}
           iconOnly={leftVisibleEffective || showManifestManager}
           galleryActive={showThumbnailsEffectiveStory}
           contentsTab={contentsPanelTab}
@@ -2455,7 +2466,7 @@
     gap: 16px;
     box-sizing: border-box;
     height: 100%;
-    max-height: 100vh;
+    max-height: none;
     min-height: 0;
     overflow: hidden;
     padding: 20px;
@@ -2463,9 +2474,26 @@
     background: radial-gradient(120% 120% at 10% 0%, #1d2632 0%, #111720 55%, #0b0f14 100%);
     color: var(--viewer-text);
     font-family: sans-serif;
+    /* Shadow DOM blocks selector leakage, but inherited text properties still
+       cross the host boundary. Keep host typography and bidi choices from
+       silently rewriting viewer labels or rearranging time values. */
+    font-style: normal;
+    font-variant: normal;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: normal;
+    word-spacing: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+    white-space: normal;
+    text-align: left;
+    text-indent: 0;
+    text-transform: none;
+    direction: var(--mango-viewer-direction, ltr);
     border: 1px solid #1c2530;
     box-shadow: var(--viewer-frame-shadow, 0 28px 70px rgba(0, 0, 0, 0.55));
-    container-type: inline-size;
+    container-type: size;
     container-name: mango-viewer;
     position: relative;
 
@@ -2479,7 +2507,7 @@
     min-height: 0;
     border-radius: 0;
     overscroll-behavior: none;
-    touch-action: none;
+    touch-action: auto;
   }
 
   .viewer.viewer--story-builder {
@@ -2569,7 +2597,7 @@
     min-height: 0;
     border-radius: 0;
     overscroll-behavior: none;
-    touch-action: none;
+    touch-action: auto;
   }
 
   .viewer.viewer--fullscreen-fallback {
@@ -2585,7 +2613,7 @@
     border: 0;
     border-radius: 0;
     overscroll-behavior: none;
-    touch-action: none;
+    touch-action: auto;
   }
 
   .viewer--story-viewer:fullscreen,
@@ -2752,7 +2780,15 @@
   .viewer__grid {
     position: relative;
     display: grid;
-    grid-template-columns: 1fr;
+    /*
+     * `minmax(0, 1fr)`, never a bare `1fr`. A bare `1fr` is `minmax(auto, 1fr)`,
+     * so the track floors at the content's min-content width — and OSD's <canvas>
+     * carries an intrinsic width. On iOS that let the canvas pin the column at
+     * its own size: a 343px-wide element ended up with a 541px stage, so the
+     * image was laid out in a box wider than the viewer and appeared shoved right
+     * and cropped. Zero-floored tracks let the stage shrink to the element.
+     */
+    grid-template-columns: minmax(0, 1fr);
     row-gap: 18px;
     column-gap: 18px;
     align-items: stretch;
@@ -2964,19 +3000,34 @@
     gap: 12px;
     height: 100%;
     min-height: 0;
+    /* Same reason as the grid tracks above: the canvas inside must never be able
+       to push this column wider than the element that contains it. */
+    min-width: 0;
     overflow-x: hidden;
     overflow-y: auto;
     align-content: start;
   }
 
+  /*
+   * Vertical priority ladder for the plain viewer.
+   *
+   * The image is the product, so it owns the flexible row and keeps a floor it
+   * can never be squeezed below. Everything else is `auto` and sheds in a fixed
+   * order as the element gets shorter (see the max-height container queries):
+   * the thumbnail strip goes first (the dock's Gallery button still reaches it),
+   * then the toolbar compacts. Without the floor the gallery's intrinsic
+   * min-content height wins and the image collapses to 0px.
+   */
   .stage--viewer {
     gap: 12px;
+    grid-template-rows: minmax(min(160px, 100%), 1fr) auto;
   }
 
   .stage__primary {
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     min-height: 0;
+    min-width: 0;
   }
 
   .stage__viewer-frame {
@@ -3061,12 +3112,25 @@
   }
 
   .stage--story-builder {
-    grid-template-rows: minmax(300px, 1fr) auto;
+    /* Preserve a useful viewer while allowing content-aware authoring panels
+       to grow below it. If both no longer fit, this column becomes the scroll
+       owner instead of clipping the bottom of the editor. */
+    grid-template-rows: minmax(clamp(220px, 42cqh, 420px), 1fr) auto;
     align-content: stretch;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .stage--with-bottom-toolbar {
+  /*
+   * The story builder opts out: it owns its own rows and scrolling (above), and
+   * this rule sits later in the sheet at equal specificity, so without the
+   * exclusion it silently reinstated `overflow: hidden` and clipped the bottom
+   * of the narration editor.
+   */
+  .stage--with-bottom-toolbar:not(.stage--story-builder) {
     grid-template-rows: minmax(0, 1fr);
     grid-auto-rows: auto;
     overflow: hidden;
@@ -3109,24 +3173,14 @@
     display: none;
   }
 
-  @media (max-width: 1024px) {
-    .viewer {
-      min-height: 0;
-      max-height: none;
-      height: auto;
-      overflow: visible;
-      padding: 12px;
-      border-radius: 16px;
-    }
-  }
-
   @container mango-viewer (max-width: 1024px) {
     .viewer {
       min-height: 0;
-      max-height: none;
-      height: auto;
-      overflow: visible;
+      max-height: 100%;
+      height: 100%;
+      overflow: hidden;
       padding: 12px;
+      border-radius: 16px;
       gap: 10px;
     }
 
@@ -3136,9 +3190,9 @@
     }
 
     .viewer.viewer--story-builder {
-      height: min(900px, 100dvh);
-      min-height: 680px;
-      max-height: 100dvh;
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
       overflow: hidden;
     }
 
@@ -3151,13 +3205,16 @@
     }
 
     .viewer__grid {
-      grid-template-columns: 1fr;
+      /* minmax(0, …): a bare 1fr floors the track at the content min-content
+         width, and the mobile dock rail is `max-content` (~541px), which dragged
+         the stage wider than the element on iOS. */
+      grid-template-columns: minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr) auto;
       row-gap: 8px;
-      height: auto;
-      max-height: none;
+      height: 100%;
+      max-height: 100%;
       min-height: 0;
-      overflow: visible;
+      overflow: hidden;
     }
 
     .viewer--story-builder .viewer__grid {
@@ -3173,7 +3230,10 @@
       grid-row: 1;
       grid-column: 1 / -1;
       height: 100%;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
     }
 
     .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
@@ -3202,7 +3262,10 @@
     .viewer__grid.viewer__grid--right,
     .viewer__grid.viewer__grid--controls.viewer__grid--right,
     .viewer__grid.viewer__grid--controls {
-      grid-template-columns: 1fr;
+      /* minmax(0, …): a bare 1fr floors the track at the content min-content
+         width, and the mobile dock rail is `max-content` (~541px), which dragged
+         the stage wider than the element on iOS. */
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .viewer__grid.viewer__grid--controls.viewer__grid--left > .stage,
@@ -3270,15 +3333,27 @@
       grid-row: 2;
       grid-column: 1;
 
-      width: 100%;
+      width: fit-content;
+      max-width: 100%;
       height: auto;
       box-sizing: border-box;
-      padding: 3px 6px max(3px, env(safe-area-inset-bottom));
-      border: 1px solid var(--viewer-panel-border);
-      border-radius: 12px;
+      justify-self: center;
+      padding: 0;
+      border: 0;
+      border-radius: 9px;
       background: var(--viewer-panel);
       display: grid;
       align-items: center;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      touch-action: pan-x;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .viewer__control-rail::-webkit-scrollbar {
+      display: none;
     }
 
     .viewer__grid > .stage {
@@ -3322,9 +3397,9 @@
     }
 
     .stage {
-      height: auto;
+      height: 100%;
       min-height: 0;
-      overflow: visible;
+      overflow: hidden;
     }
 
     .stage--story {
@@ -3359,6 +3434,18 @@
       transition: none;
     }
 
+    /*
+     * The reveal animation belongs to the floating desktop toolbar, where
+     * `translate(-50%, …)` is what centres an absolutely positioned bar. Here the
+     * row is a static, full-width bar, so the revealed state must drop the
+     * translate as well: without this, any tap that reveals the controls (for
+     * example pressing Home) slid the whole bar left by half its width.
+     */
+    .stage__viewer-frame--controls-visible :global(.stage__toolbar--below),
+    .stage__viewer-frame :global(.stage__toolbar--below:focus-within) {
+      transform: none;
+    }
+
     .stage--viewer {
       --mango-viewer-av-player-aspect-ratio: 16 / 9;
       --mango-viewer-audio-art-aspect-ratio: 16 / 7;
@@ -3367,19 +3454,63 @@
   }
 
   @container mango-viewer (max-width: 700px) {
+    /*
+     * The annotation editor carries a wide "Export Annotations" action. The top
+     * row is nowrap with non-shrinking actions, so on a phone the title collapsed
+     * to nothing, the Mango brand overflowed it, and the orange button — painted
+     * later — sat on top of the brand. Give the actions their own line instead.
+     */
+    .viewer--annotation-editor .viewer__top-row {
+      flex-wrap: wrap;
+      row-gap: 8px;
+    }
+
+    .viewer--annotation-editor .viewer__top-actions {
+      flex: 1 0 100%;
+      justify-content: flex-start;
+    }
+
     .viewer.viewer--story-builder {
-      height: auto;
-      min-height: 1080px;
-      max-height: none;
-      overflow: visible;
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
+      overflow: hidden;
+    }
+
+    .viewer--story-builder .viewer__top-actions {
+      min-width: 0;
+      justify-content: flex-start;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .viewer--story-builder .viewer__top-actions::-webkit-scrollbar {
+      display: none;
+    }
+
+    .viewer--story-builder .viewer__fullscreen-btn {
+      width: 40px;
+      min-width: 40px;
+      height: 40px;
+      padding: 0;
+      flex: 0 0 40px;
+    }
+
+    .viewer--story-builder .viewer__fullscreen-btn span {
+      display: none;
     }
 
     .viewer--story-builder .viewer__grid {
       grid-template-columns: 1fr !important;
       grid-template-rows: 360px 280px 440px;
-      height: auto;
-      max-height: none;
-      overflow: visible;
+      height: 100%;
+      max-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
     }
 
     .viewer--story-builder .viewer__grid > .stage {
@@ -3398,21 +3529,174 @@
     }
   }
 
-  @media (min-width: 701px) and (max-width: 1024px) {
+  /*
+   * Rung 1 of the vertical ladder (see `.stage--viewer`). Below this height the
+   * element cannot show both a usable image and the thumbnail strip, so the
+   * strip sheds first — the dock's Gallery button still opens the full gallery
+   * view, so nothing becomes unreachable. Keyed on the element's own height, so
+   * a short embed on a tall page compacts the same way a landscape phone does.
+   */
+  @container mango-viewer (max-height: 560px) {
+    .stage--viewer > :global(.gallery) {
+      display: none;
+    }
+
+    .stage--viewer {
+      grid-template-rows: minmax(min(120px, 100%), 1fr);
+    }
+  }
+
+  @container mango-viewer (max-height: 500px) {
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__grid {
+      position: relative;
+      grid-template-columns: minmax(0, 1fr) !important;
+      grid-template-rows: minmax(0, 1fr) auto;
+      row-gap: 6px;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__grid
+      > .stage {
+      grid-column: 1;
+      grid-row: 1;
+      height: 100%;
+      min-height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__control-rail {
+      grid-column: 1;
+      grid-row: 2;
+      width: fit-content;
+      max-width: 100%;
+      height: 44px;
+      justify-self: center;
+      padding: 0;
+      border: 0;
+      border-radius: 9px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      touch-action: pan-x;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .stage--viewer .stage__viewer-frame {
+      /*
+       * Rung 2: media keeps a smaller floor and the toolbar stays put. The
+       * floor is capped at a share of the element (`26cqh`) so that on a box
+       * too small for both, the image yields rather than pushing the toolbar
+       * out of the frame's hidden overflow.
+       */
+      grid-template-rows: minmax(min(96px, 26cqh), 1fr) auto;
+      overflow: hidden;
+    }
+
+    .stage--viewer .stage__viewer-frame :global(.stage__media) {
+      min-height: 0;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .stage--viewer .stage__viewer-frame :global(.stage__toolbar--below) {
+      position: static;
+      width: 100%;
+      margin: 0;
+      padding: 4px;
+      border: 0;
+      border-radius: 0 0 12px 12px;
+      background: var(--viewer-panel);
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+      transition: none;
+    }
+
+    /* As above: a static bar must not inherit the floating bar's centring
+       translate when the controls are revealed. */
+    .stage--viewer
+      .stage__viewer-frame--controls-visible
+      :global(.stage__toolbar--below),
+    .stage--viewer
+      .stage__viewer-frame
+      :global(.stage__toolbar--below:focus-within) {
+      transform: none;
+    }
+  }
+
+  /*
+   * Short but wide: stand the icon rail up beside the image instead of stacking
+   * it underneath. On a landscape phone that hands ~50px of scarce height back
+   * to the image and spends width that was empty anyway. ViewerDock owns the
+   * dock's own column flow under the same query.
+   */
+  @container mango-viewer (max-height: 500px) and (min-width: 560px) {
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__grid {
+      grid-template-columns: minmax(0, 1fr) max-content !important;
+      grid-template-rows: minmax(0, 1fr);
+      column-gap: 8px;
+      row-gap: 0;
+    }
+
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__grid
+      > .stage {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .viewer:not(.viewer--story-viewer):not(.viewer--story-builder):not(
+        .viewer--annotation-editor
+      )
+      .viewer__control-rail {
+      grid-column: 2;
+      grid-row: 1;
+      width: max-content;
+      /* Floor matches the dock's fixed 44px icon button, so the column can
+         never collapse even if the intrinsic width resolves small. */
+      min-width: 44px;
+      max-width: 40%;
+      height: 100%;
+      justify-self: end;
+      align-self: stretch;
+      overflow-x: clip;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+    }
+  }
+
+  /*
+   * Element-relative, not viewport-relative: these two rules used to be
+   * `@media (max-width: 1024px)`, which is wrong for an embedded element whose
+   * width is decided by the host page rather than the window.
+   */
+  @container mango-viewer (max-width: 1024px) {
     .viewer.viewer--story-builder {
       height: 100%;
       min-height: 0;
       max-height: 100%;
       overflow: hidden;
-    }
-  }
-
-  @media (max-width: 700px) {
-    .viewer.viewer--story-builder {
-      height: auto;
-      min-height: 1080px;
-      max-height: none;
-      overflow: visible;
     }
   }
 

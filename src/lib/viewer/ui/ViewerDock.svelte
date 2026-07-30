@@ -725,26 +725,25 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%;
+    width: max-content;
     max-width: 100%;
     box-sizing: border-box;
-    padding: 2px 3px 5px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--viewer-panel-border) transparent;
+    padding: 0;
+    /*
+     * Deliberately NOT a scroll container. This row is sized to its content and
+     * the control rail around it owns the scrolling. When this was
+     * `overflow-x: auto` + `overscroll-behavior-x: contain` it became a scroller
+     * with zero scrollable extent, so a finger swipe landed here, found nothing
+     * to scroll, and `contain` stopped the gesture reaching the rail — the extra
+     * dock icons were simply unreachable by touch.
+     */
+    overflow: clip;
+    scrollbar-width: none;
     touch-action: pan-x;
-    -webkit-overflow-scrolling: touch;
   }
 
   .viewer-mobile-nav::-webkit-scrollbar {
-    height: 4px;
-  }
-
-  .viewer-mobile-nav::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: var(--viewer-panel-border);
+    display: none;
   }
 
   .viewer-mobile-nav__group {
@@ -757,6 +756,44 @@
   .viewer-mobile-nav__group + .viewer-mobile-nav__group {
     padding-left: 10px;
     border-left: 1px solid var(--viewer-panel-border);
+  }
+
+  /*
+   * Short but wide (a phone or tablet in landscape, a letterbox embed): height
+   * is the scarce resource and width is going spare, so the icon rail stands up
+   * as a column beside the image instead of eating another 44px band under it.
+   * ViewerLayout places the rail in the grid; this owns how the dock flows.
+   */
+  @container mango-viewer (max-height: 500px) and (min-width: 560px) {
+    .viewer-mobile-nav {
+      flex-direction: column;
+      /* `max-content`, not `auto`: a scroll container's min-content width is 0,
+         so `auto` collapsed the column to its scrollbar gutter. */
+      width: max-content;
+      max-height: 100%;
+      /*
+       * `clip`, not `hidden`: `hidden` would make this a scroll container in the
+       * inline axis, whose intrinsic width contribution is zero — the rail
+       * around it then collapsed to a scrollbar gutter and the icons spilled
+       * outside the viewer. `clip` still hides overflow without scrolling.
+       */
+      overflow-x: clip;
+      overflow-y: auto;
+      overscroll-behavior-x: auto;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+    }
+
+    .viewer-mobile-nav__group {
+      flex-direction: column;
+    }
+
+    .viewer-mobile-nav__group + .viewer-mobile-nav__group {
+      padding-top: 8px;
+      padding-left: 0;
+      border-top: 1px solid var(--viewer-panel-border);
+      border-left: 0;
+    }
   }
 
   .viewer-mobile-nav__button {
@@ -1125,7 +1162,7 @@
     color: var(--viewer-dock-active-chip-text, #0b0f14);
   }
 
-  @media (max-width: 900px) {
+  @container mango-viewer (max-width: 900px) {
     .viewer__dock {
       top: auto;
       bottom: 16px;

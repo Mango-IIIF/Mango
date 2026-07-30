@@ -78,6 +78,9 @@ describe('Viewer config', () => {
       await tick();
     }
 
+    await vi.waitFor(() => {
+      expect(target.querySelector('.panel--metadata')).toBeTruthy();
+    });
     const panel = target.querySelector('.panel--metadata');
     expect(panel).toBeTruthy();
     expect(toggle?.getAttribute('aria-pressed')).toBe('true');

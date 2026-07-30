@@ -6,13 +6,13 @@
   import AnnotationsPanel from './AnnotationsPanel.svelte';
   import ToolsPanel from './ToolsPanel.svelte';
   import SearchPanel from './SearchPanel.svelte';
-  import MetadataPanel from './MetadataPanel.svelte';
   import ContentsPanel from './ContentsPanel.svelte';
   import SettingsPanel from './SettingsPanel.svelte';
   import LayersPanel from './LayersPanel.svelte';
   import ComparePanel from './ComparePanel.svelte';
   import CollectionPanel from './CollectionPanel.svelte';
   import type { CollectionSelection } from '@mango-iiif/collection-navigator';
+  import type { Component } from 'svelte';
 
   interface Props {
     visible?: boolean;
@@ -54,6 +54,22 @@
 
   const viewer = getViewerContext();
   const mediaType = viewer.derived.mediaType;
+  let MetadataPanel = $state<Component<{
+    redesigned?: boolean;
+    onclose?: () => void;
+  }> | null>(null);
+  let metadataPanelLoad: Promise<void> | null = null;
+
+  const loadMetadataPanel = (): Promise<void> => {
+    if (MetadataPanel) return Promise.resolve();
+    if (!metadataPanelLoad) {
+      metadataPanelLoad = import('./MetadataPanel.svelte').then((module) => {
+        MetadataPanel = module.default;
+      });
+    }
+    return metadataPanelLoad;
+  };
+
   let loaded = $state({
     collection: false,
     contents: false,
@@ -74,7 +90,10 @@
     if (showAnnotations) loaded.annotations = true;
     if (showTools) loaded.tools = true;
     if (showSearch) loaded.search = true;
-    if (showMetadata) loaded.metadata = true;
+    if (showMetadata) {
+      loaded.metadata = true;
+      void loadMetadataPanel();
+    }
     if (showLayers) loaded.layers = true;
   });
   import MangoFooterBrand from '../../story/ui/MangoFooterBrand.svelte';
@@ -149,10 +168,12 @@
 
   {#if loaded.metadata}
     <div hidden={!showMetadata}>
-      <MetadataPanel
-        {redesigned}
-        onclose={() => onpanelToggle?.('metadata', false)}
-      />
+      {#if MetadataPanel}
+        <MetadataPanel
+          {redesigned}
+          onclose={() => onpanelToggle?.('metadata', false)}
+        />
+      {/if}
     </div>
   {/if}
 

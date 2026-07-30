@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Third-party embed harness — Mango</title>
+    <!--
+      This page deliberately does NOT use demo.css. It imitates an ordinary
+      third-party site: its own reset, its own type scale, a sticky header, a
+      centred article column and a footer. Nothing here is tuned to help the
+      viewer — the point is to see how <mango-viewer> behaves when the host page
+      owns the layout and the element is just one block in a flow of content.
+    -->
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      :root {
+        --ink: #16181d;
+        --muted: #5c6472;
+        --rule: #e3e6ec;
+        --accent: #7a3e12;
+        --page: #fbfaf8;
+        --column: 46rem;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--ink);
+        font-family: Iowan Old Style, Palatino, Georgia, serif;
+        font-size: 18px;
+        line-height: 1.65;
+      }
+
+      /* A sticky masthead, because embedders have them and they fight z-index. */
+      .masthead {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
+        border-bottom: 1px solid var(--rule);
+        background: rgba(251, 250, 248, 0.92);
+        backdrop-filter: blur(8px);
+        font-family: system-ui, sans-serif;
+      }
+
+      .masthead__brand {
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+      }
+
+      .masthead__nav {
+        display: flex;
+        gap: clamp(0.5rem, 2vw, 1.25rem);
+        font-size: 0.85rem;
+      }
+
+      .masthead__nav a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      .wrap {
+        max-width: var(--column);
+        margin: 0 auto;
+        padding: 0 clamp(1rem, 4vw, 2rem);
+      }
+
+      h1 {
+        margin: 2.5rem 0 0.5rem;
+        font-size: clamp(2rem, 6vw, 3.25rem);
+        line-height: 1.1;
+      }
+
+      h2 {
+        margin: 3rem 0 0.75rem;
+        font-size: clamp(1.35rem, 3.2vw, 1.9rem);
+        line-height: 1.2;
+      }
+
+      .byline {
+        margin: 0 0 2rem;
+        color: var(--muted);
+        font-family: system-ui, sans-serif;
+        font-size: 0.9rem;
+      }
+
+      p {
+        margin: 0 0 1.25rem;
+      }
+
+      figcaption {
+        margin-top: 0.6rem;
+        color: var(--muted);
+        font-family: system-ui, sans-serif;
+        font-size: 0.85rem;
+      }
+
+      figure {
+        margin: 2rem 0 2.5rem;
+      }
+
+      /* Full-bleed section: wider than the reading column. */
+      .bleed {
+        margin: 3rem 0;
+        padding: 2rem clamp(1rem, 4vw, 2.5rem);
+        background: #11151b;
+        color: #eef2f7;
+      }
+
+      .bleed h2 {
+        margin-top: 0;
+        color: #fff;
+      }
+
+      .bleed p {
+        color: #c3ccd8;
+      }
+
+      .bleed__inner {
+        max-width: 78rem;
+        margin: 0 auto;
+      }
+
+      /* A two-column arrangement with the viewer in a narrow aside. */
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2rem;
+        margin: 2.5rem 0;
+      }
+
+      @media (min-width: 60rem) {
+        .split {
+          grid-template-columns: minmax(0, 1fr) 22rem;
+          align-items: start;
+        }
+      }
+
+      .aside-note {
+        font-family: system-ui, sans-serif;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      /* Deliberate short embed: the case that used to clip the controls. */
+      .short-embed mango-viewer {
+        height: 400px;
+      }
+
+      .callout {
+        margin: 2rem 0;
+        padding: 1rem 1.25rem;
+        border-left: 3px solid var(--accent);
+        background: #fff;
+        font-family: system-ui, sans-serif;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .site-footer {
+        margin-top: 4rem;
+        padding: 2.5rem clamp(1rem, 4vw, 2.5rem) 3rem;
+        border-top: 1px solid var(--rule);
+        background: #f2f0ec;
+        font-family: system-ui, sans-serif;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="masthead__brand">The Rivergate Review</div>
+      <nav class="masthead__nav" aria-label="Site">
+        <a href="#collection">Collection</a>
+        <a href="#story">Story</a>
+        <a href="#sidebar">Notes</a>
+        <a href="#short">Short embed</a>
+      </nav>
+    </header>
+
+    <main>
+      <article class="wrap">
+        <h1>Reading the Dort in close-up</h1>
+        <p class="byline">By the editors · 12 minute read · Long-form</p>
+
+        <p>
+          Everything on this page is host-page furniture: a sticky masthead, a
+          centred reading column, serif body copy and a footer. The viewers below
+          are dropped into that flow exactly as a third-party site would embed
+          them, with no styling help from the demo stylesheet.
+        </p>
+        <p>
+          Scroll slowly. Watch what happens to the controls when the element is
+          narrower than the window, when it is shorter than its content wants to
+          be, and when the page itself is doing the scrolling.
+        </p>
+
+        <h2 id="collection">The manuscript, in the reading column</h2>
+        <p>
+          The first embed sits in the article column, so its width comes from the
+          host page rather than the viewport. Container queries mean it should
+          adopt its compact layout here even on a wide monitor.
+        </p>
+
+        <figure>
+          <mango-viewer
+            mode="viewer"
+            manifest-id="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
+          ></mango-viewer>
+          <figcaption>
+            Wunder der Vererbung, Lux-Lesebogen 103. Embedded at the article
+            column width.
+          </figcaption>
+        </figure>
+
+        <p>
+          Text continues after the viewer. The element must not bleed outside its
+          figure, must not introduce horizontal page scrolling, and must not
+          steal the page's scroll when a finger crosses it.
+        </p>
+        <p>
+          A second paragraph, so there is something to scroll past on a phone
+          before the next section arrives.
+        </p>
+      </article>
+
+      <section class="bleed" id="story">
+        <div class="bleed__inner">
+          <h2>The story viewer, full-bleed on a dark section</h2>
+          <p>
+            Here the host section is wider than the reading column and sets its
+            own dark background and light text. Inherited colour and font choices
+            should not leak into the viewer's own chrome.
+          </p>
+          <mango-viewer
+            mode="story-viewer"
+            story-url="test-story/demo.json"
+            config='{"showThumbnails":false,"showSearch":false,"showMetadata":false,"showAnnotations":false,"showTools":false}'
+          ></mango-viewer>
+          <p style="margin-top: 1.5rem">
+            Content below the story viewer, to confirm the page keeps scrolling
+            normally once the pointer leaves the element.
+          </p>
+        </div>
+      </section>
+
+      <article class="wrap">
+        <h2 id="sidebar">A viewer in a narrow aside</h2>
+        <div class="split">
+          <div>
+            <p>
+              The column beside this text is 22rem wide on desktop and collapses
+              to full width on smaller screens. The viewer inside it is a good
+              test of element-relative breakpoints: the window may be 1600px wide
+              while the element is barely 350px.
+            </p>
+            <p>
+              If the layout responded to the viewport instead of the element, the
+              aside would show a desktop layout crammed into a phone-sized box.
+            </p>
+            <p>
+              It should instead look like the phone layout, with the compact
+              control rail and a persistent toolbar.
+            </p>
+          </div>
+          <aside>
+            <mango-viewer
+              mode="viewer"
+              manifest-id="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
+            ></mango-viewer>
+            <p class="aside-note">Same component, 22rem of space.</p>
+          </aside>
+        </div>
+
+        <h2 id="short">A deliberately short embed</h2>
+        <p>
+          Some hosts pin a height. This one sets
+          <code>mango-viewer { height: 400px }</code>, which used to squeeze the
+          image to nothing and clip the transport controls.
+        </p>
+        <div class="short-embed">
+          <mango-viewer
+            mode="story-viewer"
+            story-url="test-story/demo.json"
+            config='{"showThumbnails":false,"showSearch":false,"showMetadata":false,"showAnnotations":false,"showTools":false}'
+          ></mango-viewer>
+        </div>
+
+        <div class="callout">
+          Checklist while resizing this page: nothing clipped, no horizontal page
+          scrollbar, the play button and scrubber always visible, the icon rail
+          swipeable where it overflows, and fullscreen covering the sticky
+          masthead rather than sitting under it.
+        </div>
+
+        <p>
+          A final run of body copy so that both viewers have content above and
+          below them at every screen size, which is how they will actually be
+          met by readers.
+        </p>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <div>The Rivergate Review — a fictional host site for embed testing.</div>
+    </footer>
+
+    <script type="module" src="dist/mango-viewer-element.js"></script>
+  </body>
+</html>

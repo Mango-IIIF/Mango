@@ -113,9 +113,9 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: min(720px, 90vw);
-    height: min(640px, 85vh);
-    max-height: 90vh;
+    width: min(720px, 90cqw);
+    height: min(640px, 85cqh);
+    max-height: 90cqh;
     background: #0f1722;
     color: #e8edf4;
     border-radius: 14px;

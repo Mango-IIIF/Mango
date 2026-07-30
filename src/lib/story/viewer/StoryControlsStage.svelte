@@ -118,11 +118,24 @@
     Boolean(src) && !brokenThumbnailUrls.has(src ?? '');
 
   let footerRef = $state<HTMLElement | null>(null);
+  let metadataExpanded = $state(false);
+  let expandedChapterIndex = $state(-1);
+  // Keep the full text reachable on narrow phones as well as tablets. Around
+  // 96 characters is where the two-line phone summary commonly starts to
+  // clamp, while the control remains unobtrusive for genuinely short copy.
+  const hasExpandableMetadata = () => chapterDescription.trim().length > 96;
+
+  $effect(() => {
+    if (expandedChapterIndex !== currentChapterIndex) {
+      expandedChapterIndex = currentChapterIndex;
+      metadataExpanded = false;
+    }
+  });
 
   $effect(() => {
     const activeIndex = safeActiveIndex();
     if (!footerRef) return;
-    
+
     // Select the active chapter element (the buttons are children of the footer)
     const activeBtn = footerRef.children[activeIndex] as HTMLElement | undefined;
     if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
@@ -135,7 +148,11 @@
   });
 </script>
 
-<div class="story-shell" data-testid="story-controls-stage">
+<div
+  class="story-shell"
+  class:story-shell--metadata-expanded={metadataExpanded}
+  data-testid="story-controls-stage"
+>
   <div class="story-shell__body">
     <section class="story-shell__stage-wrap">
       <div class="story-shell__stage-frame">
@@ -146,23 +163,38 @@
     </section>
 
     <aside class="story-shell__sidebar">
-      <p class="story-shell__chapter-label">
-        {#if loading}
-          <span class="story-shell__loading">
-            <span class="story-shell__spinner"></span>
-            Loading chapter...
-          </span>
-        {:else}
-          Chapter {safeActiveIndex() + 1} of {chapterCount()}
-        {/if}
-      </p>
-      <h2 class="story-shell__title">{chapterTitle}</h2>
-      <div class="story-shell__accent" aria-hidden="true"></div>
-      {#if chapterDescription}
-        <p class="story-shell__description">
-          {chapterDescription}
+      <div class="story-shell__metadata">
+        <p class="story-shell__chapter-label">
+          {#if loading}
+            <span class="story-shell__loading">
+              <span class="story-shell__spinner"></span>
+              Loading chapter...
+            </span>
+          {:else}
+            Chapter {safeActiveIndex() + 1} of {chapterCount()}
+          {/if}
         </p>
-      {/if}
+        <h2 class="story-shell__title">{chapterTitle}</h2>
+        <div class="story-shell__accent" aria-hidden="true"></div>
+        {#if chapterDescription}
+          <p
+            class="story-shell__description"
+            class:story-shell__description--expanded={metadataExpanded}
+          >
+            {chapterDescription}
+          </p>
+          {#if hasExpandableMetadata()}
+            <button
+              type="button"
+              class="story-shell__metadata-toggle"
+              aria-expanded={metadataExpanded}
+              onclick={() => (metadataExpanded = !metadataExpanded)}
+            >
+              {metadataExpanded ? 'Show less' : 'Show more'}
+            </button>
+          {/if}
+        {/if}
+      </div>
 
       <div class="story-shell__playback">
         <div class="story-shell__transport">
@@ -322,7 +354,7 @@
 
   .story-shell__title {
     margin: 10px 0 10px;
-    font-size: clamp(32px, 2.6vw, 58px);
+    font-size: clamp(32px, 2.6cqw, 58px);
     line-height: 1.03;
     color: var(--story-text);
     font-family: Georgia, 'Times New Roman', serif;
@@ -339,14 +371,57 @@
   .story-shell__description {
     margin: 0 0 18px;
     color: var(--story-muted);
-    font-size: clamp(15px, 1.15vw, 20px);
+    font-size: clamp(15px, 1.15cqw, 20px);
     line-height: 1.55;
+  }
+
+  .story-shell__metadata-toggle {
+    margin: 2px 0 0;
+    padding: 6px 0;
+    border: 0;
+    background: transparent;
+    color: #be8dff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .story-shell__metadata-toggle:hover,
+  .story-shell__metadata-toggle:focus-visible {
+    color: #d8bcff;
+    text-decoration: underline;
   }
 
   .story-shell__playback {
     margin-top: auto;
     padding-top: 24px;
     flex-shrink: 0;
+  }
+
+  /*
+   * Wide layout only (the narrow and short layouts restack the sidebar below).
+   * The sidebar is two regions, not one scrolling column: chapter text that may
+   * be any length, and transport controls that must always be on screen. Giving
+   * the text its own scroll area stops a long title or description from pushing
+   * the play button past the bottom of the panel.
+   */
+  @container mango-viewer (min-width: 1025px) {
+    .story-shell__sidebar {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+
+    .story-shell__metadata {
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+    }
+
+    .story-shell__playback {
+      margin-top: 0;
+    }
   }
 
   .story-shell__transport {
@@ -428,6 +503,9 @@
     text-align: right;
     font-size: 12px;
     color: #d0dcf0;
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
   }
 
   .story-shell__stage-wrap {
@@ -478,13 +556,22 @@
   .story-shell__footer {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: clamp(68px, 6vw, 82px);
+    grid-auto-columns: clamp(68px, 6cqw, 82px);
     gap: 10px;
     overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
     align-items: start;
     min-height: 0;
     padding: 12px 12px 10px;
     border-top: 0;
+  }
+
+  .story-shell__footer::-webkit-scrollbar {
+    display: none;
   }
 
   .story-shell__chapter {
@@ -583,34 +670,105 @@
 
   @container mango-viewer (max-width: 1024px) {
     .story-shell {
-      grid-template-rows: auto auto auto;
-      overflow-y: auto;
+      grid-template-rows: minmax(0, 1fr) auto auto;
+      overflow: hidden;
     }
 
     .story-shell__body {
       grid-template-columns: 1fr;
-      height: max-content;
-      overflow: visible;
+      grid-template-rows: minmax(220px, 1fr) auto;
+      height: 100%;
+      overflow: hidden;
     }
 
     .story-shell__stage-wrap {
       flex: none;
-      min-height: clamp(240px, 56cqw, 520px);
+      min-height: 0;
     }
 
     .story-shell__sidebar {
-      overflow: visible;
+      overflow: hidden;
       border-top: 1px solid var(--story-line);
       border-left: 0;
     }
 
+    .story-shell__playback {
+      order: -1;
+    }
+
     .story-shell__title {
-      font-size: clamp(32px, 8vw, 48px);
+      font-size: clamp(32px, 8cqw, 48px);
     }
 
     .story-shell__description {
-      font-size: clamp(15px, 3.2vw, 20px);
+      font-size: clamp(15px, 3.2cqw, 20px);
     }
+  }
+
+  @container mango-viewer (min-width: 701px) and (max-width: 1024px) {
+    .story-shell__sidebar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      padding: 10px 16px 12px;
+    }
+
+    .story-shell__playback {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: auto;
+      min-width: 0;
+      width: 100%;
+      margin-top: 0;
+      padding: 0 0 8px;
+      border-bottom: 1px solid var(--story-line);
+    }
+
+    .story-shell__metadata {
+      grid-column: 1;
+      grid-row: 2;
+      min-width: 0;
+      padding-top: 10px;
+    }
+
+    .story-shell__title {
+      margin: 4px 0 6px;
+      font-size: clamp(30px, 4cqw, 36px);
+    }
+
+    .story-shell__accent {
+      margin-bottom: 8px;
+    }
+
+    .story-shell__description {
+      display: -webkit-box;
+      margin: 0;
+      overflow: hidden;
+      font-size: clamp(14px, 1.8cqw, 18px);
+      line-height: 1.4;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+    }
+
+    .story-shell__play-btn {
+      width: 58px;
+      height: 58px;
+    }
+
+    .story-shell__transport-btn {
+      width: 42px;
+      height: 42px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 8px;
+    }
+
+    .story-shell__footer {
+      grid-auto-columns: 72px;
+      padding: 8px 10px 6px;
+    }
+
   }
 
   @container mango-viewer (max-width: 700px) {
@@ -626,7 +784,50 @@
     }
 
     .story-shell__stage-wrap {
-      min-height: clamp(220px, 60cqw, 420px);
+      min-height: 0;
+    }
+
+    .story-shell__body {
+      grid-template-rows: minmax(180px, 1fr) auto;
+    }
+
+    .story-shell__sidebar {
+      padding: 10px 12px;
+    }
+
+    .story-shell__chapter-label {
+      font-size: 15px;
+    }
+
+    .story-shell__title {
+      margin: 4px 0 6px;
+      font-size: clamp(27px, 8cqw, 34px);
+    }
+
+    .story-shell__accent {
+      height: 3px;
+      margin-bottom: 7px;
+    }
+
+    .story-shell__description {
+      display: -webkit-box;
+      margin: 0 0 7px;
+      overflow: hidden;
+      font-size: 14px;
+      line-height: 1.35;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .story-shell__playback {
+      order: -1;
+      margin-top: 0;
+      padding: 3px 0 9px;
+      border-bottom: 1px solid var(--story-line);
+    }
+
+    .story-shell__metadata {
+      padding-top: 8px;
     }
 
     .story-shell__transport {
@@ -636,6 +837,307 @@
     .story-shell__play-btn {
       width: 58px;
       height: 58px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 8px;
+    }
+  }
+
+  @container mango-viewer (max-width: 1024px) {
+    .story-shell__description--expanded {
+      display: block;
+      overflow: visible;
+      -webkit-line-clamp: unset;
+    }
+
+    .story-shell--metadata-expanded {
+      grid-template-rows: auto auto auto;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .story-shell--metadata-expanded .story-shell__body {
+      grid-template-rows: minmax(260px, 45cqw) auto;
+      height: max-content;
+      min-height: max-content;
+      overflow: visible;
+    }
+
+    .story-shell--metadata-expanded .story-shell__sidebar {
+      overflow: visible;
+    }
+  }
+
+  /*
+   * Short AND wide enough to afford a sidebar. The side-by-side layout reserves
+   * `minmax(280px, 38%)` for the text column, so on a 358px-wide short embed it
+   * left the image about 78px of width — a sliver in a mostly empty column.
+   * Narrow short elements keep the stacked layout, where the image gets the full
+   * width. 560px matches the threshold the IIIF rail uses for the same reason.
+   */
+  @container mango-viewer (max-height: 500px) and (min-width: 560px) {
+    .story-shell__body {
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 38%);
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .story-shell__stage-wrap {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .story-shell__sidebar {
+      grid-column: 2;
+      grid-row: 1;
+      display: flex;
+      padding: 8px 12px;
+      border-top: 0;
+      border-left: 1px solid var(--story-line);
+    }
+
+    .story-shell__chapter-label {
+      font-size: 14px;
+    }
+
+    .story-shell__title {
+      display: -webkit-box;
+      margin: 2px 0 4px;
+      overflow: hidden;
+      font-size: 26px;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .story-shell__accent {
+      height: 3px;
+      margin-bottom: 5px;
+    }
+
+    .story-shell__description {
+      display: -webkit-box;
+      margin: 0;
+      overflow: hidden;
+      font-size: 13px;
+      line-height: 1.3;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+    }
+
+    .story-shell__description--expanded {
+      display: block;
+      overflow: visible;
+      -webkit-line-clamp: unset;
+    }
+
+    .story-shell__playback {
+      grid-column: auto;
+      grid-row: auto;
+      align-self: auto;
+      order: initial;
+      margin-top: auto;
+      padding-top: 2px;
+      border-bottom: 0;
+    }
+
+    .story-shell__transport-btn {
+      width: 38px;
+      height: 38px;
+    }
+
+    .story-shell__play-btn {
+      width: 50px;
+      height: 50px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 5px;
+    }
+
+    .story-shell__footer {
+      grid-auto-columns: 56px;
+      gap: 8px;
+      padding: 6px 10px 4px;
+    }
+
+    .story-shell__chapter-thumb {
+      min-height: 56px;
+      border-radius: 10px;
+    }
+
+    .story-shell__chapter-number {
+      margin-top: 3px;
+      font-size: 12px;
+    }
+
+    .story-shell__dot {
+      margin-top: 2px;
+    }
+  }
+
+  /*
+   * Narrow and not very tall — a phone in portrait whose element lands under
+   * ~560px, which is the common case on iOS once Safari's chrome is taken off
+   * the viewport. Everything compacts, but the chapter rail STAYS: this band was
+   * previously shedding it, which is why real phones showed a story with no
+   * chapters. Compacting the rail and the type buys back the ~40px that was
+   * clipping the chapter title here.
+   */
+  @container mango-viewer (max-height: 560px) and (max-width: 559px) {
+    .story-shell__body {
+      grid-template-rows: minmax(120px, 1fr) auto;
+    }
+
+    .story-shell__sidebar {
+      padding: 6px 12px 8px;
+    }
+
+    .story-shell__title {
+      margin: 1px 0 3px;
+      font-size: 22px;
+      -webkit-line-clamp: 1;
+    }
+
+    .story-shell__accent {
+      margin-bottom: 4px;
+    }
+
+    /* One line of summary at these heights; "Show more" still opens the rest. */
+    .story-shell__description {
+      margin: 0 0 4px;
+      -webkit-line-clamp: 1;
+    }
+
+    .story-shell__transport-btn {
+      width: 36px;
+      height: 36px;
+    }
+
+    .story-shell__play-btn {
+      width: 46px;
+      height: 46px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 4px;
+    }
+
+    .story-shell__footer {
+      grid-auto-columns: 46px;
+      gap: 6px;
+      padding: 4px 10px 3px;
+    }
+
+    .story-shell__chapter-thumb {
+      min-height: 46px;
+      border-radius: 8px;
+    }
+
+    .story-shell__chapter-number {
+      margin-top: 2px;
+      font-size: 11px;
+    }
+
+    .story-shell__dot {
+      width: 5px;
+      height: 5px;
+      margin-top: 2px;
+    }
+  }
+
+  /*
+   * Narrow AND genuinely short — e.g. a 400px-tall embed on a phone. Below this
+   * there is no room for image + chapter text + transport + a rail, so the rail
+   * is the thing that sheds; prev/next still move between chapters. Without it
+   * the sidebar was squeezed to ~28px and the title, play button and scrubber
+   * were all clipped by it with no way to scroll to them.
+   */
+  @container mango-viewer (max-height: 430px) and (max-width: 559px) {
+    .story-shell {
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .story-shell__footer {
+      display: none;
+    }
+
+    .story-shell__body {
+      grid-template-rows: minmax(110px, 1fr) auto;
+    }
+
+    .story-shell__transport-btn {
+      width: 34px;
+      height: 34px;
+    }
+
+    .story-shell__play-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 3px;
+    }
+  }
+
+  /*
+   * Very short elements (a phone in landscape with browser chrome, or a short
+   * embed). One more rung down: the transport and the chapter rail shrink so
+   * the play button and scrubber stay inside the sidebar instead of being
+   * clipped by its hidden overflow.
+   */
+  @container mango-viewer (max-height: 360px) {
+    .story-shell__sidebar {
+      padding: 6px 10px;
+    }
+
+    .story-shell__chapter-label {
+      font-size: 13px;
+    }
+
+    .story-shell__title {
+      margin: 1px 0 3px;
+      font-size: 22px;
+      -webkit-line-clamp: 1;
+    }
+
+    .story-shell__accent {
+      margin-bottom: 4px;
+    }
+
+    .story-shell__transport-btn {
+      width: 34px;
+      height: 34px;
+    }
+
+    .story-shell__play-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .story-shell__timeline {
+      margin-top: 3px;
+    }
+
+    .story-shell__timeline-text {
+      font-size: 11px;
+    }
+
+    .story-shell__footer {
+      grid-auto-columns: 46px;
+      gap: 6px;
+      padding: 4px 8px 3px;
+    }
+
+    .story-shell__chapter-thumb {
+      min-height: 46px;
+      border-radius: 8px;
+    }
+
+    .story-shell__chapter-number {
+      margin-top: 2px;
+      font-size: 11px;
     }
   }
 </style>

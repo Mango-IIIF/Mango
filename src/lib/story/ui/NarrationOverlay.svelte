@@ -332,8 +332,8 @@
   .narration-panel__panel {
     position: relative;
     pointer-events: auto;
-    width: clamp(360px, 42vw, 500px);
-    max-width: 92vw;
+    width: clamp(360px, 42cqw, 500px);
+    max-width: 92cqw;
     height: 100%;
     min-height: 100%;
     align-self: stretch;

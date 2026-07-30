@@ -97,6 +97,93 @@
   } | null = $state(null);
   let fallbackText = $derived($t('viewer.panels.annotations.fallback'));
   let renderFrameId: number | null = null;
+  let centeringAtHome = false;
+  /*
+   * Set while the pointer is driving the viewport (drag, wheel, pinch). OSD
+   * already keeps an axis centred when the content is narrower than the surface
+   * (`visibilityRatio: 1` + `constrainDuringPan: true`), so re-centering from
+   * inside `pan`/`zoom` handlers only fought the gesture: OSD moved the image on
+   * one frame and `panTo(..., true)` yanked it back on the next, which is the
+   * stutter users felt. Re-centering still runs for open, resize and
+   * animation-finish — every case where nobody is holding the image.
+   */
+  let userDrivingViewport = false;
+  let userIdleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const markUserViewportActivity = (): void => {
+    userDrivingViewport = true;
+    if (userIdleTimer !== undefined) clearTimeout(userIdleTimer);
+    // Wheel and pinch have no explicit end event; fall back to a short idle.
+    userIdleTimer = setTimeout(() => {
+      userIdleTimer = undefined;
+      userDrivingViewport = false;
+      keepHomeViewportCentered();
+    }, 220);
+  };
+
+  const endUserViewportActivity = (): void => {
+    if (userIdleTimer !== undefined) clearTimeout(userIdleTimer);
+    userIdleTimer = undefined;
+    if (!userDrivingViewport) return;
+    userDrivingViewport = false;
+    /*
+     * Settle explicitly when the gesture ends. Relying on `animation-finish`
+     * was not enough: an immediate pan can end without an animation to finish,
+     * which left the image resting off-centre on an axis that should be centred.
+     */
+    keepHomeViewportCentered();
+  };
+
+  const keepHomeViewportCentered = (): void => {
+    const viewport = viewer?.viewport;
+    if (
+      !viewport ||
+      centeringAtHome ||
+      userDrivingViewport ||
+      typeof viewport.getHomeZoom !== 'function' ||
+      typeof viewport.getHomeBounds !== 'function' ||
+      typeof viewport.getBounds !== 'function' ||
+      typeof viewport.getCenter !== 'function' ||
+      typeof viewport.panTo !== 'function'
+    ) {
+      return;
+    }
+    const zoom = viewport.getZoom(true);
+    const homeZoom = viewport.getHomeZoom();
+    if (!Number.isFinite(zoom) || !Number.isFinite(homeZoom)) {
+      return;
+    }
+    const center = viewport.getCenter(true);
+    const homeCenter = viewport.getHomeBounds().getCenter();
+    const visibleBounds = viewport.getBounds(true);
+    const contentBounds = viewer?.world?.getHomeBounds?.();
+    const atHome = zoom <= homeZoom * 1.001;
+    const contentFitsHorizontally = Boolean(
+      contentBounds && contentBounds.width <= visibleBounds.width * 1.001,
+    );
+    const contentFitsVertically = Boolean(
+      contentBounds && contentBounds.height <= visibleBounds.height * 1.001,
+    );
+    if (!atHome && !contentFitsHorizontally && !contentFitsVertically) return;
+
+    // Constrain each axis independently. A tall portrait at modest zoom may
+    // be vertically pannable while still narrower than the surface; forcing
+    // both axes home would make legitimate reading/navigation impossible.
+    const targetCenter = {
+      x: atHome || contentFitsHorizontally ? homeCenter.x : center.x,
+      y: atHome || contentFitsVertically ? homeCenter.y : center.y,
+    };
+    if (
+      Math.abs(center.x - targetCenter.x) < 0.000001 &&
+      Math.abs(center.y - targetCenter.y) < 0.000001
+    ) {
+      return;
+    }
+    centeringAtHome = true;
+    viewport.panTo(targetCenter, true);
+    viewport.applyConstraints?.();
+    centeringAtHome = false;
+  };
 
   const buildFilterCss = (filters: ImageFilters): string => {
     const parts: string[] = [];
@@ -516,6 +603,68 @@
     let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
     let resizeFrameId: number | null = null;
+    let initialHomeFrameId: number | null = null;
+
+    /*
+     * Safari can deliver OSD's `open` before the custom element's final size has
+     * propagated, so the image fits against a stale container and ends up parked
+     * off-centre — cropped against one edge with dead space on the other.
+     *
+     * A fixed number of frames was not enough: on a real device the size can
+     * still be settling several frames later (fonts, image decode, the host
+     * page's own layout). Instead, keep refitting until OSD's own container size
+     * agrees with the DOM element's and has stopped changing for two consecutive
+     * frames, bounded by a deadline so this can never spin. Any real user
+     * gesture ends it immediately — the viewport is theirs from that point.
+     */
+    const settleInitialHome = (): void => {
+      const deadline =
+        (typeof performance !== 'undefined' ? performance.now() : 0) + 1500;
+      let stableFrames = 0;
+      let lastWidth = -1;
+      let lastHeight = -1;
+
+      const step = (): void => {
+        initialHomeFrameId = null;
+        if (!viewer || !container || userDrivingViewport) return;
+
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        if (width <= 0 || height <= 0) {
+          schedule();
+          return;
+        }
+
+        const osdSize = viewer.viewport?.getContainerSize?.();
+        const mismatched =
+          !osdSize ||
+          Math.abs(osdSize.x - width) > 1 ||
+          Math.abs(osdSize.y - height) > 1;
+        const resized = width !== lastWidth || height !== lastHeight;
+        lastWidth = width;
+        lastHeight = height;
+
+        if (mismatched || resized) {
+          viewer.forceResize?.();
+          viewer.viewport?.goHome?.(true);
+          viewer.viewport?.applyConstraints?.();
+          keepHomeViewportCentered();
+          scheduleRenderedUpdate();
+          stableFrames = 0;
+        } else {
+          stableFrames += 1;
+        }
+
+        const now = typeof performance !== 'undefined' ? performance.now() : deadline;
+        if (stableFrames < 2 && now < deadline) schedule();
+      };
+
+      const schedule = (): void => {
+        initialHomeFrameId = requestAnimationFrame(step);
+      };
+
+      schedule();
+    };
 
     const init = async () => {
       if (!container) return;
@@ -543,8 +692,11 @@
         minZoomImageRatio: 0.1,
         // Ensure consistent viewport behavior across devices
         homeFillsViewer: false,
-        visibilityRatio: 0.5,
-        constrainDuringPan: false,
+        // Do not let a casual one-finger drag leave a small portrait image
+        // parked against one edge with a large empty gutter. Zoomed images
+        // remain pannable, while the viewport is constrained to real content.
+        visibilityRatio: 1,
+        constrainDuringPan: true,
         gestureSettingsMouse: {
           clickToZoom: legacyOsdConfig?.clickToZoomEnabled ?? false,
         },
@@ -572,6 +724,7 @@
           resizeFrameId = requestAnimationFrame(() => {
             resizeFrameId = null;
             viewer?.forceResize();
+            keepHomeViewportCentered();
             viewer?.viewport?.applyConstraints?.();
             scheduleRenderedUpdate();
           });
@@ -580,6 +733,7 @@
       }
 
       const handleViewportChange = () => {
+        keepHomeViewportCentered();
         emitViewBox();
         scheduleRenderedUpdate();
       };
@@ -597,6 +751,8 @@
         if (initialViewBox && !initialViewBoxApplied) {
           initialViewBoxApplied = true;
           requestAnimationFrame(() => setViewBox(initialViewBox));
+        } else if (!legacyOsdConfig?.preserveViewport) {
+          settleInitialHome();
         }
         handleViewportChange();
       });
@@ -605,6 +761,39 @@
       viewer.addHandler('animation', handleAnimation);
       viewer.addHandler('animation-finish', handleViewportChange);
       viewer.addHandler('resize', handleViewportChange);
+      /*
+       * Backstop for the same Safari problem the settle loop covers: if OSD's
+       * container size still disagrees with the element once tiles are actually
+       * on screen — and no resize event ever fires to correct it — repair the
+       * fit then. One shot, and never while a gesture is in progress.
+       */
+      viewer.addHandler('fully-loaded-change', function verifyFit() {
+        if (!viewer || !container || userDrivingViewport) return;
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        if (width <= 0 || height <= 0) return;
+        const osdSize = viewer.viewport?.getContainerSize?.();
+        if (
+          osdSize &&
+          Math.abs(osdSize.x - width) <= 1 &&
+          Math.abs(osdSize.y - height) <= 1
+        ) {
+          return;
+        }
+        viewer.forceResize?.();
+        if (!initialViewBox || initialViewBoxApplied) {
+          viewer.viewport?.goHome?.(true);
+        }
+        viewer.viewport?.applyConstraints?.();
+        scheduleRenderedUpdate();
+      });
+      // Gesture bookkeeping for `userDrivingViewport` — see its declaration.
+      viewer.addHandler('canvas-press', markUserViewportActivity);
+      viewer.addHandler('canvas-drag', markUserViewportActivity);
+      viewer.addHandler('canvas-scroll', markUserViewportActivity);
+      viewer.addHandler('canvas-pinch', markUserViewportActivity);
+      viewer.addHandler('canvas-drag-end', endUserViewportActivity);
+      viewer.addHandler('canvas-release', endUserViewportActivity);
       viewer.addHandler('open-failed', (event) => {
         openingBaseCustomId = '';
         baseImageLoaded = false;
@@ -635,6 +824,11 @@
         cancelAnimationFrame(resizeFrameId);
         resizeFrameId = null;
       }
+      if (initialHomeFrameId !== null) {
+        cancelAnimationFrame(initialHomeFrameId);
+        initialHomeFrameId = null;
+      }
+      endUserViewportActivity();
       resizeObserver?.disconnect();
       cancelled = true;
       viewer?.destroy();
@@ -1184,7 +1378,7 @@
     color: #f1f5f9;
     font-size: 11px;
     line-height: 1.2;
-    max-width: min(220px, 60vw);
+    max-width: min(220px, 60cqw);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

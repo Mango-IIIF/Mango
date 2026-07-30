@@ -206,8 +206,20 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
     min-height: 166px;
+    max-height: clamp(280px, 56cqh, 620px);
     padding: 18px;
     box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    /*
+     * No `overscroll-behavior-y: contain` here. This panel usually has only a few
+     * dozen pixels of its own scroll while the stage below holds the rest, so
+     * containing the gesture stopped the wheel dead partway and made the bottom of
+     * the editor (Apply to chapter) unreachable. Letting it chain hands the
+     * remaining scroll to the stage.
+     */
+    scrollbar-gutter: stable;
+    resize: vertical;
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
     border-radius: 16px;
     background: color-mix(
@@ -369,6 +381,17 @@
     }
     .story-wide-narration__range > span {
       display: none;
+    }
+  }
+
+  /* Touch layouts use the authoring column as the scroll owner. Native CSS
+     resize handles are difficult to operate there and can trap gestures. */
+  @container mango-viewer (max-width: 1024px) {
+    .story-wide-narration {
+      max-height: none;
+      overflow: visible;
+      resize: none;
+      scrollbar-gutter: auto;
     }
   }
 </style>

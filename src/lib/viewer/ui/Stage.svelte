@@ -259,13 +259,14 @@
     rendererInstance?.getModelPose?.() ?? pendingModelPose ?? null;
 
   const handleStageKeydown = (event: KeyboardEvent) => {
-    const target = event.target;
-    if (
-      target instanceof HTMLElement &&
-      (target.isContentEditable || target.matches('input, textarea, select'))
-    ) {
-      return;
-    }
+    const isEditable = event.composedPath().some(
+      (target) =>
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.matches('input, textarea, select') ||
+          Boolean(target.closest('[contenteditable="true"]'))),
+    );
+    if (isEditable) return;
     if (event.key === '+' || event.key === '=') {
       event.preventDefault();
       zoomBy(1.2);
@@ -344,8 +345,6 @@
   );
 </script>
 
-<svelte:window onkeydown={handleStageKeydown} />
-
 <div class="stage__container">
   {#if showDock}
     <div class:stage__dock--inline={dockInline} class="stage__dock">
@@ -370,6 +369,8 @@
     </div>
   {/if}
 
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex (the labelled application region intentionally owns viewer-only keyboard shortcuts) -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions (the labelled application region intentionally owns viewer-only keyboard shortcuts) -->
   <div
     bind:this={mediaBounds}
     class:stage__media--fixed={isFixedStage}
@@ -379,7 +380,9 @@
     class:stage__media--video={mediaType === 'video'}
     class="stage__media"
     role="application"
+    tabindex="0"
     aria-label={$t('viewer.stage.label') ?? 'Viewer stage'}
+    onkeydown={handleStageKeydown}
   >
     {#if isFetching}
       <div class="stage__placeholder">{$t('viewer.stage.loading')}</div>
@@ -475,6 +478,9 @@
     gap: 16px;
     height: 100%;
     min-height: 0;
+    /* The OSD <canvas> has an intrinsic width; without a zero min-width it can
+       force this column — and therefore the whole stage — wider than the viewer. */
+    min-width: 0;
   }
 
   .stage__dock {
@@ -505,6 +511,7 @@
 
   .stage__media {
     height: auto;
+    min-width: 0;
     border-radius: 18px;
     overflow: hidden;
     background: var(--viewer-stage);
@@ -513,8 +520,14 @@
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
+  /*
+   * Sized against the viewer element (`cqh`), never the browser window. With
+   * `vh` here a 400px-tall embed on a 1080px monitor asked for 734px of media
+   * and overflowed its host; `cqh` resolves against `.viewer`, which is a size
+   * container, so the media tracks the space the embedder actually gave us.
+   */
   .stage__media--fixed {
-    height: clamp(364px, 68vh, 676px);
+    height: clamp(240px, 68cqh, 676px);
   }
 
   .stage__media--constrained {
@@ -598,9 +611,8 @@
       gap: 4px;
     }
 
-    .stage__media--fixed,
-    .stage__media--constrained:not(.stage__media--audio) {
-      height: clamp(300px, 52svh, 560px);
+    .stage__media--fixed {
+      height: clamp(200px, 52cqh, 560px);
     }
 
     .stage__media--audio {
@@ -617,17 +629,32 @@
   }
 
   @container mango-viewer (max-width: 480px) {
-    .stage__media--fixed,
-    .stage__media--constrained:not(.stage__media--audio) {
-      height: clamp(230px, 44svh, 340px);
+    .stage__media--fixed {
+      height: clamp(160px, 44cqh, 340px);
     }
 
     .stage__media--audio {
-      height: clamp(200px, 26svh, 240px);
+      height: clamp(200px, 26cqh, 240px);
     }
 
     .stage__media--video {
-      height: clamp(200px, 26svh, 240px);
+      /* Slightly higher share than audio: `cqh` measures the viewer element,
+         which is shorter than the window the old `svh` value measured, so the
+         coefficient is raised to keep the same on-screen video height. */
+      height: clamp(210px, 30cqh, 240px);
+    }
+  }
+
+  /*
+   * Short elements (landscape phones, short embeds): the media keeps its share
+   * of the box instead of asking for a fixed pixel height it cannot have.
+   */
+  @container mango-viewer (max-height: 560px) {
+    .stage__media--fixed,
+    .stage__media--audio,
+    .stage__media--video {
+      height: 100%;
+      min-height: 0;
     }
   }
 </style>
