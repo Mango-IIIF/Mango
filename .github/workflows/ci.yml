@@ -38,8 +38,8 @@ jobs:
       - name: Check package contents
         run: npm pack --dry-run
 
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Run end-to-end tests
         run: npm run test:e2e

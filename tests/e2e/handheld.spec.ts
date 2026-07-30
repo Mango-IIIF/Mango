@@ -267,10 +267,13 @@ test.describe("handheld viewer layout", () => {
     expect(hostBox).not.toBeNull();
     expect(workspaceBox).not.toBeNull();
     expect(railBox).not.toBeNull();
-    expect(hostBox!.height).toBe(844);
-    expect(workspaceBox!.height).toBe(844);
-    expect(railBox!.width).toBe(390);
-    expect(railBox!.y + railBox!.height).toBe(844);
+    // WebKit resolves 100dvh against a device-pixel-snapped viewport, so these
+    // land a fraction under the 844pt viewport height. Compare to subpixel
+    // precision rather than exact equality.
+    expect(hostBox!.height).toBeCloseTo(844, 1);
+    expect(workspaceBox!.height).toBeCloseTo(844, 1);
+    expect(railBox!.width).toBeCloseTo(390, 1);
+    expect(railBox!.y + railBox!.height).toBeCloseTo(844, 1);
   });
 
   test("keeps audio controls inside the phone stage", async ({ page }) => {
