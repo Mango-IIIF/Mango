@@ -1113,6 +1113,33 @@
   const handleGalleryOpen = () => {
     controller.setPanelOpen('thumbnails', !showThumbnailsEffectiveStory);
   };
+
+  /*
+   * True while the strip is drawn as an overlay rather than a row — see the
+   * `max-height: 560px` rung further down.
+   *
+   * Read from the element's own computed position instead of tracking a size
+   * flag. It is synchronous and reports exactly what the stylesheet decided, so
+   * it cannot fall out of step the way an observer-backed flag does; that
+   * staleness is what made two earlier attempts at this button race.
+   */
+  const galleryIsOverlay = (): boolean => {
+    const gallery = viewerRoot?.querySelector('.gallery');
+    return gallery ? getComputedStyle(gallery).position === 'absolute' : false;
+  };
+
+  /*
+   * As a row the strip stays open so the reader can keep browsing. As an overlay
+   * it covers the stage, so choosing a page has to dismiss it — otherwise you
+   * pick an image and are left looking at the picker instead of the picture.
+   */
+  const handleGalleryCanvasSelect = (index: number) => {
+    const dismiss = galleryIsOverlay();
+    controller.setCanvasByIndex(index);
+    if (dismiss) {
+      controller.setPanelOpen('thumbnails', false);
+    }
+  };
   const handleRotate = () => stageRef?.rotateBy?.(90);
   export function on<K extends keyof ViewerEventMap>(
     event: K,
@@ -2164,7 +2191,7 @@
               canvasThumbnails={$canvasThumbnails}
               selectedCanvasIndex={$selectedCanvasIndex}
               onpanelToggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
-              oncanvasSelect={(detail) => controller.setCanvasByIndex(detail.index)}
+              oncanvasSelect={(detail) => handleGalleryCanvasSelect(detail.index)}
               onviewall={isPlainViewerMode ? () => controller.setLayoutMode('gallery') : undefined}
             />
           {/if}
