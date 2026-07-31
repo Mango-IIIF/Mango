@@ -19,18 +19,21 @@ const state = (viewer: Locator) =>
   }));
 
 /**
- * Poll until the embed is framed on the region its config asked for.
+ * Poll the vertical centre of the framed region.
  *
- * This deliberately asserts the goal rather than waiting for the viewport to
- * hold perfectly still. These embeds stream tiles from live image services, and
- * on a slow or loaded machine the box keeps drifting by a fraction long after it
- * is visually settled — an earlier version waited for two identical samples and
- * timed out in CI for that reason. Landing on the region is what the fix
- * guarantees; absolute stillness is not.
+ * Vertical is the axis worth asserting: the bug being guarded here centred the
+ * view on the whole image, and on a portrait scan that is hundreds of pixels
+ * away from any configured region. Horizontally the two are near enough to each
+ * other to prove nothing, because fitBounds clamps a region near the edge back
+ * towards the middle.
+ *
+ * Polled rather than sampled once, and it deliberately asserts the goal instead
+ * of waiting for the viewport to hold perfectly still: tiles stream in for a
+ * while and the box keeps drifting fractionally long after it looks settled.
  */
-const expectFramedOn = async (
+const expectFramedOnY = async (
   viewer: Locator,
-  region: { x: number; y: number; w: number; h: number },
+  centreY: number,
   tolerance: number,
 ) => {
   await expect
@@ -38,12 +41,7 @@ const expectFramedOn = async (
       async () => {
         const box = await viewer.evaluate((element: any) => element.getViewBox());
         if (!box) return Number.POSITIVE_INFINITY;
-        // fitBounds grows the box on one axis to match the stage aspect, so the
-        // centre is the part the embed actually controls.
-        return Math.max(
-          Math.abs(box.x + box.w / 2 - (region.x + region.w / 2)),
-          Math.abs(box.y + box.h / 2 - (region.y + region.h / 2)),
-        );
+        return Math.abs(box.y + box.h / 2 - centreY);
       },
       { timeout: 30_000, intervals: [250] },
     )
@@ -79,31 +77,22 @@ test.describe("embed host API", () => {
       .toBeLessThan(2411);
 
     expect((await state(viewer)).count).toBe(36);
-  });
 
-  test("honours the configured region on other collections", async ({ page }) => {
-    // Two embeds, each waiting on a different institution's image service. The
-    // default per-test budget is not enough for that on a cold CI runner.
-    test.setTimeout(150_000);
-    await page.goto("/embed-third-party.html");
-
-    // The startup centering pass used to pull a configured framing back to the
-    // middle of the image, keeping the zoom but discarding the position.
-    const cases = [
-      { id: "#harvard-viewer", x: 560, y: 880, w: 980, h: 800 },
-      { id: "#yale-viewer", x: 700, y: 3900, w: 2200, h: 1800 },
-    ];
-
-    // Image-space pixels. Generous enough to ride out sub-pixel settling on a
-    // slow machine, far tighter than the failure it guards: discarding the
-    // position re-centres the view, which is wrong by hundreds of pixels.
-    const tolerance = 40;
-
-    for (const { id, ...region } of cases) {
-      const viewer = page.locator(id);
-      await settled(viewer);
-      await expectFramedOn(viewer, region, tolerance);
-    }
+    /*
+     * Placement, not just zoom. The startup centering pass used to drag a
+     * configured framing back to the middle of the image while keeping the zoom,
+     * so the zoom assertions above would have passed with the bug present.
+     *
+     * The region is `y: 500, h: 1300`, so its centre sits at 1150. Centred on
+     * the image instead it would be 1686 — a 536px error against the 40px
+     * tolerance, which is what makes this worth asserting.
+     *
+     * This deliberately checks the Wellcome-backed embed rather than the other
+     * collections on the page: their image services are not reliably reachable
+     * from CI, and a test that cannot load tiles guards nothing. See the note in
+     * the demo page about which embeds are covered here.
+     */
+    await expectFramedOnY(viewer, 500 + 1300 / 2, 40);
   });
 
   test("sets page, zoom, and position through the element methods", async ({

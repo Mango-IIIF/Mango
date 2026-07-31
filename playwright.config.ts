@@ -3,7 +3,15 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
-  timeout: 45_000,
+  /*
+   * Every spec here drives a real viewer against live IIIF endpoints, so the
+   * budget has to cover network as well as layout. A CI runner is several times
+   * slower than a dev machine — full runs take ~5 minutes there against ~50s
+   * locally — and the failures seen there burn the whole per-test budget on
+   * navigation rather than failing an assertion. Give CI room; keep the local
+   * budget tight so genuinely stuck tests still surface quickly.
+   */
+  timeout: process.env.CI ? 90_000 : 45_000,
   expect: {
     timeout: 15_000,
   },

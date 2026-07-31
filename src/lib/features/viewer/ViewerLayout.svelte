@@ -1094,41 +1094,24 @@
   const handleHome = () => stageRef?.goHome?.();
 
   /*
-   * Below this element height the thumbnail strip is shed by container query
-   * (the `max-height: 560px` rung further down this file). Keep the two in
-   * step: the dock's Gallery button has to know when the strip it toggles
-   * cannot be shown.
-   */
-  const THUMBNAIL_STRIP_MIN_HEIGHT = 560;
-
-  const thumbnailStripHidden = (): boolean => {
-    const height = viewerRoot?.clientHeight ?? 0;
-    return height > 0 && height <= THUMBNAIL_STRIP_MIN_HEIGHT;
-  };
-
-  /*
-   * Toggling the strip in a short embed flips state the reader can never see,
-   * which left the Gallery button doing nothing at all. Send it to the full
-   * gallery layout instead — the same destination the strip's own "View all"
-   * offers — so the canvases stay reachable at every height.
+   * KNOWN ISSUE: below a 560px element height the thumbnail strip is shed by
+   * container query, and this button then toggles state nothing can render —
+   * it appears to do nothing. Routing it to the full gallery layout instead
+   * looks like the obvious fix and was tried; it is not safe as things stand.
+   *
+   * `showThumbnails` is flipped asynchronously by the short-layout pass, so a
+   * press can land after the panel has already closed and be read as "open".
+   * That switched the stage to the gallery view, where `.stage__media` does not
+   * exist, stranding the viewer with no image. Passing the button's rendered
+   * state through the event does not help: the handler still reads the live
+   * value at click time.
+   *
+   * A safe version needs a reactive "strip is hidden" flag so the button's
+   * state and its action are derived from the same source — note that
+   * SHORT_LAYOUT_HEIGHT (500) does not currently match the CSS rung (560).
    */
   const handleGalleryOpen = () => {
-    // Showing the full gallery already: the button is the way back out of it.
-    if (isPlainViewerMode && $layoutMode === 'gallery') {
-      controller.setLayoutMode('single');
-      return;
-    }
-    // Closing the strip is meaningful at any height, so keep that path intact.
-    if (showThumbnailsEffectiveStory) {
-      controller.setPanelOpen('thumbnails', false);
-      return;
-    }
-    // Opening in a short embed, where the strip is shed by container query.
-    if (isPlainViewerMode && thumbnailStripHidden()) {
-      controller.setLayoutMode('gallery');
-      return;
-    }
-    controller.setPanelOpen('thumbnails', true);
+    controller.setPanelOpen('thumbnails', !showThumbnailsEffectiveStory);
   };
   const handleRotate = () => stageRef?.rotateBy?.(90);
   export function on<K extends keyof ViewerEventMap>(
@@ -1703,7 +1686,7 @@
           variant="sidebar"
           mobile={isMobileLayout || isShortLayout}
           iconOnly={leftVisibleEffective || showManifestManager}
-          galleryActive={showThumbnailsEffectiveStory || $layoutMode === 'gallery'}
+          galleryActive={showThumbnailsEffectiveStory}
           contentsTab={contentsPanelTab}
           allowThumbnails={allowThumbnailsStory}
           allowCollection={allowCollectionStory}
