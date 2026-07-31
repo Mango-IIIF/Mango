@@ -509,7 +509,7 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.16em;
-    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.65));
+    color: var(--story-sidebar-muted, var(--viewer-muted, rgba(255, 255, 255, 0.65)));
   }
 
   .story-sidebar__header-add {
@@ -519,7 +519,7 @@
     border: 0;
     padding: 5px;
     background: transparent;
-    color: #2ac7ff;
+    color: var(--viewer-accent-2, #2ac7ff);
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
@@ -536,7 +536,7 @@
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     font-size: 12px;
-    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
+    color: var(--story-sidebar-muted, var(--viewer-muted, rgba(255, 255, 255, 0.6)));
   }
   .story-sidebar__empty strong {
     color: var(--story-sidebar-text, var(--viewer-text, #e8edf4));
@@ -601,8 +601,8 @@
   }
 
   .story-sidebar__row--active {
-    border-color: #2ac7ff;
-    background: color-mix(in srgb, #2ac7ff 6%, var(--viewer-surface, #151d26));
+    border-color: var(--viewer-accent-2, #2ac7ff);
+    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 6%, var(--viewer-surface, #151d26));
   }
 
   .story-sidebar__row--dragging {
@@ -623,7 +623,7 @@
     left: 10px;
     right: 10px;
     height: 2px;
-    background: var(--accent, #e07a3f);
+    background: var(--accent, var(--story-builder-accent, #e07a3f));
   }
 
   .story-sidebar__row--drop-before::before {
@@ -646,7 +646,7 @@
     border-radius: 8px;
     object-fit: cover;
     display: block;
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent);
   }
 
   .story-sidebar__thumbnail--placeholder {
@@ -654,7 +654,7 @@
     place-items: center;
     font-size: 14px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.75);
+    color: color-mix(in srgb, var(--viewer-text, #e8edf4) 75%, transparent);
   }
 
   .story-sidebar__thumbnail-index {
@@ -667,8 +667,8 @@
     height: 18px;
     padding: 0 3px;
     border-radius: 5px;
-    background: rgba(232, 237, 244, 0.88);
-    color: #13202d;
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 88%, transparent);
+    color: var(--viewer-panel, #13202d);
     font-size: 9px;
     font-weight: 800;
     box-sizing: border-box;
@@ -682,7 +682,7 @@
 
   .story-sidebar__row-index {
     font-size: 12px;
-    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.65));
+    color: var(--story-sidebar-muted, var(--viewer-muted, rgba(255, 255, 255, 0.65)));
   }
 
   .story-sidebar__row-title {
@@ -699,7 +699,7 @@
     gap: 5px;
     justify-self: start;
     font-size: 12px;
-    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
+    color: var(--story-sidebar-muted, var(--viewer-muted, rgba(255, 255, 255, 0.6)));
   }
   .story-sidebar__row-duration :global(svg) {
     width: 13px;
@@ -708,7 +708,7 @@
 
   .story-sidebar__row-error {
     justify-self: start;
-    color: #ffb8b8;
+    color: var(--viewer-danger, #ffb8b8);
     font-size: 11px;
     font-weight: 650;
   }
@@ -733,7 +733,7 @@
   }
 
   .story-sidebar__menu-button:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent);
   }
 
   .story-sidebar__menu-popover {
@@ -743,8 +743,8 @@
     min-width: 120px;
     padding: 6px;
     border-radius: 10px;
-    background: rgba(13, 18, 28, 0.98);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: color-mix(in srgb, var(--viewer-panel, #121922) 98%, transparent);
+    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 12%, transparent);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
     z-index: 5;
   }
@@ -762,7 +762,7 @@
   }
 
   .story-sidebar__menu-action:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent);
   }
 
   .story-sidebar__menu-action:disabled {
@@ -771,7 +771,7 @@
   }
 
   .story-sidebar__menu-action--danger {
-    color: #ff9aa2;
+    color: var(--viewer-danger, #ff9aa2);
   }
 
   .story-sidebar__reorder {
@@ -780,7 +780,7 @@
     justify-content: center;
     gap: 7px;
     padding: 8px;
-    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
+    color: var(--story-sidebar-muted, var(--viewer-muted, rgba(255, 255, 255, 0.6)));
     font-size: 11px;
   }
   .story-sidebar__reorder :global(svg) {
@@ -792,7 +792,7 @@
     display: grid;
     gap: 6px;
     font-size: 11px;
-    color: var(--story-sidebar-muted, rgba(255, 255, 255, 0.6));
+    color: var(--story-sidebar-muted, var(--viewer-muted, rgba(255, 255, 255, 0.6)));
     word-break: break-word;
   }
 
@@ -804,10 +804,10 @@
   .story-sidebar__error {
     padding: 10px 12px;
     border-radius: 12px;
-    background: rgba(255, 79, 162, 0.12);
+    background: color-mix(in srgb, var(--viewer-accent, #ff4fa2) 12%, transparent);
     color: var(--story-sidebar-text, var(--viewer-text, #e8edf4));
     font-size: 12px;
-    border: 1px solid rgba(255, 79, 162, 0.3);
+    border: 1px solid color-mix(in srgb, var(--viewer-accent, #ff4fa2) 30%, transparent);
   }
 
   .story-sidebar__modal-backdrop {
@@ -825,15 +825,15 @@
     max-width: 280px;
     padding: 14px;
     border-radius: 12px;
-    background: #111922;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--viewer-panel, #111922);
+    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 12%, transparent);
     display: grid;
     gap: 12px;
   }
 
   .story-sidebar__modal-text {
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.94);
+    color: color-mix(in srgb, var(--viewer-text, #e8edf4) 94%, transparent);
   }
 
   .story-sidebar__modal-actions {
@@ -851,12 +851,12 @@
   }
 
   .story-sidebar__modal-button--cancel {
-    background: rgba(255, 255, 255, 0.14);
-    color: rgba(255, 255, 255, 0.92);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 14%, transparent);
+    color: color-mix(in srgb, var(--viewer-text, #e8edf4) 92%, transparent);
   }
 
   .story-sidebar__modal-button--danger {
-    background: rgba(255, 79, 79, 0.2);
-    color: #ffb8b8;
+    background: color-mix(in srgb, var(--viewer-danger, #ffb8b8) 20%, transparent);
+    color: var(--viewer-danger, #ffb8b8);
   }
 </style>

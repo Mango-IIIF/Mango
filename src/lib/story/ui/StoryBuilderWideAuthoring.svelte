@@ -297,7 +297,7 @@
     margin-top: 14px;
     background: color-mix(
       in srgb,
-      var(--accent, #e07a3f) 78%,
+      var(--accent, var(--story-builder-accent, #e07a3f)) 78%,
       var(--viewer-panel-border)
     );
   }
@@ -358,8 +358,8 @@
   }
   .story-wide-authoring__point-delete:hover {
     opacity: 1;
-    color: #ef4444;
-    border-color: rgba(239, 68, 68, 0.5);
+    color: var(--viewer-danger, #ef4444);
+    border-color: color-mix(in srgb, var(--viewer-danger, #ffb8b8) 50%, transparent);
   }
   .story-wide-authoring__point-delete :global(svg) {
     width: 10px;
@@ -386,7 +386,7 @@
     position: absolute;
     width: 28px;
     height: 34px;
-    fill: var(--accent, #e07a3f);
+    fill: var(--accent, var(--story-builder-accent, #e07a3f));
     stroke: white;
     stroke-width: 1.7;
   }
@@ -429,7 +429,7 @@
   }
   .story-wide-authoring__add:hover,
   .story-wide-authoring__point:hover .story-wide-authoring__point-label strong {
-    color: var(--accent, #e07a3f);
+    color: var(--accent, var(--story-builder-accent, #e07a3f));
   }
 
   @media (max-width: 720px) {

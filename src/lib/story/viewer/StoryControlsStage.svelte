@@ -307,14 +307,16 @@
 
 <style>
 
+  /*
+   * Colours come from the `--story-*` tokens the themed `.viewer` defines (see
+   * ViewerLayout). Each use site carries the dark-theme value as its fallback so
+   * the shell still renders correctly when it is mounted outside a themed
+   * viewer — component tests do exactly that. Accent-derived shades (the play
+   * button glow, the scrubber fill, the active chapter ring) are mixed from
+   * `--story-accent` rather than themed one by one, so a new theme only has to
+   * declare the base tokens.
+   */
   .story-shell {
-    --story-bg: #07101e;
-    --story-line: rgba(255, 255, 255, 0.14);
-    --story-text: #edf5ff;
-    --story-muted: #d8dee9;
-    --story-accent: #9a57ff;
-    --story-accent-2: #4bc6ff;
-
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto auto;
     gap: 0;
@@ -323,7 +325,7 @@
     min-width: 0;
     padding: 0;
     border-radius: var(--story-shell-radius, 18px);
-    background: linear-gradient(180deg, #10161e 0%, #0b1118 100%);
+    background: var(--story-shell-bg, linear-gradient(180deg, #10161e 0%, #0b1118 100%));
     border: 0;
     overflow: hidden;
   }
@@ -342,12 +344,12 @@
     flex-direction: column;
     min-height: 0;
     overflow: auto;
-    border-left: 1px solid var(--story-line);
+    border-left: 1px solid var(--story-line, rgba(255, 255, 255, 0.14));
   }
 
   .story-shell__chapter-label {
     margin: 0;
-    color: #be8dff;
+    color: var(--story-accent-text, #be8dff);
     font-size: 19px;
     font-weight: 600;
   }
@@ -356,7 +358,7 @@
     margin: 10px 0 10px;
     font-size: clamp(32px, 2.6cqw, 58px);
     line-height: 1.03;
-    color: var(--story-text);
+    color: var(--story-text, #edf5ff);
     font-family: Georgia, 'Times New Roman', serif;
   }
 
@@ -364,13 +366,17 @@
     width: 70px;
     height: 4px;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--story-accent), #b87fff);
+    background: linear-gradient(
+      90deg,
+      var(--story-accent, #9a57ff),
+      var(--story-accent-text, #b87fff)
+    );
     margin-bottom: 14px;
   }
 
   .story-shell__description {
     margin: 0 0 18px;
-    color: var(--story-muted);
+    color: var(--story-muted, #d8dee9);
     font-size: clamp(15px, 1.15cqw, 20px);
     line-height: 1.55;
   }
@@ -380,7 +386,7 @@
     padding: 6px 0;
     border: 0;
     background: transparent;
-    color: #be8dff;
+    color: var(--story-accent-text, #be8dff);
     font: inherit;
     font-size: 14px;
     font-weight: 700;
@@ -389,7 +395,7 @@
 
   .story-shell__metadata-toggle:hover,
   .story-shell__metadata-toggle:focus-visible {
-    color: #d8bcff;
+    color: var(--story-accent-text-hover, #d8bcff);
     text-decoration: underline;
   }
 
@@ -433,9 +439,9 @@
 
   .story-shell__transport-btn,
   .story-shell__play-btn {
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    background: rgba(8, 17, 32, 0.6);
-    color: var(--story-text);
+    border: 1px solid var(--story-control-border, rgba(255, 255, 255, 0.24));
+    background: var(--story-control-bg, rgba(8, 17, 32, 0.6));
+    color: var(--story-text, #edf5ff);
     border-radius: 999px;
     cursor: pointer;
     display: grid;
@@ -451,14 +457,18 @@
     width: 66px;
     height: 66px;
     font-size: 19px;
-    border-color: rgba(148, 83, 255, 0.88);
+    border-color: color-mix(in srgb, var(--story-accent, #9a57ff) 88%, transparent);
     box-shadow:
-      0 0 0 6px rgba(115, 62, 222, 0.2),
-      0 10px 24px rgba(72, 28, 166, 0.4);
+      0 0 0 6px color-mix(in srgb, var(--story-accent, #9a57ff) 20%, transparent),
+      0 10px 24px color-mix(in srgb, var(--story-accent, #9a57ff) 40%, transparent);
   }
 
   .story-shell__play-btn--active {
-    background: radial-gradient(circle at 32% 25%, #b58aff 0%, #8a44ff 72%);
+    background: radial-gradient(
+      circle at 32% 25%,
+      color-mix(in srgb, var(--story-accent, #9a57ff) 62%, white) 0%,
+      var(--story-accent, #9a57ff) 72%
+    );
   }
 
   .story-shell__timeline {
@@ -470,8 +480,8 @@
     width: 100%;
     height: 10px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--story-track-bg, rgba(255, 255, 255, 0.2));
+    border: 1px solid var(--story-track-border, rgba(255, 255, 255, 0.15));
     overflow: hidden;
   }
 
@@ -482,7 +492,11 @@
     bottom: 0;
     width: 0%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #8b45ff 0%, #b276ff 100%);
+    background: linear-gradient(
+      90deg,
+      var(--story-accent, #8b45ff) 0%,
+      color-mix(in srgb, var(--story-accent, #9a57ff) 68%, white) 100%
+    );
     transition: width 120ms linear;
   }
 
@@ -492,8 +506,8 @@
     width: 12px;
     height: 12px;
     border-radius: 999px;
-    background: #c69dff;
-    box-shadow: 0 0 0 3px rgba(139, 69, 255, 0.26);
+    background: color-mix(in srgb, var(--story-accent, #9a57ff) 72%, white);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--story-accent, #9a57ff) 26%, transparent);
     transform: translate(-50%, -50%);
     transition: left 120ms linear;
   }
@@ -502,7 +516,7 @@
     margin-top: 4px;
     text-align: right;
     font-size: 12px;
-    color: #d0dcf0;
+    color: var(--story-muted, #d0dcf0);
     direction: ltr;
     unicode-bidi: isolate;
     font-variant-numeric: tabular-nums;
@@ -543,7 +557,7 @@
   .story-shell__chapter:hover:not(:disabled),
   .story-shell__transport-btn:hover:not(:disabled),
   .story-shell__play-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--story-control-hover-bg, rgba(255, 255, 255, 0.12));
   }
 
   .story-shell__chapter:disabled,
@@ -577,7 +591,7 @@
   .story-shell__chapter {
     border: none;
     background: transparent;
-    color: #c6d4ed;
+    color: var(--story-muted, #c6d4ed);
     cursor: pointer;
     font: inherit;
     display: grid;
@@ -591,7 +605,7 @@
     min-height: 66px;
     aspect-ratio: 1 / 1;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--story-control-border, rgba(255, 255, 255, 0.2));
     overflow: hidden;
   }
 
@@ -613,18 +627,18 @@
     text-align: center;
     margin-top: 6px;
     font-size: 14px;
-    color: #cad7ee;
+    color: var(--story-muted, #cad7ee);
   }
 
   .story-shell__chapter--active .story-shell__chapter-thumb {
-    border-color: rgba(160, 110, 255, 0.95);
+    border-color: color-mix(in srgb, var(--story-accent, #9a57ff) 82%, white);
     box-shadow:
-      0 0 0 2px rgba(64, 171, 245, 0.84) inset,
-      0 0 0 1px rgba(227, 240, 255, 0.42);
+      0 0 0 2px var(--story-active-ring, rgba(64, 171, 245, 0.84)) inset,
+      0 0 0 1px var(--story-active-halo, rgba(227, 240, 255, 0.42));
   }
 
   .story-shell__chapter--active .story-shell__chapter-number {
-    color: #f0e8ff;
+    color: var(--story-text, #f0e8ff);
   }
 
   .story-shell__dot {
@@ -633,7 +647,7 @@
     height: 6px;
     border-radius: 999px;
     margin-top: 5px;
-    background: #8f4dff;
+    background: var(--story-accent, #8f4dff);
     opacity: 0;
     transition: opacity 140ms ease;
   }
@@ -643,7 +657,7 @@
   }
 
   .story-shell__error {
-    color: #ffb3c1;
+    color: var(--story-error, #ffb3c1);
     font-size: 13px;
   }
 
@@ -656,8 +670,8 @@
   .story-shell__spinner {
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(154, 87, 255, 0.3);
-    border-top-color: var(--story-accent);
+    border: 2px solid color-mix(in srgb, var(--story-accent, #9a57ff) 30%, transparent);
+    border-top-color: var(--story-accent, #9a57ff);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -688,7 +702,7 @@
 
     .story-shell__sidebar {
       overflow: hidden;
-      border-top: 1px solid var(--story-line);
+      border-top: 1px solid var(--story-line, rgba(255, 255, 255, 0.14));
       border-left: 0;
     }
 
@@ -721,7 +735,7 @@
       width: 100%;
       margin-top: 0;
       padding: 0 0 8px;
-      border-bottom: 1px solid var(--story-line);
+      border-bottom: 1px solid var(--story-line, rgba(255, 255, 255, 0.14));
     }
 
     .story-shell__metadata {
@@ -823,7 +837,7 @@
       order: -1;
       margin-top: 0;
       padding: 3px 0 9px;
-      border-bottom: 1px solid var(--story-line);
+      border-bottom: 1px solid var(--story-line, rgba(255, 255, 255, 0.14));
     }
 
     .story-shell__metadata {
@@ -894,7 +908,7 @@
       display: flex;
       padding: 8px 12px;
       border-top: 0;
-      border-left: 1px solid var(--story-line);
+      border-left: 1px solid var(--story-line, rgba(255, 255, 255, 0.14));
     }
 
     .story-shell__chapter-label {

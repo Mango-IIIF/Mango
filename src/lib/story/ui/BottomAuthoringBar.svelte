@@ -33,17 +33,17 @@
     align-items: center;
     padding: 12px 16px;
     border-top: 1px solid
-      var(--story-authoring-border, rgba(255, 255, 255, 0.08));
-    background: var(--story-authoring-bg, #0b121a);
-    color: var(--story-authoring-text, #eef3f8);
+      var(--story-authoring-border, var(--viewer-panel-border, rgba(255, 255, 255, 0.08)));
+    background: var(--story-authoring-bg, var(--viewer-panel, #0b121a));
+    color: var(--story-authoring-text, var(--viewer-text, #eef3f8));
   }
 
   .story-authoring-bar__button {
     border: none;
     border-radius: 12px;
     padding: 10px 14px;
-    background: var(--story-authoring-button-bg, rgba(255, 255, 255, 0.08));
-    color: var(--story-authoring-text, #eef3f8);
+    background: var(--story-authoring-button-bg, color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent));
+    color: var(--story-authoring-text, var(--viewer-text, #eef3f8));
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.12em;

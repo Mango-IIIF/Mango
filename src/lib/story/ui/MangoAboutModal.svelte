@@ -75,12 +75,12 @@
 
 <style>
   .mango-about-backdrop {
-    --mango-about-accent: #e07a3f;
-    --mango-about-accent-hover: #e8864b;
-    --mango-about-surface: #18202c;
-    --mango-about-text: #e8edf4;
-    --mango-about-muted: #b3c0ce;
-    --mango-about-border: rgba(255, 255, 255, 0.12);
+    --mango-about-accent: var(--story-builder-accent, #e07a3f);
+    --mango-about-accent-hover: var(--story-builder-accent-hover, #e8864b);
+    --mango-about-surface: var(--viewer-panel, #18202c);
+    --mango-about-text: var(--viewer-text, #e8edf4);
+    --mango-about-muted: var(--viewer-muted, #b3c0ce);
+    --mango-about-border: color-mix(in srgb, var(--viewer-text, #e8edf4) 12%, transparent);
 
     position: fixed;
     inset: 0;
@@ -112,7 +112,7 @@
     border-radius: 16px;
     padding: 28px;
     color: var(--mango-about-text);
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(224, 122, 63, 0.15);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px color-mix(in srgb, var(--story-builder-accent, #e07a3f) 15%, transparent);
     animation: mangoAboutScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -126,14 +126,14 @@
     height: 32px;
     border: 0;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 6%, transparent);
     color: var(--mango-about-muted);
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .mango-about-modal__close:hover {
-    background: rgba(255, 255, 255, 0.14);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 14%, transparent);
     color: white;
   }
 
@@ -151,8 +151,8 @@
     width: 64px;
     height: 64px;
     border-radius: 18px;
-    background: rgba(224, 122, 63, 0.12);
-    border: 1px solid rgba(224, 122, 63, 0.25);
+    background: color-mix(in srgb, var(--story-builder-accent, #e07a3f) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--story-builder-accent, #e07a3f) 25%, transparent);
     margin-bottom: 12px;
   }
 
@@ -170,8 +170,8 @@
     margin-bottom: 2px;
     padding: 2px 10px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 12%, transparent);
     font-size: 11px;
     font-weight: 600;
     color: var(--mango-about-muted);
@@ -198,7 +198,7 @@
     gap: 12px;
     margin-top: 24px;
     padding-top: 18px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent);
   }
 
   .mango-about-modal__link {
@@ -250,8 +250,8 @@
   .mango-about-modal__button {
     padding: 10px 16px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 12%, transparent);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 6%, transparent);
     color: white;
     font-weight: 600;
     font-size: 13px;
@@ -260,7 +260,7 @@
   }
 
   .mango-about-modal__button:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 12%, transparent);
   }
 
   @keyframes mangoAboutFadeIn {

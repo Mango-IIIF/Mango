@@ -42,7 +42,11 @@
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
   import { ChevronsRight, Expand, ImageOff, Shrink } from '@lucide/svelte';
-  import { setViewerContext } from '../../viewer/context';
+  import {
+    isViewerSettingsTheme,
+    setViewerContext,
+    type ViewerSettingsTheme,
+  } from '../../viewer/context';
   import {
     createViewerFullscreenController,
     isIPadLikeDevice,
@@ -433,7 +437,7 @@
     enterMobileLayout();
   }
 
-  let viewerSettingsTheme = $state<'dark' | 'light' | 'sepia' | 'midnight'>('dark');
+  let viewerSettingsTheme = $state<ViewerSettingsTheme>('dark');
   let viewerSettingsLocale = $state('en');
   const applyViewerSettingsLocale = (locale: string) => {
     const nextLocale = locale.toLowerCase();
@@ -530,10 +534,7 @@
   });
   $effect(() => {
     const configuredTheme = normalisedConfig.theme?.toLowerCase();
-    viewerSettingsTheme =
-      configuredTheme === 'light' || configuredTheme === 'sepia' || configuredTheme === 'midnight'
-        ? configuredTheme
-        : 'dark';
+    viewerSettingsTheme = isViewerSettingsTheme(configuredTheme) ? configuredTheme : 'dark';
   });
   $effect(() => {
     setLocale(viewerSettingsLocale);
@@ -2527,6 +2528,56 @@
       rgba(14, 20, 29, 0.92) 100%
     );
 
+    /*
+     * Story chrome runs its own palette rather than reusing `--viewer-accent`:
+     * the story viewer is a presentation surface with its own identity, and the
+     * two accents are deliberately different in the default theme. Every theme
+     * below restates this block, so a story never inherits a palette that was
+     * only contrast-checked against viewer chrome. The story components consume
+     * these with the dark values as literal fallbacks, so they still render
+     * standalone (tests, storybook) outside a themed `.viewer`.
+     */
+    --story-shell-bg: linear-gradient(180deg, #10161e 0%, #0b1118 100%);
+    --story-line: rgba(255, 255, 255, 0.14);
+    --story-text: #edf5ff;
+    --story-muted: #d8dee9;
+    --story-accent: #9a57ff;
+    --story-accent-2: #4bc6ff;
+    --story-accent-text: #be8dff;
+    --story-accent-text-hover: #d8bcff;
+    --story-control-bg: rgba(8, 17, 32, 0.6);
+    --story-control-border: rgba(255, 255, 255, 0.24);
+    --story-control-hover-bg: rgba(255, 255, 255, 0.12);
+    --story-track-bg: rgba(255, 255, 255, 0.2);
+    --story-track-border: rgba(255, 255, 255, 0.15);
+    --story-active-ring: rgba(64, 171, 245, 0.84);
+    --story-active-halo: rgba(227, 240, 255, 0.42);
+    --story-error: #ffb3c1;
+    --story-note-bg: rgba(255, 255, 255, 0.92);
+    --story-note-text: #2b2520;
+    --story-label-bg: rgba(20, 16, 12, 0.82);
+    --story-label-text: #ffffff;
+
+    /*
+     * Status colours and the story builder's accent. These carry meaning rather
+     * than decoration, so each theme restates them at a lightness that reads on
+     * its own panels — the dark theme's pale pinks and greens vanish on a light
+     * surface. Tints and washes are mixed from these at the use site.
+     */
+    --viewer-danger: #ffb8b8;
+    --viewer-success: #72cea4;
+    --viewer-warning: #e8b85f;
+    --story-builder-accent: #b4551f;
+    --story-builder-accent-hover: #a8480f;
+    /*
+     * Sunken surfaces — inputs, scrub tracks, timeline wells. These sit *below*
+     * their panel, so they cannot be mixed from `--viewer-text` the way raised
+     * fills are: on a dark theme that would lighten them. Each theme states its
+     * own recess instead.
+     */
+    --viewer-well-bg: rgba(5, 10, 16, 0.35);
+    --viewer-focus-ring: rgba(42, 199, 255, 0.7);
+
     display: grid;
     grid-template-rows: auto 1fr;
     gap: 16px;
@@ -2711,9 +2762,9 @@
     --viewer-panel-strong: #dde4ed;
     --viewer-panel-border: rgba(34, 48, 65, 0.12);
     --viewer-text: #223041;
-    --viewer-muted: #69788b;
-    --viewer-accent: #7c96be;
-    --viewer-accent-2: #6caec7;
+    --viewer-muted: #586576;
+    --viewer-accent: #53719c;
+    --viewer-accent-2: #357f99;
     --viewer-stage: #f3f5f8;
     --viewer-stage-glow: rgba(108, 174, 199, 0.16);
     --viewer-stage-tail: #ffffff;
@@ -2736,7 +2787,7 @@
     --viewer-close-button-hover-bg: rgba(233, 240, 248, 0.96);
     --viewer-close-button-hover-border: rgba(34, 48, 65, 0.3);
     --viewer-close-button-color: #223041;
-    --viewer-close-button-focus-ring: rgba(108, 174, 199, 0.58);
+    --viewer-close-button-focus-ring: var(--viewer-focus-ring);
     --viewer-stage-bottom-bg: rgba(241, 245, 251, 0.86);
     --viewer-toolbar-separator: rgba(34, 48, 65, 0.16);
     --viewer-toolbar-group-border: rgba(34, 48, 65, 0.16);
@@ -2749,12 +2800,39 @@
     --viewer-search-clear-bg: rgba(124, 150, 190, 0.2);
     --viewer-search-item-bg: rgba(255, 255, 255, 0.78);
     --viewer-search-item-hover-bg: rgba(124, 150, 190, 0.22);
-    --viewer-search-focus: rgba(108, 174, 199, 0.68);
+    --viewer-search-focus: var(--viewer-focus-ring);
     --viewer-control-rail-bg: linear-gradient(
       180deg,
       rgba(241, 245, 251, 0.95) 0%,
       rgba(229, 236, 245, 0.95) 100%
     );
+    --story-shell-bg: linear-gradient(180deg, #ffffff 0%, #eaf0f8 100%);
+    --story-line: rgba(34, 48, 65, 0.14);
+    --story-text: #1d2a3a;
+    --story-muted: #56677d;
+    --story-accent: #6d3bd4;
+    --story-accent-2: #1f8fc4;
+    --story-accent-text: #5a2fbd;
+    --story-accent-text-hover: #43219a;
+    --story-control-bg: rgba(255, 255, 255, 0.88);
+    --story-control-border: rgba(34, 48, 65, 0.22);
+    --story-control-hover-bg: rgba(109, 59, 212, 0.12);
+    --story-track-bg: rgba(34, 48, 65, 0.14);
+    --story-track-border: rgba(34, 48, 65, 0.12);
+    --story-active-ring: rgba(31, 143, 196, 0.72);
+    --story-active-halo: rgba(34, 48, 65, 0.24);
+    --story-error: #b3243c;
+    --story-note-bg: rgba(255, 255, 255, 0.95);
+    --story-note-text: #1d2a3a;
+    --story-label-bg: rgba(29, 42, 58, 0.86);
+    --story-label-text: #ffffff;
+    --viewer-danger: #b3243c;
+    --viewer-success: #1d7a52;
+    --viewer-warning: #8a5a00;
+    --story-builder-accent: #b4551f;
+    --story-builder-accent-hover: #93430f;
+    --viewer-well-bg: rgba(34, 48, 65, 0.07);
+    --viewer-focus-ring: #0b6fa4;
     border-color: #dbe2eb;
     box-shadow: var(--viewer-frame-shadow, none);
     background: radial-gradient(135% 135% at 10% 0%, #e6f1ff 0%, #f5faff 45%, #ffffff 100%);
@@ -2767,7 +2845,7 @@
     --viewer-panel-strong: #dac9aa;
     --viewer-panel-border: rgba(76, 58, 35, 0.16);
     --viewer-text: #3d3023;
-    --viewer-muted: #776650;
+    --viewer-muted: #67563f;
     --viewer-accent: #a86f46;
     --viewer-accent-2: #2f858b;
     --viewer-accent-tools: #66864a;
@@ -2793,7 +2871,7 @@
     --viewer-close-button-hover-bg: rgba(239, 227, 207, 0.96);
     --viewer-close-button-hover-border: rgba(76, 58, 35, 0.32);
     --viewer-close-button-color: #3d3023;
-    --viewer-close-button-focus-ring: rgba(47, 133, 139, 0.58);
+    --viewer-close-button-focus-ring: var(--viewer-focus-ring);
     --viewer-stage-bottom-bg: rgba(241, 231, 212, 0.88);
     --viewer-toolbar-separator: rgba(76, 58, 35, 0.16);
     --viewer-toolbar-group-border: rgba(76, 58, 35, 0.16);
@@ -2806,12 +2884,39 @@
     --viewer-search-clear-bg: rgba(47, 133, 139, 0.14);
     --viewer-search-item-bg: rgba(255, 250, 240, 0.78);
     --viewer-search-item-hover-bg: rgba(47, 133, 139, 0.16);
-    --viewer-search-focus: rgba(47, 133, 139, 0.65);
+    --viewer-search-focus: var(--viewer-focus-ring);
     --viewer-control-rail-bg: linear-gradient(
       180deg,
       rgba(241, 231, 212, 0.96) 0%,
       rgba(229, 214, 188, 0.96) 100%
     );
+    --story-shell-bg: linear-gradient(180deg, #f9f3e7 0%, #e8dbc2 100%);
+    --story-line: rgba(76, 58, 35, 0.18);
+    --story-text: #3d3023;
+    --story-muted: #6b5a44;
+    --story-accent: #a8562a;
+    --story-accent-2: #2f858b;
+    --story-accent-text: #8d451f;
+    --story-accent-text-hover: #6d3415;
+    --story-control-bg: rgba(255, 250, 240, 0.9);
+    --story-control-border: rgba(76, 58, 35, 0.24);
+    --story-control-hover-bg: rgba(168, 86, 42, 0.14);
+    --story-track-bg: rgba(76, 58, 35, 0.16);
+    --story-track-border: rgba(76, 58, 35, 0.14);
+    --story-active-ring: rgba(47, 133, 139, 0.74);
+    --story-active-halo: rgba(76, 58, 35, 0.26);
+    --story-error: #a32b26;
+    --story-note-bg: rgba(255, 250, 240, 0.95);
+    --story-note-text: #3d3023;
+    --story-label-bg: rgba(61, 48, 35, 0.86);
+    --story-label-text: #fffaf0;
+    --viewer-danger: #a32b26;
+    --viewer-success: #2f6b4a;
+    --viewer-warning: #7a5410;
+    --story-builder-accent: #a8562a;
+    --story-builder-accent-hover: #8a4319;
+    --viewer-well-bg: rgba(76, 58, 35, 0.09);
+    --viewer-focus-ring: #1b6b70;
     border-color: #d8c7aa;
     box-shadow: var(--viewer-frame-shadow, none);
     background: radial-gradient(135% 135% at 10% 0%, #f5ead7 0%, #eee4d2 48%, #e5d7bf 100%);
@@ -2838,9 +2943,130 @@
       rgba(12, 29, 48, 0.96) 0%,
       rgba(5, 15, 28, 0.96) 100%
     );
+    --story-shell-bg: linear-gradient(180deg, #0b1b30 0%, #040c18 100%);
+    --story-line: rgba(126, 180, 235, 0.18);
+    --story-text: #edf6ff;
+    --story-muted: #a8bdd6;
+    --story-accent: #a78bfa;
+    --story-accent-2: #38bdf8;
+    --story-accent-text: #c4b1ff;
+    --story-accent-text-hover: #ddd0ff;
+    --story-control-bg: rgba(5, 15, 28, 0.72);
+    --story-control-border: rgba(126, 180, 235, 0.28);
+    --story-control-hover-bg: rgba(126, 180, 235, 0.14);
+    --story-track-bg: rgba(126, 180, 235, 0.2);
+    --story-track-border: rgba(126, 180, 235, 0.16);
+    --story-active-ring: rgba(56, 189, 248, 0.82);
+    --story-active-halo: rgba(199, 226, 255, 0.4);
+    --story-error: #ff9db0;
+    --viewer-danger: #ff9db0;
+    --viewer-success: #5eead4;
+    --viewer-warning: #fbbf24;
+    /*
+     * Deep rather than bright: these accents are button fills carrying white
+     * labels, so the fill has to stay dark enough to clear 4.5:1 against white.
+     * A lighter orange reads better against the midnight panel but drops the
+     * label to ~2.4:1.
+     */
+    --story-builder-accent: #c2410c;
+    --story-builder-accent-hover: #d4550f;
+    --viewer-well-bg: rgba(3, 8, 16, 0.45);
     border-color: #142b46;
     box-shadow: var(--viewer-frame-shadow, none);
     background: radial-gradient(130% 130% at 8% 0%, #142a46 0%, #07111f 50%, #020711 100%);
+  }
+
+  /*
+   * Ringo — the Yellow Submarine theme. A light-family palette (see the
+   * `[data-theme='ringo']` entries in the `:is()` lists elsewhere in the
+   * codebase, which it joins alongside light and sepia): yellow hull, sea-blue
+   * secondary, Pepperland pink accent. The stage stays a pale cream rather than
+   * going sea-blue, because stage overlays draw `--viewer-text` on top of it and
+   * a dark stage under dark text is unreadable.
+   */
+  .viewer[data-theme='ringo'] {
+    --viewer-bg: #ffd60a;
+    --viewer-surface: #ffe987;
+    --viewer-panel: #ffe15c;
+    --viewer-panel-strong: #ffcf1f;
+    --viewer-panel-border: rgba(74, 48, 0, 0.24);
+    --viewer-text: #2e2000;
+    --viewer-muted: #6d5200;
+    --viewer-accent: #a8232b;
+    --viewer-accent-2: #0072c6;
+    --viewer-accent-tools: #00875a;
+    --viewer-stage: #fff6c2;
+    /* Warm, not the sea blue: a blue glow over the cream stage mixes to green. */
+    --viewer-stage-glow: rgba(168, 35, 43, 0.1);
+    --viewer-stage-tail: #fffdf0;
+    --viewer-dock-button-bg: rgba(255, 250, 214, 0.96);
+    --viewer-dock-button-border: rgba(74, 48, 0, 0.24);
+    --viewer-dock-tooltip-bg: rgba(255, 247, 199, 0.97);
+    --viewer-dock-active-border: rgba(168, 35, 43, 0.7);
+    --viewer-dock-active-ring: rgba(168, 35, 43, 0.2);
+    --viewer-dock-active-chip-text: #5a0723;
+    --viewer-dock-button-shadow: 0 10px 20px rgba(74, 48, 0, 0.22);
+    --viewer-dock-active-shadow-base: 0 10px 20px rgba(74, 48, 0, 0.24);
+    --viewer-gallery-bg: rgba(255, 243, 176, 0.94);
+    --viewer-gallery-item-bg: rgba(255, 252, 226, 0.94);
+    --viewer-gallery-item-border: rgba(74, 48, 0, 0.18);
+    --viewer-gallery-thumb-bg: rgba(240, 214, 120, 0.72);
+    --viewer-gallery-close-bg: rgba(255, 252, 226, 0.94);
+    --viewer-gallery-active-ring: rgba(0, 114, 198, 0.26);
+    --viewer-close-button-border: rgba(74, 48, 0, 0.24);
+    --viewer-close-button-bg: rgba(255, 252, 226, 0.94);
+    --viewer-close-button-hover-bg: rgba(255, 238, 160, 0.96);
+    --viewer-close-button-hover-border: rgba(74, 48, 0, 0.36);
+    --viewer-close-button-color: #2e2000;
+    --viewer-close-button-focus-ring: var(--viewer-focus-ring);
+    --viewer-stage-bottom-bg: rgba(255, 244, 184, 0.88);
+    --viewer-toolbar-separator: rgba(74, 48, 0, 0.2);
+    --viewer-toolbar-group-border: rgba(74, 48, 0, 0.2);
+    --viewer-toolbar-group-bg: transparent;
+    --viewer-toolbar-button-bg: rgba(255, 252, 226, 0.86);
+    --viewer-toolbar-button-hover-bg: rgba(168, 35, 43, 0.16);
+    --viewer-toolbar-value-text: #2e2000;
+    --viewer-toolbar-value-bg: transparent;
+    --viewer-search-input-bg: rgba(255, 252, 226, 0.94);
+    --viewer-search-clear-bg: rgba(168, 35, 43, 0.16);
+    --viewer-search-item-bg: rgba(255, 252, 226, 0.78);
+    --viewer-search-item-hover-bg: rgba(168, 35, 43, 0.18);
+    --viewer-search-focus: var(--viewer-focus-ring);
+    --viewer-control-rail-bg: linear-gradient(
+      180deg,
+      rgba(255, 240, 158, 0.96) 0%,
+      rgba(255, 214, 10, 0.96) 100%
+    );
+    --story-shell-bg: linear-gradient(180deg, #fff3a8 0%, #ffcf00 100%);
+    --story-line: rgba(74, 48, 0, 0.22);
+    --story-text: #2e2000;
+    --story-muted: #6d5200;
+    --story-accent: #a8232b;
+    --story-accent-2: #0072c6;
+    --story-accent-text: #8c1f1a;
+    --story-accent-text-hover: #701712;
+    --story-control-bg: rgba(255, 249, 214, 0.9);
+    --story-control-border: rgba(74, 48, 0, 0.28);
+    --story-control-hover-bg: rgba(168, 35, 43, 0.14);
+    --story-track-bg: rgba(74, 48, 0, 0.18);
+    --story-track-border: rgba(74, 48, 0, 0.14);
+    --story-active-ring: rgba(0, 114, 198, 0.8);
+    --story-active-halo: rgba(74, 48, 0, 0.26);
+    --story-error: #a3123c;
+    --story-note-bg: rgba(255, 250, 219, 0.95);
+    --story-note-text: #2e2000;
+    --story-label-bg: rgba(46, 32, 0, 0.86);
+    --story-label-text: #fff4b8;
+    --viewer-danger: #a3123c;
+    --viewer-success: #00694a;
+    --viewer-warning: #7a4b00;
+    --story-builder-accent: #9c2b22;
+    --story-builder-accent-hover: #8c1f1a;
+    --viewer-well-bg: rgba(74, 48, 0, 0.1);
+    --viewer-focus-ring: #0056a3;
+    border-color: #e0a800;
+    box-shadow: var(--viewer-frame-shadow, none);
+    background: radial-gradient(135% 135% at 10% 0%, #fff8c4 0%, #ffd60a 48%, #f2b705 100%);
   }
 
   .viewer__grid {
@@ -3245,8 +3471,15 @@
     border: 1px solid var(--viewer-panel-border);
   }
 
+  /*
+   * The keyboard focus indicator for every control in the viewer. It has to
+   * clear 3:1 against the surface behind it (WCAG 2.2 SC 1.4.11), which the
+   * dark themes' cyan does not manage on a light panel — it landed near 1.4:1
+   * on light, sepia and ringo, i.e. all but invisible. Each light-family theme
+   * therefore states its own ring rather than inheriting this one.
+   */
   :global(.viewer :is(button, input, select, textarea):focus-visible) {
-    outline: 2px solid rgba(42, 199, 255, 0.7);
+    outline: 2px solid var(--viewer-focus-ring, rgba(42, 199, 255, 0.7));
     outline-offset: 2px;
   }
 

@@ -540,7 +540,7 @@
     white-space: nowrap;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .manifest-card__thumbnail .manifest-card__iiif {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .manifest-card__thumbnail .manifest-card__iiif {
     filter: none;
   }
 

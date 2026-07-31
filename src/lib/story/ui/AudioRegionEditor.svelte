@@ -279,7 +279,7 @@
     overflow: hidden;
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
-    background: rgba(5, 10, 16, 0.42);
+    background: var(--viewer-well-bg, rgba(5, 10, 16, 0.42));
   }
   .audio-region__wave {
     min-height: 64px;
@@ -303,21 +303,21 @@
   }
   .audio-region__zoom input {
     width: 100%;
-    accent-color: var(--accent, #e07a3f);
+    accent-color: var(--accent, var(--story-builder-accent, #e07a3f));
   }
   .audio-region__zoom button {
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
     border-radius: 6px;
     padding: 5px 7px;
-    background: rgba(255, 255, 255, 0.04);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 4%, transparent);
     color: var(--viewer-text, #e8edf4);
     font: inherit;
     cursor: pointer;
   }
   .audio-region__wave :global(::part(region)) {
-    border-right: 2px solid #ffb184;
-    border-left: 2px solid #ffb184;
-    background: rgba(224, 122, 63, 0.32) !important;
+    border-right: 2px solid var(--story-builder-accent-hover, #ffb184);
+    border-left: 2px solid var(--story-builder-accent-hover, #ffb184);
+    background: color-mix(in srgb, var(--story-builder-accent, #e07a3f) 32%, transparent) !important;
     z-index: 4 !important;
   }
   .audio-region__wave :global(::part(region-content)) {
@@ -331,7 +331,7 @@
   .audio-region__wave :global(::part(region-handle-left)),
   .audio-region__wave :global(::part(region-handle-right)) {
     width: 8px !important;
-    border-color: #ffb184 !important;
+    border-color: var(--story-builder-accent-hover, #ffb184) !important;
   }
   .audio-region__message {
     position: absolute;
@@ -340,11 +340,11 @@
     place-items: center;
     padding: 8px;
     color: var(--viewer-muted, #9aa6b2);
-    background: rgba(5, 10, 16, 0.4);
+    background: var(--viewer-well-bg, rgba(5, 10, 16, 0.4));
     font-size: 10px;
     pointer-events: none;
   }
   .audio-region__message--error {
-    color: #f2b4a9;
+    color: var(--viewer-danger, #f2b4a9);
   }
 </style>

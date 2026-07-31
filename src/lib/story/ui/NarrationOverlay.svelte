@@ -444,8 +444,8 @@
   }
 
   .narration-overlay__input-shell:focus-within {
-    border-color: var(--accent, #e07a3f);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #e07a3f) 18%, transparent);
+    border-color: var(--accent, var(--story-builder-accent, #e07a3f));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 18%, transparent);
   }
 
   .narration-overlay__input-shell :global(svg) {
@@ -475,12 +475,12 @@
   }
 
   .narration-overlay__input--standalone:focus {
-    border-color: var(--accent, #e07a3f);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #e07a3f) 18%, transparent);
+    border-color: var(--accent, var(--story-builder-accent, #e07a3f));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 18%, transparent);
   }
 
   .narration-overlay__input::placeholder {
-    color: rgba(213, 221, 234, 0.45);
+    color: color-mix(in srgb, var(--viewer-muted, #9aa6b2) 45%, transparent);
   }
 
   .narration-overlay__input:disabled {
@@ -491,10 +491,10 @@
   .narration-overlay__warning {
     margin: 0;
     padding: 10px 12px;
-    border: 1px solid rgba(255, 157, 92, 0.45);
+    border: 1px solid color-mix(in srgb, var(--story-builder-accent, #e07a3f) 45%, transparent);
     border-radius: 9px;
-    background: rgba(255, 157, 92, 0.1);
-    color: #ffd2b2;
+    background: color-mix(in srgb, var(--story-builder-accent, #e07a3f) 10%, transparent);
+    color: var(--story-builder-accent-hover, #ffd2b2);
     font-size: 12px;
     line-height: 1.4;
   }
@@ -513,20 +513,20 @@
     width: 100%;
     min-height: 48px;
     color: var(--viewer-text, #e8edf4);
-    accent-color: var(--accent, #e07a3f);
+    accent-color: var(--accent, var(--story-builder-accent, #e07a3f));
   }
 
   .narration-overlay__player::-webkit-media-controls-enclosure,
   .narration-overlay__player::-webkit-media-controls-panel {
-    background: rgba(230, 236, 246, 0.14);
-    color: rgba(230, 236, 246, 0.72);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 14%, transparent);
+    color: color-mix(in srgb, var(--viewer-text, #e8edf4) 72%, transparent);
     text-shadow: none;
   }
 
   .narration-overlay__player::-webkit-media-controls-current-time-display,
   .narration-overlay__player::-webkit-media-controls-time-remaining-display {
-    color: rgba(230, 236, 246, 0.72);
-    -webkit-text-fill-color: rgba(230, 236, 246, 0.72);
+    color: color-mix(in srgb, var(--viewer-text, #e8edf4) 72%, transparent);
+    -webkit-text-fill-color: color-mix(in srgb, var(--viewer-text, #e8edf4) 72%, transparent);
     text-shadow: none;
     filter: none;
   }
@@ -571,7 +571,7 @@
 
   .narration-overlay__button--accent {
     width: 100%;
-    background: var(--accent, #e07a3f);
+    background: var(--accent, var(--story-builder-accent, #e07a3f));
     border-color: transparent;
     color: #fff;
   }
@@ -581,7 +581,12 @@
   }
 
   .narration-overlay__button--accent:not(:disabled):hover {
-    background: color-mix(in srgb, var(--accent, #e07a3f) 84%, white);
+    /*
+     * Darken on hover rather than lighten. These fills carry white labels, so
+     * mixing toward white pushed the label under 4.5:1 exactly when the
+     * pointer was on it; mixing toward black raises it instead.
+     */
+    background: color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 86%, black);
   }
 
   .narration-overlay__form {
@@ -632,8 +637,8 @@
   }
 
   .narration-overlay__language-tab--active {
-    border-color: var(--accent, #e07a3f);
-    background: color-mix(in srgb, var(--accent, #e07a3f) 16%, transparent);
+    border-color: var(--accent, var(--story-builder-accent, #e07a3f));
+    background: color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 16%, transparent);
     color: var(--viewer-text, #e8edf4);
   }
 
@@ -669,7 +674,7 @@
     height: 38px;
     border-radius: 10px;
     background: var(--viewer-panel-strong, #1b242e);
-    color: var(--accent, #e07a3f);
+    color: var(--accent, var(--story-builder-accent, #e07a3f));
   }
 
   .narration-overlay__source-icon :global(svg) {

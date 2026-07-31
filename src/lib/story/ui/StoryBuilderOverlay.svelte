@@ -689,7 +689,7 @@
     inset: 0;
     width: 38px;
     height: 44px;
-    fill: var(--accent, #e07a3f);
+    fill: var(--accent, var(--story-builder-accent, #e07a3f));
     stroke: white;
     stroke-width: 1.8;
   }
@@ -702,7 +702,7 @@
   .story-builder-motion-marker:focus-visible {
     transform: translate(calc(-50% + var(--motion-offset-x)), calc(-88% + var(--motion-offset-y)))
       scale(1.14);
-    outline: 2px solid color-mix(in srgb, var(--accent, #e07a3f) 45%, white);
+    outline: 2px solid color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 45%, white);
     outline-offset: 2px;
   }
 
@@ -744,8 +744,8 @@
     display: flex;
     gap: 12px;
     padding: 12px 16px;
-    background: rgba(25, 33, 44, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--viewer-panel-strong, #1b242e) 95%, transparent);
+    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 10%, transparent);
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     z-index: 102;
@@ -762,22 +762,22 @@
   }
 
   .story-builder-positioning-button--cancel {
-    background: rgba(255, 255, 255, 0.15);
-    color: #eef3f8;
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 15%, transparent);
+    color: var(--viewer-text, #eef3f8);
   }
 
   .story-builder-positioning-button--cancel:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 25%, transparent);
   }
 
   .story-builder-positioning-button--confirm {
-    background: var(--accent, #e07a3f);
-    color: #fffaf6;
+    background: var(--accent, var(--story-builder-accent, #e07a3f));
+    color: var(--viewer-text, #fffaf6);
   }
 
   .story-builder-positioning-button--confirm:hover {
     background: var(--accent-hover, #ef8f56);
-    box-shadow: 0 0 12px rgba(224, 122, 63, 0.4);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--story-builder-accent, #e07a3f) 40%, transparent);
   }
 
   .story-builder-motion-placement {
@@ -792,9 +792,9 @@
     max-width: min(440px, calc(100% - 32px));
     padding: 6px 12px;
     transform: translateX(-50%);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 14%, transparent);
     border-radius: 12px;
-    background: rgba(18, 25, 34, 0.96);
+    background: color-mix(in srgb, var(--viewer-panel, #121922) 96%, transparent);
     color: var(--viewer-text, #e8edf4);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
     pointer-events: auto;
@@ -827,7 +827,7 @@
   }
 
   .story-builder-motion-placement-pin--dragging {
-    filter: drop-shadow(0 8px 14px rgba(224, 122, 63, 0.85));
+    filter: drop-shadow(0 8px 14px color-mix(in srgb, var(--story-builder-accent, #e07a3f) 85%, transparent));
     transform: translate(-50%, -96%) scale(1.08);
   }
 
@@ -840,7 +840,7 @@
     transform: translate(-50%, 50%);
     border: 2px solid white;
     border-radius: 50%;
-    background: var(--accent, #e07a3f);
+    background: var(--accent, var(--story-builder-accent, #e07a3f));
     box-shadow:
       0 0 8px rgba(0, 0, 0, 0.6),
       inset 0 0 0 2px rgba(0, 0, 0, 0.3);
@@ -852,7 +852,7 @@
     inset: 0;
     width: 42px;
     height: 50px;
-    fill: var(--accent, #e07a3f);
+    fill: var(--accent, var(--story-builder-accent, #e07a3f));
     stroke: white;
     stroke-width: 1.8;
   }
@@ -880,17 +880,17 @@
     flex: 0 0 auto;
   }
   .story-builder-motion-placement__actions button {
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 12%, transparent);
     border-radius: 9px;
     padding: 9px 11px;
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent);
     color: inherit;
     font-weight: 650;
     cursor: pointer;
   }
   .story-builder-motion-placement__actions .story-builder-motion-placement__confirm {
     border-color: transparent;
-    background: var(--accent, #e07a3f);
+    background: var(--accent, var(--story-builder-accent, #e07a3f));
     color: white;
   }
   .story-builder-motion-placement__actions .story-builder-motion-placement__confirm:disabled {

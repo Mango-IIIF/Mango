@@ -230,7 +230,7 @@
     animation: viewer-secondary-panel-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .panel-stack--left.panel-stack--redesigned {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .panel-stack--left.panel-stack--redesigned {
     border-color: rgba(34, 48, 65, 0.12);
     background: rgba(233, 237, 243, 0.9);
   }
@@ -243,6 +243,11 @@
   :global(.viewer[data-theme='midnight']) .panel-stack--left.panel-stack--redesigned {
     border-color: rgba(126, 180, 235, 0.15);
     background: rgba(7, 19, 33, 0.9);
+  }
+
+  :global(.viewer[data-theme='ringo']) .panel-stack--left.panel-stack--redesigned {
+    border-color: rgba(74, 48, 0, 0.18);
+    background: rgba(255, 235, 140, 0.92);
   }
 
   .panel-stack--left.panel-stack--redesigned :global(.panel) {
@@ -299,7 +304,7 @@
     gap: 12px;
     padding: 12px;
     border-radius: 14px;
-    background: var(--story-sidebar-row-bg, rgba(255, 255, 255, 0.06));
+    background: var(--story-sidebar-row-bg, color-mix(in srgb, var(--viewer-text, #e8edf4) 6%, transparent));
     border: 1px solid transparent;
     box-shadow: none;
     color: var(--story-sidebar-text, var(--viewer-text, #e8edf4));
@@ -443,21 +448,21 @@
   }
 
   :global(.panel__tab--active) {
-    border: 1px solid rgba(42, 199, 255, 0.64);
-    background: rgba(42, 199, 255, 0.14);
-    color: #f5fbff;
-    box-shadow: inset 0 0 0 1px rgba(42, 199, 255, 0.08);
+    border: 1px solid color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 64%, transparent);
+    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 14%, transparent);
+    color: var(--viewer-text, #f5fbff);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 8%, transparent);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .panel-stack--left :global(.panel__tab) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .panel-stack--left :global(.panel__tab) {
     background: rgba(255, 255, 255, 0.78);
     color: #223041;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .panel-stack--left :global(.panel__tab--active) {
-    border-color: #159fce;
-    background: rgba(42, 199, 255, 0.13);
-    color: #16435a;
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .panel-stack--left :global(.panel__tab--active) {
+    border-color: var(--viewer-accent-2, #159fce);
+    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 13%, transparent);
+    color: var(--viewer-text, #16435a);
     box-shadow: inset 0 0 0 1px rgba(21, 159, 206, 0.1);
   }
 

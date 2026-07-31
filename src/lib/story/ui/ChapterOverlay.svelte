@@ -1660,7 +1660,7 @@
     .chapter-overlay__scrim {
       position: absolute;
       inset: 0;
-      background: rgba(5, 10, 22, 0.18);
+      background: var(--viewer-well-bg, rgba(5, 10, 22, 0.18));
       pointer-events: auto;
     }
 
@@ -1716,10 +1716,10 @@
       gap: 10px;
       align-items: center;
       width: 100%;
-      border: 1px solid color-mix(in srgb, var(--accent, #e07a3f) 48%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 48%, transparent);
       border-radius: 11px;
       padding: 10px 12px;
-      background: color-mix(in srgb, var(--accent, #e07a3f) 10%, transparent);
+      background: color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 10%, transparent);
       color: var(--viewer-text, #e8edf4);
       text-align: left;
       cursor: pointer;
@@ -1727,14 +1727,14 @@
 
     .chapter-overlay__set-view:hover,
     .chapter-overlay__set-view:focus-visible {
-      border-color: var(--accent, #e07a3f);
-      background: color-mix(in srgb, var(--accent, #e07a3f) 16%, transparent);
+      border-color: var(--accent, var(--story-builder-accent, #e07a3f));
+      background: color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 16%, transparent);
     }
 
     .chapter-overlay__set-view :global(svg) {
       width: 17px;
       height: 17px;
-      color: var(--accent, #e07a3f);
+      color: var(--accent, var(--story-builder-accent, #e07a3f));
     }
 
     .chapter-overlay__set-view span {
@@ -1838,7 +1838,7 @@
       padding: 13px;
       border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
       border-radius: 10px;
-      background: color-mix(in srgb, var(--accent, #e07a3f) 7%, transparent);
+      background: color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 7%, transparent);
     }
 
     .chapter-overlay__wide-tool-note strong {
@@ -1887,22 +1887,22 @@
     }
     .chapter-overlay__annotation-tools
       .chapter-overlay__annotation-tool--active {
-      border-color: #2ac7ff;
-      background: rgba(42, 199, 255, 0.12);
+      border-color: var(--viewer-accent-2, #2ac7ff);
+      background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 12%, transparent);
       color: var(--viewer-text, #e8edf4);
     }
     .chapter-overlay__annotation-editor { display:grid; gap:14px; }
     .chapter-overlay__field { display:grid; gap:7px; color:var(--viewer-muted, #9aa6b2); font-size:10px; font-weight:700; }
     .chapter-overlay__translation-field { display:grid; grid-template-columns:28px minmax(0,1fr); align-items:center; gap:7px; }
     .chapter-overlay__translation-field small { color:var(--viewer-muted, #9aa6b2); font-size:9px; }
-    .chapter-overlay__translation-field input { min-width:0; box-sizing:border-box; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:8px 9px; background:rgba(4,9,15,.35); color:var(--viewer-text, #e8edf4); font:inherit; }
+    .chapter-overlay__translation-field input { min-width:0; box-sizing:border-box; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:8px 9px; background:var(--viewer-well-bg, rgba(4, 9, 15, 0.35)); color:var(--viewer-text, #e8edf4); font:inherit; }
     .chapter-overlay__annotation-palette { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
     .chapter-overlay__annotation-palette button { width:25px; height:25px; border:2px solid transparent; border-radius:999px; background:var(--annotation-color); cursor:pointer; }
-    .chapter-overlay__annotation-palette .chapter-overlay__annotation-swatch--active { border-color:#fff; box-shadow:0 0 0 2px var(--annotation-color); }
+    .chapter-overlay__annotation-palette .chapter-overlay__annotation-swatch--active { border-color:var(--viewer-text, #fff); box-shadow:0 0 0 2px var(--annotation-color); }
     .chapter-overlay__annotation-palette input[type="color"] { width:30px; height:27px; padding:1px; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:7px; background:transparent; cursor:pointer; }
     .chapter-overlay__segmented-control { display:flex; gap:5px; }
     .chapter-overlay__segmented-control button { flex:1; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:7px; background:transparent; color:var(--viewer-muted, #9aa6b2); text-transform:capitalize; cursor:pointer; }
-    .chapter-overlay__segmented-control .chapter-overlay__segmented-control--active { border-color:var(--accent, #e07a3f); background:color-mix(in srgb, var(--accent, #e07a3f) 14%, transparent); color:var(--viewer-text, #e8edf4); }
+    .chapter-overlay__segmented-control .chapter-overlay__segmented-control--active { border-color:var(--accent, var(--story-builder-accent, #e07a3f)); background:color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 14%, transparent); color:var(--viewer-text, #e8edf4); }
 
     .chapter-overlay__task {
       display: grid;
@@ -1984,9 +1984,13 @@
     }
 
     .chapter-overlay__language-tab--active {
-      border-color: var(--accent, #e07a3f);
-      background: rgba(224, 122, 63, 0.16);
-      color: #fff;
+      border-color: var(--accent, var(--story-builder-accent, #e07a3f));
+      background: color-mix(in srgb, var(--story-builder-accent, #e07a3f) 16%, transparent);
+      /*
+       * A 16% tint, so the label sits on the panel colour rather than on the
+       * accent — white would disappear on the light themes' pale tint.
+       */
+      color: var(--viewer-text, #fff);
     }
 
     .chapter-overlay__collapse-toggle {
@@ -2050,10 +2054,10 @@
 
     .chapter-overlay__validation {
       padding: 12px 14px;
-      border: 1px solid rgba(255, 120, 120, 0.35);
+      border: 1px solid color-mix(in srgb, var(--viewer-danger, #ffb8b8) 35%, transparent);
       border-radius: 12px;
-      background: rgba(255, 90, 90, 0.1);
-      color: #ffd0d0;
+      background: color-mix(in srgb, var(--viewer-danger, #ffb8b8) 10%, transparent);
+      color: var(--viewer-danger, #ffd0d0);
       font-size: 12px;
     }
 
@@ -2076,15 +2080,15 @@
 
     .chapter-overlay__input::placeholder,
     .chapter-overlay__textarea::placeholder {
-      color: rgba(213, 221, 234, 0.45);
+      color: color-mix(in srgb, var(--viewer-muted, #9aa6b2) 45%, transparent);
     }
 
     .chapter-overlay__input:focus,
     .chapter-overlay__select:focus,
     .chapter-overlay__textarea:focus {
-      border-color: var(--accent, #e07a3f);
+      border-color: var(--accent, var(--story-builder-accent, #e07a3f));
       box-shadow: 0 0 0 2px
-        color-mix(in srgb, var(--accent, #e07a3f) 18%, transparent);
+        color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 18%, transparent);
     }
 
     .chapter-overlay__textarea {
@@ -2142,7 +2146,7 @@
 
     .chapter-overlay__button--primary,
     .chapter-overlay__button--accent {
-      background: var(--accent, #e07a3f);
+      background: var(--accent, var(--story-builder-accent, #e07a3f));
       border-color: transparent;
       color: #fff;
     }
@@ -2166,7 +2170,12 @@
 
     .chapter-overlay__button--primary:not(:disabled):hover,
     .chapter-overlay__button--accent:not(:disabled):hover {
-      background: color-mix(in srgb, var(--accent, #e07a3f) 84%, white);
+      /*
+       * Darken on hover rather than lighten. These fills carry white labels, so
+       * mixing toward white pushed the label under 4.5:1 exactly when the
+       * pointer was on it; mixing toward black raises it instead.
+       */
+      background: color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 86%, black);
     }
 
     .chapter-overlay__audio-source {
@@ -2200,16 +2209,16 @@
       width: 100%;
       height: 168px;
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 14%, transparent);
       background:
         linear-gradient(
           to right,
-          rgba(255, 255, 255, 0.06) 1px,
+          color-mix(in srgb, var(--viewer-text, #e8edf4) 6%, transparent) 1px,
           transparent 1px
         ),
         linear-gradient(
           to bottom,
-          rgba(255, 255, 255, 0.06) 1px,
+          color-mix(in srgb, var(--viewer-text, #e8edf4) 6%, transparent) 1px,
           transparent 1px
         ),
         var(--viewer-panel, #121922);
@@ -2232,7 +2241,7 @@
       gap: 8px;
       margin: 0 -18px -22px;
       padding: 12px 18px 18px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-top: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 10%, transparent);
       background: var(--viewer-panel, #121922);
     }
 
@@ -2251,16 +2260,16 @@
       gap: 8px;
       padding: 10px 12px;
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.03);
+      background: color-mix(in srgb, var(--viewer-text, #e8edf4) 4%, transparent);
+      border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 3%, transparent);
       transition:
         background-color 0.2s ease,
         border-color 0.2s ease;
     }
 
     .chapter-overlay__layer-item:hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(255, 255, 255, 0.06);
+      background: color-mix(in srgb, var(--viewer-text, #e8edf4) 6%, transparent);
+      border-color: color-mix(in srgb, var(--viewer-text, #e8edf4) 6%, transparent);
     }
 
     .chapter-overlay__layer-info {
@@ -2274,7 +2283,7 @@
 
     .chapter-overlay__layer-name {
       font-weight: 700;
-      color: rgba(230, 236, 246, 0.9);
+      color: color-mix(in srgb, var(--viewer-text, #e8edf4) 90%, transparent);
     }
 
     .chapter-overlay__layer-value {
@@ -2285,9 +2294,9 @@
 
     .chapter-overlay__layer-slider {
       width: 100%;
-      accent-color: var(--accent, #e07a3f);
+      accent-color: var(--accent, var(--story-builder-accent, #e07a3f));
       cursor: pointer;
-      background: rgba(255, 255, 255, 0.1);
+      background: color-mix(in srgb, var(--viewer-text, #e8edf4) 10%, transparent);
       height: 4px;
       border-radius: 2px;
       outline: none;

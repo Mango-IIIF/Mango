@@ -116,8 +116,8 @@
     width: min(720px, 90cqw);
     height: min(640px, 85cqh);
     max-height: 90cqh;
-    background: #0f1722;
-    color: #e8edf4;
+    background: var(--viewer-panel, #0f1722);
+    color: var(--viewer-text, #e8edf4);
     border-radius: 14px;
     padding: 16px;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
@@ -176,8 +176,8 @@
     display: block;
     width: 100%;
     height: 100%;
-    background: #0b111a;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--viewer-panel, #0b111a);
+    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent);
     border-radius: 10px;
     padding: 12px;
     margin: 0;
@@ -185,7 +185,7 @@
     resize: none;
     font-family: Monaco, 'Courier New', monospace;
     font-size: 12px;
-    color: #d5e2f5;
+    color: var(--viewer-muted, #d5e2f5);
     box-sizing: border-box;
   }
 
@@ -200,7 +200,7 @@
     border: none;
     border-radius: 10px;
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent);
     color: inherit;
     font-size: 12px;
     text-transform: uppercase;
@@ -209,7 +209,7 @@
   }
 
   .save-modal__button--primary {
-    background: #e07a3f;
-    color: #fffaf6;
+    background: var(--story-builder-accent, #e07a3f);
+    color: var(--viewer-text, #fffaf6);
   }
 </style>

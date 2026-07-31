@@ -2,7 +2,7 @@ import type { AVPlayerConfig } from '@mango-iiif/av/core';
 
 export type ViewerConfig = {
   language?: string;
-  theme?: 'light' | 'dark' | string;
+  theme?: 'dark' | 'light' | 'sepia' | 'midnight' | 'ringo' | string;
   allowCreateMode?: boolean;
   showThumbnails?: boolean;
   showCollection?: boolean;
