@@ -16,6 +16,7 @@
     ChapterDrawingAnnotation,
     StoryState,
   } from "../../core/types/story";
+  import type { ViewBox } from "../../core/types/viewer";
   import type { MediaType, MediaSource } from "../../iiif/mediaResolver";
   import type { MediaMarksState } from "../mediaMarks";
   import {

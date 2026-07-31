@@ -73,24 +73,46 @@ The button's *displayed state* and its *action* are derived from different sourc
 those sources settle at different times. Any fix that keeps consulting `showThumbnails`
 at short heights inherits the race in item 1.
 
-### Suggested approach
+### Approach that was tried and rejected — do not repeat it
 
-- Add a reactive "thumbnail strip is hidden" flag keyed to the **same 560px threshold
-  the stylesheet uses**.
-- Derive both `galleryActive` and the click handler from that one flag, so state and
-  action cannot disagree.
-- Reconcile `SHORT_LAYOUT_HEIGHT` (`ViewerLayout.svelte:85`, currently **500**) with the
-  CSS rung (`ViewerLayout.svelte:3612`, currently **560**). They express the same idea
-  with different numbers, which is part of why this is fragile.
+The suggestion originally recorded here was: add a reactive "strip is hidden" flag keyed
+to the 560px rung, and derive both `galleryActive` and the click handler from it, so the
+button's state and its action share one source.
 
-At short heights the button should then reflect and toggle gallery layout **only**,
-never `showThumbnails`. `responsive-matrix.spec.ts:321` would read `aria-pressed=false`,
-never click, and the stuck state becomes unreachable rather than merely unlikely.
+**That was implemented and measured. It does not work: 3 / 16 failures**, against 0 / 16
+for simply reverting. The failure artifact again showed the gallery grid rendered and
+the button `[pressed]`.
+
+The reason is worth recording. The flag is updated by a `ResizeObserver`, so it is
+*asynchronous too*. Between the host being resized and the observer firing, the flag is
+stale: the button renders with "strip" semantics while a click landing in that window is
+handled with "gallery" semantics. Sharing one source removes the disagreement between
+`showThumbnails` and the button, but introduces the same disagreement one level down.
+
+Generalising is the useful lesson: **any fix that changes what the button *means* based
+on an asynchronously-updated size flag will race.** The window shrinks, it does not
+close.
+
+### Approach worth trying instead
+
+Keep the button's meaning constant — it always toggles `showThumbnails` — and change
+what that *renders* at short heights. Below the rung, have "thumbnails open" draw the
+gallery view in place of the strip, rather than switching `layoutMode`.
+
+The button then has one meaning at every size, there is no size-dependent branch in the
+handler, and nothing to race. It is a rendering change rather than a behavioural one,
+which is also why it should not disturb the pinned layout tests.
+
+Note on the two constants: `SHORT_LAYOUT_HEIGHT` (`ViewerLayout.svelte:85`, **500**) and
+the CSS rung (**560**) look like the same idea but are not — the first decides when the
+dock goes compact, the second whether the strip can render at all. Leave them distinct.
 
 ### Verification
 
-Re-run the 320px test in isolation ~16 times and compare against the table in item 1.
-A single green full-suite run proves nothing here — the rate is too low.
+Re-run the 320px test in isolation **~16 times** and compare against the table in item 1.
+A single green full-suite run proves nothing — the rate is too low. Beware of measuring
+while anything else touches port 4173 or rebuilds `apps/demo/dist`: a contended run
+produced a false 3/16 that took a second, clean measurement to disprove.
 
 ---
 
@@ -116,18 +138,42 @@ rounds and I twice called it pre-existing on samples that were too small.
   `backdrop-filter: blur(12px)`, but the built bundle computes it to `none`. Cosmetic
   only — the panel is 78% opaque — but if the frosted effect is wanted, something in the
   CSS pipeline is dropping it.
-- **`annotation-editor.html:23` points at a dead image service.** The manifest
-  (`api.artic.edu/.../80607`) parses, but its image service returns **403**, so tiles
-  never load. Worth swapping for a reachable manifest.
+- **~~`annotation-editor.html:23` points at a dead image service.~~ FIXED.** Swapped to
+  the IIIF Cookbook `0005-image-service` manifest, which renders with no console errors.
+  **But the dead `api.artic.edu` service is referenced far more widely** — including
+  `apps/demo/test-story/demo.json` and `feature-showcase.json`, which the story e2e specs
+  load, plus the react-app and vue-app copies. Those chapters target a canvas whose tiles
+  return 403, so any story test touching them is working with an image that never loads.
+  That is a plausible contributor to the story-related flakiness and is worth its own
+  pass; it was left alone here because rewriting story fixtures means keeping canvas ids
+  consistent across four files.
 - **Harvard and Yale image services are unreachable from CI.** The embeds on
   `embed-third-party.html` render locally but their tiles do not load on GitHub runners,
   so the e2e placement guard deliberately targets the Wellcome embed instead. Noted in a
   comment on the demo page.
-- **`npm run lint` crashes.** `TypeError: Cannot read properties of undefined (reading
-  'type')` in `@typescript-eslint/no-unused-vars` on
-  `src/lib/story/ui/StoryBuilderWideAuthoring.svelte`. Reproduced on a clean checkout —
-  an eslint 10 / typescript-eslint incompatibility, not a code problem. CI does not run
-  lint, so nothing is blocked, but lint currently covers nothing.
+- **~~`npm run lint` crashes.~~ FIXED — and it was a code problem after all.** The crash
+  is upstream (`@typescript-eslint/no-unused-vars` has no `default` in its
+  `defToVariableType` switch, so an unrecognised definition type returns `undefined` and
+  it dereferences `.type`), but it only fires when the rule tries to *report* something.
+  `svelte-eslint-parser` labels Svelte 5 runes `ComputedVariable`, which the rule does not
+  know — so an **unused `$derived` crashes the linter**. The trigger was a genuinely dead
+  `$: durationSeconds` in `StoryBuilderWideAuthoring.svelte`. Removing it, plus the real
+  errors that then surfaced, gets `npm run lint` to exit 0:
+  - dead type import in `story/normalizeAnnotations.ts`
+  - `ViewBox` used but never imported in `story/ui/ChapterOverlay.svelte` — a real bug
+    `no-undef` caught, hidden because `tsconfig.build.json` does not type-check `.svelte`
+  - dead component import in `viewer/ui/LeftPanelStack.svelte`
+
+  Still fragile: the next unused rune will crash it again until upstream adds a default.
+
+- **The Svelte lint rules have never actually run.** `eslint.config.mjs` does
+  `...sveltePlugin.configs.recommended.rules`, but in eslint-plugin-svelte v3 that config
+  is a flat-config **array**, so `.rules` is `undefined` and the spread contributes
+  nothing. Enabling it properly (`...sveltePlugin.configs.recommended` in the top-level
+  array) surfaces **56 errors**. Left off deliberately — that backlog is its own piece of
+  work. It is also why the two remaining "unused eslint-disable directive" warnings
+  appear: those `svelte/no-at-html-tags` disables are inert only because the rule is off,
+  so they should be kept, not deleted.
 - **Metadata panel behind the toolbar — fixed, but note the approach.** Solved by
   raising the drawer and backdrop above the toolbar in the stacking order (z-index
   14/13/12). The earlier attempt reserved space with `padding-bottom` instead and broke

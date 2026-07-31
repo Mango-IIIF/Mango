@@ -96,7 +96,6 @@
     }
     if (showLayers) loaded.layers = true;
   });
-  import MangoFooterBrand from '../../story/ui/MangoFooterBrand.svelte';
 </script>
 
 <aside

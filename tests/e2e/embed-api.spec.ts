@@ -1,7 +1,5 @@
 import { expect, test, type Locator } from "@playwright/test";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const settled = async (viewer: Locator) => {
   await expect
     .poll(async () => viewer.evaluate((element: any) => element.getCanvasCount()), {

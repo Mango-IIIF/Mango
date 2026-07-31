@@ -41,7 +41,6 @@
     1,
     track?.durationMs ?? chapter?.presentationDurationMs ?? 5000,
   );
-  $: durationSeconds = durationMs / 1000;
   $: points = [...(track?.keyframes ?? [])].sort((a, b) => a.timeMs - b.timeMs);
 
   const pointPosition = (

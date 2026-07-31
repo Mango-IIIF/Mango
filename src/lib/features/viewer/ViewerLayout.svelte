@@ -2246,21 +2246,15 @@
     border-radius: 16px;
     padding: 12px;
     cursor: pointer;
-    transition:
-      transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
-      border-color 0.22s ease,
-      box-shadow 0.22s ease,
-      background-color 0.22s ease;
+    transition: border-color 0.22s ease;
     width: 100%;
     box-sizing: border-box;
     outline: none;
   }
 
+  /* Hover is the border and nothing else — no lift, no glow, no tint. */
   .stage-gallery-view__card:hover {
-    transform: translateY(-6px);
     border-color: var(--viewer-accent-2, #2ac7ff);
-    background: rgba(255, 255, 255, 0.06);
-    box-shadow: 0 12px 30px rgba(42, 199, 255, 0.16);
   }
 
   .stage-gallery-view__card:focus-visible {
@@ -2290,11 +2284,6 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    transition: transform 0.22s ease;
-  }
-
-  .stage-gallery-view__card:hover .stage-gallery-view__img {
-    transform: scale(1.04);
   }
 
   .stage-gallery-view__placeholder {

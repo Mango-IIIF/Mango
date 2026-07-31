@@ -1,7 +1,6 @@
 import type {
   AnnotationPlacement,
   Chapter,
-  ChapterDrawingAnnotation,
   StoryState,
 } from "../core/types/story";
 
