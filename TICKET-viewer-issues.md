@@ -56,10 +56,21 @@ most failures and converted a transient race into a terminal stuck state.
 
 ---
 
-## 2. Gallery button does nothing in short embeds (pre-existing)
+## 2. Gallery button does nothing in short embeds — FIXED
 
-**Priority: medium.** Predates this session; the revert above restores it, it does not
-cause it.
+**Resolved.** Below 560px the thumbnail strip no longer sheds; it becomes an overlay
+that the Gallery button opens and dismisses. Measured **16 / 16** passes on
+`responsive-matrix.spec.ts:321`, matching the plain revert's stability, and two full
+suite runs came back green with no flaky entries.
+
+The fix is presentation-only — the rung at `ViewerLayout.svelte` now repositions
+`.gallery` and wraps `.gallery__list` instead of hiding it. The button still only ever
+toggles `showThumbnails`, at every height, so it has one meaning everywhere and no
+size-dependent branch to race against. `layoutMode` is never touched, which is what makes
+the stuck state structurally impossible rather than merely unlikely, and `.stage__media`
+keeps its box because the overlay is taken out of flow rather than replacing the stage.
+
+The two rejected attempts are kept below, because both looked correct and neither was.
 
 Below 560px element height the strip is hidden, but the dock button still toggles
 `showThumbnails` — so it flips state nothing can render and appears dead. The comment
@@ -93,15 +104,14 @@ Generalising is the useful lesson: **any fix that changes what the button *means
 on an asynchronously-updated size flag will race.** The window shrinks, it does not
 close.
 
-### Approach worth trying instead
+### The approach that worked
 
 Keep the button's meaning constant — it always toggles `showThumbnails` — and change
-what that *renders* at short heights. Below the rung, have "thumbnails open" draw the
-gallery view in place of the strip, rather than switching `layoutMode`.
+what that *renders* at short heights. This is what shipped, as pure CSS in the
+`max-height: 560px` rung: `.gallery` becomes an absolutely-positioned, scrollable
+overlay and `.gallery__list` wraps into a grid instead of scrolling sideways.
 
-The button then has one meaning at every size, there is no size-dependent branch in the
-handler, and nothing to race. It is a rendering change rather than a behavioural one,
-which is also why it should not disturb the pinned layout tests.
+No JS, no flag, no branch in the handler, so there is nothing left to race.
 
 Note on the two constants: `SHORT_LAYOUT_HEIGHT` (`ViewerLayout.svelte:85`, **500**) and
 the CSS rung (**560**) look like the same idea but are not — the first decides when the

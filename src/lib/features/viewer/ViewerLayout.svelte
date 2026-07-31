@@ -3593,18 +3593,50 @@
 
   /*
    * Rung 1 of the vertical ladder (see `.stage--viewer`). Below this height the
-   * element cannot show both a usable image and the thumbnail strip, so the
-   * strip sheds first — the dock's Gallery button still opens the full gallery
-   * view, so nothing becomes unreachable. Keyed on the element's own height, so
-   * a short embed on a tall page compacts the same way a landscape phone does.
+   * element cannot give the thumbnail strip a row of its own without squeezing
+   * the image to nothing. The strip therefore stops being a row and becomes an
+   * overlay: the reader opens it with the Gallery button and dismisses it with
+   * the same button. Keyed on the element's own height, so a short embed on a
+   * tall page compacts the same way a landscape phone does.
+   *
+   * This is deliberately a presentation change and nothing else. The button
+   * still only ever toggles `showThumbnails`, at every height, so it has one
+   * meaning everywhere and no size-dependent branch to race against — see
+   * TICKET-viewer-issues.md for the two attempts that changed its behaviour
+   * instead and stranded the viewer in the gallery layout.
+   *
+   * The media keeps its box while the overlay is open: the overlay is taken out
+   * of flow rather than replacing the stage, so anything measuring `.stage__media`
+   * still finds it.
    */
   @container mango-viewer (max-height: 560px) {
-    .stage--viewer > :global(.gallery) {
-      display: none;
+    .stage--viewer {
+      position: relative;
+      grid-template-rows: minmax(min(120px, 100%), 1fr);
     }
 
-    .stage--viewer {
-      grid-template-rows: minmax(min(120px, 100%), 1fr);
+    .stage--viewer > :global(.gallery) {
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      margin-top: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      align-content: start;
+      background: var(--viewer-gallery-bg, rgba(10, 14, 19, 0.96));
+    }
+
+    /*
+     * As a row this list scrolls sideways; with the whole stage to fill it wraps
+     * instead, so every page is reachable by scrolling the overlay vertically.
+     */
+    .stage--viewer > :global(.gallery) :global(.gallery__list) {
+      grid-auto-flow: row;
+      grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+      grid-auto-columns: auto;
+      overflow-x: visible;
+      overflow-y: visible;
+      touch-action: auto;
     }
   }
 
