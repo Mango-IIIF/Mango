@@ -3023,21 +3023,36 @@
     --viewer-toolbar-separator: rgba(74, 48, 0, 0.2);
     --viewer-toolbar-group-border: rgba(74, 48, 0, 0.2);
     --viewer-toolbar-group-bg: transparent;
-    --viewer-toolbar-button-bg: rgba(255, 252, 226, 0.86);
-    --viewer-toolbar-button-hover-bg: rgba(168, 35, 43, 0.16);
+    /*
+     * The transport controls are filled in the submarine's trim red with a pale
+     * hull-yellow glyph, rather than being pale chips on the yellow panel. The
+     * readout text beside them stays dark, because it sits on the panel itself
+     * and not on a button.
+     */
+    --viewer-toolbar-button-bg: rgba(156, 43, 34, 0.94);
+    --viewer-toolbar-button-hover-bg: rgba(124, 32, 25, 0.98);
+    --viewer-toolbar-button-color: #fff4b8;
     --viewer-toolbar-value-text: #2e2000;
+    /* The left navigation matches the transport controls: red fittings on the
+       yellow hull. Active is a deeper red with a pale hull-yellow edge, since a
+       sea-blue ring would read as a different system on top of the red. */
+    --viewer-nav-button-bg: rgba(156, 43, 34, 0.94);
+    --viewer-nav-button-hover-bg: rgba(124, 32, 25, 0.98);
+    --viewer-nav-button-hover-border: rgba(74, 48, 0, 0.4);
+    --viewer-nav-button-border: rgba(74, 48, 0, 0.28);
+    --viewer-nav-button-color: #fff4b8;
+    --viewer-nav-button-active-bg: rgba(124, 32, 25, 0.98);
+    --viewer-nav-button-active-border: #fff4b8;
     --viewer-toolbar-value-bg: transparent;
     --viewer-search-input-bg: rgba(255, 252, 226, 0.94);
     --viewer-search-clear-bg: rgba(168, 35, 43, 0.16);
     --viewer-search-item-bg: rgba(255, 252, 226, 0.78);
     --viewer-search-item-hover-bg: rgba(168, 35, 43, 0.18);
     --viewer-search-focus: var(--viewer-focus-ring);
-    --viewer-control-rail-bg: linear-gradient(
-      180deg,
-      rgba(255, 240, 158, 0.96) 0%,
-      rgba(255, 214, 10, 0.96) 100%
-    );
-    --story-shell-bg: linear-gradient(180deg, #fff3a8 0%, #ffcf00 100%);
+    /* Flat surfaces. The only gradient Ringo keeps is the stage wash behind the
+       image, which OSDViewer builds from --viewer-stage-glow/-stage/-stage-tail. */
+    --viewer-control-rail-bg: rgba(255, 225, 92, 0.96);
+    --story-shell-bg: #ffe15c;
     --story-line: rgba(74, 48, 0, 0.22);
     --story-text: #2e2000;
     --story-muted: #6d5200;
@@ -3066,7 +3081,7 @@
     --viewer-focus-ring: #0056a3;
     border-color: #e0a800;
     box-shadow: var(--viewer-frame-shadow, none);
-    background: radial-gradient(135% 135% at 10% 0%, #fff8c4 0%, #ffd60a 48%, #f2b705 100%);
+    background: var(--viewer-bg);
   }
 
   .viewer__grid {
@@ -3362,9 +3377,16 @@
      * The static placements below the image drop the panel instead — see the
      * two `position: static` overrides further down.
      */
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
     border-radius: 14px;
-    background: rgba(9, 14, 21, 0.78);
+    /*
+     * Themed, not a fixed dark slab. The panel still does its job over artwork —
+     * it is largely opaque and blurred — but its *contents* follow the theme,
+     * and the readout text (`--viewer-toolbar-value-text`) goes dark on the
+     * light themes. Against a hardcoded dark panel that left "1 / 36" and the
+     * zoom percentage as dark-on-dark, i.e. invisible.
+     */
+    background: var(--viewer-stage-bottom-bg, rgba(9, 14, 21, 0.78));
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.34);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);

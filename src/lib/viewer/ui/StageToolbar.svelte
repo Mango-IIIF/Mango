@@ -459,7 +459,12 @@
     align-items: center;
     justify-content: center;
     background: var(--viewer-toolbar-button-bg, rgba(255, 255, 255, 0.03));
-    color: var(--viewer-text);
+    /*
+     * Separate from --viewer-text so a theme can fill these controls with a
+     * strong colour and still pick a glyph that reads on it. Falls back to the
+     * body text colour, which is right whenever the fill is a subtle wash.
+     */
+    color: var(--viewer-toolbar-button-color, var(--viewer-text));
     cursor: pointer;
     transition: background-color 0.2s ease;
   }

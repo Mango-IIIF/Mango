@@ -132,18 +132,51 @@
     }
   });
 
+  let hasAlignedChapterStrip = false;
+
+  /*
+   * Centre the active chapter in the strip by driving the strip's own
+   * scrollLeft.
+   *
+   * This deliberately avoids `scrollIntoView`. That method scrolls *every*
+   * scrollable ancestor, the document included — `block: 'nearest'` only
+   * minimises the vertical movement, it does not prevent it. On a host page
+   * where the viewer sits below the fold, the initial call on mount dragged the
+   * whole page down to the viewer, which read as the page auto-scrolling to its
+   * middle on load. Scrolling the element itself can never move the host page.
+   */
   $effect(() => {
     const activeIndex = safeActiveIndex();
-    if (!footerRef) return;
+    const strip = footerRef;
+    if (!strip) return;
 
-    // Select the active chapter element (the buttons are children of the footer)
-    const activeBtn = footerRef.children[activeIndex] as HTMLElement | undefined;
-    if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
-      activeBtn.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center'
-      });
+    const activeBtn = strip.children[activeIndex] as HTMLElement | undefined;
+    if (!activeBtn) return;
+
+    const maxScroll = strip.scrollWidth - strip.clientWidth;
+    if (maxScroll <= 0) return;
+
+    // Measured from rects rather than offsetLeft, which is relative to whichever
+    // ancestor happens to be the offsetParent and not necessarily the strip.
+    const stripBox = strip.getBoundingClientRect();
+    const buttonBox = activeBtn.getBoundingClientRect();
+    const delta =
+      buttonBox.left + buttonBox.width / 2 - (stripBox.left + stripBox.width / 2);
+    const left = Math.max(0, Math.min(strip.scrollLeft + delta, maxScroll));
+
+    // The first pass is the initial layout, so it jumps; later chapter changes
+    // animate. Honour a reduced-motion preference either way.
+    const prefersReducedMotion =
+      typeof matchMedia === 'function' &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const behavior: ScrollBehavior =
+      hasAlignedChapterStrip && !prefersReducedMotion ? 'smooth' : 'auto';
+    hasAlignedChapterStrip = true;
+
+    if (typeof strip.scrollTo === 'function') {
+      strip.scrollTo({ left, behavior });
+    } else {
+      strip.scrollLeft = left;
     }
   });
 </script>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { ExternalLink, X } from '@lucide/svelte';
   import MangoLogoIcon from './MangoLogoIcon.svelte';
   import pkg from '../../../../package.json';
@@ -6,6 +7,50 @@
   export let open = false;
   export let onClose: () => void = () => {};
   export let version: string = pkg.version;
+
+  /*
+   * Easter egg: the Ringo theme turns the About box into a jukebox.
+   *
+   * The theme is read off the nearest `.viewer` ancestor rather than the viewer
+   * context, because this modal is also mounted from the story builder and from
+   * standalone brand footers, where that context may not exist. Nothing is
+   * embedded — and no request reaches YouTube — unless the reader is on Ringo
+   * and has actually opened the dialog.
+   */
+  let backdropEl: HTMLElement | null = null;
+  let isRingo = false;
+  let themeObserver: MutationObserver | null = null;
+
+  const readTheme = () => {
+    isRingo = backdropEl?.closest('.viewer')?.getAttribute('data-theme') === 'ringo';
+  };
+
+  /*
+   * `data-theme` is an attribute on an ancestor, not reactive state here, so
+   * reading it once would go stale: the host can switch theme through the
+   * config API while the dialog is open, which left the embed showing under a
+   * theme that should not have it. Watch the attribute for as long as we are
+   * open, and stop watching as soon as we are not.
+   */
+  const stopWatching = () => {
+    themeObserver?.disconnect();
+    themeObserver = null;
+  };
+
+  $: if (open && backdropEl) {
+    readTheme();
+    stopWatching();
+    const viewer = backdropEl.closest('.viewer');
+    if (viewer && typeof MutationObserver !== 'undefined') {
+      themeObserver = new MutationObserver(readTheme);
+      themeObserver.observe(viewer, { attributes: true, attributeFilter: ['data-theme'] });
+    }
+  } else if (!open) {
+    stopWatching();
+    isRingo = false;
+  }
+
+  onDestroy(stopWatching);
 
   const handleKeydown = (event: KeyboardEvent) => {
     if (open && event.key === 'Escape') {
@@ -20,6 +65,7 @@
   <div
     class="mango-about-backdrop"
     role="presentation"
+    bind:this={backdropEl}
     on:click|self={onClose}
   >
     <div
@@ -49,6 +95,19 @@
         <p>
           Mango is an open-source, W3C Annotation and IIIF-compliant deep zoom viewer and interactive story creation suite designed for high-resolution manuscript, artwork, and spatial media exploration.
         </p>
+
+        {#if isRingo}
+          <div class="mango-about-modal__easter-egg">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/j_JaDDcyIIU"
+              title="Yellow Submarine"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="encrypted-media; picture-in-picture; web-share"
+              allowfullscreen
+            ></iframe>
+          </div>
+        {/if}
       </div>
 
       <div class="mango-about-modal__footer">
@@ -189,6 +248,24 @@
   .mango-about-modal__body p {
     margin: 0;
     text-align: center;
+  }
+
+  .mango-about-modal__easter-egg {
+    /* The modal caps at 480px, so size from the box rather than the embed's own
+       560x315 and let the ratio carry the height. */
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--mango-about-border);
+    background: #000;
+  }
+
+  .mango-about-modal__easter-egg iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
   }
 
   .mango-about-modal__footer {

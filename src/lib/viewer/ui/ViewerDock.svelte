@@ -903,10 +903,16 @@
     min-height: 46px;
     box-sizing: border-box;
     padding: 10px 12px;
-    border: 1px solid var(--viewer-panel-border);
+    border: 1px solid var(--viewer-nav-button-border, var(--viewer-panel-border));
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.025);
-    color: var(--viewer-text);
+    /*
+     * Tokenised so a theme can fill these with a strong colour and still choose
+     * a glyph that reads on it — see the stage toolbar, which does the same. The
+     * fallbacks are the original values, so themes that leave them alone are
+     * unchanged.
+     */
+    background: var(--viewer-nav-button-bg, rgba(255, 255, 255, 0.025));
+    color: var(--viewer-nav-button-color, var(--viewer-text));
     font: inherit;
     font-size: 13px;
     font-weight: 600;
@@ -954,15 +960,27 @@
     filter: none;
   }
 
+  /*
+   * Ringo fills the sidebar buttons with the trim red, so the IIIF mark has to
+   * go light again — the light-family rule above would leave it dark on dark.
+   * The mobile nav keeps its pale buttons, so it is deliberately not included.
+   */
+  :global(.viewer[data-theme='ringo']) .viewer-sidebar__button--iiif img {
+    filter: invert(1);
+  }
+
   .viewer-sidebar__button:hover:not(:disabled),
   .viewer-sidebar__collapse:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: var(--viewer-nav-button-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--viewer-nav-button-hover-border, rgba(255, 255, 255, 0.18));
   }
 
   .viewer-sidebar__button--active {
-    border-color: var(--viewer-accent-2);
-    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 9%, transparent);
+    border-color: var(--viewer-nav-button-active-border, var(--viewer-accent-2));
+    background: var(
+      --viewer-nav-button-active-bg,
+      color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 9%, transparent)
+    );
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 12%, transparent);
   }
 
