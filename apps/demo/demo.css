@@ -4,8 +4,17 @@
   --bg-end: #e2d8cb;
   --ink: #2b2520;
   --ink-muted: #6c5d50;
-  --accent: #e07a3f;
-  --accent-dark: #8b3f1f;
+  /*
+   * Demo-page chrome only, and deep enough for white labels to clear 4.5:1.
+   *
+   * Deliberately NOT named `--accent`: custom properties inherit through the
+   * shadow boundary, so a host declaring `--accent` overrides every embedded
+   * viewer's own theme accent — which meant the demos painted all five themes
+   * the same orange. embed-third-party.html still sets `--accent` on purpose,
+   * because demonstrating that host override is what that page is for.
+   */
+  --demo-accent: #b4551f;
+  --demo-accent-dark: #8b3f1f;
   --panel: rgba(255, 255, 255, 0.72);
 }
 
@@ -129,13 +138,13 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  background: var(--accent);
+  background: var(--demo-accent);
   color: #fffaf6;
   cursor: pointer;
 }
 
 .manifest-form__button:hover {
-  background: var(--accent-dark);
+  background: var(--demo-accent-dark);
 }
 
 .viewer-actions {
@@ -163,13 +172,13 @@ body {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   text-decoration: none;
-  background: linear-gradient(140deg, var(--accent), #cf6835);
+  background: linear-gradient(140deg, var(--demo-accent), #cf6835);
   color: #fffaf6;
   box-shadow: 0 10px 16px rgba(139, 63, 31, 0.18);
 }
 
 .viewer-actions__link:hover {
-  background: linear-gradient(140deg, var(--accent-dark), #713018);
+  background: linear-gradient(140deg, var(--demo-accent-dark), #713018);
 }
 
 .viewer-shell {
@@ -317,7 +326,7 @@ body {
 }
 
 .cookbook-eyebrow {
-  color: var(--accent-dark);
+  color: var(--demo-accent-dark);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -478,7 +487,7 @@ body {
   gap: 10px 18px;
   align-items: baseline;
   margin: 12px 0 0;
-  color: var(--accent-dark);
+  color: var(--demo-accent-dark);
   font:
     500 22px Georgia,
     serif;
@@ -567,7 +576,7 @@ body {
 }
 
 .cookbook-recipe__number {
-  color: var(--accent-dark);
+  color: var(--demo-accent-dark);
   font:
     500 13px ui-monospace,
     SFMono-Regular,

@@ -22,7 +22,7 @@
 }
 
 .config-back {
-  color: var(--accent-dark);
+  color: var(--demo-accent-dark);
   font-weight: 650;
   text-decoration: none;
 }
@@ -70,7 +70,7 @@
 
 .config-sidebar legend {
   padding: 0 7px;
-  color: var(--accent-dark);
+  color: var(--demo-accent-dark);
   font-size: 13px;
   font-weight: 750;
   letter-spacing: 0.08em;
@@ -115,7 +115,7 @@
 .config-sidebar .config-check input {
   width: 17px;
   height: 17px;
-  accent-color: var(--accent);
+  accent-color: var(--demo-accent);
 }
 
 .config-help {
@@ -141,7 +141,7 @@
   border: 0;
   border-radius: 10px;
   padding: 10px 14px;
-  background: var(--accent);
+  background: var(--demo-accent);
   color: white;
   font-weight: 700;
   cursor: pointer;

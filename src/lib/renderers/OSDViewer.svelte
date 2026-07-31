@@ -118,6 +118,19 @@
    */
   let userDrivingViewport = false;
   let userIdleTimer: ReturnType<typeof setTimeout> | undefined;
+  /*
+   * Set once a caller has framed the viewport programmatically on the current
+   * image — `setViewBox`, i.e. a search result, an annotation focus, or a story
+   * chapter. It is the programmatic twin of `userDrivingViewport`: both mean
+   * "somebody owns this viewport, stop refitting it to home".
+   *
+   * Without it, navigating to a search hit on another canvas raced the settle
+   * loop below. The hit's box was applied, then `settleInitialHome` — which
+   * keeps refitting for up to 1500ms after `open` — threw it away and left the
+   * reader looking at the whole page instead of the word they clicked. Cleared
+   * on every `open` so a canvas change with no framing request still fits home.
+   */
+  let callerFramedViewport = false;
 
   const markUserViewportActivity = (): void => {
     userDrivingViewport = true;
@@ -569,6 +582,30 @@
     // This ensures the region is visible, though aspect ratio differences
     // between desktop and mobile may result in different zoom levels
     viewer.viewport.fitBounds(viewportRect, true);
+    /*
+     * fitBounds pans and zooms in a single step, and with `visibilityRatio: 1`
+     * plus `constrainDuringPan` that pan is constrained against the *outgoing*
+     * zoom. Coming from a fit-to-page view the viewport is wider than the image,
+     * so the only centre the constraint allows is the middle of the image — the
+     * requested centre was clamped away and every framing landed mid-page. A
+     * search hit zoomed to the right magnification on the wrong words, which
+     * read as "clicking a result takes you to the wrong place".
+     *
+     * Re-assert the centre now that the new zoom makes it reachable, then let
+     * the constraints have their say about the corrected position.
+     */
+    // `panTo` only reads `.x`/`.y`, so a plain point is enough when the rect has
+    // no `getCenter` — which is the case for stubbed tile sources under test.
+    const rectCentre =
+      typeof viewportRect.getCenter === 'function'
+        ? viewportRect.getCenter()
+        : ({
+            x: viewportRect.x + viewportRect.width / 2,
+            y: viewportRect.y + viewportRect.height / 2,
+          } as OpenSeadragon.Point);
+    viewer.viewport.panTo?.(rectCentre, true);
+    viewer.viewport.applyConstraints?.(true);
+    callerFramedViewport = true;
   };
 
   export const zoomBy = (factor: number): void => {
@@ -579,6 +616,9 @@
 
   export const goHome = (): void => {
     if (!viewer?.viewport) return;
+    // An explicit Home hands the viewport back: whatever framing a caller had
+    // claimed is exactly what the reader is asking to drop.
+    callerFramedViewport = false;
     viewer.viewport.goHome?.(true);
     viewer.viewport.applyConstraints?.();
   };
@@ -637,7 +677,8 @@
 
       const step = (): void => {
         initialHomeFrameId = null;
-        if (!viewer || !container || userDrivingViewport) return;
+        if (!viewer || !container || userDrivingViewport || callerFramedViewport)
+          return;
 
         const width = container.clientWidth;
         const height = container.clientHeight;
@@ -833,6 +874,10 @@
         if (openPendingBaseTarget()) return;
         baseImageLoaded = true;
         openingBaseCustomId = '';
+        // A fresh image starts unclaimed. Callers that want this one framed
+        // (a search hit, a story chapter) re-claim it via setViewBox below,
+        // which lands after this handler has run.
+        callerFramedViewport = false;
         onviewerready?.({ viewer: viewer as OpenSeadragon.Viewer });
         setRotation(rotation);
         if (initialViewBox && !initialViewBoxApplied) {
@@ -871,8 +916,9 @@
         // Repairing the fit must not throw away a framing the embed asked for.
         // Without an initial viewBox, refitting home is the right repair; with
         // one, the settle loop above owns the viewport and goHome would just
-        // discard the configured region.
-        if (!initialViewBox) {
+        // discard the configured region. The same holds for a framing a caller
+        // applied at runtime — a search hit or story chapter.
+        if (!initialViewBox && !callerFramedViewport) {
           viewer.viewport?.goHome?.(true);
         }
         viewer.viewport?.applyConstraints?.();

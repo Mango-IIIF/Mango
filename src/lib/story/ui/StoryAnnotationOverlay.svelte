@@ -253,8 +253,13 @@
     padding: calc(10px * var(--annotation-scale, 1)) calc(12px * var(--annotation-scale, 1));
     border: 0;
     border-radius: calc(12px * var(--annotation-scale, 1));
-    background: rgba(255, 255, 255, 0.92);
-    color: var(--ink, #2b2520);
+    /*
+     * `--accent` and `--ink` are per-annotation overrides carried in the story
+     * document, so they must keep winning over the theme; the `--story-note-*`
+     * tokens only decide what an annotation that specifies neither looks like.
+     */
+    background: var(--story-note-bg, rgba(255, 255, 255, 0.92));
+    color: var(--ink, var(--story-note-text, #2b2520));
     font: inherit;
     font-size: calc(13px * var(--annotation-scale, 1));
     line-height: 1.4;
@@ -330,8 +335,8 @@
     padding: calc(3px * var(--annotation-scale, 1)) calc(7px * var(--annotation-scale, 1));
     border: 1px solid var(--accent, #e07a3f);
     border-radius: calc(7px * var(--annotation-scale, 1));
-    background: rgba(20, 16, 12, 0.82);
-    color: #fff;
+    background: var(--story-label-bg, rgba(20, 16, 12, 0.82));
+    color: var(--story-label-text, #fff);
     font-size: calc(11px * var(--annotation-scale, 1));
     line-height: 1.3;
     white-space: nowrap;

@@ -221,7 +221,7 @@
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     padding: 7px 10px;
-    background: rgba(255, 255, 255, 0.04);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 4%, transparent);
     color: inherit;
     font-size: 10px;
     cursor: pointer;
@@ -259,7 +259,7 @@
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
     border-radius: 7px;
     padding: 7px 8px;
-    background: rgba(5, 10, 16, 0.28);
+    background: var(--viewer-well-bg, rgba(5, 10, 16, 0.28));
     color: inherit;
   }
   .story-wide-media__range > span,
@@ -276,7 +276,7 @@
     cursor: not-allowed;
   }
   .story-wide-media__error {
-    color: #ff9d9d;
+    color: var(--viewer-danger, #ff9d9d);
   }
   @media (max-width: 760px) {
     .story-wide-media__range {

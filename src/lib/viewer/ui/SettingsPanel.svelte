@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Grid2x2, Image, Images, Scroll } from '@lucide/svelte';
-  import { getViewerContext } from '../context';
+  import { getViewerContext, viewerSettingsThemes } from '../context';
   import { supportedLocales, t } from '../../i18n';
   import PanelCloseButton from './PanelCloseButton.svelte';
 
@@ -40,10 +40,14 @@
     <div class="settings-panel__section">
       <div class="settings-panel__label">{$t('workspace.theme')}</div>
       <div class="panel__tabs">
-        <button type="button" class="panel__tab" class:panel__tab--active={settings.theme === 'dark'} onclick={() => settings.theme = 'dark'}>{$t('workspace.themeDark')}</button>
-        <button type="button" class="panel__tab" class:panel__tab--active={settings.theme === 'light'} onclick={() => settings.theme = 'light'}>{$t('workspace.themeLight')}</button>
-        <button type="button" class="panel__tab" class:panel__tab--active={settings.theme === 'sepia'} onclick={() => settings.theme = 'sepia'}>{$t('workspace.themeSepia')}</button>
-        <button type="button" class="panel__tab" class:panel__tab--active={settings.theme === 'midnight'} onclick={() => settings.theme = 'midnight'}>{$t('workspace.themeMidnight')}</button>
+        {#each viewerSettingsThemes as option}
+          <button
+            type="button"
+            class="panel__tab"
+            class:panel__tab--active={settings.theme === option}
+            onclick={() => (settings.theme = option)}
+          >{$t(`workspace.theme${option[0].toUpperCase()}${option.slice(1)}`)}</button>
+        {/each}
       </div>
     </div>
 
@@ -139,30 +143,30 @@
     padding: 8px 10px;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .panel__tabs) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .panel__tabs) {
     background: rgba(255, 255, 255, 0.6);
     border: 1px solid rgba(34, 48, 65, 0.1);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .panel__tab) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .panel__tab) {
     background: rgba(255, 255, 255, 0.84);
     color: #223041;
   }
 
   :global(.settings-panel .panel__tab--active) {
-    border: 1px solid rgba(42, 199, 255, 0.64);
-    background: rgba(42, 199, 255, 0.14);
-    color: #f5fbff;
-    box-shadow: inset 0 0 0 1px rgba(42, 199, 255, 0.08);
+    border: 1px solid color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 64%, transparent);
+    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 14%, transparent);
+    color: var(--viewer-text, #f5fbff);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 8%, transparent);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .panel__tab--active) {
-    border-color: #159fce;
-    background: rgba(42, 199, 255, 0.13);
-    color: #16435a;
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .panel__tab--active) {
+    border-color: var(--viewer-accent-2, #159fce);
+    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 13%, transparent);
+    color: var(--viewer-text, #16435a);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel select) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel select) {
     border-color: rgba(34, 48, 65, 0.18);
     background: rgba(255, 255, 255, 0.84);
   }
@@ -204,7 +208,7 @@
   }
 
   .page-layout-card:hover:not(:disabled):not(.page-layout-card--selected) {
-    border-color: rgba(42, 199, 255, 0.46);
+    border-color: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 46%, transparent);
     background: rgba(255, 255, 255, 0.08);
   }
 
@@ -216,13 +220,13 @@
   .page-layout-card--selected {
     border: 2px solid var(--viewer-accent-2, #2ac7ff);
     padding: 10px 11px;
-    background: rgba(42, 199, 255, 0.12);
-    color: #f5fbff;
-    box-shadow: inset 0 0 0 1px rgba(42, 199, 255, 0.12);
+    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 12%, transparent);
+    color: var(--viewer-text, #f5fbff);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 12%, transparent);
   }
 
   .page-layout-card:focus-visible {
-    outline: 3px solid rgba(42, 199, 255, 0.82);
+    outline: 3px solid color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 82%, transparent);
     outline-offset: 3px;
   }
 
@@ -230,24 +234,24 @@
     cursor: not-allowed;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .page-layout-card) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .page-layout-card) {
     border-color: rgba(34, 48, 65, 0.18);
     background: rgba(255, 255, 255, 0.72);
     color: #223041;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .page-layout-card--selected) {
-    border-color: #159fce;
-    background: rgba(42, 199, 255, 0.13);
-    color: #16435a;
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .page-layout-card--selected) {
+    border-color: var(--viewer-accent-2, #159fce);
+    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 13%, transparent);
+    color: var(--viewer-text, #16435a);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .page-layout-card :global(svg) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .page-layout-card :global(svg) {
     color: rgba(34, 48, 65, 0.72);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .page-layout-card--selected :global(svg) {
-    color: #159fce;
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .page-layout-card--selected :global(svg) {
+    color: var(--viewer-accent-2, #159fce);
   }
 
   @container mango-viewer (max-width: 560px) {

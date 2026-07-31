@@ -106,7 +106,7 @@
   }
 
   .chapter-task-card--attention {
-    box-shadow: inset 2px 0 rgba(255, 157, 92, 0.75);
+    box-shadow: inset 2px 0 color-mix(in srgb, var(--story-builder-accent, #e07a3f) 75%, transparent);
   }
 
   .chapter-task-card__button {
@@ -125,11 +125,11 @@
   }
 
   .chapter-task-card__button:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--accent, #e07a3f) 9%, transparent);
+    background: color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 9%, transparent);
   }
 
   .chapter-task-card__button:focus-visible {
-    outline: 2px solid var(--accent, #e07a3f);
+    outline: 2px solid var(--accent, var(--story-builder-accent, #e07a3f));
     outline-offset: -3px;
   }
 
@@ -145,7 +145,7 @@
     place-items: center;
     border-radius: 10px;
     color: var(--viewer-text, #e8edf4);
-    background: rgba(255, 255, 255, 0.035);
+    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 3.5%, transparent);
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
   }
 
@@ -208,13 +208,13 @@
   }
 
   .chapter-task-card__state--complete {
-    color: #72cea4;
+    color: var(--viewer-success, #72cea4);
   }
   .chapter-task-card__state--partial {
-    color: #e8b85f;
+    color: var(--viewer-warning, #e8b85f);
   }
   .chapter-task-card__state--attention {
-    color: #ff9d5c;
+    color: var(--story-builder-accent-hover, #ff9d5c);
   }
 
   .chapter-task-card__unavailable {
@@ -241,13 +241,13 @@
     height: 15px;
   }
   .chapter-task-card__trail--complete :global(svg:first-child) {
-    color: #55c993;
+    color: var(--viewer-success, #55c993);
   }
   .chapter-task-card__trail--partial :global(svg:first-child) {
-    color: #e8b85f;
+    color: var(--viewer-warning, #e8b85f);
   }
   .chapter-task-card__trail--attention :global(svg:first-child) {
-    color: #ff9d5c;
+    color: var(--story-builder-accent-hover, #ff9d5c);
   }
   .chapter-task-card--disabled .chapter-task-card__trail :global(svg:first-child) {
     color: var(--viewer-muted, #9aa6b2);

@@ -228,7 +228,17 @@
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
-    padding-bottom: 6px;
+    /*
+     * This is a scroll container, so it clips at its padding box — and the
+     * active ring (a 2px outset box-shadow) and the focus outline (2px at 2px
+     * offset) both paint *outside* the button's border box. With no padding
+     * they were sliced off against the top edge and against the leading edge on
+     * the first card. Reserve the 4px they need, and pull it back with matching
+     * negative margins so the row stays aligned with the header above.
+     */
+    margin-inline: -4px;
+    margin-top: -4px;
+    padding: 4px 4px 10px;
     touch-action: pan-x;
     -webkit-overflow-scrolling: touch;
   }

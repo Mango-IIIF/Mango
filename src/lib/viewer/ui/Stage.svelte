@@ -541,7 +541,7 @@
   }
 
   .stage__media:focus-visible {
-    box-shadow: 0 0 0 3px rgba(42, 199, 255, 0.4);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 4%, transparent);
   }
 
   .stage__placeholder {

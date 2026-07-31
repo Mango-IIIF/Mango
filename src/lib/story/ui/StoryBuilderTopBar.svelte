@@ -179,11 +179,11 @@
     height: 7px;
     flex: 0 0 auto;
     border-radius: 50%;
-    background: #55b889;
+    background: var(--viewer-success, #55b889);
   }
 
   .story-topbar__status-dot--dirty {
-    background: #f2ad4f;
+    background: var(--viewer-warning, #f2ad4f);
   }
 
   .story-topbar__group {
@@ -226,7 +226,7 @@
 
   .story-topbar__button--primary {
     border-color: transparent !important;
-    background: var(--accent, #e07a3f) !important;
+    background: var(--accent, var(--story-builder-accent, #e07a3f)) !important;
     color: #fff !important;
   }
 

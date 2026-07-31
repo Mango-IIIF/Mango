@@ -819,7 +819,7 @@
 
   .viewer-mobile-nav__button--active {
     border-color: var(--viewer-accent-2);
-    background: rgba(42, 199, 255, 0.09);
+    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 9%, transparent);
     color: var(--viewer-text);
   }
 
@@ -949,8 +949,8 @@
     filter: invert(1);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .viewer-sidebar__button--iiif img,
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .viewer-mobile-nav__button--iiif img {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .viewer-sidebar__button--iiif img,
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .viewer-mobile-nav__button--iiif img {
     filter: none;
   }
 
@@ -962,8 +962,8 @@
 
   .viewer-sidebar__button--active {
     border-color: var(--viewer-accent-2);
-    background: rgba(42, 199, 255, 0.09);
-    box-shadow: inset 0 0 0 1px rgba(42, 199, 255, 0.12);
+    background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 9%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 12%, transparent);
   }
 
   .viewer-sidebar__button:disabled {

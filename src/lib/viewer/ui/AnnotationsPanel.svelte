@@ -171,12 +171,12 @@
   }
 
   .annotation-list__item--active {
-    border-color: rgba(42, 199, 255, 0.7);
-    box-shadow: 0 0 0 1px rgba(42, 199, 255, 0.2);
+    border-color: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 7%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 2%, transparent);
   }
 
   .annotation-list__item:focus-visible {
-    outline: 2px solid rgba(42, 199, 255, 0.6);
+    outline: 2px solid color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 6%, transparent);
     outline-offset: 2px;
   }
 
