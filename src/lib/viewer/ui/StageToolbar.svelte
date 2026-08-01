@@ -266,7 +266,7 @@
           type="text"
           inputmode="numeric"
           pattern="[0-9]*"
-          aria-label={$t('viewer.toolbar.canvasNumber') ?? 'Canvas number'}
+        aria-label={$t('viewer.toolbar.canvasNumber')}
           value={canvasNumberInput}
           style={`width: ${Math.max(2, String(Math.max(totalCanvases, currentCanvasNumber, 1)).length)}ch;`}
           disabled={totalCanvases <= 0}
@@ -325,7 +325,7 @@
           type="text"
           inputmode="numeric"
           pattern="[0-9]*"
-          aria-label={$t('viewer.toolbar.zoomPercent') ?? 'Zoom percent'}
+        aria-label={$t('viewer.toolbar.zoomPercent')}
           value={zoomPercentInput}
           disabled={!hasSource || !canZoom}
           onfocus={() => (isEditingZoomPercent = true)}

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from '../../i18n';
+
   export let size = 24;
   export let color = 'currentColor';
   export let className = '';
@@ -11,7 +13,7 @@
   height={size}
   class={`mango-logo-icon ${className}`}
   role="img"
-  aria-label="Mango logo"
+  aria-label={$t('about.logo')}
 >
   <g fill={color} fill-rule="evenodd" transform="translate(0 7)">
     <path d="M 210 87 L 207 84 L 204 82 L 195 78 L 190 77 L 177 78 L 174 69 L 168 60 L 164 56 L 155 51 L 151 50 L 143 50 L 138 51 L 132 53 L 125 57 L 121 60 L 116 65 L 108 77 L 105 86 L 103 88 L 101 88 L 100 87 L 96 86 L 82 86 L 76 88 L 73 90 L 65 98 L 60 109 L 58 121 L 59 132 L 61 140 L 68 155 L 72 161 L 77 167 L 82 172 L 89 177 L 97 181 L 103 183 L 108 183 L 109 184 L 113 184 L 114 183 L 119 183 L 128 179 L 134 173 L 136 170 L 138 165 L 140 163 L 146 166 L 154 168 L 162 168 L 168 167 L 175 165 L 185 160 L 192 155 L 203 144 L 208 137 L 213 128 L 216 119 L 217 113 L 217 104 L 215 96 Z

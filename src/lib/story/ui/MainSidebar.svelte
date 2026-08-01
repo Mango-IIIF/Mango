@@ -29,7 +29,7 @@
 
   const labelForChapter = (chapter: Chapter, index: number): string => {
     const title = chapter.title?.[language];
-    return title?.trim() ? title.trim() : `Chapter ${index + 1}`;
+    return title?.trim() ? title.trim() : $t('storyBuilder.chapters.number', { number: index + 1 });
   };
 
   const chapterDurationSeconds = (chapter: Chapter): number => {
@@ -227,7 +227,7 @@
 
   <section class="story-sidebar__chapters" data-testid="chapter-list">
     <div class="story-sidebar__header">
-      <span>Chapters</span>
+      <span>{$t('storyBuilder.chapters.title')}</span>
       {#if $story.chapters.length > 0}
         <button
           class="story-sidebar__header-add"
@@ -235,15 +235,15 @@
           data-testid="add-chapter"
           on:click={() => onAddChapter?.()}
         >
-          <Plus aria-hidden="true" /> Add chapter
+          <Plus aria-hidden="true" /> {$t('storyBuilder.chapters.add')}
         </button>
       {/if}
     </div>
 
     {#if $story.chapters.length === 0}
       <div class="story-sidebar__empty" data-testid="chapter-empty">
-        <strong>Start your story</strong>
-        <span> Load a IIIF Manifest in the setup panel, then create your first chapter. </span>
+        <strong>{$t('storyBuilder.chapters.start')}</strong>
+        <span>{$t('storyBuilder.chapters.startHint')}</span>
       </div>
     {/if}
 
@@ -285,7 +285,7 @@
             </div>
 
             <div class="story-sidebar__row-content">
-              <div class="story-sidebar__row-index">Chapter {index + 1}</div>
+              <div class="story-sidebar__row-index">{$t('storyBuilder.chapters.number', { number: index + 1 })}</div>
               <div class="story-sidebar__row-title" data-testid="chapter-title-{chapter.id}">
                 {labelForChapter(chapter, index)}
               </div>
@@ -295,7 +295,7 @@
               </div>
               {#if errorsForChapter(index).length > 0}
                 <div class="story-sidebar__row-error" title={errorsForChapter(index).join('\n')}>
-                  Needs attention
+                  {$t('storyBuilder.tasks.status.attention')}
                 </div>
               {/if}
             </div>
@@ -305,7 +305,7 @@
             <button
               class="story-sidebar__menu-button"
               type="button"
-              aria-label="Chapter options"
+              aria-label={$t('storyBuilder.chapters.options')}
               data-testid="chapter-menu-{chapter.id}"
               on:click|stopPropagation={() => toggleMenu(chapter.id)}
             >
@@ -322,7 +322,7 @@
                     onDuplicateChapter?.(chapter.id);
                   }}
                 >
-                  Duplicate
+                  {$t('storyBuilder.chapters.duplicate')}
                 </button>
                 <button
                   class="story-sidebar__menu-action"
@@ -330,7 +330,7 @@
                   disabled={index === 0}
                   on:click|stopPropagation={() => moveChapter(chapter.id, index, -1)}
                 >
-                  Move up
+                  {$t('storyBuilder.chapters.moveUp')}
                 </button>
                 <button
                   class="story-sidebar__menu-action"
@@ -338,7 +338,7 @@
                   disabled={index === $story.chapters.length - 1}
                   on:click|stopPropagation={() => moveChapter(chapter.id, index, 1)}
                 >
-                  Move down
+                  {$t('storyBuilder.chapters.moveDown')}
                 </button>
                 <button
                   class="story-sidebar__menu-action story-sidebar__menu-action--danger"
@@ -356,14 +356,14 @@
     </div>
     {#if $story.chapters.length > 1}
       <div class="story-sidebar__reorder">
-        <GripVertical aria-hidden="true" /> Drag to reorder chapters
+        <GripVertical aria-hidden="true" /> {$t('storyBuilder.chapters.reorder')}
       </div>
     {/if}
   </section>
 
   {#if showDebug}
     <div class="story-sidebar__debug">
-      <div class="story-sidebar__label">3D Pose</div>
+      <div class="story-sidebar__label">{$t('storyBuilder.chapters.modelPose')}</div>
       <output class="story-sidebar__debug-output" data-testid="pose-debug">
         {poseDebugValue ?? '-'}
       </output>

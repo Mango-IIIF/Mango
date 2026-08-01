@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from '../../i18n';
+
   export let chapterExists = false;
   export let chapterCanvasIndex = 0;
   export let canvasIndex = 0;
@@ -17,12 +19,12 @@
 
 {#if section === 'all' || section === 'source'}
   <section class="chapter-overlay__section chapter-overlay__section--card">
-    <div class="chapter-overlay__section-title">Manifest URL</div>
+    <div class="chapter-overlay__section-title">{$t('storyBuilder.chapter.manifestLabel')}</div>
     <div class="chapter-overlay__row">
       <input
         class="chapter-overlay__input"
         type="url"
-        aria-label="Manifest URL"
+        aria-label={$t('storyBuilder.chapter.manifestLabel')}
         data-testid="chapter-manifest"
         value={manifestDraft}
         on:input={onManifestInput}
@@ -35,14 +37,16 @@
         on:click={() => onReloadManifest?.(chapterCanvasIndex)}
         disabled={!chapterExists && !manifestDraft.trim()}
       >
-        {chapterExists || sourceLoaded ? 'Reload manifest' : 'Load manifest'}
+        {chapterExists || sourceLoaded
+          ? $t('storyBuilder.source.reloadManifest')
+          : $t('storyBuilder.source.loadManifest')}
       </button>
     </div>
     {#if !chapterExists && !sourceLoaded}
-      <div class="chapter-overlay__hint">Step 1 of 2 · Load a IIIF Manifest.</div>
+      <div class="chapter-overlay__hint">{$t('storyBuilder.source.stepLoad')}</div>
     {:else if canvasCount > 0}
       <label class="chapter-overlay__label">
-        Canvas
+        {$t('storyBuilder.source.canvas')}
         <select
           class="chapter-overlay__select"
           data-testid="chapter-canvas-select"
@@ -50,44 +54,42 @@
           on:change={(event) => onSelectCanvas?.(Number(event.currentTarget.value))}
         >
           {#each Array.from({ length: canvasCount }, (_, index) => index) as index}
-            <option value={index}>Canvas {index + 1} of {canvasCount}</option>
+            <option value={index}>{$t('storyBuilder.source.canvasPosition', { current: index + 1, total: canvasCount })}</option>
           {/each}
         </select>
       </label>
       {#if chapterExists}
         <div class="chapter-overlay__hint">
-          Choose a canvas, then save the source to apply it to this chapter.
+          {$t('storyBuilder.source.chooseCanvasHint')}
         </div>
       {:else}
         <div class="chapter-overlay__onboarding-finish">
           <div class="chapter-overlay__hint">
-            Step 2 of 2 · Choose a canvas and create the first chapter. Image placement can be
-            adjusted afterwards from the chapter tools.
+            {$t('storyBuilder.source.stepCreate')}
           </div>
           <button
             class="chapter-overlay__button chapter-overlay__button--primary"
             type="button"
             data-testid="chapter-create-first"
-            on:click={onCreateChapter}>Create first chapter</button
+            on:click={onCreateChapter}>{$t('storyBuilder.source.createFirst')}</button
           >
         </div>
       {/if}
     {:else if sourceLoaded}
-      <div class="chapter-overlay__hint" role="status">Loading the manifest and its canvases…</div>
+      <div class="chapter-overlay__hint" role="status">{$t('storyBuilder.source.loading')}</div>
     {/if}
   </section>
 {/if}
 
 {#if section === 'all' || section === 'transition-timing'}
   <section class="chapter-overlay__section chapter-overlay__section--card">
-    <div class="chapter-overlay__section-title">Chapter transition time</div>
+    <div class="chapter-overlay__section-title">{$t('storyBuilder.transition.title')}</div>
     <div class="chapter-overlay__section-content">
       <p class="chapter-overlay__hint">
-        Set how long to wait before moving to the next chapter. Leave this blank to require manual
-        navigation.
+        {$t('storyBuilder.transition.description')}
       </p>
       <label class="chapter-overlay__label">
-        Delay before next chapter (seconds)
+        {$t('storyBuilder.transition.delay')}
         <input
           class="chapter-overlay__input"
           type="number"

@@ -1,27 +1,38 @@
 {
   "common": {
     "closeGlyph": "×",
+    "close": "Cau",
+    "closeModal": "Cau'r ffenestr",
+    "back": "Yn ôl",
     "emptyValue": "-",
     "notAvailable": "D/A"
   },
   "storyBuilder": {
-    "narration": {
-      "button": "Adroddwr sain"
-    },
     "chapters": {
       "title": "Penodau",
       "empty": "Lleolwch y gwyliwr, yna Ychwanegwch Bennod.",
       "edit": "Golygu",
       "delete": "Dileu",
       "cancel": "Canslo",
-      "confirmDelete": "Dileu'r bennod hon?"
+      "confirmDelete": "Dileu'r bennod hon?",
+      "add": "Ychwanegu pennod",
+      "number": "Pennod {number}",
+      "start": "Dechreuwch eich stori",
+      "startHint": "Llwythwch Faniffest IIIF yn y panel gosod, yna crëwch eich pennod gyntaf.",
+      "options": "Dewisiadau'r bennod",
+      "duplicate": "Dyblygu",
+      "moveUp": "Symud i fyny",
+      "moveDown": "Symud i lawr",
+      "reorder": "Llusgwch i aildrefnu'r penodau",
+      "modelPose": "Ystum 3D"
     },
     "actions": {
       "add": "+ Ychwanegu Pennod",
       "save": "Cadw / Allforio",
       "saving": "Wrthi'n cadw...",
       "saveSuccess": "Wedi cadw'n llwyddiannus",
-      "saveFailed": "Methwyd â chadw"
+      "saveFailed": "Methwyd â chadw",
+      "updatePosition": "Diweddaru safle'r bennod"
     },
     "chapter": {
       "header": "Gosodiadau Pennod",
@@ -48,7 +59,332 @@
     "export": {
       "title": "Allforio JSON y stori",
       "copy": "Copïo JSON",
-      "download": "Lawrlwytho .json"
+      "download": "Lawrlwytho .json",
+      "downloadIiif": "Lawrlwytho JSON IIIF y stori",
+      "jsonLabel": "JSON y stori a allforiwyd",
+      "empty": "// Dim data allforio ar gael",
+      "trackLabel": "Trac Anodiadau'r Stori"
+    },
+    "topBar": {
+      "saved": "Wedi'i gadw",
+      "unsaved": "Newidiadau heb eu cadw",
+      "upToDate": "Cyfredol",
+      "history": "Hanes y stori",
+      "undo": "Dadwneud",
+      "redo": "Ailwneud",
+      "preview": "Rhagolwg o'r stori",
+      "exitPreview": "Gadael y rhagolwg",
+      "save": "Cadw",
+      "export": "Allforio",
+      "settings": "Gosodiadau'r stori"
+    },
+    "source": {
+      "reloadManifest": "Ail-lwytho'r maniffest",
+      "loadManifest": "Llwytho'r maniffest",
+      "stepLoad": "Cam 1 o 2 · Llwythwch Faniffest IIIF.",
+      "canvas": "Cynfas",
+      "canvasPosition": "Cynfas {current} o {total}",
+      "chooseCanvasHint": "Dewiswch gynfas, yna cadwch y ffynhonnell i'w gymhwyso i'r bennod hon.",
+      "stepCreate": "Cam 2 o 2 · Dewiswch gynfas a chrëwch y bennod gyntaf. Gellir addasu lleoliad y ddelwedd wedyn o offer y bennod.",
+      "createFirst": "Creu'r bennod gyntaf",
+      "loading": "Wrthi'n llwytho'r maniffest a'i gynfasau…"
+    },
+    "transition": {
+      "title": "Amser pontio rhwng penodau",
+      "description": "Gosodwch pa mor hir i aros cyn symud i'r bennod nesaf. Gadewch hyn yn wag i fynnu llywio â llaw.",
+      "delay": "Oedi cyn y bennod nesaf (eiliadau)"
+    },
+    "audio": {
+      "chapterSelection": "Dewisiad y bennod",
+      "loadError": "Methu llwytho tonffurf y cyfrwng.",
+      "waveformSelection": "Dewisiad ar donffurf y sain",
+      "zoomControls": "Rheolyddion chwyddo'r donffurf",
+      "fitMedia": "Ffitio'r cyfrwng cyfan",
+      "zoom": "Chwyddo",
+      "waveformZoom": "Chwyddo'r donffurf",
+      "showSelection": "Dangos y dewisiad",
+      "addUrl": "Ychwanegwch URL cyfrwng i lwytho ei donffurf.",
+      "loading": "Wrthi'n llwytho'r donffurf…",
+      "unavailable": "Tonffurf ddim ar gael"
+    },
+    "tasks": {
+      "title": "Offer y bennod",
+      "description": "Dewiswch offeryn i olygu'r bennod hon.",
+      "advanced": "Uwch",
+      "languages": "{translated}/{total} iaith",
+      "status": {
+        "empty": "Heb ei ffurfweddu",
+        "partial": "Wedi'i ffurfweddu'n rhannol",
+        "complete": "Wedi'i ffurfweddu",
+        "attention": "Angen sylw"
+      },
+      "items": {
+        "details": {
+          "title": "Manylion",
+          "description": "Teitl, disgrifiad a chyfieithiadau.",
+          "save": "Cadw'r manylion"
+        },
+        "focus": {
+          "title": "Anodiadau",
+          "description": "Blychau testun ac anodiadau lluniadu.",
+          "save": "Cadw'r anodiad"
+        },
+        "motion": {
+          "title": "Symudiad",
+          "description": "Pwyntiau camera wedi'u hamseru ar gyfer symud o fewn y bennod.",
+          "save": "Cadw'r symudiad"
+        },
+        "audio-timing": {
+          "title": "Adroddiant",
+          "description": "Traciau trosleisio ac amseru adroddiant y bennod.",
+          "save": "Cadw'r adroddiant"
+        },
+        "transition-timing": {
+          "title": "Amser pontio rhwng penodau",
+          "description": "Gosodwch yr oedi cyn symud i'r bennod nesaf.",
+          "save": "Cadw'r amser pontio rhwng penodau"
+        },
+        "media-timing": {
+          "title": "Amseru'r cyfrwng",
+          "description": "Pwyntiau dechrau a diwedd sain neu fideo ffynhonnell y bennod hon.",
+          "save": "Cadw amseru'r cyfrwng"
+        },
+        "layers": {
+          "title": "Haenau",
+          "description": "Gwelededd ac afloywder haenau delwedd.",
+          "save": "Cadw'r haenau"
+        },
+        "comparison": {
+          "title": "Cymhariaeth",
+          "description": "Cyflwyno ffynonellau cydnaws gyda'i gilydd.",
+          "save": "Cadw'r gymhariaeth"
+        },
+        "source": {
+          "title": "Ffynhonnell · Uwch",
+          "description": "Ffurfweddu'r Maniffest a'r Cynfas.",
+          "save": "Cadw'r ffynhonnell a'r cynfas"
+        }
+      },
+      "availability": {
+        "annotationsMedia": "Mae anodiadau ar gael ar gyfer penodau delwedd a PDF yn unig.",
+        "chooseImage": "Dewiswch ffynhonnell ddelwedd neu PDF i ychwanegu anodiadau.",
+        "annotationsSpatial": "Mae angen golwg ofodol delwedd, PDF neu 3D ar anodiadau.",
+        "captureSpatial": "Cipiwch olwg delwedd, PDF neu 3D yn gyntaf.",
+        "motionSpatial": "Mae angen safle camera gofodol i'w gipio ar gyfer symudiad.",
+        "layers": "Nid yw'r ffynhonnell hon yn dangos haenau delwedd lluosog ar hyn o bryd.",
+        "chooseLayered": "Dewiswch Faniffest haenog yn Ffynhonnell.",
+        "comparisonUnavailable": "Mae ffynonellau cydnaws wedi'u llwytho, ond nid yw creu penodau cymharu wedi'i alluogi eto.",
+        "keepSources": "Cadwch y ffynonellau wedi'u llwytho ar gyfer pennod gymharu yn y dyfodol.",
+        "comparisonSources": "Mae angen o leiaf dwy ffynhonnell wedi'u llwytho ar gyfer cymhariaeth.",
+        "loadSource": "Llwythwch ffynhonnell gydnaws arall."
+      }
+    },
+    "media": {
+      "segment": "Segment cyfrwng y bennod",
+      "useFull": "Defnyddio'r cyfrwng cyfan",
+      "stop": "Stopio",
+      "sourceWaveform": "Tonffurf {type} y ffynhonnell",
+      "media": "cyfrwng",
+      "startSeconds": "Dechrau (eiliadau)",
+      "endSeconds": "Diwedd (eiliadau)",
+      "startTime": "Amser dechrau'r cyfrwng",
+      "endTime": "Amser gorffen y cyfrwng",
+      "useCurrent": "Defnyddio'r un cyfredol",
+      "to": "i",
+      "invalidRange": "Rhaid i'r diwedd fod yn hwyrach na'r dechrau.",
+      "markIn": "Marc Mewn (HH:MM:SS)",
+      "markOut": "Marc Allan (HH:MM:SS)",
+      "avPreview": "Rhagolwg Sain / Fideo",
+      "marksHint": "Defnyddiwch reolyddion cyfrwng y gwyliwr i osod amseroedd Marc Mewn a Marc Allan.",
+      "videoTiming": "Amseru fideo'r maniffest",
+      "audioTiming": "Amseru sain y maniffest",
+      "chooseSegment": "Dewiswch segment {type} maniffest y bennod",
+      "editorHint": "Dim ond {type} y ffynhonnell y mae'r golygydd tonffurf o dan y gwyliwr yn ei reoli. Caiff adroddiant y stori ei olygu ar wahân.",
+      "dragSelection": "Llusgwch y dewisiad cysgodol i symud ei ddechrau a'i ddiwedd gyda'i gilydd.",
+      "dragEdge": "Llusgwch y naill ymyl neu'r llall i addasu'r amser dechrau neu ddiwedd.",
+      "longMediaHint": "Ar gyfer cyfryngau hir, chwyddwch a sgroliwch y donffurf. Defnyddiwch “Dangos y dewisiad” i ddychwelyd at ystod y bennod.",
+      "autoSaveHint": "Cewch ragolwg o'r dewisiad pryd bynnag y bo angen. Caiff rhanbarthau a lusgwyd a golygiadau amser union eu cadw'n awtomatig."
+    },
+    "narration": {
+      "button": "Adroddwr sain",
+      "title": "Adroddiant",
+      "description": "Dewiswch y trac adroddiant a llusgwch neu newidiwch faint rhanbarth y bennod.",
+      "language": "Iaith yr adroddiant",
+      "audioUrl": "URL sain yr adroddiant",
+      "preview": "Rhagolwg o'r adroddiant",
+      "stopPreview": "Stopio'r rhagolwg",
+      "dragSelection": "Llusgwch neu newidiwch faint dewisiad y bennod",
+      "waveform": "Tonffurf yr adroddiant",
+      "apply": "Cymhwyso i'r bennod",
+      "chapterTitle": "Adroddiant y bennod ({language})",
+      "expand": "Ehangu'r adran adrodd sain",
+      "collapse": "Cwympo'r adran adrodd sain",
+      "footerHint": "Defnyddiwch olygydd WaveSurfer yn nhroedyn y crëwr storïau i addasu'r ystod hon.",
+      "storyAudioSource": "Ffynhonnell sain y stori",
+      "skip": "Hepgor yr adroddiant ar gyfer y bennod hon",
+      "editor": "Golygydd adroddiant",
+      "editorHint": "Defnyddiwch y golygydd llydan o dan y gwyliwr i ddewis sain a gosod ystod y bennod hon."
+    },
+    "content": {
+      "language": "Iaith y cynnwys",
+      "title": "Cynnwys ({language})",
+      "expandMetadata": "Ehangu'r adran fetadata",
+      "collapseMetadata": "Cwympo'r adran fetadata",
+      "titleLabel": "Teitl",
+      "descriptionLabel": "Disgrifiad",
+      "textBox": "Anodiad blwch testun ({language})",
+      "expandAnnotation": "Ehangu'r adran anodi",
+      "collapseAnnotation": "Cwympo'r adran anodi",
+      "textBoxHint": "Mae hyn yn creu blwch testun wedi'i leoli. Mae ar wahân i'r offer lluniadu uchod.",
+      "textPlaceholder": "Rhowch destun ar gyfer y blwch testun hwn",
+      "placeText": "Gosod y blwch testun ar y gwaith celf",
+      "captureHint": "Cipiwch bennod i olygu testun a lleoliad yr anodiad."
+    },
+    "annotations": {
+      "chapter": "Anodiadau'r bennod",
+      "drawing": "Anodiadau lluniadu",
+      "tools": "Offer lluniadu anodiadau",
+      "drawingHint": "Ychwanegwch bwynt, siâp neu linell yn uniongyrchol at y gwaith celf. Dewiswch anodiad yn y troedyn i'w olygu yma.",
+      "edit": "Golygu'r anodiad",
+      "editDrawing": "Golygu anodiad {type} {index}",
+      "deleteDrawing": "Dileu anodiad {type} {index}",
+      "translations": "Cyfieithiadau'r testun",
+      "textPlaceholder": "Testun yr anodiad ({language})",
+      "colour": "Lliw",
+      "setColour": "Gosod lliw'r anodiad i {colour}",
+      "customColour": "Lliw anodiad personol",
+      "background": "Cefndir",
+      "transparent": "Tryloyw",
+      "solid": "Solet",
+      "stroke": "Strôc",
+      "strokeWidth": {
+        "thin": "Tenau",
+        "medium": "Canolig",
+        "thick": "Trwchus"
+      },
+      "emptySelection": "Lluniwch anodiad, neu dewiswch un o'r troedyn i olygu ei destun a'i olwg.",
+      "empty": "Dim anodiadau yn y bennod hon."
+    },
+    "motion": {
+      "title": "Symud drwy'r bennod hon",
+      "requireTwo": "Dewiswch arddull symud neu ychwanegwch ddau bwynt camera i alluogi'r rheolyddion symud.",
+      "requireOneMore": "Ychwanegwch un pwynt camera arall i gael rhagolwg a ffurfweddu'r symudiad hwn.",
+      "requireArcPoint": "Mae angen o leiaf dri phwynt camera ar gyfer ysgubiad bwa. Ychwanegwch un pwynt arall i'w ddefnyddio.",
+      "durationError": "Rhaid i hyd y symudiad fod yn fwy na 0 eiliad.",
+      "durationDwellError": "Rhaid i'r hyd adael amser i symud ar ôl y saib dechrau o {seconds} eiliad.",
+      "arcError": "Mae angen o leiaf dri phwynt camera ar gyfer ysgubiad bwa. Ychwanegwch bwynt arall yn gyntaf.",
+      "dwellError": "Rhaid i'r saib dechrau fod yn fyrrach na'r amser hyd at y pwynt camera nesaf.",
+      "customHint": "Mae'r modd personol yn cadw chwyddiad y cynfas a gipiwyd ar gyfer pob pwynt. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
+      "presetHint": "Mae'r pwyntiau'n gosod y ffocws; mae'r arddull symud yn rheoli'r chwyddo. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
+      "preview": "Rhagolwg",
+      "style": "Arddull symud",
+      "presets": "Rhagosodiadau symud",
+      "preset": {
+        "ken-burns": "Ken Burns",
+        "hero-reveal": "Datgeliad arwrol",
+        "arc-sweep": "Ysgubiad bwa",
+        "zoom-in": "Chwyddo i mewn",
+        "zoom-out": "Chwyddo allan",
+        "pan": "Panio",
+        "drift-zoom": "Drifft + chwyddo",
+        "static": "Llonydd",
+        "custom": "Personol"
+      },
+      "path": "Taith y llwybr",
+      "curved": "Sblein Crwm",
+      "straight": "Llinellol Syth",
+      "dwell": "Amser Dal ar y Dechrau (Saib)",
+      "dwellHint": "Dal yn llonydd ar yr olwg gychwynnol cyn i'r symud ddechrau.",
+      "noDwell": "0 eiliad (Dim)",
+      "seconds": "{seconds} eiliad",
+      "easing": "Esmwytho'r symudiad",
+      "easingOptions": {
+        "linear": "Llinellol",
+        "ease-in": "Esmwytho i mewn",
+        "ease-out": "Esmwytho allan",
+        "ease-in-out": "Esmwytho i mewn/allan"
+      },
+      "duration": "Hyd symudiad y bennod",
+      "durationHint": "Caiff pob safle ei wasgaru'n awtomatig ar draws yr hyd hwn.",
+      "durationSeconds": "Hyd (eiliadau)",
+      "cameraPoints": "Pwyntiau camera",
+      "movePointAt": "Symud pwynt camera {number} ar {seconds} eiliad",
+      "movePointTitle": "Symud pwynt camera {number} · {seconds} eiliad",
+      "placePointHint": "Cliciwch neu lusgwch y gwaith celf i osod y pwynt camera",
+      "setPoint": "Gosod pwynt camera",
+      "movePoint": "Symud pwynt {number}",
+      "placePoint": "Gosod pwynt {number}",
+      "usePoint": "Defnyddio'r pwynt hwn",
+      "zoomValue": "Chwyddo {zoom}×",
+      "timeline": "Llinell amser symudiad y bennod",
+      "goToPoint": "Mynd i bwynt camera {number}",
+      "point": "Pwynt {number}",
+      "deletePoint": "Dileu'r pwynt camera",
+      "deletePointNumber": "Dileu pwynt camera {number}",
+      "emptyPoints": "Dim pwyntiau camera eto. Ychwanegwch bwynt, yna llusgwch ei bin i'w safle yn y gwyliwr.",
+      "addPoint": "Ychwanegu pwynt camera"
+    },
+    "settings": {
+      "title": "Gosodiadau'r stori",
+      "subtitle": "Gosodwch deitl y stori a'r sain adrodd",
+      "close": "Cau gosodiadau'r stori",
+      "storyId": "ID y stori",
+      "storyTitle": "Teitl y stori ({language})",
+      "titleHint": "Yn ymddangos ym mar uchaf gwyliwr y stori",
+      "untitled": "Stori heb deitl",
+      "savedLabel": "Wedi'i gadw fel y gwerth {language} yn label yr AnnotationPage.",
+      "identifiers": "Dynodyddion cyhoeddi",
+      "identifiersHint": "IDau cyhoeddus sefydlog ar gyfer y stori a'i phenodau",
+      "annotationPageId": "ID yr AnnotationPage",
+      "annotationBase": "Sail Anodiadau'r penodau",
+      "annotationBasePlaceholder": "Yn deillio o ID yr AnnotationPage",
+      "identifiersManaged": "Caiff y dynodyddion hyn eu rheoli gan y gwesteiwr cyhoeddi.",
+      "identifiersWarning": "Bydd newid y sail hon yn newid IDau cyhoeddus Anodiadau penodau a gyhoeddwyd eisoes.",
+      "saveIdentifiers": "Cadw'r dynodyddion cyhoeddi",
+      "audioSource": "Ffynhonnell sain {language}",
+      "audioSourceHint": "Caiff ei defnyddio gan bob pennod ag adroddiant yn yr iaith hon",
+      "audioFileUrl": "URL y ffeil sain",
+      "audioPreview": "Rhagolwg sain",
+      "audioPreviewHint": "Rhowch URL i gael rhagolwg o'r trac adrodd.",
+      "saveAudio": "Cadw'r ffynhonnell sain"
+    },
+    "overlay": {
+      "closeMetadata": "Cau metadata'r bennod",
+      "selectedChapter": "Y bennod a ddewiswyd",
+      "newStory": "Stori newydd",
+      "loadSource": "Llwytho ffynhonnell",
+      "positionUpdated": "Safle wedi'i ddiweddaru",
+      "setPosition": "Gosod safle cyfredol y gwyliwr",
+      "positionConfirmed": "Mae'r bennod hon bellach yn defnyddio'r safle a gadarnhawyd.",
+      "positionMoved": "Mae'r gwyliwr wedi symud. Cliciwch i gadarnhau'r safle a'r chwyddiad hwn.",
+      "noPosition": "Nid oes safle wedi'i gadw. Cliciwch i ddefnyddio'r safle a'r chwyddiad hwn.",
+      "sourceHint": "Ychwanegwch ffynhonnell eich stori, dewiswch ei chynfas cychwynnol, a chrëwch y bennod gyntaf. Gallwch addasu lleoliad y ddelwedd o offer y bennod wedyn.",
+      "backToTools": "Yn ôl i offer y bennod",
+      "saveChapter": "Cadw'r bennod",
+      "revertView": "Dychwelyd i'r olwg a gipiwyd",
+      "noChapter": "Dim pennod wedi'i dewis",
+      "noChapterHint": "Cipiwch bennod neu dewiswch un o'r llinell amser i olygu ei chynnwys.",
+      "confirmPosition": "Cadarnhau'r Safle"
+    },
+    "comparison": {
+      "hint": "Llwythwch o leiaf ddwy ffynhonnell gydnaws i greu pennod gymharu."
+    },
+    "errors": {
+      "missingPublicId": "Gosodwch ID Stori canonaidd yng ngosodiadau'r stori cyn cyhoeddi.",
+      "captureBlocked": "Cipio wedi'i rwystro: {reason}",
+      "capture": {
+        "unsupported-media": "cyfrwng heb ei gefnogi",
+        "missing-manifest": "maniffest ar goll",
+        "missing-viewbox": "blwch golwg ar goll",
+        "invalid-media-marks": "marciau cyfrwng annilys",
+        "missing-model-pose": "ystum model ar goll"
+      },
+      "viewerNotReady": "Nid yw'r gwyliwr yn barod.",
+      "manifestRequired": "Mae angen URL y maniffest.",
+      "saveStatus": "Methodd y cadw ({status})",
+      "invalidSaveResponse": "Methodd y cadw (ymateb JSON annilys)",
+      "saveTimeout": "Cadw wedi goramseru",
+      "network": "Methu cysylltu â'r gweinydd"
     }
   },
   "viewer": {
@@ -74,6 +410,7 @@
         "title": "Casgliad",
         "close": "Cau llywio casgliad",
         "error": "Methu llwytho llywio casgliad",
+        "openError": "Methu agor yr eitem casgliad a ddewiswyd.",
         "messages": {
           "viewBy": "Gweld yn ôl:",
           "hierarchy": "Hierarchaeth",
@@ -108,6 +445,11 @@
         "emptyCreate": "Defnyddiwch y far offer i ychwanegu petryalau neu nodiadau.",
         "emptyList": "Dim anodiadau ar y cynfas hwn.",
         "fallback": "Anodiad",
+        "tag": "Tag",
+        "secondsShort": "{seconds} eiliad",
+        "viewList": "Gweld y Rhestr",
+        "drawShape": "Lluniadu Siâp",
+        "drawHint": "Lluniwch ar y ddelwedd i greu anodiad newydd.",
         "keepVisible": "Cadw anodiadau'n weladwy",
         "keepVisibleDescription": "Dangos anodiadau ar ôl cau'r panel hwn.",
         "editor": {
@@ -126,6 +468,8 @@
           },
           "layer": "Haen",
           "layersLabel": "Haenau",
+          "addLayer": "Ychwanegu haen",
+          "setLayerColour": "Gosod lliw {layer}",
           "label": "Label",
           "labelPlaceholder": "Label Anodiad",
           "text": "Testun",
@@ -141,6 +485,7 @@
           "saveChanges": "Cadw Newidiadau",
           "deleteAnnotation": "Dileu Anodiad",
           "empty": "Dewiswch anodiad i archwilio manylion.",
+          "rectanglePlacement": "Golygydd lleoli petryal",
           "id": "ID",
           "type": "Math",
           "searchPlaceholder": "Chwilio anodiadau",
@@ -210,12 +555,15 @@
         "attribution": "Priodoliad",
         "license": "Trwydded",
         "empty": "Dim metadata maniffest ar gael.",
-        "provider": "Adnodd wedi'i ddarparu gan"
+        "provider": "Adnodd wedi'i ddarparu gan",
+        "resourceTitle": "Teitl"
       },
       "layers": {
         "label": "Panel haenau",
         "title": "Haenau",
-        "close": "Cau haenau"
+        "close": "Cau haenau",
+        "baseImage": "Delwedd Sylfaen",
+        "layerNumber": "Haen {number}"
       }
     },
     "stage": {
@@ -255,7 +603,12 @@
         "hideTools": "Cuddio offer",
         "toggleLayers": "Togl haenau",
         "showLayers": "Dangos haenau",
-        "hideLayers": "Cuddio haenau"
+        "hideLayers": "Cuddio haenau",
+        "closePanels": "Cau'r paneli",
+        "closeFullscreen": "Cau'r sgrin lawn",
+        "enterFullscreen": "Mynd i'r sgrin lawn",
+        "fullscreen": "Sgrin lawn",
+        "expandSidebar": "Ehangu'r bar ochr"
       }
     },
     "toolbar": {
@@ -282,7 +635,9 @@
       "hide": "Cuddio galeri",
       "empty": "Dim cynfasau ar gael.",
       "unavailable": "Cyfryngau ddim ar gael",
-      "canvasAlt": "Cynfas {index}"
+      "canvasAlt": "Cynfas {index}",
+      "pages": "Tudalennau",
+      "viewAll": "Gweld pob un o'r {count} tudalen"
     },
     "dock": {
       "gallery": "G",
@@ -328,29 +683,109 @@
     "none": "Dim",
     "singleViewOnly": "Mae metadata, chwilio ac anodiadau ar gael yn y modd un olwg.",
     "manifest": "Maniffest",
-    "pageLayout": { "group": "Gosodiad tudalen", "singleAria": "Gosodiad tudalen sengl", "sideBySideAria": "Gosodiad tudalennau ochr yn ochr", "continuousAria": "Gosodiad sgrolio di-dor", "galleryAria": "Gosodiad galeri" },
-    "window": { "canvasNavigation": "Llywio cynfasau", "pageNumber": "Rhif tudalen", "replaceManifest": "Disodli'r maniffest yn y ffenestr hon", "previousCanvas": "Cynfas blaenorol", "nextCanvas": "Cynfas nesaf" },
-    "emptySlot": { "dropZone": "Ffenestr weithle wag", "dragOrPaste": "Llusgwch faniffest yma neu gludwch ei URL", "empty": "Gwag", "placeholder": "URL y maniffest", "load": "Llwytho maniffest", "chooseLibrary": "Dewis o'r llyfrgell faniffestau" },
+    "pageLayout": {
+      "group": "Gosodiad tudalen",
+      "singleAria": "Gosodiad tudalen sengl",
+      "sideBySideAria": "Gosodiad tudalennau ochr yn ochr",
+      "continuousAria": "Gosodiad sgrolio di-dor",
+      "galleryAria": "Gosodiad galeri"
+    },
+    "window": {
+      "canvasNavigation": "Llywio cynfasau",
+      "pageNumber": "Rhif tudalen",
+      "replaceManifest": "Disodli'r maniffest yn y ffenestr hon",
+      "previousCanvas": "Cynfas blaenorol",
+      "nextCanvas": "Cynfas nesaf"
+    },
+    "emptySlot": {
+      "dropZone": "Ffenestr weithle wag",
+      "dragOrPaste": "Llusgwch faniffest yma neu gludwch ei URL",
+      "empty": "Gwag",
+      "placeholder": "URL y maniffest",
+      "load": "Llwytho maniffest",
+      "chooseLibrary": "Dewis o'r llyfrgell faniffestau"
+    },
     "compare": {
-      "title": "Cymharu", "close": "Cau cymharu", "description": "Dewiswch sut mae'r golygon cymharu wedi'u trefnu.", "group": "Gosodiad cymharu",
-      "single": "Golwg sengl", "singleAria": "Gosodiad golwg sengl, 1 wrth 1", "singleAnnouncement": "Dewiswyd gosodiad golwg sengl",
-      "sideBySide": "Ochr yn ochr", "sideBySideAria": "Gosodiad ochr yn ochr, 1 wrth 2", "sideBySideAnnouncement": "Dewiswyd gosodiad ochr yn ochr",
-      "stacked": "Wedi'u pentyrru", "stackedAria": "Gosodiad pentwr, 2 wrth 1", "stackedAnnouncement": "Dewiswyd gosodiad pentwr",
-      "oneByTwo": "Un a dau", "oneByTwoAria": "Gosodiad un a dau, un olwg fawr a dau olwg mewn pentwr", "oneByTwoAnnouncement": "Dewiswyd y gosodiad un a dau. Mae tri golwg ar agor",
-      "grid": "Grid", "gridAria": "Gosodiad grid, 2 wrth 2", "gridAnnouncement": "Dewiswyd gosodiad grid"
+      "title": "Cymharu",
+      "close": "Cau cymharu",
+      "description": "Dewiswch sut mae'r golygon cymharu wedi'u trefnu.",
+      "group": "Gosodiad cymharu",
+      "single": "Golwg sengl",
+      "singleAria": "Gosodiad golwg sengl, 1 wrth 1",
+      "singleAnnouncement": "Dewiswyd gosodiad golwg sengl",
+      "sideBySide": "Ochr yn ochr",
+      "sideBySideAria": "Gosodiad ochr yn ochr, 1 wrth 2",
+      "sideBySideAnnouncement": "Dewiswyd gosodiad ochr yn ochr",
+      "stacked": "Wedi'u pentyrru",
+      "stackedAria": "Gosodiad pentwr, 2 wrth 1",
+      "stackedAnnouncement": "Dewiswyd gosodiad pentwr",
+      "oneByTwo": "Un a dau",
+      "oneByTwoAria": "Gosodiad un a dau, un olwg fawr a dau olwg mewn pentwr",
+      "oneByTwoAnnouncement": "Dewiswyd y gosodiad un a dau. Mae tri golwg ar agor",
+      "grid": "Grid",
+      "gridAria": "Gosodiad grid, 2 wrth 2",
+      "gridAnnouncement": "Dewiswyd gosodiad grid"
     },
     "manifestManager": {
-      "ariaLabel": "Rheolwr maniffestau IIIF", "eyebrow": "Gweithle IIIF", "title": "Llwytho maniffest", "close": "Cau'r rheolwr maniffestau",
-      "url": "URL y maniffest", "urlPlaceholder": "https://enghraifft.org/iiif/manifest.json", "targetWindow": "Ffenestr darged", "window": "Ffenestr {number}", "active": "gweithredol",
-      "loading": "Wrthi'n llwytho…", "loadSelected": "Llwytho i'r ffenestr a ddewiswyd", "load": "Llwytho maniffest", "replaceAll": "Disodli pob maniffest",
-      "library": "Llyfrgell", "resourceCount": "{count} adnodd", "loadError": "Methu llwytho'r maniffest: {error}", "remove": "Tynnu o'r llyfrgell", "removeAria": "Tynnu {label} o'r llyfrgell faniffestau",
-      "addTitle": "Ychwanegu URL maniffest", "addDescription": "Gludwch URL maniffest IIIF i'w agor yn y gwyliwr.", "addUrl": "Ychwanegu URL maniffest",
-      "search": "Chwilio maniffestau", "searchPlaceholder": "Chwilio maniffestau, casgliadau neu eiriau allweddol…", "filterAria": "Hidlo maniffestau", "all": "Pob un", "recent": "Diweddar", "favourites": "Ffefrynnau",
-      "source": "Ffynhonnell y maniffest", "allSources": "Pob ffynhonnell", "unknownSource": "Ffynhonnell anhysbys", "pasteHint": "Gludwch URL maniffest IIIF neu dewiswch o'ch", "yourLibrary": "llyfrgell.",
-      "itemCount": "{count} eitem", "openAria": "Llwytho {label}", "favouriteAria": "Toglo {label} fel ffefryn", "noResults": "Nid oes maniffestau yn cyfateb i'r hidlydd hwn.", "whatIsIiif": "Beth yw maniffest IIIF?"
+      "ariaLabel": "Rheolwr maniffestau IIIF",
+      "eyebrow": "Gweithle IIIF",
+      "title": "Llwytho maniffest",
+      "close": "Cau'r rheolwr maniffestau",
+      "url": "URL y maniffest",
+      "urlPlaceholder": "https://enghraifft.org/iiif/manifest.json",
+      "targetWindow": "Ffenestr darged",
+      "window": "Ffenestr {number}",
+      "active": "gweithredol",
+      "loading": "Wrthi'n llwytho…",
+      "loadSelected": "Llwytho i'r ffenestr a ddewiswyd",
+      "load": "Llwytho maniffest",
+      "replaceAll": "Disodli pob maniffest",
+      "library": "Llyfrgell",
+      "resourceCount": "{count} adnodd",
+      "loadError": "Methu llwytho'r maniffest: {error}",
+      "remove": "Tynnu o'r llyfrgell",
+      "removeAria": "Tynnu {label} o'r llyfrgell faniffestau",
+      "addTitle": "Ychwanegu URL maniffest",
+      "addDescription": "Gludwch URL maniffest IIIF i'w agor yn y gwyliwr.",
+      "addUrl": "Ychwanegu URL maniffest",
+      "search": "Chwilio maniffestau",
+      "searchPlaceholder": "Chwilio maniffestau, casgliadau neu eiriau allweddol…",
+      "filterAria": "Hidlo maniffestau",
+      "all": "Pob un",
+      "recent": "Diweddar",
+      "favourites": "Ffefrynnau",
+      "source": "Ffynhonnell y maniffest",
+      "allSources": "Pob ffynhonnell",
+      "unknownSource": "Ffynhonnell anhysbys",
+      "pasteHint": "Gludwch URL maniffest IIIF neu dewiswch o'ch",
+      "yourLibrary": "llyfrgell.",
+      "itemCount": "{count} eitem",
+      "openAria": "Llwytho {label}",
+      "favouriteAria": "Toglo {label} fel ffefryn",
+      "noResults": "Nid oes maniffestau yn cyfateb i'r hidlydd hwn.",
+      "whatIsIiif": "Beth yw maniffest IIIF?"
     },
     "sidebar": {
-      "navigation": "Llywio'r gwyliwr", "browse": "Pori", "gallery": "Galeri", "metadata": "Metadata", "search": "Chwilio", "annotations": "Anodiadau", "collections": "Casgliadau", "transcription": "Trawsgrifiad", "explore": "Archwilio", "imageLayers": "Haenau delwedd", "tools": "Offer", "viewSettings": "Gosodiadau golwg", "compare": "Cymharu", "download": "Lawrlwytho", "share": "Rhannu", "cite": "Dyfynnu", "iiifManifests": "Maniffestau IIIF", "collapse": "Cwympo'r bar ochr", "workspaceTools": "Offer y gweithle", "manageIiif": "Rheoli maniffestau IIIF"
+      "navigation": "Llywio'r gwyliwr",
+      "browse": "Pori",
+      "gallery": "Galeri",
+      "metadata": "Metadata",
+      "search": "Chwilio",
+      "annotations": "Anodiadau",
+      "collections": "Casgliadau",
+      "transcription": "Trawsgrifiad",
+      "explore": "Archwilio",
+      "imageLayers": "Haenau delwedd",
+      "tools": "Offer",
+      "viewSettings": "Gosodiadau golwg",
+      "compare": "Cymharu",
+      "download": "Lawrlwytho",
+      "share": "Rhannu",
+      "cite": "Dyfynnu",
+      "iiifManifests": "Maniffestau IIIF",
+      "collapse": "Cwympo'r bar ochr",
+      "workspaceTools": "Offer y gweithle",
+      "manageIiif": "Rheoli maniffestau IIIF"
     }
   },
   "media": {
@@ -405,9 +840,87 @@
     },
     "annotation": {
       "label": "Ychwanegu anodiad",
-      "note": "Gollyngwch anodiad cyflym ar y golygfa gyfredol.",
+      "focusLabel": "Ffocws Anodiadau",
+      "note": "Gollyngwch anodiad cyflym ar y olygfa gyfredol.",
       "button": "Ychwanegu anodiad",
       "added": "Ychwanegwyd trwy ategyn"
+    },
+    "errors": {
+      "title": "Gwall Ategyn",
+      "load": "Methodd {label} â llwytho",
+      "initialise": "Methodd yr ategyn “{label}” ({id}) â chychwyn",
+      "cleanup": "Methodd yr ategyn “{label}” ({id}) wrth lanhau"
+    },
+    "storyBuilder": {
+      "sidebar": "Crëwr Storïau",
+      "actions": "Gweithredoedd y Crëwr Storïau",
+      "inspector": "Arolygydd Penodau",
+      "overlay": "Troshaen y Crëwr Storïau",
+      "timeline": "Llinell amser y penodau"
+    }
+  },
+  "storyViewer": {
+    "loadingChapter": "Wrthi'n llwytho'r bennod...",
+    "chapterPosition": "Pennod {current} o {total}",
+    "showLess": "Dangos llai",
+    "showMore": "Dangos mwy",
+    "previous": "Y bennod flaenorol",
+    "next": "Y bennod nesaf",
+    "pause": "Oedi'r stori",
+    "play": "Chwarae'r stori",
+    "chapters": "Penodau'r stori",
+    "thumbnailAlt": "Mân-lun pennod {number}",
+    "invalid": "Stori annilys",
+    "invalidAnnotationPage": "AnnotationPage stori Mango annilys",
+    "errors": {
+      "shape": "Ffurf stori annilys: disgwylid AnnotationPage stori Mango",
+      "missingVersion": "Fersiwn stori Mango ar goll",
+      "unsupportedVersion": "Fersiwn stori Mango heb ei chefnogi: {version}",
+      "chapterState": "Cyflwr pennod stori Mango annilys"
+    }
+  },
+  "about": {
+    "title": "Mango Viewer",
+    "description": "Mae Mango yn wyliwr chwyddo dwfn cod agored sy'n cydymffurfio â W3C Annotation a IIIF, ynghyd â chyfres creu storïau rhyngweithiol, wedi'i gynllunio i archwilio llawysgrifau, gwaith celf a chyfryngau gofodol cydraniad uchel.",
+    "easterEggTitle": "Yellow Submarine",
+    "visit": "Ewch i mangoviewer.dev",
+    "buttonTitle": "Ynghylch Mango Viewer (mangoviewer.dev)",
+    "buttonLabel": "Ynghylch Mango Viewer",
+    "brand": "Mango",
+    "logo": "Logo Mango",
+    "version": "v{version}"
+  },
+  "validation": {
+    "chapter": "Pennod {number}",
+    "storyEmpty": "Stori: rhaid cael o leiaf un bennod",
+    "missingId": "{prefix}: id ar goll",
+    "missingManifest": "{prefix}: maniffest ar goll",
+    "invalidCanvas": "{prefix}: mynegai cynfas annilys",
+    "singleCapture": "{prefix}: rhaid cael yn union un o viewBox, media, neu model",
+    "captureRequired": "{prefix}: rhaid cael viewBox, media, model, neu segment adroddiant",
+    "invalidViewBox": "{prefix}: rhaid i led ac uchder viewBox fod > 0",
+    "invalidMedia": "{prefix}: rhaid i ddiwedd y cyfrwng fod yn fwy na'r dechrau",
+    "missingModelPose": "{prefix}: mae ystum y model ar goll",
+    "entryTransition": "{prefix}: ni chaiff hyd y pontio mynediad fod yn negatif",
+    "presentationDuration": "{prefix}: ni chaiff hyd y cyflwyniad fod yn negatif",
+    "cameraDuration": "{prefix}: rhaid i hyd y trac camera fod yn bositif",
+    "cameraPointIds": "{prefix}: rhaid i IDau pwyntiau'r trac camera fod yn unigryw",
+    "cameraPointOutside": "{prefix}: mae pwynt y trac camera y tu allan i hyd y bennod",
+    "cameraPointState": "{prefix}: nid oes cyflwr wedi'i gipio gan bwynt y trac camera",
+    "invalidAnnotationPlacement": "{prefix}: lleoliad annilys ar gyfer anodiad y bennod",
+    "invalidNarration": "{prefix}: segment adroddiant annilys ar gyfer {language}",
+    "invalidPlacement": "{prefix}: lleoliad annilys ar gyfer {language}",
+    "transitionPositive": "{prefix}: rhaid i transitionTimeMs fod yn bositif",
+    "identifiers": {
+      "identifier": "Dynodydd",
+      "absoluteUrl": "{label}: rhaid iddo fod yn URL HTTP(S) absoliwt",
+      "localhost": "{label}: ni ellir defnyddio localhost ar gyfer stori a gyhoeddwyd",
+      "credentials": "{label}: ni chaniateir manylion mewngofnodi",
+      "query": "{label}: ni chaniateir llinynnau ymholiad na darnau",
+      "whitespace": "{label}: yn cynnwys bylchau anniogel",
+      "publishedStory": "ID y Stori: mae angen dynodydd HTTP(S) canonaidd ar stori a gyhoeddwyd",
+      "unsafeChapter": "ID y Bennod: dynodydd anniogel “{id}”",
+      "collision": "Gwrthdrawiad ID pennod: {id}"
     }
   },
   "warnings": {

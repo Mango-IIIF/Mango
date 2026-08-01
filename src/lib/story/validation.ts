@@ -1,6 +1,7 @@
 import type { Chapter, StoryState } from '../core/types/story';
 import { isAnnotationPlacement } from './annotationPlacement';
 import { validatePublicationIdentifiers } from './publicIdentifiers';
+import { translate } from '../i18n';
 
 const hasSingleCapture = (chapter: Chapter): boolean => {
   const captureCount = [chapter.viewBox, chapter.media, chapter.model].filter(Boolean)
@@ -30,47 +31,49 @@ const isValidModel = (chapter: Chapter): boolean => {
 
 const validateChapter = (chapter: Chapter, index: number): string[] => {
   const errors: string[] = [];
-  const prefix = `Chapter ${index + 1}`;
+  const prefix = translate('validation.chapter', { number: index + 1 });
+  const error = (key: string, params?: Record<string, string | number>) =>
+    translate(`validation.${key}`, { prefix, ...params });
 
   if (!chapter.manifest) {
-    errors.push(`${prefix}: missing manifest`);
+    errors.push(error('missingManifest'));
   }
   if (chapter.canvasIndex == null || chapter.canvasIndex < 0) {
-    errors.push(`${prefix}: invalid canvas index`);
+    errors.push(error('invalidCanvas'));
   }
   if (!hasSingleCapture(chapter)) {
-    errors.push(`${prefix}: must have exactly one of viewBox, media, or model`);
+    errors.push(error('singleCapture'));
   }
   if (chapter.viewBox && !isValidViewBox(chapter)) {
-    errors.push(`${prefix}: viewBox width/height must be > 0`);
+    errors.push(error('invalidViewBox'));
   }
   if (chapter.media && !isValidMedia(chapter)) {
-    errors.push(`${prefix}: media end must be greater than start`);
+    errors.push(error('invalidMedia'));
   }
   if (chapter.model && !isValidModel(chapter)) {
-    errors.push(`${prefix}: model pose is missing`);
+    errors.push(error('missingModelPose'));
   }
   if (chapter.entryTransition && chapter.entryTransition.durationMs < 0) {
-    errors.push(`${prefix}: entry transition duration must be non-negative`);
+    errors.push(error('entryTransition'));
   }
   if (chapter.presentationDurationMs !== undefined && chapter.presentationDurationMs < 0) {
-    errors.push(`${prefix}: presentation duration must be non-negative`);
+    errors.push(error('presentationDuration'));
   }
   if (chapter.cameraTrack) {
     if (!(chapter.cameraTrack.durationMs > 0)) {
-      errors.push(`${prefix}: camera track duration must be positive`);
+      errors.push(error('cameraDuration'));
     }
     const pointIds = new Set<string>();
     for (const point of chapter.cameraTrack.keyframes) {
       if (!point.id || pointIds.has(point.id)) {
-        errors.push(`${prefix}: camera track point IDs must be unique`);
+        errors.push(error('cameraPointIds'));
       }
       pointIds.add(point.id);
       if (point.timeMs < 0 || point.timeMs > chapter.cameraTrack.durationMs) {
-        errors.push(`${prefix}: camera track point is outside the chapter duration`);
+        errors.push(error('cameraPointOutside'));
       }
       if (!point.focus && !point.viewBox && !point.model && !point.layerOpacities) {
-        errors.push(`${prefix}: camera track point has no captured state`);
+        errors.push(error('cameraPointState'));
       }
     }
   }
@@ -79,20 +82,20 @@ const validateChapter = (chapter: Chapter, index: number): string[] => {
     chapter.annotationPlacement !== undefined &&
     !isAnnotationPlacement(chapter.annotationPlacement)
   ) {
-    errors.push(`${prefix}: invalid chapter annotation placement`);
+    errors.push(error('invalidAnnotationPlacement'));
   }
 
   const segments = chapter.narrationSegment ?? {};
   for (const [lang, segment] of Object.entries(segments)) {
     if (segment.end <= segment.start) {
-      errors.push(`${prefix}: narration segment invalid for ${lang}`);
+      errors.push(error('invalidNarration', { language: lang }));
     }
   }
 
   const annotations = chapter.annotations ?? {};
   for (const [lang, annotation] of Object.entries(annotations)) {
     if (annotation.placement && !isAnnotationPlacement(annotation.placement)) {
-      errors.push(`${prefix}: invalid placement for ${lang}`);
+      errors.push(error('invalidPlacement', { language: lang }));
     }
   }
 
@@ -103,7 +106,7 @@ export const validateStory = (story: StoryState): { ok: boolean; errors: string[
   const errors: string[] = [];
 
   if (!Array.isArray(story.chapters) || story.chapters.length === 0) {
-    errors.push('Story: must have at least one chapter');
+    errors.push(translate('validation.storyEmpty'));
   }
 
   if (Array.isArray(story.chapters)) {

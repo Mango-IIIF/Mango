@@ -3,19 +3,19 @@ import en from '../../locales/en.json';
 import es from '../../locales/es.json';
 import cy from '../../locales/cy.json';
 import fr from '../../locales/fr.json';
-
-type Messages = typeof en;
+import ja from '../../locales/ja.json';
 
 type Params = Record<string, string | number | undefined>;
 
 type MessageTree = string | { [key: string]: MessageTree };
 type MessageValue = MessageTree | undefined;
 
-const catalogue: Record<string, Messages> = {
+const catalogue: Record<string, MessageTree> = {
   en,
   es,
   cy,
   fr,
+  ja,
 };
 
 export const supportedLocales = Object.freeze(Object.keys(catalogue));
@@ -35,7 +35,7 @@ const resolveLocale = (value?: string): string => {
   return fallbackLocale;
 };
 
-const lookup = (messages: Messages, key: string): MessageValue => {
+const lookup = (messages: MessageTree, key: string): MessageValue => {
   return key.split('.').reduce<MessageValue>((acc, part) => {
     if (!acc || typeof acc !== 'object') return undefined;
     return (acc as Record<string, MessageTree>)[part];
@@ -58,14 +58,19 @@ export const setLocale = (value: string): void => {
 
 export const getLocale = (): string => get(locale);
 
-export const translate = (key: string, params?: Params, overrideLocale?: string): string => {
+export const translate = (
+  key: string,
+  params?: Params,
+  overrideLocale?: string,
+): string => {
   const resolved = resolveLocale(overrideLocale ?? get(locale));
   const messages = catalogue[resolved] ?? catalogue[fallbackLocale];
-  const value = lookup(messages, key);
+  const value = lookup(messages, key) ?? lookup(catalogue[fallbackLocale], key);
   if (typeof value !== 'string') return key;
   return format(value, params);
 };
 
 export const t = derived(locale, ($locale) => {
-  return (key: string, params?: Params): string => translate(key, params, $locale);
+  return (key: string, params?: Params): string =>
+    translate(key, params, $locale);
 });

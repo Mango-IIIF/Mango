@@ -12,54 +12,37 @@
   } from '@lucide/svelte';
   import type { ChapterTaskEvaluation, ChapterTaskId } from '../chapterTasks';
   import ChapterTaskCard from './ChapterTaskCard.svelte';
+  import { t } from '../../i18n';
 
   export let tasks: ChapterTaskEvaluation[];
   export let onOpenTask: (task: ChapterTaskId) => void;
 
-  const definitions = {
+  const icons = {
     details: {
-      title: 'Details',
-      description: 'Title, description and translations.',
       icon: FileText,
     },
     focus: {
-      title: 'Annotations',
-      description: 'Text boxes and drawing annotations.',
       icon: MessageSquareMore,
     },
     motion: {
-      title: 'Motion',
-      description: 'Timed camera points for in-chapter movement.',
       icon: Move3d,
     },
     'audio-timing': {
-      title: 'Narration',
-      description: 'Voiceover tracks and chapter narration timing.',
       icon: AudioLines,
     },
     'transition-timing': {
-      title: 'Chapter transition time',
-      description: 'Set the delay before moving to the next chapter.',
       icon: Clock3,
     },
     'media-timing': {
-      title: 'Media timing',
-      description: 'Start and end points for this chapter’s source audio or video.',
       icon: Film,
     },
     layers: {
-      title: 'Layers',
-      description: 'Visibility and opacity for image layers.',
       icon: Layers3,
     },
     comparison: {
-      title: 'Comparison',
-      description: 'Present compatible sources together.',
       icon: Blend,
     },
     source: {
-      title: 'Source',
-      description: 'Manifest and Canvas configuration.',
       icon: ScrollText,
     },
   } as const;
@@ -67,16 +50,16 @@
 
 <section class="chapter-dashboard" aria-labelledby="chapter-dashboard-title">
   <div class="chapter-dashboard__intro">
-    <h2 id="chapter-dashboard-title">Chapter tools</h2>
-    <p>Select a tool to edit this chapter.</p>
+    <h2 id="chapter-dashboard-title">{$t('storyBuilder.tasks.title')}</h2>
+    <p>{$t('storyBuilder.tasks.description')}</p>
   </div>
   <div class="chapter-dashboard__grid">
     {#each tasks as task (task.id)}
-      {@const definition = definitions[task.id]}
+      {@const definition = icons[task.id]}
       <ChapterTaskCard
         id={task.id}
-        title={definition.title}
-        description={definition.description}
+        title={$t(`storyBuilder.tasks.items.${task.id}.title`)}
+        description={$t(`storyBuilder.tasks.items.${task.id}.description`)}
         icon={definition.icon}
         availability={task.availability}
         status={task.status}

@@ -1,5 +1,4 @@
 <script lang="ts">
-  /* eslint-disable svelte/no-at-html-tags -- IIIF HTML is sanitized before rendering */
   import { onMount } from 'svelte';
   import { getViewerContext } from '../context';
   import { t } from '../../i18n';
@@ -110,7 +109,7 @@
     {#if $manifestTitle}
       {#if redesigned}
         <div class="metadata__block metadata__block--title">
-          <div class="metadata__block-title">Title</div>
+          <div class="metadata__block-title">{$t('viewer.panels.metadata.resourceTitle')}</div>
           <div class="metadata__block-value">{$manifestTitle}</div>
         </div>
       {:else}

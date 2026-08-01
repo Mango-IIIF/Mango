@@ -5,6 +5,7 @@
   import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
   import type { MediaMarksState } from "../mediaMarks";
   import AudioRegionEditor from "./AudioRegionEditor.svelte";
+  import { t } from '../../i18n';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
@@ -109,15 +110,15 @@
 <section class="story-wide-media" data-testid="chapter-media-timing-editor">
   <div class="story-wide-media__editor">
     <div class="story-wide-media__toolbar">
-      <strong>Chapter media segment</strong>
+      <strong>{$t('storyBuilder.media.segment')}</strong>
       <button type="button" on:click={useFullMedia}>
-        <RotateCcw aria-hidden="true" /> Use full media
+        <RotateCcw aria-hidden="true" /> {$t('storyBuilder.media.useFull')}
       </button>
       <button type="button" disabled={!valid} on:click={preview}>
-        <Play aria-hidden="true" /> Preview segment
+        <Play aria-hidden="true" /> {$t('storyBuilder.chapter.preview')}
       </button>
       <button type="button" on:click={onStopPreview}>
-        <Square aria-hidden="true" /> Stop
+        <Square aria-hidden="true" /> {$t('storyBuilder.media.stop')}
       </button>
     </div>
 
@@ -126,7 +127,7 @@
       start={Number(startDraft)}
       end={Number(endDraft)}
       {duration}
-      label={`Source ${source?.type ?? $mediaType ?? "media"} waveform`}
+      label={$t('storyBuilder.media.sourceWaveform', { type: source?.type ?? $mediaType ?? $t('storyBuilder.media.media') })}
       testId="chapter-media-waveform"
       onChange={handleRegionChange}
       onReady={(nextDuration) => (waveformDuration = nextDuration)}
@@ -134,13 +135,13 @@
 
     <div class="story-wide-media__range">
       <label>
-        <span>Start (seconds)</span>
+        <span>{$t('storyBuilder.media.startSeconds')}</span>
         <input
           type="number"
           min="0"
           max={duration}
           step="0.01"
-          aria-label="Media start time"
+          aria-label={$t('storyBuilder.media.startTime')}
           bind:value={startDraft}
           on:change={normalizeAndCommit}
           on:blur={normalizeAndCommit}
@@ -151,17 +152,17 @@
         class="story-wide-media__current"
         on:click={() => useCurrent("start")}
       >
-        Use current
+        {$t('storyBuilder.media.useCurrent')}
       </button>
-      <span>to</span>
+      <span>{$t('storyBuilder.media.to')}</span>
       <label>
-        <span>End (seconds)</span>
+        <span>{$t('storyBuilder.media.endSeconds')}</span>
         <input
           type="number"
           min="0"
           max={duration}
           step="0.01"
-          aria-label="Media end time"
+          aria-label={$t('storyBuilder.media.endTime')}
           bind:value={endDraft}
           on:change={normalizeAndCommit}
           on:blur={normalizeAndCommit}
@@ -172,11 +173,11 @@
         class="story-wide-media__current"
         on:click={() => useCurrent("end")}
       >
-        Use current
+        {$t('storyBuilder.media.useCurrent')}
       </button>
     </div>
     {#if !$marksValid && $mediaMarks.markIn !== null && $mediaMarks.markOut !== null}
-      <p class="story-wide-media__error">End must be later than start.</p>
+      <p class="story-wide-media__error">{$t('storyBuilder.media.invalidRange')}</p>
     {/if}
   </div>
 </section>

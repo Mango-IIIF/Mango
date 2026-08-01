@@ -18,6 +18,7 @@
   import type { MediaMarksState } from '../mediaMarks';
   import type { ExportEnvelope } from '../storySerializer';
   import type { ChapterTaskId } from '../chapterTasks';
+  import { t } from '../../i18n';
 
   export let story: Readable<StoryState>;
   export let surface: 'overlay' | 'inspector' = 'overlay';
@@ -515,8 +516,8 @@
       />
     {:else}
       <div class="story-builder-inspector-empty">
-        <strong>No chapter selected</strong>
-        <span>Capture a chapter or select one from the timeline to edit its content.</span>
+        <strong>{$t('storyBuilder.overlay.noChapter')}</strong>
+        <span>{$t('storyBuilder.overlay.noChapterHint')}</span>
       </div>
     {/if}
   </div>
@@ -541,14 +542,14 @@
     <SaveExportModal open={exportModalOpen} payload={exportPayload} onclose={onCloseSaveModal} />
 
     {#if chapterId && $activeChapterTask === 'motion' && !$motionPreviewing && currentMode !== 'annotationPositioning' && currentMode !== 'motionPointPositioning' && currentMode !== 'narrationPanel' && motionMarkers.length > 0}
-      <div class="story-builder-motion-markers" aria-label="Camera points">
+      <div class="story-builder-motion-markers" aria-label={$t('storyBuilder.motion.cameraPoints')}>
         {#each motionMarkers as marker (marker.id)}
           <button
             class="story-builder-motion-marker"
             type="button"
             style={`--motion-x:${marker.x * 100}%;--motion-y:${marker.y * 100}%;--motion-offset-x:${marker.offsetX}px;--motion-offset-y:${marker.offsetY}px`}
-            aria-label={`Move camera point ${marker.index + 1} at ${(marker.timeMs / 1000).toFixed(1)} seconds`}
-            title={`Move camera point ${marker.index + 1} · ${(marker.timeMs / 1000).toFixed(1)}s`}
+            aria-label={$t('storyBuilder.motion.movePointAt', { number: marker.index + 1, seconds: (marker.timeMs / 1000).toFixed(1) })}
+            title={$t('storyBuilder.motion.movePointTitle', { number: marker.index + 1, seconds: (marker.timeMs / 1000).toFixed(1) })}
             on:click={() => onStartMotionPointPositioning(marker.id)}
           >
             <MapPin aria-hidden="true" />
@@ -583,14 +584,14 @@
             type="button"
             on:click={handleCancel}
           >
-            Cancel
+            {$t('storyBuilder.chapters.cancel')}
           </button>
           <button
             class="story-builder-positioning-button story-builder-positioning-button--confirm"
             type="button"
             on:click={handleConfirm}
           >
-            Confirm Position
+            {$t('storyBuilder.overlay.confirmPosition')}
           </button>
         </div>
       </div>
@@ -601,7 +602,7 @@
         bind:this={motionSurfaceElement}
         class="story-builder-motion-point-surface"
         type="button"
-        aria-label="Click or drag the artwork to place the camera point"
+        aria-label={$t('storyBuilder.motion.placePointHint')}
         on:click={handleMotionCanvasClick}
         on:pointerdown={handleMotionPointerDown}
         on:pointermove={handleMotionPointerMove}
@@ -619,23 +620,23 @@
           </div>
         {/if}
       </button>
-      <div class="story-builder-motion-placement" role="dialog" aria-label="Set camera point">
+      <div class="story-builder-motion-placement" role="dialog" aria-label={$t('storyBuilder.motion.setPoint')}>
         <div class="story-builder-motion-placement__message">
           <strong>
             {$motionPointDraft.keyframeId
-              ? `Move point ${motionPlacementNumber}`
-              : `Place point ${motionPlacementNumber}`}
+              ? $t('storyBuilder.motion.movePoint', { number: motionPlacementNumber })
+              : $t('storyBuilder.motion.placePoint', { number: motionPlacementNumber })}
           </strong>
         </div>
         <div class="story-builder-motion-placement__actions">
-          <button type="button" on:click={onCancelMotionPointPositioning}>Cancel</button>
+          <button type="button" on:click={onCancelMotionPointPositioning}>{$t('storyBuilder.chapters.cancel')}</button>
           <button
             class="story-builder-motion-placement__confirm"
             type="button"
             disabled={!effectiveMotionPlacementFocus}
             on:click={() =>
               effectiveMotionPlacementFocus &&
-              onConfirmMotionPointPositioning(effectiveMotionPlacementFocus)}>Use this point</button
+              onConfirmMotionPointPositioning(effectiveMotionPlacementFocus)}>{$t('storyBuilder.motion.usePoint')}</button
           >
         </div>
       </div>

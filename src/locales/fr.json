@@ -1,27 +1,38 @@
 {
   "common": {
     "closeGlyph": "×",
+    "close": "Fermer",
+    "closeModal": "Fermer la fenêtre",
+    "back": "Retour",
     "emptyValue": "-",
     "notAvailable": "N/A"
   },
   "storyBuilder": {
-    "narration": {
-      "button": "Narrateur audio"
-    },
     "chapters": {
       "title": "Chapitres",
       "empty": "Positionnez le visualiseur, puis ajoutez un chapitre.",
       "edit": "Modifier",
       "delete": "Supprimer",
       "cancel": "Annuler",
-      "confirmDelete": "Supprimer ce chapitre ?"
+      "confirmDelete": "Supprimer ce chapitre ?",
+      "add": "Ajouter un chapitre",
+      "number": "Chapitre {number}",
+      "start": "Commencez votre histoire",
+      "startHint": "Chargez un manifeste IIIF dans le panneau de configuration, puis créez votre premier chapitre.",
+      "options": "Options du chapitre",
+      "duplicate": "Dupliquer",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "reorder": "Faites glisser pour réordonner les chapitres",
+      "modelPose": "Pose 3D"
     },
     "actions": {
       "add": "+ Ajouter un chapitre",
       "save": "Enregistrer / Exporter",
       "saving": "Enregistrement...",
       "saveSuccess": "Enregistré avec succès",
-      "saveFailed": "Échec de l'enregistrement"
+      "saveFailed": "Échec de l'enregistrement",
+      "updatePosition": "Mettre à jour la position du chapitre"
     },
     "chapter": {
       "header": "Paramètres du chapitre",
@@ -48,7 +59,332 @@
     "export": {
       "title": "Exporter le JSON de l'histoire",
       "copy": "Copier le JSON",
-      "download": "Télécharger le .json"
+      "download": "Télécharger le .json",
+      "downloadIiif": "Télécharger le JSON IIIF de l'histoire",
+      "jsonLabel": "JSON de l'histoire exportée",
+      "empty": "// Aucune donnée d'export disponible",
+      "trackLabel": "Piste d'annotations de l'histoire"
+    },
+    "topBar": {
+      "saved": "Enregistré",
+      "unsaved": "Modifications non enregistrées",
+      "upToDate": "À jour",
+      "history": "Historique de l'histoire",
+      "undo": "Annuler",
+      "redo": "Rétablir",
+      "preview": "Prévisualiser l'histoire",
+      "exitPreview": "Quitter la prévisualisation",
+      "save": "Enregistrer",
+      "export": "Exporter",
+      "settings": "Paramètres de l'histoire"
+    },
+    "source": {
+      "reloadManifest": "Recharger le manifeste",
+      "loadManifest": "Charger le manifeste",
+      "stepLoad": "Étape 1 sur 2 · Chargez un manifeste IIIF.",
+      "canvas": "Canevas",
+      "canvasPosition": "Canevas {current} sur {total}",
+      "chooseCanvasHint": "Choisissez un canevas, puis enregistrez la source pour l'appliquer à ce chapitre.",
+      "stepCreate": "Étape 2 sur 2 · Choisissez un canevas et créez le premier chapitre. Le placement de l'image pourra être ajusté ensuite depuis les outils du chapitre.",
+      "createFirst": "Créer le premier chapitre",
+      "loading": "Chargement du manifeste et de ses canevas…"
+    },
+    "transition": {
+      "title": "Temps de transition entre chapitres",
+      "description": "Définissez le délai avant de passer au chapitre suivant. Laissez ce champ vide pour exiger une navigation manuelle.",
+      "delay": "Délai avant le chapitre suivant (secondes)"
+    },
+    "audio": {
+      "chapterSelection": "Sélection du chapitre",
+      "loadError": "Impossible de charger la forme d'onde du média.",
+      "waveformSelection": "Sélection dans la forme d'onde audio",
+      "zoomControls": "Commandes de zoom de la forme d'onde",
+      "fitMedia": "Ajuster au média entier",
+      "zoom": "Zoom",
+      "waveformZoom": "Zoom de la forme d'onde",
+      "showSelection": "Afficher la sélection",
+      "addUrl": "Ajoutez une URL de média pour charger sa forme d'onde.",
+      "loading": "Chargement de la forme d'onde…",
+      "unavailable": "Forme d'onde indisponible"
+    },
+    "tasks": {
+      "title": "Outils du chapitre",
+      "description": "Sélectionnez un outil pour modifier ce chapitre.",
+      "advanced": "Avancé",
+      "languages": "{translated}/{total} langues",
+      "status": {
+        "empty": "Non configuré",
+        "partial": "Partiellement configuré",
+        "complete": "Configuré",
+        "attention": "Nécessite une attention"
+      },
+      "items": {
+        "details": {
+          "title": "Détails",
+          "description": "Titre, description et traductions.",
+          "save": "Enregistrer les détails"
+        },
+        "focus": {
+          "title": "Annotations",
+          "description": "Zones de texte et annotations dessinées.",
+          "save": "Enregistrer l'annotation"
+        },
+        "motion": {
+          "title": "Mouvement",
+          "description": "Points de caméra minutés pour le mouvement au sein du chapitre.",
+          "save": "Enregistrer le mouvement"
+        },
+        "audio-timing": {
+          "title": "Narration",
+          "description": "Pistes de voix off et minutage de la narration du chapitre.",
+          "save": "Enregistrer la narration"
+        },
+        "transition-timing": {
+          "title": "Temps de transition entre chapitres",
+          "description": "Définissez le délai avant de passer au chapitre suivant.",
+          "save": "Enregistrer le temps de transition entre chapitres"
+        },
+        "media-timing": {
+          "title": "Minutage du média",
+          "description": "Points de début et de fin de l'audio ou de la vidéo source de ce chapitre.",
+          "save": "Enregistrer le minutage du média"
+        },
+        "layers": {
+          "title": "Calques",
+          "description": "Visibilité et opacité des calques d'image.",
+          "save": "Enregistrer les calques"
+        },
+        "comparison": {
+          "title": "Comparaison",
+          "description": "Présenter ensemble des sources compatibles.",
+          "save": "Enregistrer la comparaison"
+        },
+        "source": {
+          "title": "Source · Avancé",
+          "description": "Configuration du manifeste et du canevas.",
+          "save": "Enregistrer la source et le canevas"
+        }
+      },
+      "availability": {
+        "annotationsMedia": "Les annotations ne sont disponibles que pour les chapitres image et PDF.",
+        "chooseImage": "Choisissez une source image ou PDF pour ajouter des annotations.",
+        "annotationsSpatial": "Les annotations nécessitent une vue spatiale image, PDF ou 3D.",
+        "captureSpatial": "Capturez d'abord une vue image, PDF ou 3D.",
+        "motionSpatial": "Le mouvement nécessite une position de caméra spatiale à capturer.",
+        "layers": "Cette source n'expose actuellement pas plusieurs calques d'image.",
+        "chooseLayered": "Choisissez un manifeste multicalque dans Source.",
+        "comparisonUnavailable": "Des sources compatibles sont chargées, mais la création de chapitres de comparaison n'est pas encore activée.",
+        "keepSources": "Gardez les sources chargées pour un futur chapitre de comparaison.",
+        "comparisonSources": "La comparaison nécessite au moins deux sources chargées.",
+        "loadSource": "Chargez une autre source compatible."
+      }
+    },
+    "media": {
+      "segment": "Segment de média du chapitre",
+      "useFull": "Utiliser le média entier",
+      "stop": "Arrêter",
+      "sourceWaveform": "Forme d'onde de {type} source",
+      "media": "média",
+      "startSeconds": "Début (secondes)",
+      "endSeconds": "Fin (secondes)",
+      "startTime": "Heure de début du média",
+      "endTime": "Heure de fin du média",
+      "useCurrent": "Utiliser la valeur actuelle",
+      "to": "à",
+      "invalidRange": "La fin doit être postérieure au début.",
+      "markIn": "Point d'entrée (HH:MM:SS)",
+      "markOut": "Point de sortie (HH:MM:SS)",
+      "avPreview": "Prévisualisation audio / vidéo",
+      "marksHint": "Utilisez les commandes de lecture du visualiseur pour définir les points d'entrée et de sortie.",
+      "videoTiming": "Minutage de la vidéo du manifeste",
+      "audioTiming": "Minutage de l'audio du manifeste",
+      "chooseSegment": "Choisissez le segment {type} du manifeste pour ce chapitre",
+      "editorHint": "L'éditeur de forme d'onde sous le visualiseur ne contrôle que {type} source. La narration de l'histoire se modifie séparément.",
+      "dragSelection": "Faites glisser la sélection ombrée pour déplacer son début et sa fin ensemble.",
+      "dragEdge": "Faites glisser l'un ou l'autre bord pour ajuster l'heure de début ou de fin.",
+      "longMediaHint": "Pour les médias longs, zoomez et faites défiler la forme d'onde. Utilisez « Afficher la sélection » pour revenir à la plage du chapitre.",
+      "autoSaveHint": "Prévisualisez la sélection à tout moment. Les régions déplacées et les modifications précises de temps sont enregistrées automatiquement."
+    },
+    "narration": {
+      "button": "Narrateur audio",
+      "title": "Narration",
+      "description": "Choisissez la piste de narration, puis déplacez ou redimensionnez la région du chapitre.",
+      "language": "Langue de la narration",
+      "audioUrl": "URL de l'audio de narration",
+      "preview": "Prévisualiser la narration",
+      "stopPreview": "Arrêter la prévisualisation",
+      "dragSelection": "Déplacez ou redimensionnez la sélection du chapitre",
+      "waveform": "Forme d'onde de la narration",
+      "apply": "Appliquer au chapitre",
+      "chapterTitle": "Narration du chapitre ({language})",
+      "expand": "Développer la section de narration audio",
+      "collapse": "Réduire la section de narration audio",
+      "footerHint": "Utilisez l'éditeur WaveSurfer en pied du créateur d'histoires pour ajuster cette plage.",
+      "storyAudioSource": "Source audio de l'histoire",
+      "skip": "Ignorer la narration pour ce chapitre",
+      "editor": "Éditeur de narration",
+      "editorHint": "Utilisez l'éditeur large sous le visualiseur pour choisir l'audio et définir la plage de ce chapitre."
+    },
+    "content": {
+      "language": "Langue du contenu",
+      "title": "Contenu ({language})",
+      "expandMetadata": "Développer la section des métadonnées",
+      "collapseMetadata": "Réduire la section des métadonnées",
+      "titleLabel": "Titre",
+      "descriptionLabel": "Description",
+      "textBox": "Annotation en zone de texte ({language})",
+      "expandAnnotation": "Développer la section des annotations",
+      "collapseAnnotation": "Réduire la section des annotations",
+      "textBoxHint": "Ceci crée une zone de texte positionnée. Elle est distincte des outils de dessin ci-dessus.",
+      "textPlaceholder": "Saisissez le texte de cette zone",
+      "placeText": "Placer la zone de texte sur l'œuvre",
+      "captureHint": "Capturez un chapitre pour modifier le texte et le placement de l'annotation."
+    },
+    "annotations": {
+      "chapter": "Annotations du chapitre",
+      "drawing": "Annotations dessinées",
+      "tools": "Outils de dessin d'annotations",
+      "drawingHint": "Ajoutez un point, une forme ou une ligne directement sur l'œuvre. Sélectionnez une annotation dans le pied de page pour la modifier ici.",
+      "edit": "Modifier l'annotation",
+      "editDrawing": "Modifier l'annotation {type} {index}",
+      "deleteDrawing": "Supprimer l'annotation {type} {index}",
+      "translations": "Traductions du texte",
+      "textPlaceholder": "Texte de l'annotation ({language})",
+      "colour": "Couleur",
+      "setColour": "Définir la couleur de l'annotation sur {colour}",
+      "customColour": "Couleur d'annotation personnalisée",
+      "background": "Arrière-plan",
+      "transparent": "Transparent",
+      "solid": "Uni",
+      "stroke": "Contour",
+      "strokeWidth": {
+        "thin": "Fin",
+        "medium": "Moyen",
+        "thick": "Épais"
+      },
+      "emptySelection": "Dessinez une annotation, ou sélectionnez-en une dans le pied de page pour modifier son texte et son apparence.",
+      "empty": "Aucune annotation dans ce chapitre."
+    },
+    "motion": {
+      "title": "Se déplacer dans ce chapitre",
+      "requireTwo": "Choisissez un style de mouvement ou ajoutez deux points de caméra pour activer les commandes de mouvement.",
+      "requireOneMore": "Ajoutez un point de caméra supplémentaire pour prévisualiser et configurer ce mouvement.",
+      "requireArcPoint": "Le balayage en arc nécessite au moins trois points de caméra. Ajoutez un point de plus pour l'utiliser.",
+      "durationError": "La durée du mouvement doit être supérieure à 0 seconde.",
+      "durationDwellError": "La durée doit laisser le temps de se déplacer après la pause initiale de {seconds} s.",
+      "arcError": "Le balayage en arc nécessite au moins trois points de caméra. Ajoutez d'abord un autre point.",
+      "dwellError": "La pause initiale doit être plus courte que le temps jusqu'au point de caméra suivant.",
+      "customHint": "Le mode personnalisé conserve le zoom du canevas capturé à chaque point. La prévisualisation démarre au point 1.",
+      "presetHint": "Les points définissent le cadrage ; le style de mouvement contrôle le zoom. La prévisualisation démarre au point 1.",
+      "preview": "Prévisualiser",
+      "style": "Style de mouvement",
+      "presets": "Préréglages de mouvement",
+      "preset": {
+        "ken-burns": "Ken Burns",
+        "hero-reveal": "Révélation principale",
+        "arc-sweep": "Balayage en arc",
+        "zoom-in": "Zoom avant",
+        "zoom-out": "Zoom arrière",
+        "pan": "Panoramique",
+        "drift-zoom": "Dérive + zoom",
+        "static": "Fixe",
+        "custom": "Personnalisé"
+      },
+      "path": "Trajectoire du parcours",
+      "curved": "Spline courbe",
+      "straight": "Linéaire droite",
+      "dwell": "Temps de pause initiale",
+      "dwellHint": "Rester immobile sur la vue initiale avant le début du mouvement.",
+      "noDwell": "0 s (aucune)",
+      "seconds": "{seconds} s",
+      "easing": "Lissage du mouvement",
+      "easingOptions": {
+        "linear": "Linéaire",
+        "ease-in": "Accélération",
+        "ease-out": "Décélération",
+        "ease-in-out": "Accélération/décélération"
+      },
+      "duration": "Durée du mouvement du chapitre",
+      "durationHint": "Toutes les positions sont réparties automatiquement sur cette durée.",
+      "durationSeconds": "Durée (secondes)",
+      "cameraPoints": "Points de caméra",
+      "movePointAt": "Déplacer le point de caméra {number} à {seconds} secondes",
+      "movePointTitle": "Déplacer le point de caméra {number} · {seconds} s",
+      "placePointHint": "Cliquez sur l'œuvre ou faites-la glisser pour placer le point de caméra",
+      "setPoint": "Définir le point de caméra",
+      "movePoint": "Déplacer le point {number}",
+      "placePoint": "Placer le point {number}",
+      "usePoint": "Utiliser ce point",
+      "zoomValue": "Zoom {zoom}×",
+      "timeline": "Chronologie du mouvement du chapitre",
+      "goToPoint": "Aller au point de caméra {number}",
+      "point": "Point {number}",
+      "deletePoint": "Supprimer le point de caméra",
+      "deletePointNumber": "Supprimer le point de caméra {number}",
+      "emptyPoints": "Aucun point de caméra pour l'instant. Ajoutez un point, puis faites glisser son repère à sa place dans le visualiseur.",
+      "addPoint": "Ajouter un point de caméra"
+    },
+    "settings": {
+      "title": "Paramètres de l'histoire",
+      "subtitle": "Définissez le titre de l'histoire et l'audio de narration",
+      "close": "Fermer les paramètres de l'histoire",
+      "storyId": "ID de l'histoire",
+      "storyTitle": "Titre de l'histoire ({language})",
+      "titleHint": "Affiché dans la barre supérieure du visualiseur d'histoires",
+      "untitled": "Histoire sans titre",
+      "savedLabel": "Enregistré comme valeur {language} dans le label de l'AnnotationPage.",
+      "identifiers": "Identifiants de publication",
+      "identifiersHint": "ID publics stables pour l'histoire et ses chapitres",
+      "annotationPageId": "ID de l'AnnotationPage",
+      "annotationBase": "Base des annotations de chapitre",
+      "annotationBasePlaceholder": "Dérivée de l'ID de l'AnnotationPage",
+      "identifiersManaged": "Ces identifiants sont gérés par l'hôte de publication.",
+      "identifiersWarning": "Modifier cette base changera les ID publics des annotations de chapitre déjà publiées.",
+      "saveIdentifiers": "Enregistrer les identifiants de publication",
+      "audioSource": "Source audio en {language}",
+      "audioSourceHint": "Utilisée par tous les chapitres narrés dans cette langue",
+      "audioFileUrl": "URL du fichier audio",
+      "audioPreview": "Prévisualisation audio",
+      "audioPreviewHint": "Saisissez une URL pour prévisualiser la piste de narration.",
+      "saveAudio": "Enregistrer la source audio"
+    },
+    "overlay": {
+      "closeMetadata": "Fermer les métadonnées du chapitre",
+      "selectedChapter": "Chapitre sélectionné",
+      "newStory": "Nouvelle histoire",
+      "loadSource": "Charger une source",
+      "positionUpdated": "Position mise à jour",
+      "setPosition": "Définir la position actuelle du visualiseur",
+      "positionConfirmed": "Ce chapitre utilise désormais la position confirmée.",
+      "positionMoved": "Le visualiseur a bougé. Cliquez pour confirmer cette position et ce zoom.",
+      "noPosition": "Aucune position n'est enregistrée. Cliquez pour utiliser cette position et ce zoom.",
+      "sourceHint": "Ajoutez la source de votre histoire, choisissez son canevas de départ et créez le premier chapitre. Vous pourrez ensuite ajuster le placement de l'image depuis les outils du chapitre.",
+      "backToTools": "Retour aux outils du chapitre",
+      "saveChapter": "Enregistrer le chapitre",
+      "revertView": "Revenir à la vue capturée",
+      "noChapter": "Aucun chapitre sélectionné",
+      "noChapterHint": "Capturez un chapitre ou sélectionnez-en un dans la chronologie pour modifier son contenu.",
+      "confirmPosition": "Confirmer la position"
+    },
+    "comparison": {
+      "hint": "Chargez au moins deux sources compatibles pour créer un chapitre de comparaison."
+    },
+    "errors": {
+      "missingPublicId": "Définissez un ID d'histoire canonique dans les paramètres de l'histoire avant de publier.",
+      "captureBlocked": "Capture bloquée : {reason}",
+      "capture": {
+        "unsupported-media": "média non pris en charge",
+        "missing-manifest": "manifeste manquant",
+        "missing-viewbox": "cadre de vue manquant",
+        "invalid-media-marks": "points de média invalides",
+        "missing-model-pose": "pose du modèle manquante"
+      },
+      "viewerNotReady": "Le visualiseur n'est pas prêt.",
+      "manifestRequired": "L'URL du manifeste est obligatoire.",
+      "saveStatus": "Échec de l'enregistrement ({status})",
+      "invalidSaveResponse": "Échec de l'enregistrement (réponse JSON invalide)",
+      "saveTimeout": "Délai d'enregistrement dépassé",
+      "network": "Impossible de joindre le serveur"
     }
   },
   "viewer": {
@@ -74,6 +410,7 @@
         "title": "Collection",
         "close": "Fermer la navigation de collection",
         "error": "Impossible de charger la navigation de collection",
+        "openError": "Impossible d'ouvrir l'élément de collection sélectionné.",
         "messages": {
           "viewBy": "Afficher par :",
           "hierarchy": "Hiérarchie",
@@ -108,6 +445,11 @@
         "emptyCreate": "Utilisez la barre d'outils pour ajouter des rectangles ou des notes.",
         "emptyList": "Aucune annotation sur ce canevas.",
         "fallback": "Annotation",
+        "tag": "Étiquette",
+        "secondsShort": "{seconds} s",
+        "viewList": "Voir la liste",
+        "drawShape": "Dessiner une forme",
+        "drawHint": "Dessinez sur l'image pour créer une nouvelle annotation.",
         "keepVisible": "Garder les annotations visibles",
         "keepVisibleDescription": "Afficher les annotations après la fermeture de ce panneau.",
         "editor": {
@@ -126,6 +468,8 @@
           },
           "layer": "Calque",
           "layersLabel": "Calques",
+          "addLayer": "Ajouter un calque",
+          "setLayerColour": "Définir la couleur de {layer}",
           "label": "Étiquette",
           "labelPlaceholder": "Étiquette de l'annotation",
           "text": "Texte",
@@ -141,6 +485,7 @@
           "saveChanges": "Enregistrer les modifications",
           "deleteAnnotation": "Supprimer l'annotation",
           "empty": "Sélectionnez une annotation pour inspecter les détails.",
+          "rectanglePlacement": "Éditeur de placement du rectangle",
           "id": "ID",
           "type": "Type",
           "searchPlaceholder": "Rechercher des annotations",
@@ -210,12 +555,15 @@
         "attribution": "Attribution",
         "license": "Licence",
         "empty": "Aucune métadonnée de manifeste disponible.",
-        "provider": "Ressource fournie par"
+        "provider": "Ressource fournie par",
+        "resourceTitle": "Titre"
       },
       "layers": {
         "label": "Panneau des calques",
         "title": "Calques",
-        "close": "Fermer les calques"
+        "close": "Fermer les calques",
+        "baseImage": "Image de base",
+        "layerNumber": "Calque {number}"
       }
     },
     "stage": {
@@ -255,7 +603,12 @@
         "hideTools": "Masquer les outils",
         "toggleLayers": "Basculer les calques",
         "showLayers": "Afficher les calques",
-        "hideLayers": "Masquer les calques"
+        "hideLayers": "Masquer les calques",
+        "closePanels": "Fermer les panneaux",
+        "closeFullscreen": "Quitter le plein écran",
+        "enterFullscreen": "Passer en plein écran",
+        "fullscreen": "Plein écran",
+        "expandSidebar": "Développer la barre latérale"
       }
     },
     "toolbar": {
@@ -282,7 +635,9 @@
       "hide": "Masquer la galerie",
       "empty": "Aucun canevas disponible.",
       "unavailable": "Média indisponible",
-      "canvasAlt": "Canevas {index}"
+      "canvasAlt": "Canevas {index}",
+      "pages": "Pages",
+      "viewAll": "Voir les {count} pages"
     },
     "dock": {
       "gallery": "G",
@@ -328,29 +683,109 @@
     "none": "Aucune",
     "singleViewOnly": "Les métadonnées, la recherche et les annotations sont disponibles en vue unique.",
     "manifest": "Manifeste",
-    "pageLayout": { "group": "Mise en page", "singleAria": "Mise en page unique", "sideBySideAria": "Mise en page côte à côte", "continuousAria": "Mise en page à défilement continu", "galleryAria": "Mise en page galerie" },
-    "window": { "canvasNavigation": "Navigation entre les canevas", "pageNumber": "Numéro de page", "replaceManifest": "Remplacer le manifeste de cette fenêtre", "previousCanvas": "Canevas précédent", "nextCanvas": "Canevas suivant" },
-    "emptySlot": { "dropZone": "Fenêtre vide", "dragOrPaste": "Faites glisser un manifeste ici ou collez son URL", "empty": "Vide", "placeholder": "URL du manifeste", "load": "Charger le manifeste", "chooseLibrary": "Choisir dans la bibliothèque de manifestes" },
+    "pageLayout": {
+      "group": "Mise en page",
+      "singleAria": "Mise en page unique",
+      "sideBySideAria": "Mise en page côte à côte",
+      "continuousAria": "Mise en page à défilement continu",
+      "galleryAria": "Mise en page galerie"
+    },
+    "window": {
+      "canvasNavigation": "Navigation entre les canevas",
+      "pageNumber": "Numéro de page",
+      "replaceManifest": "Remplacer le manifeste de cette fenêtre",
+      "previousCanvas": "Canevas précédent",
+      "nextCanvas": "Canevas suivant"
+    },
+    "emptySlot": {
+      "dropZone": "Fenêtre vide",
+      "dragOrPaste": "Faites glisser un manifeste ici ou collez son URL",
+      "empty": "Vide",
+      "placeholder": "URL du manifeste",
+      "load": "Charger le manifeste",
+      "chooseLibrary": "Choisir dans la bibliothèque de manifestes"
+    },
     "compare": {
-      "title": "Comparer", "close": "Fermer la comparaison", "description": "Choisissez la disposition des vues de comparaison.", "group": "Disposition de comparaison",
-      "single": "Vue unique", "singleAria": "Disposition en vue unique, 1 par 1", "singleAnnouncement": "Disposition en vue unique sélectionnée",
-      "sideBySide": "Côte à côte", "sideBySideAria": "Disposition côte à côte, 1 par 2", "sideBySideAnnouncement": "Disposition côte à côte sélectionnée",
-      "stacked": "Empilées", "stackedAria": "Disposition empilée, 2 par 1", "stackedAnnouncement": "Disposition empilée sélectionnée",
-      "oneByTwo": "Un et deux", "oneByTwoAria": "Disposition un et deux, une grande vue et deux vues empilées", "oneByTwoAnnouncement": "Disposition un et deux sélectionnée. Trois vues sont ouvertes",
-      "grid": "Grille", "gridAria": "Disposition en grille, 2 par 2", "gridAnnouncement": "Disposition en grille sélectionnée"
+      "title": "Comparer",
+      "close": "Fermer la comparaison",
+      "description": "Choisissez la disposition des vues de comparaison.",
+      "group": "Disposition de comparaison",
+      "single": "Vue unique",
+      "singleAria": "Disposition en vue unique, 1 par 1",
+      "singleAnnouncement": "Disposition en vue unique sélectionnée",
+      "sideBySide": "Côte à côte",
+      "sideBySideAria": "Disposition côte à côte, 1 par 2",
+      "sideBySideAnnouncement": "Disposition côte à côte sélectionnée",
+      "stacked": "Empilées",
+      "stackedAria": "Disposition empilée, 2 par 1",
+      "stackedAnnouncement": "Disposition empilée sélectionnée",
+      "oneByTwo": "Un et deux",
+      "oneByTwoAria": "Disposition un et deux, une grande vue et deux vues empilées",
+      "oneByTwoAnnouncement": "Disposition un et deux sélectionnée. Trois vues sont ouvertes",
+      "grid": "Grille",
+      "gridAria": "Disposition en grille, 2 par 2",
+      "gridAnnouncement": "Disposition en grille sélectionnée"
     },
     "manifestManager": {
-      "ariaLabel": "Gestionnaire de manifestes IIIF", "eyebrow": "Espace de travail IIIF", "title": "Charger un manifeste", "close": "Fermer le gestionnaire de manifestes",
-      "url": "URL du manifeste", "urlPlaceholder": "https://exemple.org/iiif/manifest.json", "targetWindow": "Fenêtre cible", "window": "Fenêtre {number}", "active": "active",
-      "loading": "Chargement…", "loadSelected": "Charger dans la fenêtre sélectionnée", "load": "Charger le manifeste", "replaceAll": "Remplacer tous les manifestes",
-      "library": "Bibliothèque", "resourceCount": "{count} ressources", "loadError": "Impossible de charger le manifeste : {error}", "remove": "Retirer de la bibliothèque", "removeAria": "Retirer {label} de la bibliothèque de manifestes",
-      "addTitle": "Ajouter l’URL d’un manifeste", "addDescription": "Collez l’URL d’un manifeste IIIF pour l’ouvrir dans la visionneuse.", "addUrl": "Ajouter l’URL d’un manifeste",
-      "search": "Rechercher des manifestes", "searchPlaceholder": "Rechercher des manifestes, collections ou mots-clés…", "filterAria": "Filtrer les manifestes", "all": "Tous", "recent": "Récents", "favourites": "Favoris",
-      "source": "Source du manifeste", "allSources": "Toutes les sources", "unknownSource": "Source inconnue", "pasteHint": "Collez l’URL d’un manifeste IIIF ou choisissez dans votre", "yourLibrary": "bibliothèque.",
-      "itemCount": "{count} éléments", "openAria": "Charger {label}", "favouriteAria": "Ajouter ou retirer {label} des favoris", "noResults": "Aucun manifeste ne correspond à ce filtre.", "whatIsIiif": "Qu’est-ce qu’un manifeste IIIF ?"
+      "ariaLabel": "Gestionnaire de manifestes IIIF",
+      "eyebrow": "Espace de travail IIIF",
+      "title": "Charger un manifeste",
+      "close": "Fermer le gestionnaire de manifestes",
+      "url": "URL du manifeste",
+      "urlPlaceholder": "https://exemple.org/iiif/manifest.json",
+      "targetWindow": "Fenêtre cible",
+      "window": "Fenêtre {number}",
+      "active": "active",
+      "loading": "Chargement…",
+      "loadSelected": "Charger dans la fenêtre sélectionnée",
+      "load": "Charger le manifeste",
+      "replaceAll": "Remplacer tous les manifestes",
+      "library": "Bibliothèque",
+      "resourceCount": "{count} ressources",
+      "loadError": "Impossible de charger le manifeste : {error}",
+      "remove": "Retirer de la bibliothèque",
+      "removeAria": "Retirer {label} de la bibliothèque de manifestes",
+      "addTitle": "Ajouter l’URL d’un manifeste",
+      "addDescription": "Collez l’URL d’un manifeste IIIF pour l’ouvrir dans la visionneuse.",
+      "addUrl": "Ajouter l’URL d’un manifeste",
+      "search": "Rechercher des manifestes",
+      "searchPlaceholder": "Rechercher des manifestes, collections ou mots-clés…",
+      "filterAria": "Filtrer les manifestes",
+      "all": "Tous",
+      "recent": "Récents",
+      "favourites": "Favoris",
+      "source": "Source du manifeste",
+      "allSources": "Toutes les sources",
+      "unknownSource": "Source inconnue",
+      "pasteHint": "Collez l’URL d’un manifeste IIIF ou choisissez dans votre",
+      "yourLibrary": "bibliothèque.",
+      "itemCount": "{count} éléments",
+      "openAria": "Charger {label}",
+      "favouriteAria": "Ajouter ou retirer {label} des favoris",
+      "noResults": "Aucun manifeste ne correspond à ce filtre.",
+      "whatIsIiif": "Qu’est-ce qu’un manifeste IIIF ?"
     },
     "sidebar": {
-      "navigation": "Navigation de la visionneuse", "browse": "Parcourir", "gallery": "Galerie", "metadata": "Métadonnées", "search": "Rechercher", "annotations": "Annotations", "collections": "Collections", "transcription": "Transcription", "explore": "Explorer", "imageLayers": "Calques d'image", "tools": "Outils", "viewSettings": "Paramètres d'affichage", "compare": "Comparer", "download": "Télécharger", "share": "Partager", "cite": "Citer", "iiifManifests": "Manifestes IIIF", "collapse": "Réduire la barre latérale", "workspaceTools": "Outils de l'espace de travail", "manageIiif": "Gérer les manifestes IIIF"
+      "navigation": "Navigation de la visionneuse",
+      "browse": "Parcourir",
+      "gallery": "Galerie",
+      "metadata": "Métadonnées",
+      "search": "Rechercher",
+      "annotations": "Annotations",
+      "collections": "Collections",
+      "transcription": "Transcription",
+      "explore": "Explorer",
+      "imageLayers": "Calques d'image",
+      "tools": "Outils",
+      "viewSettings": "Paramètres d'affichage",
+      "compare": "Comparer",
+      "download": "Télécharger",
+      "share": "Partager",
+      "cite": "Citer",
+      "iiifManifests": "Manifestes IIIF",
+      "collapse": "Réduire la barre latérale",
+      "workspaceTools": "Outils de l'espace de travail",
+      "manageIiif": "Gérer les manifestes IIIF"
     }
   },
   "media": {
@@ -405,9 +840,87 @@
     },
     "annotation": {
       "label": "Ajouter une annotation",
+      "focusLabel": "Focus sur les annotations",
       "note": "Déposer une annotation rapide sur la vue actuelle.",
       "button": "Ajouter une annotation",
       "added": "Ajouté via le plugin"
+    },
+    "errors": {
+      "title": "Erreur d'extension",
+      "load": "Échec du chargement de {label}",
+      "initialise": "Échec de l'initialisation de l'extension « {label} » ({id})",
+      "cleanup": "Échec du nettoyage de l'extension « {label} » ({id})"
+    },
+    "storyBuilder": {
+      "sidebar": "Créateur d'histoires",
+      "actions": "Actions du créateur d'histoires",
+      "inspector": "Inspecteur de chapitre",
+      "overlay": "Superposition du créateur d'histoires",
+      "timeline": "Chronologie des chapitres"
+    }
+  },
+  "storyViewer": {
+    "loadingChapter": "Chargement du chapitre...",
+    "chapterPosition": "Chapitre {current} sur {total}",
+    "showLess": "Afficher moins",
+    "showMore": "Afficher plus",
+    "previous": "Chapitre précédent",
+    "next": "Chapitre suivant",
+    "pause": "Mettre l'histoire en pause",
+    "play": "Lire l'histoire",
+    "chapters": "Chapitres de l'histoire",
+    "thumbnailAlt": "Vignette du chapitre {number}",
+    "invalid": "Histoire invalide",
+    "invalidAnnotationPage": "AnnotationPage d'histoire Mango invalide",
+    "errors": {
+      "shape": "Structure d'histoire invalide : un AnnotationPage d'histoire Mango était attendu",
+      "missingVersion": "Version de l'histoire Mango manquante",
+      "unsupportedVersion": "Version d'histoire Mango non prise en charge : {version}",
+      "chapterState": "État de chapitre d'histoire Mango invalide"
+    }
+  },
+  "about": {
+    "title": "Mango Viewer",
+    "description": "Mango est un visualiseur à zoom profond open source, conforme à IIIF et à W3C Annotation, doublé d'une suite de création d'histoires interactives, conçu pour explorer manuscrits, œuvres d'art et médias spatiaux en haute résolution.",
+    "easterEggTitle": "Yellow Submarine",
+    "visit": "Visitez mangoviewer.dev",
+    "buttonTitle": "À propos de Mango Viewer (mangoviewer.dev)",
+    "buttonLabel": "À propos de Mango Viewer",
+    "brand": "Mango",
+    "logo": "Logo Mango",
+    "version": "v{version}"
+  },
+  "validation": {
+    "chapter": "Chapitre {number}",
+    "storyEmpty": "Histoire : doit comporter au moins un chapitre",
+    "missingId": "{prefix} : id manquant",
+    "missingManifest": "{prefix} : manifeste manquant",
+    "invalidCanvas": "{prefix} : index de canevas invalide",
+    "singleCapture": "{prefix} : doit comporter exactement un élément parmi viewBox, media ou model",
+    "captureRequired": "{prefix} : doit comporter viewBox, media, model ou un segment de narration",
+    "invalidViewBox": "{prefix} : la largeur et la hauteur de viewBox doivent être > 0",
+    "invalidMedia": "{prefix} : la fin du média doit être postérieure au début",
+    "missingModelPose": "{prefix} : la pose du modèle est manquante",
+    "entryTransition": "{prefix} : la durée de la transition d'entrée ne peut pas être négative",
+    "presentationDuration": "{prefix} : la durée de présentation ne peut pas être négative",
+    "cameraDuration": "{prefix} : la durée de la piste caméra doit être positive",
+    "cameraPointIds": "{prefix} : les ID des points de la piste caméra doivent être uniques",
+    "cameraPointOutside": "{prefix} : un point de la piste caméra se situe hors de la durée du chapitre",
+    "cameraPointState": "{prefix} : un point de la piste caméra n'a pas d'état capturé",
+    "invalidAnnotationPlacement": "{prefix} : placement invalide de l'annotation du chapitre",
+    "invalidNarration": "{prefix} : segment de narration invalide pour {language}",
+    "invalidPlacement": "{prefix} : placement invalide pour {language}",
+    "transitionPositive": "{prefix} : transitionTimeMs doit être positif",
+    "identifiers": {
+      "identifier": "Identifiant",
+      "absoluteUrl": "{label} : doit être une URL HTTP(S) absolue",
+      "localhost": "{label} : localhost ne peut pas être utilisé pour une histoire publiée",
+      "credentials": "{label} : les identifiants de connexion ne sont pas autorisés",
+      "query": "{label} : les chaînes de requête et les fragments ne sont pas autorisés",
+      "whitespace": "{label} : contient des espaces non sûrs",
+      "publishedStory": "ID de l'histoire : une histoire publiée nécessite un identifiant HTTP(S) canonique",
+      "unsafeChapter": "ID du chapitre : identifiant non sûr « {id} »",
+      "collision": "Collision d'ID de chapitre : {id}"
     }
   },
   "warnings": {

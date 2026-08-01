@@ -3,6 +3,7 @@
   import type { Readable } from 'svelte/store';
   import type { StoryState } from '../../core/types/story';
   import { deriveChapterAnnotationBase, validatePublicIdentifier } from '../publicIdentifiers';
+  import { t } from '../../i18n';
 
   export let story: Readable<StoryState>;
   export let open = false;
@@ -56,9 +57,11 @@
   }
 
   $: identifiersLocked = Boolean($story.publication?.identifiersLocked);
-  $: storyIdErrors = storyId.trim() ? validatePublicIdentifier(storyId, 'Story ID') : [];
+  $: storyIdErrors = storyId.trim()
+    ? validatePublicIdentifier(storyId, $t('storyBuilder.settings.storyId'))
+    : [];
   $: annotationBaseErrors = annotationBase.trim()
-    ? validatePublicIdentifier(annotationBase, 'Chapter Annotation base')
+    ? validatePublicIdentifier(annotationBase, $t('storyBuilder.settings.annotationBase'))
     : [];
   $: changingPublishedBase =
     $story.publication?.status === 'published' &&
@@ -122,31 +125,31 @@
           data-testid="narration-back"
           on:click={() => onBack?.()}
         >
-          Back
+          {$t('common.back')}
         </button>
       {/if}
       <div>
-        <div class="narration-overlay__title" id="narration-overlay-title">Story settings</div>
-        <div class="narration-overlay__subtitle">Set the story title and narration audio</div>
+        <div class="narration-overlay__title" id="narration-overlay-title">{$t('storyBuilder.settings.title')}</div>
+        <div class="narration-overlay__subtitle">{$t('storyBuilder.settings.subtitle')}</div>
       </div>
       <button
         class="narration-overlay__close"
         type="button"
-        aria-label="Close story settings"
+        aria-label={$t('storyBuilder.settings.close')}
         data-testid="narration-close"
         on:click={() => onClose?.()}
       >
-        ×
+        {$t('common.closeGlyph')}
       </button>
     </div>
 
     <div class="narration-overlay__form">
       <section class="narration-overlay__section">
-        <div class="narration-overlay__section-title">Language</div>
+        <div class="narration-overlay__section-title">{$t('storyBuilder.chapter.language')}</div>
         <div
           class="narration-overlay__language-tabs"
           role="tablist"
-          aria-label="Narration language"
+          aria-label={$t('storyBuilder.narration.language')}
         >
           {#each languages as lang}
             <button
@@ -169,13 +172,13 @@
           <span class="narration-overlay__source-icon narration-overlay__source-icon--title">T</span
           >
           <span>
-            <strong>Story title ({activeLanguage.toUpperCase()})</strong>
-            <small>Shown in the story viewer top bar</small>
+            <strong>{$t('storyBuilder.settings.storyTitle', { language: activeLanguage.toUpperCase() })}</strong>
+            <small>{$t('storyBuilder.settings.titleHint')}</small>
           </span>
         </div>
 
         <label class="narration-overlay__label" for="story-title">
-          Title
+          {$t('storyBuilder.content.titleLabel')}
           <input
             id="story-title"
             class="narration-overlay__input narration-overlay__input--standalone"
@@ -183,11 +186,11 @@
             data-testid="story-title"
             value={title}
             on:input={handleTitleInput}
-            placeholder="Untitled story"
+            placeholder={$t('storyBuilder.settings.untitled')}
           />
         </label>
         <p class="narration-overlay__hint">
-          Saved as the {activeLanguage.toUpperCase()} value in the AnnotationPage label.
+          {$t('storyBuilder.settings.savedLabel', { language: activeLanguage.toUpperCase() })}
         </p>
       </section>
 
@@ -195,12 +198,12 @@
         <div class="narration-overlay__source-heading">
           <span class="narration-overlay__source-icon"><Link2 aria-hidden="true" /></span>
           <span>
-            <strong>Publishing identifiers</strong>
-            <small>Stable public IDs for the story and its chapters</small>
+            <strong>{$t('storyBuilder.settings.identifiers')}</strong>
+            <small>{$t('storyBuilder.settings.identifiersHint')}</small>
           </span>
         </div>
         <label class="narration-overlay__label">
-          AnnotationPage ID
+          {$t('storyBuilder.settings.annotationPageId')}
           <input
             class="narration-overlay__input narration-overlay__input--standalone"
             type="url"
@@ -211,21 +214,21 @@
           />
         </label>
         <label class="narration-overlay__label">
-          Chapter Annotation base
+          {$t('storyBuilder.settings.annotationBase')}
           <input
             class="narration-overlay__input narration-overlay__input--standalone"
             type="url"
             data-testid="story-annotation-base"
             bind:value={annotationBase}
             disabled={identifiersLocked}
-            placeholder="Derived from the AnnotationPage ID"
+            placeholder={$t('storyBuilder.settings.annotationBasePlaceholder')}
           />
         </label>
         {#if identifiersLocked}
-          <p class="narration-overlay__hint">These identifiers are managed by the publishing host.</p>
+          <p class="narration-overlay__hint">{$t('storyBuilder.settings.identifiersManaged')}</p>
         {:else if changingPublishedBase}
           <p class="narration-overlay__warning" role="alert">
-            Changing this base will change the public IDs of previously published chapter Annotations.
+            {$t('storyBuilder.settings.identifiersWarning')}
           </p>
         {/if}
         {#if storyIdErrors.length || annotationBaseErrors.length}
@@ -240,7 +243,7 @@
           disabled={identifiersLocked || storyIdErrors.length > 0 || annotationBaseErrors.length > 0}
           on:click={saveIdentifiers}
         >
-          <Check aria-hidden="true" /> Save publishing identifiers
+          <Check aria-hidden="true" /> {$t('storyBuilder.settings.saveIdentifiers')}
         </button>
       </section>
 
@@ -248,13 +251,13 @@
         <div class="narration-overlay__source-heading">
           <span class="narration-overlay__source-icon"><Volume2 aria-hidden="true" /></span>
           <span>
-            <strong>{activeLanguage.toUpperCase()} audio source</strong>
-            <small>Used by every narrated chapter in this language</small>
+            <strong>{$t('storyBuilder.settings.audioSource', { language: activeLanguage.toUpperCase() })}</strong>
+            <small>{$t('storyBuilder.settings.audioSourceHint')}</small>
           </span>
         </div>
 
         <label class="narration-overlay__label" for="narration-audio-url">
-          Audio file URL
+          {$t('storyBuilder.settings.audioFileUrl')}
           <span class="narration-overlay__input-shell">
             <Link2 aria-hidden="true" />
             <input
@@ -270,12 +273,12 @@
         </label>
 
         <div class="narration-overlay__preview">
-          <div class="narration-overlay__preview-label">Audio preview</div>
+          <div class="narration-overlay__preview-label">{$t('storyBuilder.settings.audioPreview')}</div>
           <div class="narration-overlay__player-shell">
             <audio class="narration-overlay__player" controls preload="metadata" src={url}></audio>
           </div>
           {#if !url}
-            <p class="narration-overlay__hint">Enter a URL to preview the narration track.</p>
+            <p class="narration-overlay__hint">{$t('storyBuilder.settings.audioPreviewHint')}</p>
           {/if}
         </div>
 
@@ -288,7 +291,7 @@
             on:click={handleSaveUrl}
           >
             <Check aria-hidden="true" />
-            Save audio source
+            {$t('storyBuilder.settings.saveAudio')}
           </button>
         </div>
       </section>

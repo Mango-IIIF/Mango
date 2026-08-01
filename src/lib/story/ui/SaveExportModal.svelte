@@ -14,7 +14,7 @@
   const close = () => onclose?.();
 
   const pretty = () =>
-    payload ? JSON.stringify(payload, null, 2) : '// No export payload available';
+    payload ? JSON.stringify(payload, null, 2) : $t('storyBuilder.export.empty');
 
   const copyJson = async () => {
     try {
@@ -60,7 +60,7 @@
         <div class="save-modal__title" id="save-modal-title">
           {$t('storyBuilder.export.title')}
         </div>
-        <button class="save-modal__close" type="button" aria-label="Close" onclick={close}>
+        <button class="save-modal__close" type="button" aria-label={$t('common.close')} onclick={close}>
           {$t('common.closeGlyph')}
         </button>
       </div>
@@ -68,7 +68,7 @@
       <textarea
         bind:this={textareaRef}
         class="save-modal__code"
-        aria-label="Exported story JSON"
+        aria-label={$t('storyBuilder.export.jsonLabel')}
         readonly
         value={pretty()}
       ></textarea>
@@ -82,7 +82,7 @@
           type="button"
           onclick={downloadJson}
         >
-          Download IIIF story JSON
+          {$t('storyBuilder.export.downloadIiif')}
         </button>
       </div>
     </div>

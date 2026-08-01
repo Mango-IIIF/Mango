@@ -7,6 +7,7 @@
     TaskAvailability,
     TaskStatus,
   } from '../chapterTasks';
+  import { t } from '../../i18n';
 
   export let id: ChapterTaskId;
   export let title: string;
@@ -17,13 +18,6 @@
   export let advanced = false;
   export let onOpen: (id: ChapterTaskId) => void;
 
-  const statusLabels: Record<CompletionState, string> = {
-    empty: 'Not configured',
-    partial: 'Partially configured',
-    complete: 'Configured',
-    attention: 'Needs attention',
-  };
-
   const statusIcons: Record<CompletionState, Component> = {
     empty: Circle,
     partial: CircleDot,
@@ -32,13 +26,16 @@
   };
 
   $: disabled = availability.state !== 'available';
-  $: statusLabel = statusLabels[status.completion];
+  $: statusLabel = $t(`storyBuilder.tasks.status.${status.completion}`);
   $: StatusIcon = statusIcons[status.completion];
   $: translationLabel =
     status.languageTotal !== undefined
-      ? `${status.translated ?? 0}/${status.languageTotal} languages`
+      ? $t('storyBuilder.tasks.languages', {
+          translated: status.translated ?? 0,
+          total: status.languageTotal,
+        })
       : '';
-  $: accessibleLabel = [title, advanced ? 'Advanced' : '', statusLabel, translationLabel]
+  $: accessibleLabel = [title, advanced ? $t('storyBuilder.tasks.advanced') : '', statusLabel, translationLabel]
     .filter(Boolean)
     .join(', ');
 </script>
@@ -64,7 +61,7 @@
       <span class="chapter-task-card__content">
         <span class="chapter-task-card__heading">
           <strong>{title}</strong>
-          {#if advanced}<span class="chapter-task-card__advanced">Advanced</span>{/if}
+          {#if advanced}<span class="chapter-task-card__advanced">{$t('storyBuilder.tasks.advanced')}</span>{/if}
         </span>
         <span id={`${id}-description`} class="chapter-task-card__description">{description}</span>
         <span id={`${id}-status`} class="chapter-task-card__status">

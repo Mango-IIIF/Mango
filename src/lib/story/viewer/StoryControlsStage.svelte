@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { t } from '../../i18n';
 
   interface Props {
     currentChapterIndex?: number;
@@ -169,7 +170,7 @@
     const prefersReducedMotion =
       typeof matchMedia === 'function' &&
       matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const behavior: ScrollBehavior =
+    const behavior: 'auto' | 'smooth' =
       hasAlignedChapterStrip && !prefersReducedMotion ? 'smooth' : 'auto';
     hasAlignedChapterStrip = true;
 
@@ -201,10 +202,10 @@
           {#if loading}
             <span class="story-shell__loading">
               <span class="story-shell__spinner"></span>
-              Loading chapter...
+              {$t('storyViewer.loadingChapter')}
             </span>
           {:else}
-            Chapter {safeActiveIndex() + 1} of {chapterCount()}
+            {$t('storyViewer.chapterPosition', { current: safeActiveIndex() + 1, total: chapterCount() })}
           {/if}
         </p>
         <h2 class="story-shell__title">{chapterTitle}</h2>
@@ -223,7 +224,7 @@
               aria-expanded={metadataExpanded}
               onclick={() => (metadataExpanded = !metadataExpanded)}
             >
-              {metadataExpanded ? 'Show less' : 'Show more'}
+              {metadataExpanded ? $t('storyViewer.showLess') : $t('storyViewer.showMore')}
             </button>
           {/if}
         {/if}
@@ -235,7 +236,7 @@
             type="button"
             class="story-shell__transport-btn"
             disabled={disabled || loading}
-            aria-label="Previous chapter"
+            aria-label={$t('storyViewer.previous')}
             onclick={() => onpreviousChapter?.()}
           >
             &#9664;
@@ -246,7 +247,7 @@
             class:story-shell__play-btn--active={playState === 'playing'}
             data-testid="story-controls-play"
             disabled={disabled || loading}
-            aria-label={playState === 'playing' ? 'Pause story' : 'Play story'}
+            aria-label={playState === 'playing' ? $t('storyViewer.pause') : $t('storyViewer.play')}
             onclick={handlePlayToggle}
           >
             {#if playState === 'playing'}
@@ -259,7 +260,7 @@
             type="button"
             class="story-shell__transport-btn"
             disabled={disabled || loading}
-            aria-label="Next chapter"
+            aria-label={$t('storyViewer.next')}
             onclick={() => onnextChapter?.()}
           >
             &#9654;
@@ -290,7 +291,7 @@
   <nav
     bind:this={footerRef}
     class="story-shell__footer"
-    aria-label="Story chapters"
+    aria-label={$t('storyViewer.chapters')}
     data-testid="story-controls-pagination"
   >
     {#each chapterIndices as index}
@@ -307,7 +308,7 @@
           {#if canRenderThumbnail(chapterThumbnails[index])}
             <img
               src={chapterThumbnails[index] ?? ''}
-              alt={`Chapter ${chapterNumber(index)} thumbnail`}
+              alt={$t('storyViewer.thumbnailAlt', { number: chapterNumber(index) })}
               loading="eager"
               onerror={() => markThumbnailBroken(chapterThumbnails[index])}
             />

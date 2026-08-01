@@ -4,6 +4,7 @@
     OSDAnnotationEditor,
     type RectAnnotation,
   } from '@mango-iiif/annotation';
+  import { t } from '../../i18n';
 
   type PlacementRect = { x: number; y: number; w: number; h: number };
   type InteractionSource = 'create' | 'move' | 'resize';
@@ -143,7 +144,7 @@
   class="rect-placement-editor"
   class:rect-placement-editor--passthrough={passthrough}
   role="application"
-  aria-label="Rectangle placement editor"
+  aria-label={$t('viewer.panels.annotations.editor.rectanglePlacement')}
 ></div>
 
 {#if text && previewRect}

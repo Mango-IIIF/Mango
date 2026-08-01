@@ -70,7 +70,7 @@
         class:panel__tab--active={effectiveMode === 'edit'}
         onclick={() => setMode('edit')}
       >
-        View List
+        {$t('viewer.panels.annotations.viewList')}
       </button>
       <button
         type="button"
@@ -78,7 +78,7 @@
         class:panel__tab--active={effectiveMode === 'create'}
         onclick={() => setMode('create')}
       >
-        Draw Shape
+        {$t('viewer.panels.annotations.drawShape')}
       </button>
     </div>
   {/if}
@@ -86,7 +86,7 @@
     {#if $overlayAnnotations.length === 0}
       <div class="panel__empty">
         {#if effectiveMode === 'create'}
-          Draw on the image to create a new annotation.
+          {$t('viewer.panels.annotations.drawHint')}
         {:else}
           {$t('viewer.panels.annotations.emptyList')}
         {/if}
@@ -104,11 +104,11 @@
               {#if annotation.motivation?.includes('tagging') || annotation.time}
                 <div class="annotation-list__header">
                   {#if annotation.motivation?.includes('tagging')}
-                    <span class="annotation-list__badge">Tag</span>
+                    <span class="annotation-list__badge">{$t('viewer.panels.annotations.tag')}</span>
                   {/if}
                   {#if annotation.time}
                     <span class="annotation-list__meta">
-                      {annotation.time.start}s
+                      {$t('viewer.panels.annotations.secondsShort', { seconds: annotation.time.start })}
                     </span>
                   {/if}
                 </div>

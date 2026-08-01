@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from '../../i18n';
+
   export let hasSelectedChapter = false;
   export let onAddChapter: (() => void) | undefined;
   export let onUpdateChapter: (() => void) | undefined;
@@ -11,7 +13,7 @@
     data-testid="authoring-add-chapter"
     on:click={() => onAddChapter?.()}
   >
-    + Add Chapter
+    {$t('storyBuilder.actions.add')}
   </button>
 
   <button
@@ -21,7 +23,7 @@
     disabled={!hasSelectedChapter}
     on:click={() => onUpdateChapter?.()}
   >
-    Update Chapter Position
+    {$t('storyBuilder.actions.updatePosition')}
   </button>
 </div>
 

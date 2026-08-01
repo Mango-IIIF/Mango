@@ -3,6 +3,7 @@
   import { ExternalLink, X } from '@lucide/svelte';
   import MangoLogoIcon from './MangoLogoIcon.svelte';
   import pkg from '../../../../package.json';
+  import { t } from '../../i18n';
 
   export let open = false;
   export let onClose: () => void = () => {};
@@ -77,7 +78,7 @@
       <button
         class="mango-about-modal__close"
         type="button"
-        aria-label="Close modal"
+        aria-label={$t('common.closeModal')}
         on:click={onClose}
       >
         <X aria-hidden="true" size={18} />
@@ -87,20 +88,20 @@
         <div class="mango-about-modal__badge">
           <MangoLogoIcon size={48} color="var(--mango-about-accent)" />
         </div>
-        <h2 id="mango-about-title">Mango Viewer</h2>
-        <span class="mango-about-modal__version">v{version}</span>
+        <h2 id="mango-about-title">{$t('about.title')}</h2>
+        <span class="mango-about-modal__version">{$t('about.version', { version })}</span>
       </div>
 
       <div class="mango-about-modal__body">
         <p>
-          Mango is an open-source, W3C Annotation and IIIF-compliant deep zoom viewer and interactive story creation suite designed for high-resolution manuscript, artwork, and spatial media exploration.
+          {$t('about.description')}
         </p>
 
         {#if isRingo}
           <div class="mango-about-modal__easter-egg">
             <iframe
               src="https://www.youtube-nocookie.com/embed/j_JaDDcyIIU"
-              title="Yellow Submarine"
+              title={$t('about.easterEggTitle')}
               loading="lazy"
               referrerpolicy="strict-origin-when-cross-origin"
               allow="encrypted-media; picture-in-picture; web-share"
@@ -117,7 +118,7 @@
           target="_blank"
           rel="noopener noreferrer"
         >
-          <span>Visit mangoviewer.dev</span>
+          <span>{$t('about.visit')}</span>
           <ExternalLink size={16} aria-hidden="true" />
         </a>
         <button
@@ -125,7 +126,7 @@
           type="button"
           on:click={onClose}
         >
-          Close
+          {$t('common.close')}
         </button>
       </div>
     </div>

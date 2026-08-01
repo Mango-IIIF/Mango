@@ -71,10 +71,10 @@
   aria-label={$t('viewer.gallery.label')}
 >
   <div class="gallery__header">
-    <div class="gallery__title">{redesigned ? 'Pages' : $t('viewer.gallery.title')}</div>
+    <div class="gallery__title">{redesigned ? $t('viewer.gallery.pages') : $t('viewer.gallery.title')}</div>
     {#if redesigned && onviewall}
       <button class="gallery__view-all" type="button" onclick={() => onviewall?.()}>
-        <span>View all {canvases.length} pages</span>
+        <span>{$t('viewer.gallery.viewAll', { count: canvases.length })}</span>
         <ArrowRight aria-hidden="true" />
       </button>
     {:else}

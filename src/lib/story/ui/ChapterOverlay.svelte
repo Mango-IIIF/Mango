@@ -35,6 +35,7 @@
     type ChapterTaskEvaluation,
     type ChapterTaskId,
   } from "../chapterTasks";
+  import { t } from '../../i18n';
 
   export let story: Readable<StoryState>;
   export let layers: MediaSource[] = [];
@@ -234,40 +235,16 @@
     );
   };
 
-  const taskTitles: Record<ChapterTaskId, string> = {
-    details: "Details",
-    focus: "Annotations",
-    motion: "Motion",
-    "audio-timing": "Narration",
-    "transition-timing": "Chapter transition time",
-    "media-timing": "Media timing",
-    layers: "Layers",
-    comparison: "Comparison",
-    source: "Source · Advanced",
-  };
-  const taskSaveLabels: Record<ChapterTaskId, string> = {
-    details: "Save details",
-    focus: "Save annotation",
-    motion: "Save motion",
-    "audio-timing": "Save narration",
-    "transition-timing": "Save chapter transition time",
-    "media-timing": "Save media timing",
-    layers: "Save layers",
-    comparison: "Save comparison",
-    source: "Save source and canvas",
-  };
-
   const annotationTools: Array<{
     id: ChapterAnnotationTool;
-    label: string;
     icon: Component;
   }> = [
-    { id: "select", label: "Select / pan", icon: MousePointer2 },
-    { id: "rectangle", label: "Rectangle", icon: Square },
-    { id: "polygon", label: "Polygon", icon: Pentagon },
-    { id: "point", label: "Point", icon: MapPin },
-    { id: "freehand", label: "Freehand", icon: Pencil },
-    { id: "line", label: "Line", icon: Minus },
+    { id: "select", icon: MousePointer2 },
+    { id: "rectangle", icon: Square },
+    { id: "polygon", icon: Pentagon },
+    { id: "point", icon: MapPin },
+    { id: "freehand", icon: Pencil },
+    { id: "line", icon: Minus },
   ];
   const annotationPalette = ["#e07a3f", "#f6c343", "#39b57e", "#3aa0e0", "#a06eff", "#ef5f7a"];
 
@@ -985,7 +962,7 @@
       class="chapter-overlay__scrim"
       role="button"
       tabindex="0"
-      aria-label="Close chapter metadata"
+      aria-label={$t('storyBuilder.overlay.closeMetadata')}
       on:click={() => onClose?.()}
       on:keydown={(event) => {
         if (event.key === "Enter" || event.key === " ") onClose?.();
@@ -1007,16 +984,16 @@
           data-testid="chapter-overlay-back"
           on:click={() => onClose?.()}
         >
-          Back
+          {$t('common.back')}
         </button>
       {/if}
       <div>
         <div class="chapter-overlay__eyebrow">
           {chapterIndex >= 0
-            ? `Chapter ${chapterIndex + 1}`
+            ? $t('storyBuilder.chapters.number', { number: chapterIndex + 1 })
             : chapter
-              ? "Selected chapter"
-              : "New story"}
+              ? $t('storyBuilder.overlay.selectedChapter')
+              : $t('storyBuilder.overlay.newStory')}
         </div>
         <div
           class="chapter-overlay__title"
@@ -1025,10 +1002,10 @@
           bind:this={dashboardHeading}
         >
           {inspectorView.mode === "task"
-            ? taskTitles[inspectorView.task]
+            ? $t(`storyBuilder.tasks.items.${inspectorView.task}.title`)
             : chapter
-              ? "Chapter tools"
-              : "Load a source"}
+              ? $t('storyBuilder.tasks.title')
+              : $t('storyBuilder.overlay.loadSource')}
         </div>
       </div>
       {#if docked && chapter && (chapterPositionNeedsConfirmation || viewUpdateAcknowledged)}
@@ -1042,17 +1019,17 @@
           <span>
             <strong aria-live="polite">
               {viewUpdateAcknowledged
-                ? "Position updated"
+                ? $t('storyBuilder.overlay.positionUpdated')
                 : chapterHasSavedPosition
-                  ? "Update chapter position"
-                  : "Set current viewer position"}
+                  ? $t('storyBuilder.actions.updatePosition')
+                  : $t('storyBuilder.overlay.setPosition')}
             </strong>
             <small>
               {viewUpdateAcknowledged
-                ? "This chapter now uses the confirmed position."
+                ? $t('storyBuilder.overlay.positionConfirmed')
                 : chapterHasSavedPosition
-                  ? "The viewer has moved. Click to confirm this position and zoom."
-                  : "No position is saved. Click to use this position and zoom."}
+                  ? $t('storyBuilder.overlay.positionMoved')
+                  : $t('storyBuilder.overlay.noPosition')}
             </small>
           </span>
         </button>
@@ -1063,9 +1040,9 @@
           type="button"
           data-testid="chapter-overlay-close"
           on:click={() => onClose?.()}
-          aria-label="Close"
+          aria-label={$t('common.close')}
         >
-          ×
+          {$t('common.closeGlyph')}
         </button>
       {/if}
     </div>
@@ -1073,7 +1050,7 @@
     <form class="chapter-overlay__form" on:submit|preventDefault>
       {#if chapterValidationErrors.length > 0 && inspectorView.mode === "task"}
         <div class="chapter-overlay__validation" role="alert">
-          <strong>Needs attention</strong>
+          <strong>{$t('storyBuilder.tasks.status.attention')}</strong>
           <ul>
             {#each chapterValidationErrors as message}
               <li>{message}</li>
@@ -1087,9 +1064,7 @@
         {:else if inspectorView.mode === "dashboard"}
           <div class="chapter-overlay__empty-source">
             <p class="chapter-overlay__hint">
-              Add the source for your story, choose its starting canvas, and
-              create the first chapter. You can adjust image placement from the
-              chapter tools afterwards.
+              {$t('storyBuilder.overlay.sourceHint')}
             </p>
             <ChapterCameraConfig
               section="source"
@@ -1123,7 +1098,7 @@
             type="button"
             on:click={returnToDashboard}
           >
-            ← Back to chapter tools
+            ← {$t('storyBuilder.overlay.backToTools')}
           </button>
           <ChapterTextForm
             section="details"
@@ -1161,38 +1136,39 @@
             type="button"
             on:click={returnToDashboard}
           >
-            ← Back to chapter tools
+            ← {$t('storyBuilder.overlay.backToTools')}
           </button>
           <div class="chapter-overlay__section chapter-overlay__section--card">
             <div class="chapter-overlay__section-title">
               {mediaTypeValue === "video"
-                ? "Manifest video timing"
-                : "Manifest audio timing"}
+                ? $t('storyBuilder.media.videoTiming')
+                : $t('storyBuilder.media.audioTiming')}
             </div>
             <div class="chapter-overlay__wide-tool-note">
               <strong
-                >Choose the chapter’s manifest {mediaTypeValue === "video"
-                  ? "video"
-                  : "audio"} segment</strong
+                >{$t('storyBuilder.media.chooseSegment', {
+                  type: mediaTypeValue === 'video'
+                    ? $t('media.type.video').toLowerCase()
+                    : $t('media.type.audio').toLowerCase(),
+                })}</strong
               >
               <span>
-                The waveform editor below the viewer controls source {mediaTypeValue ===
-                "video"
-                  ? "video"
-                  : "audio"} only. Story narration is edited separately.
+                {$t('storyBuilder.media.editorHint', {
+                  type: mediaTypeValue === 'video'
+                    ? $t('media.type.video').toLowerCase()
+                    : $t('media.type.audio').toLowerCase(),
+                })}
               </span>
               <ul>
                 <li>
-                  Drag the shaded selection to move its start and end together.
+                  {$t('storyBuilder.media.dragSelection')}
                 </li>
-                <li>Drag either edge to adjust the start or end time.</li>
+                <li>{$t('storyBuilder.media.dragEdge')}</li>
                 <li>
-                  For long media, zoom and scroll the waveform. Use “Show
-                  selection” to return to the chapter range.
+                  {$t('storyBuilder.media.longMediaHint')}
                 </li>
                 <li>
-                  Preview the selection whenever needed. Dragged regions and
-                  exact time edits are saved automatically.
+                  {$t('storyBuilder.media.autoSaveHint')}
                 </li>
               </ul>
             </div>
@@ -1211,19 +1187,18 @@
             type="button"
             on:click={returnToDashboard}
           >
-            ← Back to chapter tools
+            ← {$t('storyBuilder.overlay.backToTools')}
           </button>
           <div class="chapter-overlay__section chapter-overlay__section--card">
             <div class="chapter-overlay__section-title">
-              Drawing annotations
+              {$t('storyBuilder.annotations.drawing')}
             </div>
             <p class="chapter-overlay__hint">
-              Add a point, shape, or line directly to the artwork. Select an
-              annotation in the footer to edit it here.
+              {$t('storyBuilder.annotations.drawingHint')}
             </p>
             <div
               class="chapter-overlay__annotation-tools"
-              aria-label="Annotation drawing tools"
+              aria-label={$t('storyBuilder.annotations.tools')}
             >
               {#each annotationTools as tool}
                 <button
@@ -1234,24 +1209,24 @@
                   on:click={() => onSetAnnotationTool?.(tool.id)}
                 >
                   <svelte:component this={tool.icon} aria-hidden="true" />
-                  <span>{tool.label}</span>
+                  <span>{$t(`viewer.panels.annotations.editor.tools.${tool.id}`)}</span>
                 </button>
               {/each}
             </div>
           </div>
           {#if selectedDrawingAnnotation}
             <div class="chapter-overlay__section chapter-overlay__section--card chapter-overlay__annotation-editor">
-              <div class="chapter-overlay__section-title">Edit annotation</div>
+              <div class="chapter-overlay__section-title">{$t('storyBuilder.annotations.edit')}</div>
 
               <div class="chapter-overlay__field">
-                <span>Text translations</span>
+                <span>{$t('storyBuilder.annotations.translations')}</span>
                 {#each languages as lang}
                   <label class="chapter-overlay__translation-field">
                     <small>{lang.toUpperCase()}</small>
                     <input
                       type="text"
                       value={selectedDrawingAnnotation.label?.[lang] ?? ""}
-                      placeholder={`Annotation text (${lang.toUpperCase()})`}
+                      placeholder={$t('storyBuilder.annotations.textPlaceholder', { language: lang.toUpperCase() })}
                       on:input={(event) => onSetDrawingAnnotationLabel?.(
                         selectedDrawingAnnotation!.id,
                         lang,
@@ -1263,14 +1238,14 @@
               </div>
 
               <div class="chapter-overlay__field">
-                <span>Colour</span>
+                <span>{$t('storyBuilder.annotations.colour')}</span>
                 <div class="chapter-overlay__annotation-palette">
                   {#each annotationPalette as color}
                     <button
                       type="button"
                       style={`--annotation-color:${color}`}
                       class:chapter-overlay__annotation-swatch--active={(selectedDrawingAnnotation.color ?? "#e07a3f") === color}
-                      aria-label={`Set annotation colour to ${color}`}
+                      aria-label={$t('storyBuilder.annotations.setColour', { colour: color })}
                       aria-pressed={(selectedDrawingAnnotation.color ?? "#e07a3f") === color}
                       on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { color })}
                     ></button>
@@ -1278,7 +1253,7 @@
                   <input
                     type="color"
                     value={selectedDrawingAnnotation.color ?? "#e07a3f"}
-                    aria-label="Custom annotation colour"
+                    aria-label={$t('storyBuilder.annotations.customColour')}
                     on:input={(event) => onSetDrawingAnnotationStyle?.(
                       selectedDrawingAnnotation!.id,
                       { color: (event.currentTarget as HTMLInputElement).value },
@@ -1289,24 +1264,24 @@
 
               {#if selectedDrawingAnnotation.type === "rectangle" || selectedDrawingAnnotation.type === "polygon"}
                 <div class="chapter-overlay__field">
-                  <span>Background</span>
+                  <span>{$t('storyBuilder.annotations.background')}</span>
                   <div class="chapter-overlay__segmented-control">
                     <button
                       type="button"
                       class:chapter-overlay__segmented-control--active={selectedDrawingAnnotation.fillMode !== "solid"}
                       on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { fillMode: "transparent" })}
-                    >Transparent</button>
+                    >{$t('storyBuilder.annotations.transparent')}</button>
                     <button
                       type="button"
                       class:chapter-overlay__segmented-control--active={selectedDrawingAnnotation.fillMode === "solid"}
                       on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { fillMode: "solid" })}
-                    >Solid</button>
+                    >{$t('storyBuilder.annotations.solid')}</button>
                   </div>
                 </div>
               {/if}
 
               <div class="chapter-overlay__field">
-                <span>Stroke</span>
+                <span>{$t('storyBuilder.annotations.stroke')}</span>
                 <div class="chapter-overlay__segmented-control">
                   {#each ["thin", "medium", "thick"] as width}
                     <button
@@ -1316,13 +1291,13 @@
                         selectedDrawingAnnotation!.id,
                         { strokeWidth: width as "thin" | "medium" | "thick" },
                       )}
-                    >{width}</button>
+                    >{$t(`storyBuilder.annotations.strokeWidth.${width}`)}</button>
                   {/each}
                 </div>
               </div>
             </div>
           {:else}
-            <p class="chapter-overlay__hint">Draw an annotation, or select one from the footer to edit its text and appearance.</p>
+            <p class="chapter-overlay__hint">{$t('storyBuilder.annotations.emptySelection')}</p>
           {/if}
         </section>
 
@@ -1339,7 +1314,7 @@
               type="button"
               on:click={returnToDashboard}
             >
-              ← Back to chapter tools
+              ← {$t('storyBuilder.overlay.backToTools')}
             </button>
             <ChapterCameraConfig
               section="source"
@@ -1369,14 +1344,14 @@
             type="button"
             on:click={returnToDashboard}
           >
-            ← Back to chapter tools
+            ← {$t('storyBuilder.overlay.backToTools')}
           </button>
           {#if manifestSupportsLayers}
             <div
               class="chapter-overlay__section chapter-overlay__section--card"
             >
               <div class="chapter-overlay__section-header">
-                <div class="chapter-overlay__section-title">Layers</div>
+                <div class="chapter-overlay__section-title">{$t('viewer.panels.layers.title')}</div>
               </div>
               <div class="chapter-overlay__section-content">
                 {#each layers as layer, index (layer.id)}
@@ -1390,7 +1365,9 @@
                     <div class="chapter-overlay__layer-info">
                       <span class="chapter-overlay__layer-name">
                         {layer.label ||
-                          (index === 0 ? "Base Image" : `Layer ${index + 1}`)}
+                          (index === 0
+                            ? $t('viewer.panels.layers.baseImage')
+                            : $t('viewer.panels.layers.layerNumber', { number: index + 1 }))}
                       </span>
                       <span class="chapter-overlay__layer-value"
                         >{Math.round(opacity * 100)}%</span
@@ -1426,13 +1403,12 @@
             type="button"
             on:click={returnToDashboard}
           >
-            ← Back to chapter tools
+            ← {$t('storyBuilder.overlay.backToTools')}
           </button>
           <div class="chapter-overlay__wide-tool-note">
-            <strong>Narration editor</strong>
+            <strong>{$t('storyBuilder.narration.editor')}</strong>
             <span
-              >Use the wide editor below the viewer to choose audio and set this
-              chapter's range.</span
+              >{$t('storyBuilder.narration.editorHint')}</span
             >
           </div>
           <div class="chapter-overlay__narration-compat">
@@ -1500,7 +1476,7 @@
             type="button"
             on:click={returnToDashboard}
           >
-            ← Back to chapter tools
+            ← {$t('storyBuilder.overlay.backToTools')}
           </button>
           <ChapterCameraConfig
             section="transition-timing"
@@ -1526,7 +1502,7 @@
             type="button"
             on:click={returnToDashboard}
           >
-            ← Back to chapter tools
+            ← {$t('storyBuilder.overlay.backToTools')}
           </button>
           <ChapterMotionPanel
             track={chapter?.cameraTrack}
@@ -1554,13 +1530,12 @@
             type="button"
             on:click={returnToDashboard}
           >
-            ← Back to chapter tools
+            ← {$t('storyBuilder.overlay.backToTools')}
           </button>
           <div class="chapter-overlay__section chapter-overlay__section--card">
-            <div class="chapter-overlay__section-title">Comparison</div>
+            <div class="chapter-overlay__section-title">{$t('storyBuilder.tasks.items.comparison.title')}</div>
             <p class="chapter-overlay__hint">
-              Load at least two compatible sources to create a comparison
-              chapter.
+              {$t('storyBuilder.comparison.hint')}
             </p>
           </div>
         </section>
@@ -1576,10 +1551,10 @@
               on:click={handleSave}
             >
               {saveAcknowledged
-                ? "Saved"
+                ? $t('storyBuilder.topBar.saved')
                 : inspectorView.mode === "task"
-                  ? taskSaveLabels[inspectorView.task]
-                  : "Save chapter"}
+                  ? $t(`storyBuilder.tasks.items.${inspectorView.task}.save`)
+                  : $t('storyBuilder.overlay.saveChapter')}
             </button>
             {#if docked}
               <button
@@ -1589,19 +1564,19 @@
                 disabled={saveDisabled}
                 on:click={handleRevertView}
               >
-                Revert to captured view
+                {$t('storyBuilder.overlay.revertView')}
               </button>
             {/if}
           </div>
           {#if saveDisabled}
             <div class="chapter-overlay__hint">
-              Select a chapter to save settings.
+              {$t('storyBuilder.chapter.saveHint')}
             </div>
           {/if}
         </div>
       {:else if chapter}
         <div class="chapter-overlay__dashboard-hint">
-          Select a tool to edit this chapter.
+          {$t('storyBuilder.tasks.description')}
         </div>
         <button
           class="chapter-overlay__dashboard-save-compat"
@@ -1609,7 +1584,7 @@
           data-testid="chapter-save"
           tabindex="-1"
           aria-hidden="true"
-          on:click={handleSave}>Save chapter</button
+          on:click={handleSave}>{$t('storyBuilder.overlay.saveChapter')}</button
         >
       {/if}
     </form>
