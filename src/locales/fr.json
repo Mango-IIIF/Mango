@@ -343,7 +343,11 @@
       "ariaLabel": "Gestionnaire de manifestes IIIF", "eyebrow": "Espace de travail IIIF", "title": "Charger un manifeste", "close": "Fermer le gestionnaire de manifestes",
       "url": "URL du manifeste", "urlPlaceholder": "https://exemple.org/iiif/manifest.json", "targetWindow": "Fenêtre cible", "window": "Fenêtre {number}", "active": "active",
       "loading": "Chargement…", "loadSelected": "Charger dans la fenêtre sélectionnée", "load": "Charger le manifeste", "replaceAll": "Remplacer tous les manifestes",
-      "library": "Bibliothèque de manifestes", "resourceCount": "{count} ressources", "loadError": "Impossible de charger le manifeste : {error}", "remove": "Retirer de la bibliothèque", "removeAria": "Retirer {label} de la bibliothèque de manifestes"
+      "library": "Bibliothèque", "resourceCount": "{count} ressources", "loadError": "Impossible de charger le manifeste : {error}", "remove": "Retirer de la bibliothèque", "removeAria": "Retirer {label} de la bibliothèque de manifestes",
+      "addTitle": "Ajouter l’URL d’un manifeste", "addDescription": "Collez l’URL d’un manifeste IIIF pour l’ouvrir dans la visionneuse.", "addUrl": "Ajouter l’URL d’un manifeste",
+      "search": "Rechercher des manifestes", "searchPlaceholder": "Rechercher des manifestes, collections ou mots-clés…", "filterAria": "Filtrer les manifestes", "all": "Tous", "recent": "Récents", "favourites": "Favoris",
+      "source": "Source du manifeste", "allSources": "Toutes les sources", "unknownSource": "Source inconnue", "pasteHint": "Collez l’URL d’un manifeste IIIF ou choisissez dans votre", "yourLibrary": "bibliothèque.",
+      "itemCount": "{count} éléments", "openAria": "Charger {label}", "favouriteAria": "Ajouter ou retirer {label} des favoris", "noResults": "Aucun manifeste ne correspond à ce filtre.", "whatIsIiif": "Qu’est-ce qu’un manifeste IIIF ?"
     },
     "sidebar": {
       "navigation": "Navigation de la visionneuse", "browse": "Parcourir", "gallery": "Galerie", "metadata": "Métadonnées", "search": "Rechercher", "annotations": "Annotations", "collections": "Collections", "transcription": "Transcription", "explore": "Explorer", "imageLayers": "Calques d'image", "tools": "Outils", "viewSettings": "Paramètres d'affichage", "compare": "Comparer", "download": "Télécharger", "share": "Partager", "cite": "Citer", "iiifManifests": "Manifestes IIIF", "collapse": "Réduire la barre latérale", "workspaceTools": "Outils de l'espace de travail", "manageIiif": "Gérer les manifestes IIIF"
