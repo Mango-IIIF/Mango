@@ -20,6 +20,7 @@ export type ViewerStateStores = {
   showMetadata: ReturnType<typeof writable<boolean>>;
   showSearch: ReturnType<typeof writable<boolean>>;
   showAnnotations: ReturnType<typeof writable<boolean>>;
+  keepAnnotationsVisible: ReturnType<typeof writable<boolean>>;
   showTools: ReturnType<typeof writable<boolean>>;
   showSettings: ReturnType<typeof writable<boolean>>;
   showLayers: ReturnType<typeof writable<boolean>>;
@@ -69,6 +70,7 @@ export const createViewerState = (
     showMetadata: writable(sidebarOpen && activePanel === 'metadata'),
     showSearch: writable(sidebarOpen && activePanel === 'search'),
     showAnnotations: writable(sidebarOpen && activePanel === 'annotations'),
+    keepAnnotationsVisible: writable(false),
     showTools: writable(sidebarOpen && activePanel === 'tools'),
     showSettings: writable(sidebarOpen && activePanel === 'settings'),
     showLayers: writable(sidebarOpen && activePanel === 'layers'),

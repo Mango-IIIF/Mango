@@ -132,6 +132,35 @@ test.describe("viewer interaction regressions", () => {
     expect(scrolled).toBeGreaterThan(40);
   });
 
+  test("can keep annotation overlays visible after closing the mobile panel", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 664 });
+    await page.goto("/viewer.html");
+    await settle(page, ".stage__media");
+
+    await page.locator("mango-viewer").evaluate(async (element: any) => {
+      await element.addAnnotation({
+        id: "persistent-mobile-annotation",
+        text: "Persistent mobile annotation",
+        rect: { x: 300, y: 300, w: 600, h: 600 },
+      });
+    });
+
+    const viewer = page.locator("mango-viewer");
+    await viewer.getByRole("button", { name: "Annotations", exact: true }).click({ force: true });
+    const shape = viewer.locator('[data-annotation-id="persistent-mobile-annotation"]');
+    await expect(shape).toHaveCount(1);
+
+    const keepVisible = viewer.getByRole("switch", { name: /Keep annotations visible/ });
+    await keepVisible.click();
+    await expect(keepVisible).toHaveAttribute("aria-checked", "true");
+    await viewer.getByRole("button", { name: "Close annotation editor" }).click();
+
+    await expect(viewer.locator(".panel--editor")).toBeHidden();
+    await expect(shape).toHaveCount(1);
+  });
+
   test("dragging the image pans it instead of fighting the pointer", async ({
     page,
   }) => {

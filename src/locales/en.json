@@ -108,6 +108,8 @@
         "emptyCreate": "Use the toolbar to add rectangles or notes.",
         "emptyList": "No annotations on this canvas.",
         "fallback": "Annotation",
+        "keepVisible": "Keep annotations visible",
+        "keepVisibleDescription": "Show annotations after this panel is closed.",
         "editor": {
           "createTitle": "Create Annotation",
           "detailsTitle": "Annotation Details",

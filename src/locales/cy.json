@@ -108,6 +108,8 @@
         "emptyCreate": "Defnyddiwch y far offer i ychwanegu petryalau neu nodiadau.",
         "emptyList": "Dim anodiadau ar y cynfas hwn.",
         "fallback": "Anodiad",
+        "keepVisible": "Cadw anodiadau'n weladwy",
+        "keepVisibleDescription": "Dangos anodiadau ar ôl cau'r panel hwn.",
         "editor": {
           "createTitle": "Creu Anodiad",
           "detailsTitle": "Manylion Anodiad",

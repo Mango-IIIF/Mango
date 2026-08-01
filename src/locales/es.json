@@ -108,6 +108,8 @@
         "emptyCreate": "Usa la barra de herramientas para agregar rectángulos o notas.",
         "emptyList": "No hay anotaciones en este lienzo.",
         "fallback": "Anotación",
+        "keepVisible": "Mantener las anotaciones visibles",
+        "keepVisibleDescription": "Mostrar las anotaciones después de cerrar este panel.",
         "editor": {
           "createTitle": "Crear anotación",
           "detailsTitle": "Detalles de la anotación",

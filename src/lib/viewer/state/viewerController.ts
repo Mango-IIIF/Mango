@@ -345,6 +345,7 @@ export const createViewerController = ({
         state.showCollection.set(false);
         state.showContents.set(false);
         state.showAnnotations.set(false);
+        state.keepAnnotationsVisible.set(false);
         state.showTools.set(false);
         state.showSettings.set(false);
         state.showSearch.set(false);
@@ -356,7 +357,10 @@ export const createViewerController = ({
       if (config?.showCollection === false) state.showCollection.set(false);
       if (!allowMetadata) state.showMetadata.set(false);
       if (!allowSearch) state.showSearch.set(false);
-      if (!allowAnnotations) state.showAnnotations.set(false);
+      if (!allowAnnotations) {
+        state.showAnnotations.set(false);
+        state.keepAnnotationsVisible.set(false);
+      }
       if (config?.showSettings === false) state.showSettings.set(false);
       if (config && Object.prototype.hasOwnProperty.call(config, "showTools")) {
         state.showTools.set(config.showTools !== false);

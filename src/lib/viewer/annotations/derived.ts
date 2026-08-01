@@ -239,16 +239,17 @@ export const createAnnotationDerivedStores = ({
   const overlayAnnotations = derived(
     [
       state.showAnnotations,
+      state.keepAnnotationsVisible,
       annotations,
       searchHits,
       canvases,
       state.selectedCanvasIndex,
     ],
-    ([showAnnotations, items, hits, canvasList, canvasIndex]) => {
+    ([showAnnotations, keepAnnotationsVisible, items, hits, canvasList, canvasIndex]) => {
       const displayable = items.filter((annotation) =>
         shouldDisplayOverlayAnnotation(annotation),
       );
-      if (showAnnotations) {
+      if (showAnnotations || keepAnnotationsVisible) {
         // Show all annotations for current canvas
         return displayable;
       }

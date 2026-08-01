@@ -381,7 +381,7 @@
     --stage-toolbar-gap: 5px;
     --stage-toolbar-button-width: 36px;
     --stage-toolbar-button-height: 34px;
-    --stage-toolbar-group-height: 34px;
+    --stage-toolbar-group-height: calc(var(--stage-toolbar-button-height) + 2px);
     --stage-toolbar-value-width: 85px;
     --stage-toolbar-zoom-width: 74px;
     --stage-toolbar-zoom-input-width: 3.6ch;
@@ -435,6 +435,7 @@
     flex: 0 0 auto;
     max-width: 100%;
     min-width: 0;
+    box-sizing: border-box;
     border: 1px solid var(--viewer-toolbar-group-border, rgba(255, 255, 255, 0.1));
     border-radius: var(--stage-toolbar-radius);
     overflow: hidden;

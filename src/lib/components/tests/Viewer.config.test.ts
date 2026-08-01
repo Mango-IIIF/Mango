@@ -64,6 +64,38 @@ describe('Viewer config', () => {
     expect(target.querySelector('.viewer__grid--left')).toBeNull();
   });
 
+  it('keeps the annotation visibility preference after the panel closes', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    targets.push(target);
+    mounted.push(
+      mount(Viewer, {
+        target,
+        props: {
+          config: {
+            allowCreateMode: true,
+            sidebar: { open: true, activePanel: 'annotations' },
+          },
+        },
+      }),
+    );
+    await tick();
+
+    const toggle = target.querySelector<HTMLButtonElement>(
+      '[role="switch"][aria-checked="false"]',
+    );
+    expect(toggle?.textContent).toContain('Keep annotations visible');
+    toggle?.click();
+    await tick();
+    expect(toggle?.getAttribute('aria-checked')).toBe('true');
+
+    target.querySelector<HTMLButtonElement>('[aria-label="Close annotation editor"]')?.click();
+    await tick();
+
+    expect(toggle?.getAttribute('aria-checked')).toBe('true');
+    expect(toggle?.closest('[hidden]')).toBeTruthy();
+  });
+
   it('keeps an invoked panel mounted when it is closed and reopened', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);

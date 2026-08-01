@@ -1,5 +1,4 @@
 <script lang="ts">
-  /* eslint-disable svelte/no-at-html-tags -- HTML bodies are sanitized before rendering */
   import { getViewerContext } from '../context';
   import { t } from '../../i18n';
   import { sanitizeHtml } from '../util/sanitiseHtml';
@@ -14,7 +13,7 @@
 
   const viewer = getViewerContext();
   const { overlayAnnotations } = viewer.derived;
-  const { activeAnnotationId } = viewer.state;
+  const { activeAnnotationId, keepAnnotationsVisible } = viewer.state;
   const controller = viewer.controller;
 
   let allowCreateMode = $derived(viewer.canDrawAnnotations);
@@ -43,6 +42,26 @@
       {onclose}
     />
   </div>
+  <button
+    type="button"
+    role="switch"
+    class="annotation-visibility-toggle"
+    class:annotation-visibility-toggle--active={$keepAnnotationsVisible}
+    aria-checked={$keepAnnotationsVisible}
+    onclick={() => keepAnnotationsVisible.update((visible) => !visible)}
+  >
+    <span class="annotation-visibility-toggle__copy">
+      <span class="annotation-visibility-toggle__label">
+        {$t('viewer.panels.annotations.keepVisible')}
+      </span>
+      <span class="annotation-visibility-toggle__description">
+        {$t('viewer.panels.annotations.keepVisibleDescription')}
+      </span>
+    </span>
+    <span class="annotation-visibility-toggle__switch" aria-hidden="true">
+      <span></span>
+    </span>
+  </button>
   {#if allowCreateMode}
     <div class="panel__tabs">
       <button
@@ -141,6 +160,79 @@
 </section>
 
 <style>
+  .annotation-visibility-toggle {
+    width: calc(100% - 24px);
+    margin: 0 12px 12px;
+    padding: 10px 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.045);
+    color: var(--viewer-text);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .annotation-visibility-toggle:hover {
+    background: rgba(255, 255, 255, 0.075);
+  }
+
+  .annotation-visibility-toggle:focus-visible {
+    outline: 2px solid var(--viewer-accent-2, #2ac7ff);
+    outline-offset: 2px;
+  }
+
+  .annotation-visibility-toggle__copy {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .annotation-visibility-toggle__label {
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.3;
+  }
+
+  .annotation-visibility-toggle__description {
+    color: var(--viewer-muted);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .annotation-visibility-toggle__switch {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 20px;
+    box-sizing: border-box;
+    padding: 2px;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.18));
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+
+  .annotation-visibility-toggle__switch span {
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--viewer-text);
+    transition: transform 160ms ease;
+  }
+
+  .annotation-visibility-toggle--active .annotation-visibility-toggle__switch {
+    border-color: var(--viewer-accent-2, #2ac7ff);
+    background: var(--viewer-accent-2, #2ac7ff);
+  }
+
+  .annotation-visibility-toggle--active .annotation-visibility-toggle__switch span {
+    transform: translateX(14px);
+  }
+
   .annotation-list {
     list-style: none;
     margin: 0;

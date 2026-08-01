@@ -108,6 +108,8 @@
         "emptyCreate": "Utilisez la barre d'outils pour ajouter des rectangles ou des notes.",
         "emptyList": "Aucune annotation sur ce canevas.",
         "fallback": "Annotation",
+        "keepVisible": "Garder les annotations visibles",
+        "keepVisibleDescription": "Afficher les annotations après la fermeture de ce panneau.",
         "editor": {
           "createTitle": "Créer une annotation",
           "detailsTitle": "Détails de l'annotation",
