@@ -343,7 +343,11 @@
       "ariaLabel": "Rheolwr maniffestau IIIF", "eyebrow": "Gweithle IIIF", "title": "Llwytho maniffest", "close": "Cau'r rheolwr maniffestau",
       "url": "URL y maniffest", "urlPlaceholder": "https://enghraifft.org/iiif/manifest.json", "targetWindow": "Ffenestr darged", "window": "Ffenestr {number}", "active": "gweithredol",
       "loading": "Wrthi'n llwytho…", "loadSelected": "Llwytho i'r ffenestr a ddewiswyd", "load": "Llwytho maniffest", "replaceAll": "Disodli pob maniffest",
-      "library": "Llyfrgell faniffestau", "resourceCount": "{count} adnodd", "loadError": "Methu llwytho'r maniffest: {error}", "remove": "Tynnu o'r llyfrgell", "removeAria": "Tynnu {label} o'r llyfrgell faniffestau"
+      "library": "Llyfrgell", "resourceCount": "{count} adnodd", "loadError": "Methu llwytho'r maniffest: {error}", "remove": "Tynnu o'r llyfrgell", "removeAria": "Tynnu {label} o'r llyfrgell faniffestau",
+      "addTitle": "Ychwanegu URL maniffest", "addDescription": "Gludwch URL maniffest IIIF i'w agor yn y gwyliwr.", "addUrl": "Ychwanegu URL maniffest",
+      "search": "Chwilio maniffestau", "searchPlaceholder": "Chwilio maniffestau, casgliadau neu eiriau allweddol…", "filterAria": "Hidlo maniffestau", "all": "Pob un", "recent": "Diweddar", "favourites": "Ffefrynnau",
+      "source": "Ffynhonnell y maniffest", "allSources": "Pob ffynhonnell", "unknownSource": "Ffynhonnell anhysbys", "pasteHint": "Gludwch URL maniffest IIIF neu dewiswch o'ch", "yourLibrary": "llyfrgell.",
+      "itemCount": "{count} eitem", "openAria": "Llwytho {label}", "favouriteAria": "Toglo {label} fel ffefryn", "noResults": "Nid oes maniffestau yn cyfateb i'r hidlydd hwn.", "whatIsIiif": "Beth yw maniffest IIIF?"
     },
     "sidebar": {
       "navigation": "Llywio'r gwyliwr", "browse": "Pori", "gallery": "Galeri", "metadata": "Metadata", "search": "Chwilio", "annotations": "Anodiadau", "collections": "Casgliadau", "transcription": "Trawsgrifiad", "explore": "Archwilio", "imageLayers": "Haenau delwedd", "tools": "Offer", "viewSettings": "Gosodiadau golwg", "compare": "Cymharu", "download": "Lawrlwytho", "share": "Rhannu", "cite": "Dyfynnu", "iiifManifests": "Maniffestau IIIF", "collapse": "Cwympo'r bar ochr", "workspaceTools": "Offer y gweithle", "manageIiif": "Rheoli maniffestau IIIF"

@@ -379,8 +379,8 @@
 
   .workspace__manifest-overlay {
     position: absolute;
-    z-index: 20;
-    inset: 0 0 0 58px;
+    z-index: 50;
+    inset: 0;
     min-width: 0;
   }
 
@@ -445,7 +445,7 @@
     }
 
     .workspace__manifest-overlay {
-      inset: 0 0 calc(57px + env(safe-area-inset-bottom)) 0;
+      inset: 0;
     }
   }
 </style>

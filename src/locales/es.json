@@ -343,7 +343,11 @@
       "ariaLabel": "Gestor de manifiestos IIIF", "eyebrow": "Espacio de trabajo IIIF", "title": "Cargar un manifiesto", "close": "Cerrar el gestor de manifiestos",
       "url": "URL del manifiesto", "urlPlaceholder": "https://ejemplo.org/iiif/manifest.json", "targetWindow": "Ventana de destino", "window": "Ventana {number}", "active": "activa",
       "loading": "Cargando…", "loadSelected": "Cargar en la ventana seleccionada", "load": "Cargar manifiesto", "replaceAll": "Reemplazar todos los manifiestos",
-      "library": "Biblioteca de manifiestos", "resourceCount": "{count} recursos", "loadError": "No se pudo cargar el manifiesto: {error}", "remove": "Eliminar de la biblioteca", "removeAria": "Eliminar {label} de la biblioteca de manifiestos"
+      "library": "Biblioteca", "resourceCount": "{count} recursos", "loadError": "No se pudo cargar el manifiesto: {error}", "remove": "Eliminar de la biblioteca", "removeAria": "Eliminar {label} de la biblioteca de manifiestos",
+      "addTitle": "Añadir URL de manifiesto", "addDescription": "Pega la URL de un manifiesto IIIF para abrirlo en el visor.", "addUrl": "Añadir URL de manifiesto",
+      "search": "Buscar manifiestos", "searchPlaceholder": "Buscar manifiestos, colecciones o palabras clave…", "filterAria": "Filtrar manifiestos", "all": "Todos", "recent": "Recientes", "favourites": "Favoritos",
+      "source": "Fuente del manifiesto", "allSources": "Todas las fuentes", "unknownSource": "Fuente desconocida", "pasteHint": "Pega la URL de un manifiesto IIIF o elige de tu", "yourLibrary": "biblioteca.",
+      "itemCount": "{count} elementos", "openAria": "Cargar {label}", "favouriteAria": "Cambiar {label} como favorito", "noResults": "Ningún manifiesto coincide con este filtro.", "whatIsIiif": "¿Qué es un manifiesto IIIF?"
     },
     "sidebar": {
       "navigation": "Navegación del visor", "browse": "Explorar", "gallery": "Galería", "metadata": "Metadatos", "search": "Buscar", "annotations": "Anotaciones", "collections": "Colecciones", "transcription": "Transcripción", "explore": "Explorar", "imageLayers": "Capas de imagen", "tools": "Herramientas", "viewSettings": "Configuración de vista", "compare": "Comparar", "download": "Descargar", "share": "Compartir", "cite": "Citar", "iiifManifests": "Manifiestos IIIF", "collapse": "Contraer barra lateral", "workspaceTools": "Herramientas del espacio de trabajo", "manageIiif": "Gestionar manifiestos IIIF"
