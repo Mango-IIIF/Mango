@@ -3110,7 +3110,7 @@
   .viewer__manifest-overlay {
     position: absolute;
     z-index: 20;
-    inset: 0 0 0 72px;
+    inset: 0;
     min-width: 0;
     min-height: 0;
     /*
@@ -3124,7 +3124,7 @@
   }
 
   .viewer__manifest-overlay--right {
-    inset: 0 72px 0 0;
+    inset: 0;
   }
 
   .viewer__grid--left {
