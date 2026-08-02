@@ -1,0 +1,36 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+  "type": "Manifest",
+  "label": { "en": ["A Sunday on La Grande Jatte — 1884 (local verification copy)"] },
+  "items": [
+    {
+      "id": "http://localhost:5173/test-story/local-iiif/canvas/0",
+      "type": "Canvas",
+      "label": { "en": ["A Sunday on La Grande Jatte — 1884"] },
+      "width": 9310,
+      "height": 6237,
+      "items": [
+        {
+          "id": "http://localhost:5173/test-story/local-iiif/canvas/0/page",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "http://localhost:5173/test-story/local-iiif/canvas/0/page/painting",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "http://localhost:5173/test-story/local-iiif/jatte-full.jpg",
+                "type": "Image",
+                "format": "image/jpeg",
+                "width": 9310,
+                "height": 6237
+              },
+              "target": "http://localhost:5173/test-story/local-iiif/canvas/0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
