@@ -31,14 +31,12 @@
     onlayercolorchange = undefined,
   }: Props = $props();
 
-  const tools: Array<{ id: Tool; label: string }> = [
-    { id: 'select', label: 'Select / Pan' },
-    { id: 'rectangle', label: 'Rectangle' },
-    { id: 'polygon', label: 'Polygon' },
-    { id: 'point', label: 'Point' },
-    { id: 'freehand', label: 'Freehand' },
-    { id: 'line', label: 'Line' },
-  ];
+  const tools: Tool[] = ['select', 'rectangle', 'polygon', 'point', 'freehand', 'line'];
+  const layerName = (layer: LayerItem): string => {
+    const key = `viewer.panels.annotations.editor.layers.${layer.id}`;
+    const translated = $t(key);
+    return translated === key ? layer.name : translated;
+  };
 </script>
 
 <aside class="left-sidebar">
@@ -48,18 +46,18 @@
       <button
         type="button"
         class="left-sidebar__tool"
-        class:left-sidebar__tool--active={tool.id === activeTool}
+        class:left-sidebar__tool--active={tool === activeTool}
         onclick={() => {
-          if (tool.id === activeTool) {
-            if (tool.id !== 'select') {
+          if (tool === activeTool) {
+            if (tool !== 'select') {
               ontoolchange?.({ tool: 'select' });
             }
           } else {
-            ontoolchange?.({ tool: tool.id });
+            ontoolchange?.({ tool });
           }
         }}
       >
-        <span>{$t(`viewer.panels.annotations.editor.tools.${tool.id}`) !== `viewer.panels.annotations.editor.tools.${tool.id}` ? $t(`viewer.panels.annotations.editor.tools.${tool.id}`) : tool.label}</span>
+        <span>{$t(`viewer.panels.annotations.editor.tools.${tool}`)}</span>
       </button>
     {/each}
   </div>
@@ -67,7 +65,7 @@
   <div class="left-sidebar__layers">
     <div class="left-sidebar__layers-head">
       <p class="left-sidebar__label">{$t('viewer.panels.annotations.editor.layersLabel')}</p>
-      <button type="button" class="left-sidebar__plus" onclick={() => onaddlayer?.()}
+      <button type="button" class="left-sidebar__plus" aria-label={$t('viewer.panels.annotations.editor.addLayer')} onclick={() => onaddlayer?.()}
         >+</button
       >
     </div>
@@ -81,7 +79,7 @@
           title={layer.visible ? $t('viewer.panels.annotations.editor.hideLayer') : $t('viewer.panels.annotations.editor.showLayer')}
         >
           <span class="left-sidebar__dot" style={`background:${layer.color};`}></span>
-          <span class="left-sidebar__layer-name">{$t(`viewer.panels.annotations.editor.layers.${layer.id}`) !== `viewer.panels.annotations.editor.layers.${layer.id}` ? $t(`viewer.panels.annotations.editor.layers.${layer.id}`) : layer.name}</span>
+          <span class="left-sidebar__layer-name">{layerName(layer)}</span>
           <span class="left-sidebar__eye">
             {#if layer.visible}
               <svg
@@ -124,7 +122,7 @@
           type="color"
           class="left-sidebar__layer-color"
           value={layer.color}
-          aria-label={`Set ${layer.name} color`}
+          aria-label={$t('viewer.panels.annotations.editor.setLayerColour', { layer: layerName(layer) })}
           oninput={(event) =>
             onlayercolorchange?.({ id: layer.id, color: event.currentTarget.value })}
         />

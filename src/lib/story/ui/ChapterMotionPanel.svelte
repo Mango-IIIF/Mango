@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Clock3, Play, Square } from '@lucide/svelte';
   import type { ChapterCameraTrack } from '../../core/types/story';
+  import { t } from '../../i18n';
 
   export let track: ChapterCameraTrack | undefined;
   export let previewing = false;
@@ -21,11 +22,11 @@
   $: arcNeedsPoint = track?.preset === 'custom' && points.length > 0 && points.length < 3;
   $: requirementMessage =
     points.length === 0
-      ? 'Choose a movement style or add two camera points to enable motion controls.'
+      ? $t('storyBuilder.motion.requireTwo')
       : points.length === 1
-        ? 'Add one more camera point to preview and configure this movement.'
+        ? $t('storyBuilder.motion.requireOneMore')
         : arcNeedsPoint
-          ? 'Arc sweep needs at least three camera points. Add one more point to use it.'
+          ? $t('storyBuilder.motion.requireArcPoint')
           : '';
 
   let feedback = '';
@@ -34,14 +35,14 @@
     const input = event.currentTarget as HTMLInputElement;
     const seconds = Number(input.value);
     if (!Number.isFinite(seconds) || seconds <= 0) {
-      feedback = 'Motion duration must be greater than 0 seconds.';
+      feedback = $t('storyBuilder.motion.durationError');
       input.value = String(durationSeconds);
       return;
     }
     const durationMs = seconds * 1000;
     const nextFirstSegmentMs = points.length >= 2 ? durationMs / (points.length - 1) : durationMs;
     if (currentDwell > 0 && currentDwell >= nextFirstSegmentMs) {
-      feedback = `Duration must leave time to move after the ${currentDwell / 1000}s start hold.`;
+      feedback = $t('storyBuilder.motion.durationDwellError', { seconds: currentDwell / 1000 });
       input.value = String(durationSeconds);
       return;
     }
@@ -51,7 +52,7 @@
 
   const choosePreset = (preset: NonNullable<ChapterCameraTrack['preset']>) => {
     if (preset === 'arc-sweep' && arcNeedsPoint) {
-      feedback = 'Arc sweep needs at least three camera points. Add another point first.';
+      feedback = $t('storyBuilder.motion.arcError');
       return;
     }
     feedback = '';
@@ -67,7 +68,7 @@
   const chooseDwell = (dwellMs: number) => {
     if (points.length < 2) return;
     if (dwellMs > 0 && dwellMs >= firstSegmentMs) {
-      feedback = 'The start hold must be shorter than the time to the next camera point.';
+      feedback = $t('storyBuilder.motion.dwellError');
       return;
     }
     feedback = '';
@@ -78,11 +79,11 @@
 <div class="motion-panel">
   <div class="motion-panel__intro">
     <div>
-      <strong>Move through this chapter</strong>
+      <strong>{$t('storyBuilder.motion.title')}</strong>
       <span>
         {track?.preset === 'custom'
-          ? 'Custom keeps the canvas zoom captured for each point. Preview starts at Point 1.'
-          : 'Points set the focus; the movement style controls zoom. Preview starts at Point 1.'}
+          ? $t('storyBuilder.motion.customHint')
+          : $t('storyBuilder.motion.presetHint')}
       </span>
     </div>
     <button
@@ -91,7 +92,7 @@
       disabled={points.length < 2}
       on:click={() => (previewing ? onStopPreview() : onPreview())}
     >
-      {#if previewing}<Square aria-hidden="true" /> Stop{:else}<Play aria-hidden="true" /> Preview{/if}
+      {#if previewing}<Square aria-hidden="true" /> {$t('storyBuilder.media.stop')}{:else}<Play aria-hidden="true" /> {$t('storyBuilder.motion.preview')}{/if}
     </button>
   </div>
 
@@ -102,31 +103,31 @@
   {/if}
 
   <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
-    <div class="motion-panel__section-label">Movement style</div>
-    <div class="motion-panel__presets" role="group" aria-label="Motion presets">
-      {#each [['ken-burns', 'Ken Burns'], ['hero-reveal', 'Hero reveal'], ['arc-sweep', 'Arc sweep'], ['zoom-in', 'Zoom in'], ['zoom-out', 'Zoom out'], ['pan', 'Pan'], ['drift-zoom', 'Drift + zoom'], ['static', 'Still'], ['custom', 'Custom']] as option}
+    <div class="motion-panel__section-label">{$t('storyBuilder.motion.style')}</div>
+    <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.presets')}>
+      {#each ['ken-burns', 'hero-reveal', 'arc-sweep', 'zoom-in', 'zoom-out', 'pan', 'drift-zoom', 'static', 'custom'] as preset}
         <button
           type="button"
-          disabled={option[0] === 'arc-sweep' && arcNeedsPoint}
-          aria-pressed={track?.preset === option[0]}
-          class:motion-panel__preset--active={track?.preset === option[0]}
-          on:click={() => choosePreset(option[0] as NonNullable<ChapterCameraTrack['preset']>)}
-          >{option[1]}</button
+          disabled={preset === 'arc-sweep' && arcNeedsPoint}
+          aria-pressed={track?.preset === preset}
+          class:motion-panel__preset--active={track?.preset === preset}
+          on:click={() => choosePreset(preset as NonNullable<ChapterCameraTrack['preset']>)}
+          >{$t(`storyBuilder.motion.preset.${preset}`)}</button
         >
       {/each}
     </div>
   </section>
 
   <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
-    <div class="motion-panel__section-label">Path Trajectory</div>
-    <div class="motion-panel__presets" role="group" aria-label="Path trajectory">
+    <div class="motion-panel__section-label">{$t('storyBuilder.motion.path')}</div>
+    <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.path')}>
       <button
         type="button"
         disabled={points.length < 2}
         aria-pressed={track?.pathType === 'spline'}
         class:motion-panel__preset--active={Boolean(track) &&
           (track?.pathType ?? 'linear') === 'spline'}
-        on:click={() => choosePathType('spline')}>Curved Spline</button
+        on:click={() => choosePathType('spline')}>{$t('storyBuilder.motion.curved')}</button
       >
       <button
         type="button"
@@ -134,7 +135,7 @@
         aria-pressed={track?.pathType === 'linear'}
         class:motion-panel__preset--active={Boolean(track) &&
           (track?.pathType ?? 'linear') === 'linear'}
-        on:click={() => choosePathType('linear')}>Straight Linear</button
+        on:click={() => choosePathType('linear')}>{$t('storyBuilder.motion.straight')}</button
       >
     </div>
   </section>
@@ -143,37 +144,37 @@
     <div class="motion-panel__heading">
       <span class="motion-panel__icon"><Clock3 aria-hidden="true" /></span>
       <span>
-        <strong>Start Hold Time (Dwell)</strong>
-        <small>Hold stationary on the initial view before movement starts.</small>
+        <strong>{$t('storyBuilder.motion.dwell')}</strong>
+        <small>{$t('storyBuilder.motion.dwellHint')}</small>
       </span>
     </div>
-    <div class="motion-panel__presets" role="group" aria-label="Initial dwell time">
-      {#each [[0, '0s (None)'], [1000, '1.0s'], [1500, '1.5s'], [2000, '2.0s'], [3000, '3.0s']] as option}
+    <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.dwell')}>
+      {#each [0, 1000, 1500, 2000, 3000] as dwell}
         <button
           type="button"
-          disabled={points.length < 2 || (option[0] > 0 && option[0] >= firstSegmentMs)}
-          aria-pressed={points.length >= 2 && currentDwell === option[0]}
-          class:motion-panel__preset--active={points.length >= 2 && currentDwell === option[0]}
-          on:click={() => chooseDwell(option[0])}>{option[1]}</button
+          disabled={points.length < 2 || (dwell > 0 && dwell >= firstSegmentMs)}
+          aria-pressed={points.length >= 2 && currentDwell === dwell}
+          class:motion-panel__preset--active={points.length >= 2 && currentDwell === dwell}
+          on:click={() => chooseDwell(dwell)}>{dwell === 0 ? $t('storyBuilder.motion.noDwell') : $t('storyBuilder.motion.seconds', { seconds: (dwell / 1000).toFixed(1) })}</button
         >
       {/each}
     </div>
   </section>
 
   <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
-    <div class="motion-panel__section-label">Easing</div>
-    <div class="motion-panel__presets" role="group" aria-label="Motion easing">
-      {#each [['linear', 'Linear'], ['ease-in', 'Ease in'], ['ease-out', 'Ease out'], ['ease-in-out', 'Ease in/out']] as option}
+    <div class="motion-panel__section-label">{$t('storyBuilder.motion.easing')}</div>
+    <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.easing')}>
+      {#each ['linear', 'ease-in', 'ease-out', 'ease-in-out'] as easing}
         <button
           type="button"
           disabled={points.length < 2}
-          aria-pressed={Boolean(track) && (track?.easing ?? 'ease-in-out') === option[0]}
+          aria-pressed={Boolean(track) && (track?.easing ?? 'ease-in-out') === easing}
           class:motion-panel__preset--active={Boolean(track) &&
-            (track?.easing ?? 'ease-in-out') === option[0]}
+            (track?.easing ?? 'ease-in-out') === easing}
           on:click={() => {
             feedback = '';
-            onUpdateEasing(option[0] as NonNullable<ChapterCameraTrack['easing']>);
-          }}>{option[1]}</button
+            onUpdateEasing(easing as NonNullable<ChapterCameraTrack['easing']>);
+          }}>{$t(`storyBuilder.motion.easingOptions.${easing}`)}</button
         >
       {/each}
     </div>
@@ -183,12 +184,12 @@
     <div class="motion-panel__heading">
       <span class="motion-panel__icon"><Clock3 aria-hidden="true" /></span>
       <span>
-        <strong>Chapter motion duration</strong>
-        <small>All positions are spaced automatically across this duration.</small>
+        <strong>{$t('storyBuilder.motion.duration')}</strong>
+        <small>{$t('storyBuilder.motion.durationHint')}</small>
       </span>
     </div>
     <label class="chapter-overlay__label">
-      Duration (seconds)
+      {$t('storyBuilder.motion.durationSeconds')}
       <input
         class="chapter-overlay__input"
         type="number"

@@ -8,6 +8,7 @@
   import StoryBuilderWideNarration from "./StoryBuilderWideNarration.svelte";
   import StoryBuilderWideMediaTiming from "./StoryBuilderWideMediaTiming.svelte";
   import StoryBuilderWideAnnotations from "./StoryBuilderWideAnnotations.svelte";
+  import { t } from '../../i18n';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
@@ -58,14 +59,14 @@
   ): string | null => {
     if (!chapter?.viewBox || !point.viewBox || point.viewBox.w <= 0) return null;
     const zoom = chapter.viewBox.w / point.viewBox.w;
-    return `${zoom.toFixed(2)}× zoom`;
+    return $t('storyBuilder.motion.zoomValue', { zoom: zoom.toFixed(2) });
   };
 </script>
 
 {#if chapter && $activeTask === "motion"}
   <section
     class="story-wide-authoring"
-    aria-label="Chapter motion timeline"
+    aria-label={$t('storyBuilder.motion.timeline')}
   >
     <div class="story-wide-authoring__timeline">
       <div class="story-wide-authoring__scale" aria-hidden="true">
@@ -85,14 +86,14 @@
             <button
               class="story-wide-authoring__point"
               type="button"
-              aria-label={`Go to camera point ${index + 1}`}
+              aria-label={$t('storyBuilder.motion.goToPoint', { number: index + 1 })}
               on:click={() => onGoToPoint(point.id)}
             >
               <span class="story-wide-authoring__pin"
                 ><MapPin aria-hidden="true" /><b>{index + 1}</b></span
               >
               <span class="story-wide-authoring__point-label">
-                <strong>Point {index + 1}</strong>
+                <strong>{$t('storyBuilder.motion.point', { number: index + 1 })}</strong>
                 <small>
                   {formatTime(point.timeMs)}
                   {#if formatPointZoom(point)} · {formatPointZoom(point)}{/if}
@@ -102,8 +103,8 @@
             <button
               class="story-wide-authoring__point-delete"
               type="button"
-              title="Delete camera point"
-              aria-label={`Delete camera point ${index + 1}`}
+              title={$t('storyBuilder.motion.deletePoint')}
+              aria-label={$t('storyBuilder.motion.deletePointNumber', { number: index + 1 })}
               on:click={() => onDeletePoint(point.id)}
             >
               <Trash2 aria-hidden="true" />
@@ -114,8 +115,7 @@
 
       {#if points.length === 0}
         <p class="story-wide-authoring__empty">
-          No camera points yet. Add a point, then drag its pin into position in
-          the viewer.
+          {$t('storyBuilder.motion.emptyPoints')}
         </p>
       {/if}
 
@@ -124,7 +124,7 @@
         type="button"
         on:click={onAddPoint}
       >
-        <Plus aria-hidden="true" /> Add camera point
+        <Plus aria-hidden="true" /> {$t('storyBuilder.motion.addPoint')}
       </button>
     </div>
   </section>

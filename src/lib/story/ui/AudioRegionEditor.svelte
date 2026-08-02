@@ -4,13 +4,14 @@
   import RegionsPlugin, {
     type Region,
   } from "wavesurfer.js/dist/plugins/regions.esm.js";
+  import { t, translate } from '../../i18n';
 
   export let url = "";
   export let start = 0;
   export let end = 0;
   export let duration = 0;
   export let disabled = false;
-  export let label = "Audio waveform selection";
+  export let label: string | undefined = undefined;
   export let testId = "audio-region-editor";
   export let onChange: (
     start: number,
@@ -87,7 +88,7 @@
       drag: !disabled,
       resize: !disabled,
       minLength: Math.min(0.1, nextDuration),
-      content: "Chapter selection",
+      content: translate('storyBuilder.audio.chapterSelection'),
       color: "rgba(224, 122, 63, 0.32)",
     });
     if (
@@ -144,7 +145,7 @@
       loadError =
         error instanceof Error
           ? error.message
-          : "Unable to load media waveform.";
+          : translate('storyBuilder.audio.loadError');
     }
   };
 
@@ -207,7 +208,7 @@
     });
     waveSurfer.on("error", (error) => {
       loading = false;
-      loadError = error.message || "Unable to load media waveform.";
+      loadError = error.message || translate('storyBuilder.audio.loadError');
     });
     waveSurfer.on("play", () => onPlayStateChange(true));
     waveSurfer.on("pause", () => onPlayStateChange(false));
@@ -236,37 +237,37 @@
   });
 </script>
 
-<div class="audio-region" data-testid={testId} aria-label={label}>
+<div class="audio-region" data-testid={testId} aria-label={label ?? $t('storyBuilder.audio.waveformSelection')}>
   {#if readyDuration > 0}
-    <div class="audio-region__zoom" aria-label="Waveform zoom controls">
-      <button type="button" on:click={() => applyZoom(0)}>Fit full media</button
+    <div class="audio-region__zoom" aria-label={$t('storyBuilder.audio.zoomControls')}>
+      <button type="button" on:click={() => applyZoom(0)}>{$t('storyBuilder.audio.fitMedia')}</button
       >
       <label>
-        <span>Zoom</span>
+        <span>{$t('storyBuilder.audio.zoom')}</span>
         <input
           type="range"
           min="0"
           max="50"
           step="1"
           value={zoomPxPerSec}
-          aria-label="Waveform zoom"
+          aria-label={$t('storyBuilder.audio.waveformZoom')}
           on:input={(event) =>
             applyZoom(Number((event.currentTarget as HTMLInputElement).value))}
         />
       </label>
-      <button type="button" on:click={zoomToSelection}>Show selection</button>
+      <button type="button" on:click={zoomToSelection}>{$t('storyBuilder.audio.showSelection')}</button>
     </div>
   {/if}
   <div class="audio-region__wave" bind:this={container}></div>
   {#if !url}
     <span class="audio-region__message"
-      >Add a media URL to load its waveform.</span
+      >{$t('storyBuilder.audio.addUrl')}</span
     >
   {:else if loading}
-    <span class="audio-region__message">Loading waveform…</span>
+    <span class="audio-region__message">{$t('storyBuilder.audio.loading')}</span>
   {:else if loadError}
     <span class="audio-region__message audio-region__message--error"
-      >Waveform unavailable</span
+      >{$t('storyBuilder.audio.unavailable')}</span
     >
   {/if}
 </div>

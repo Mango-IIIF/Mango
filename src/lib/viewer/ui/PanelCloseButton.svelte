@@ -9,10 +9,12 @@
   }
 
   let {
-    label = 'Close',
+    label = undefined,
     lucide = false,
     onclose = undefined,
   }: Props = $props();
+
+  const accessibleLabel = $derived(label ?? $t('common.close'));
 
   const close = () => {
     onclose?.();
@@ -22,7 +24,7 @@
 <button
   class="panel__close"
   type="button"
-  aria-label={label}
+  aria-label={accessibleLabel}
   onclick={close}
 >
   {#if lucide}

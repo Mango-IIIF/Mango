@@ -147,7 +147,7 @@
     if (normalised.ok && normalised.story) {
       return normalised.story;
     }
-    console.error(normalised.error ?? 'Invalid Mango story AnnotationPage');
+      console.error(normalised.error ?? translate('storyViewer.invalidAnnotationPage'));
     return null;
   }
 

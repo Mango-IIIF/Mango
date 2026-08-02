@@ -10,6 +10,7 @@ import {
   parseMangoViewerStateBody,
 } from "../storyAnnotationProfile";
 import { normalizeChapterAnnotations } from "../normalizeAnnotations";
+import { translate } from '../../i18n';
 
 export type StoryWithDefaults = StoryState & {
   chapters: Array<Chapter & { transitionTimeMs: number }>;
@@ -358,16 +359,16 @@ export const normaliseStoryInput = (
   if (!isIiifStoryPage(input)) {
     return {
       ok: false,
-      error: "Invalid story shape: expected a Mango story AnnotationPage",
+      error: translate('storyViewer.errors.shape'),
     };
   }
   if (input["mango:storyVersion"] === undefined) {
-    return { ok: false, error: "Missing Mango story version" };
+    return { ok: false, error: translate('storyViewer.errors.missingVersion') };
   }
   if (input["mango:storyVersion"] !== MANGO_STORY_VERSION) {
     return {
       ok: false,
-      error: `Unsupported Mango story version: ${input["mango:storyVersion"]}`,
+      error: translate('storyViewer.errors.unsupportedVersion', { version: String(input["mango:storyVersion"]) }),
     };
   }
 
@@ -383,7 +384,7 @@ export const normaliseStoryInput = (
     return !bodies.some((body) => parseMangoViewerStateBody(body));
   });
   if (hasInvalidChapterState) {
-    return { ok: false, error: "Invalid Mango story chapter state" };
+    return { ok: false, error: translate('storyViewer.errors.chapterState') };
   }
 
   return { ok: true, story: withChapterDefaults(parseIiifStory(input)) };
@@ -395,16 +396,16 @@ export const validateStoryViewer = (
   const errors: string[] = [];
 
   if (!Array.isArray(story.chapters) || story.chapters.length === 0) {
-    errors.push("Story: must have at least one chapter");
+    errors.push(translate('validation.storyEmpty'));
   }
 
   const chapters = story.chapters ?? [];
   chapters.forEach((chapter, index) => {
-    const prefix = `Chapter ${index + 1}`;
-    if (!chapter.id) errors.push(`${prefix}: missing id`);
-    if (!chapter.manifest) errors.push(`${prefix}: missing manifest`);
+    const prefix = translate('validation.chapter', { number: index + 1 });
+    if (!chapter.id) errors.push(translate('validation.missingId', { prefix }));
+    if (!chapter.manifest) errors.push(translate('validation.missingManifest', { prefix }));
     if (chapter.canvasIndex == null || Number.isNaN(chapter.canvasIndex)) {
-      errors.push(`${prefix}: invalid canvas index`);
+      errors.push(translate('validation.invalidCanvas', { prefix }));
     }
     const hasCapture = Boolean(
       chapter.viewBox ||
@@ -413,9 +414,7 @@ export const validateStoryViewer = (
       chapter.narrationSegment,
     );
     if (!hasCapture) {
-      errors.push(
-        `${prefix}: must have viewBox, media, model, or narration segment`,
-      );
+      errors.push(translate('validation.captureRequired', { prefix }));
     }
     if (chapter.media) {
       const { start, end } = chapter.media;
@@ -423,16 +422,16 @@ export const validateStoryViewer = (
         !(typeof start === "number" && typeof end === "number") ||
         end <= start
       ) {
-        errors.push(`${prefix}: media end must be greater than start`);
+        errors.push(translate('validation.invalidMedia', { prefix }));
       }
     }
     if (chapter.transitionTimeMs != null && chapter.transitionTimeMs <= 0) {
-      errors.push(`${prefix}: transitionTimeMs must be positive`);
+      errors.push(translate('validation.transitionPositive', { prefix }));
     }
     if (chapter.narrationSegment) {
       for (const [lang, segment] of Object.entries(chapter.narrationSegment)) {
         if (segment.end <= segment.start) {
-          errors.push(`${prefix}: narration segment invalid for ${lang}`);
+          errors.push(translate('validation.invalidNarration', { prefix, language: lang }));
         }
       }
     }

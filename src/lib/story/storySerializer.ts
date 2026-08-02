@@ -15,6 +15,7 @@ import {
   type MangoViewerStateBody,
 } from './storyAnnotationProfile';
 import { buildChapterAnnotationId, deriveChapterAnnotationBase } from './publicIdentifiers';
+import { translate } from '../i18n';
 
 export type SaveConfig = {
   endpoint?: string;
@@ -371,7 +372,7 @@ export const serializeStoryToIiif = (
     type: 'AnnotationPage',
     'mango:storyVersion': MANGO_STORY_VERSION,
     ...(!raw.id && !options.id ? { 'mango:draft': true as const } : {}),
-    label: Object.keys(label).length > 0 ? label : { en: ['Story Annotation Track'] },
+    label: Object.keys(label).length > 0 ? label : { en: [translate('storyBuilder.export.trackLabel')] },
     items,
   };
 };
@@ -401,14 +402,14 @@ export const performFetchWithTimeout = async (
     clearTimeout(timeout);
 
     if (!res.ok) {
-      return { ok: false, message: `Save failed (${res.status})` };
+      return { ok: false, message: translate('storyBuilder.errors.saveStatus', { status: res.status }) };
     }
 
     let body: unknown;
     try {
       body = await res.json();
     } catch {
-      return { ok: false, message: 'Save failed (invalid JSON response)' };
+      return { ok: false, message: translate('storyBuilder.errors.invalidSaveResponse') };
     }
 
     const response =
@@ -423,7 +424,7 @@ export const performFetchWithTimeout = async (
     if (success) {
       return {
         ok: true,
-        message: typeof response.message === 'string' ? response.message : 'Saved successfully',
+        message: typeof response.message === 'string' ? response.message : translate('storyBuilder.actions.saveSuccess'),
       };
     }
 
@@ -432,15 +433,15 @@ export const performFetchWithTimeout = async (
       message:
         (typeof response.error?.message === 'string' && response.error.message) ||
         (typeof response.message === 'string' && response.message) ||
-        'Save failed',
+        translate('storyBuilder.actions.saveFailed'),
       code: typeof response.error?.code === 'string' ? response.error.code : undefined,
     };
   } catch (err) {
     clearTimeout(timeout);
     if (err instanceof DOMException && err.name === 'AbortError') {
-      return { ok: false, message: 'Save timed out', code: 'timeout' };
+      return { ok: false, message: translate('storyBuilder.errors.saveTimeout'), code: 'timeout' };
     }
-    return { ok: false, message: 'Could not reach server', code: 'network' };
+    return { ok: false, message: translate('storyBuilder.errors.network'), code: 'network' };
   }
 };
 

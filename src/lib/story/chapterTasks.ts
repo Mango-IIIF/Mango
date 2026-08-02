@@ -1,5 +1,6 @@
 import type { Chapter, StoryState } from '../core/types/story';
 import type { MediaSource, MediaType } from '../iiif/mediaResolver';
+import { translate } from '../i18n';
 
 export type ChapterTaskId =
   | 'details'
@@ -86,45 +87,44 @@ export const evaluateTaskAvailability = (
       ) {
         return {
           state: 'disabled',
-          reason: 'Annotations are available for image and PDF chapters only.',
-          action: 'Choose an image or PDF source to add annotations.',
+          reason: translate('storyBuilder.tasks.availability.annotationsMedia'),
+          action: translate('storyBuilder.tasks.availability.chooseImage'),
         };
       }
       return chapter.viewBox || chapter.model || chapter.annotations
         ? { state: 'available' }
         : {
             state: 'disabled',
-            reason: 'Annotations need a spatial image, PDF, or 3D view.',
-            action: 'Capture an image, PDF, or 3D view first.',
+            reason: translate('storyBuilder.tasks.availability.annotationsSpatial'),
+            action: translate('storyBuilder.tasks.availability.captureSpatial'),
           };
     case 'motion':
       return chapter.viewBox || chapter.model
         ? { state: 'available' }
         : {
             state: 'disabled',
-            reason: 'Motion needs a spatial camera position to capture.',
-            action: 'Capture an image, PDF, or 3D view first.',
+            reason: translate('storyBuilder.tasks.availability.motionSpatial'),
+            action: translate('storyBuilder.tasks.availability.captureSpatial'),
           };
     case 'layers':
       return layers.length > 1
         ? { state: 'available' }
         : {
             state: 'disabled',
-            reason: 'This source does not currently expose multiple image layers.',
-            action: 'Choose a layered Manifest in Source.',
+            reason: translate('storyBuilder.tasks.availability.layers'),
+            action: translate('storyBuilder.tasks.availability.chooseLayered'),
           };
     case 'comparison':
       return loadedSources.length > 1
         ? {
             state: 'disabled',
-            reason:
-              'Compatible sources are loaded, but comparison chapter authoring is not enabled yet.',
-            action: 'Keep the sources loaded for a future comparison chapter.',
+            reason: translate('storyBuilder.tasks.availability.comparisonUnavailable'),
+            action: translate('storyBuilder.tasks.availability.keepSources'),
           }
         : {
             state: 'disabled',
-            reason: 'Comparison needs at least two loaded sources.',
-            action: 'Load another compatible source.',
+            reason: translate('storyBuilder.tasks.availability.comparisonSources'),
+            action: translate('storyBuilder.tasks.availability.loadSource'),
           };
   }
 };

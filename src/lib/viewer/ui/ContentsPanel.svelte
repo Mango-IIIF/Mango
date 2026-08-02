@@ -60,8 +60,8 @@
     <div class="panel__title">
       {redesigned
         ? activeTab === 'transcript'
-          ? 'Transcription'
-          : 'Collections'
+          ? $t('workspace.sidebar.transcription')
+          : $t('workspace.sidebar.collections')
         : $t('viewer.panels.contents.title')}
     </div>
     <PanelCloseButton

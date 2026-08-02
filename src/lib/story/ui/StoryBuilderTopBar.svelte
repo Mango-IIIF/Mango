@@ -5,6 +5,7 @@
   import type { StoryState } from '../../core/types/story';
   import type { SaveState } from '../storySerializer';
   import MangoFooterBrand from './MangoFooterBrand.svelte';
+  import { t } from '../../i18n';
 
   export let story: Readable<StoryState>;
   export let isPreviewing: Readable<boolean>;
@@ -34,20 +35,20 @@
 
   $: statusLabel =
     $saveState.status === 'saving'
-      ? 'Saving…'
+      ? $t('storyBuilder.actions.saving')
       : $saveState.status === 'error'
-        ? ($saveState.message ?? 'Save failed')
+        ? ($saveState.message ?? $t('storyBuilder.actions.saveFailed'))
         : $saveState.status === 'success' && !$dirty
-          ? ($saveState.message ?? 'Saved')
+          ? ($saveState.message ?? $t('storyBuilder.topBar.saved'))
           : $dirty
-            ? 'Unsaved changes'
-            : 'Up to date';
+            ? $t('storyBuilder.topBar.unsaved')
+            : $t('storyBuilder.topBar.upToDate');
 
   $: storyTitle =
     $story.title?.[language] ||
     $story.title?.en ||
     Object.values($story.title ?? {}).find((value) => value.trim()) ||
-    'Untitled story';
+    $t('storyBuilder.settings.untitled');
 </script>
 
 <div class="story-topbar" data-testid="story-builder-topbar" bind:this={root}>
@@ -64,11 +65,11 @@
     <span>{statusLabel}</span>
   </div>
 
-  <div class="story-topbar__group" aria-label="Story history">
-    <button type="button" aria-label="Undo" title="Undo" disabled={!$canUndo} on:click={onUndo}>
+  <div class="story-topbar__group" aria-label={$t('storyBuilder.topBar.history')}>
+    <button type="button" aria-label={$t('storyBuilder.topBar.undo')} title={$t('storyBuilder.topBar.undo')} disabled={!$canUndo} on:click={onUndo}>
       <Undo2 aria-hidden="true" />
     </button>
-    <button type="button" aria-label="Redo" title="Redo" disabled={!$canRedo} on:click={onRedo}>
+    <button type="button" aria-label={$t('storyBuilder.topBar.redo')} title={$t('storyBuilder.topBar.redo')} disabled={!$canRedo} on:click={onRedo}>
       <Redo2 aria-hidden="true" />
     </button>
   </div>
@@ -76,17 +77,17 @@
   <button
     class="story-topbar__button story-topbar__button--preview"
     type="button"
-    aria-label={$isPreviewing ? 'Exit preview' : 'Preview story'}
-    title={$isPreviewing ? 'Exit preview' : 'Preview story'}
+    aria-label={$isPreviewing ? $t('storyBuilder.topBar.exitPreview') : $t('storyBuilder.topBar.preview')}
+    title={$isPreviewing ? $t('storyBuilder.topBar.exitPreview') : $t('storyBuilder.topBar.preview')}
     disabled={$story.chapters.length === 0}
     on:click={() => ($isPreviewing ? onStopPreview?.() : onPreview?.())}
   >
     {#if $isPreviewing}
       <Square aria-hidden="true" />
-      <span>Exit preview</span>
+      <span>{$t('storyBuilder.topBar.exitPreview')}</span>
     {:else}
       <Play aria-hidden="true" />
-      <span>Preview story</span>
+      <span>{$t('storyBuilder.topBar.preview')}</span>
     {/if}
   </button>
 
@@ -94,37 +95,37 @@
     <button
       class="story-topbar__button story-topbar__button--primary"
       type="button"
-      aria-label="Save"
-      title="Save"
+      aria-label={$t('storyBuilder.topBar.save')}
+      title={$t('storyBuilder.topBar.save')}
       disabled={$saveState.status === 'saving' || $story.chapters.length === 0}
       on:click={onSave}
     >
       <Save aria-hidden="true" />
-      <span>Save</span>
+      <span>{$t('storyBuilder.topBar.save')}</span>
     </button>
   {/if}
 
   <button
     class="story-topbar__button story-topbar__button--export"
     type="button"
-    aria-label="Export"
-    title="Export"
+    aria-label={$t('storyBuilder.topBar.export')}
+    title={$t('storyBuilder.topBar.export')}
     disabled={$story.chapters.length === 0}
     on:click={onExport}
   >
     <Download aria-hidden="true" />
-    <span>Export</span>
+    <span>{$t('storyBuilder.topBar.export')}</span>
   </button>
 
   <button
     class="story-topbar__button story-topbar__button--narration"
     type="button"
-    aria-label="Story settings"
-    title="Story settings"
+    aria-label={$t('storyBuilder.topBar.settings')}
+    title={$t('storyBuilder.topBar.settings')}
     on:click={onNarration}
   >
     <Settings2 aria-hidden="true" />
-    <span>Story settings</span>
+    <span>{$t('storyBuilder.topBar.settings')}</span>
   </button>
 </div>
 

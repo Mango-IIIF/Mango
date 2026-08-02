@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from '../../i18n';
+
   export let activeLanguage = 'en';
   export let languages: string[] = ['en'];
   export let metadataSectionCollapsed = false;
@@ -20,8 +22,8 @@
 
 {#if section === 'all' || section === 'details' || section === 'focus'}
   <section class="chapter-overlay__section chapter-overlay__section--card">
-    <div class="chapter-overlay__section-title">Content language</div>
-    <div class="chapter-overlay__language-tabs" role="tablist" aria-label="Content language">
+    <div class="chapter-overlay__section-title">{$t('storyBuilder.content.language')}</div>
+    <div class="chapter-overlay__language-tabs" role="tablist" aria-label={$t('storyBuilder.content.language')}>
       {#each languages as lang}
         <button
           class="chapter-overlay__language-tab"
@@ -43,7 +45,7 @@
   <section class="chapter-overlay__section chapter-overlay__section--card">
     <div class="chapter-overlay__section-header">
       <div class="chapter-overlay__section-title">
-        Content ({activeLanguage.toUpperCase()})
+        {$t('storyBuilder.content.title', { language: activeLanguage.toUpperCase() })}
       </div>
       <button
         class="chapter-overlay__collapse-toggle"
@@ -51,8 +53,8 @@
         on:click={onToggleMetadata}
         aria-expanded={!metadataSectionCollapsed}
         aria-label={metadataSectionCollapsed
-          ? 'Expand metadata section'
-          : 'Collapse metadata section'}
+          ? $t('storyBuilder.content.expandMetadata')
+          : $t('storyBuilder.content.collapseMetadata')}
       >
         <span
           class="chapter-overlay__collapse-icon"
@@ -65,7 +67,7 @@
 
     <div class="chapter-overlay__section-content" hidden={metadataSectionCollapsed}>
       <label class="chapter-overlay__label">
-        Title
+        {$t('storyBuilder.content.titleLabel')}
         <input
           class="chapter-overlay__input"
           type="text"
@@ -76,7 +78,7 @@
       </label>
 
       <label class="chapter-overlay__label">
-        Description
+        {$t('storyBuilder.content.descriptionLabel')}
         <textarea
           class="chapter-overlay__textarea"
           rows="3"
@@ -93,7 +95,7 @@
   <section class="chapter-overlay__section chapter-overlay__section--card">
     <div class="chapter-overlay__section-header">
       <div class="chapter-overlay__section-title">
-        Text box annotation ({activeLanguage.toUpperCase()})
+        {$t('storyBuilder.content.textBox', { language: activeLanguage.toUpperCase() })}
       </div>
       <button
         class="chapter-overlay__collapse-toggle"
@@ -101,8 +103,8 @@
         on:click={onToggleAnnotation}
         aria-expanded={!annotationSectionCollapsed}
         aria-label={annotationSectionCollapsed
-          ? 'Expand annotation section'
-          : 'Collapse annotation section'}
+          ? $t('storyBuilder.content.expandAnnotation')
+          : $t('storyBuilder.content.collapseAnnotation')}
       >
         <span
           class="chapter-overlay__collapse-icon"
@@ -115,7 +117,7 @@
 
     <div class="chapter-overlay__section-content" hidden={annotationSectionCollapsed}>
       <p class="chapter-overlay__hint">
-        This creates a positioned text box. It is separate from the drawing tools above.
+        {$t('storyBuilder.content.textBoxHint')}
       </p>
       <textarea
         class="chapter-overlay__textarea"
@@ -123,7 +125,7 @@
         rows="4"
         value={annotationDraft}
         on:input={onAnnotationInput}
-        placeholder="Enter text for this text box"
+        placeholder={$t('storyBuilder.content.textPlaceholder')}
       ></textarea>
 
       {#if hasChapter}
@@ -135,11 +137,11 @@
           disabled={!annotationDraft.trim()}
           on:click={onSetPositionClick}
         >
-          Place text box on artwork
+          {$t('storyBuilder.content.placeText')}
         </button>
       {:else}
         <div class="chapter-overlay__hint">
-          Capture a chapter to edit annotation text and placement.
+          {$t('storyBuilder.content.captureHint')}
         </div>
       {/if}
     </div>

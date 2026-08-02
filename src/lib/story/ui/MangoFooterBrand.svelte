@@ -1,6 +1,7 @@
 <script lang="ts">
   import MangoLogoIcon from './MangoLogoIcon.svelte';
   import MangoAboutModal from './MangoAboutModal.svelte';
+  import { t } from '../../i18n';
 
   export let position: 'fixed' | 'absolute' | 'relative' | 'inline' = 'relative';
   export let size = 16;
@@ -22,12 +23,12 @@
   <button
     type="button"
     class="mango-footer-brand__button"
-    title="About Mango Viewer (mangoviewer.dev)"
-    aria-label="About Mango Viewer"
+    title={$t('about.buttonTitle')}
+    aria-label={$t('about.buttonLabel')}
     on:click={toggleModal}
   >
     <MangoLogoIcon {size} color="currentColor" />
-    <span class="mango-footer-brand__label">Mango</span>
+    <span class="mango-footer-brand__label">{$t('about.brand')}</span>
   </button>
 
   <MangoAboutModal open={aboutOpen} onClose={() => (aboutOpen = false)} />

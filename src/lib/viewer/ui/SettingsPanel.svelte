@@ -57,7 +57,7 @@
       class:settings-panel__section--disabled={pageLayoutDisabled}
       aria-disabled={pageLayoutDisabled}
     >
-      <div class="settings-panel__label">{$t('workspace.viewMode') ?? 'Page Layout'}</div>
+      <div class="settings-panel__label">{$t('workspace.viewMode')}</div>
       <div class="page-layout-options" role="radiogroup" aria-label={$t('workspace.pageLayout.group')}>
         <button
           type="button"
@@ -69,7 +69,7 @@
           disabled={pageLayoutDisabled}
           onclick={() => settings.layoutMode = 'single'}
         >
-          <span>{$t('workspace.viewModeSingle') ?? 'Single'}</span>
+          <span>{$t('workspace.viewModeSingle')}</span>
           <Image aria-hidden="true" />
         </button>
         <button
@@ -82,7 +82,7 @@
           disabled={pageLayoutDisabled}
           onclick={() => settings.layoutMode = 'two-page'}
         >
-          <span>{$t('workspace.viewModePaged') ?? 'Side by Side'}</span>
+          <span>{$t('workspace.viewModePaged')}</span>
           <Images aria-hidden="true" />
         </button>
         <button
@@ -95,7 +95,7 @@
           disabled={pageLayoutDisabled}
           onclick={() => settings.layoutMode = 'continuous'}
         >
-          <span>{$t('workspace.viewModeContinuous') ?? 'Continuous Scroll'}</span>
+          <span>{$t('workspace.viewModeContinuous')}</span>
           <Scroll aria-hidden="true" />
         </button>
         <button
@@ -108,7 +108,7 @@
           disabled={pageLayoutDisabled}
           onclick={() => settings.layoutMode = 'gallery'}
         >
-          <span>{$t('workspace.viewModeGallery') ?? 'Gallery'}</span>
+          <span>{$t('workspace.viewModeGallery')}</span>
           <Grid2x2 aria-hidden="true" />
         </button>
       </div>

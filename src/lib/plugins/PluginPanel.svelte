@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import type { PluginContext, PluginSlot, ViewerPlugin } from '../core/types/plugin';
+  import { translate } from '../i18n';
 
   export let plugin: ViewerPlugin;
   export let context: Omit<PluginContext, 'mount'>;
@@ -27,7 +28,10 @@
       }
     } catch (error) {
       hasError = true;
-      const errorMessage = `Plugin "${plugin.label}" (${plugin.id}) failed to initialize`;
+      const errorMessage = translate('plugins.errors.initialise', {
+        label: plugin.label,
+        id: plugin.id,
+      });
       console.error(errorMessage, error);
       
       // Emit plugin error event
@@ -43,8 +47,8 @@
       if (container) {
         container.innerHTML = `
           <div style="padding: 12px; background: rgba(255, 79, 79, 0.1); border: 1px solid rgba(255, 79, 79, 0.3); border-radius: 8px; color: #ff9999;">
-            <div style="font-weight: 600; margin-bottom: 4px;">Plugin Error</div>
-            <div style="font-size: 12px; opacity: 0.9;">${plugin.label} failed to load</div>
+            <div style="font-weight: 600; margin-bottom: 4px;">${translate('plugins.errors.title')}</div>
+            <div style="font-size: 12px; opacity: 0.9;">${translate('plugins.errors.load', { label: plugin.label })}</div>
           </div>
         `;
       }
@@ -68,7 +72,10 @@
         plugin.destroy();
         container?.replaceChildren();
       } catch (error) {
-        const errorMessage = `Plugin "${plugin.label}" (${plugin.id}) failed during cleanup`;
+        const errorMessage = translate('plugins.errors.cleanup', {
+          label: plugin.label,
+          id: plugin.id,
+        });
         console.error(errorMessage, error);
         
         // Emit plugin error event for destroy phase

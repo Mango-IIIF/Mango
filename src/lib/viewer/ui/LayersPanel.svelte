@@ -22,14 +22,14 @@
   };
 </script>
 
-<section class="panel panel--layers" aria-label={$t('viewer.panels.layers.label') ?? 'Layers panel'}>
+  <section class="panel panel--layers" aria-label={$t('viewer.panels.layers.label')}>
   <div class="panel__header">
     <div class="panel__title">
-      {redesigned ? 'Image layers' : ($t('viewer.panels.layers.title') ?? 'Layers')}
+      {redesigned ? $t('workspace.sidebar.imageLayers') : $t('viewer.panels.layers.title')}
     </div>
     <PanelCloseButton
       lucide={redesigned}
-      label={$t('viewer.panels.layers.close') ?? 'Close layers'}
+      label={$t('viewer.panels.layers.close')}
       {onclose}
     />
   </div>
@@ -40,7 +40,7 @@
         <div class="layers__item">
           <div class="layers__info">
             <span class="layers__name">
-              {layer.label || (index === 0 ? 'Base Image' : `Layer ${index + 1}`)}
+            {layer.label || (index === 0 ? $t('viewer.panels.layers.baseImage') : $t('viewer.panels.layers.layerNumber', { number: index + 1 }))}
             </span>
             <span class="layers__value">{Math.round(opacity * 100)}%</span>
           </div>

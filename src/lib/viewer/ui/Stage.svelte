@@ -381,7 +381,7 @@
     class="stage__media"
     role="application"
     tabindex="0"
-    aria-label={$t('viewer.stage.label') ?? 'Viewer stage'}
+  aria-label={$t('viewer.stage.label')}
     onkeydown={handleStageKeydown}
   >
     {#if isFetching}

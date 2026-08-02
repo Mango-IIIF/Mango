@@ -6,6 +6,7 @@ import {
   type Writable,
 } from "svelte/store";
 import type { MediaSource, MediaType } from "../iiif/mediaResolver";
+import { translate } from '../i18n';
 import type { PluginContext } from "../core/types/plugin";
 import { createStoryStore } from "../state/story.svelte";
 import { createMediaMarks, type MediaMarksState } from "./mediaMarks";
@@ -481,8 +482,7 @@ export const createStoryBuilderController = (
     const hasEndpoint =
       saveConfig?.endpoint && (saveConfig.enabled ?? true) ? true : false;
     if (hasEndpoint && !get(storyStore).id) {
-      const message =
-        "Set a canonical Story ID in Story settings before publishing.";
+      const message = translate('storyBuilder.errors.missingPublicId');
       saveState.set({ status: "error", message, code: "missing_public_id" });
       return { ok: false, message, code: "missing_public_id" };
     }
@@ -1167,7 +1167,9 @@ export const createStoryBuilderController = (
         selectedChapterId.set(null);
         uiMode.set("chapterEdit");
       } else {
-        setError(`Capture blocked: ${result.reason}`);
+        setError(translate('storyBuilder.errors.captureBlocked', {
+          reason: translate(`storyBuilder.errors.capture.${result.reason}`),
+        }));
       }
       return false;
     }
@@ -1211,7 +1213,9 @@ export const createStoryBuilderController = (
         setError(null);
         uiMode.set("chapterEdit");
       } else {
-        setError(`Capture blocked: ${result.reason}`);
+        setError(translate('storyBuilder.errors.captureBlocked', {
+          reason: translate(`storyBuilder.errors.capture.${result.reason}`),
+        }));
       }
       return false;
     }
@@ -2186,11 +2190,11 @@ export const createStoryBuilderController = (
 
   const reloadManifest = (manifest: string, canvasIndex: number) => {
     if (!viewer) {
-      setError("Viewer not ready.");
+      setError(translate('storyBuilder.errors.viewerNotReady'));
       return;
     }
     if (!manifest.trim()) {
-      setError("Manifest URL is required.");
+      setError(translate('storyBuilder.errors.manifestRequired'));
       return;
     }
     viewer.setManifest(manifest);
@@ -2213,12 +2217,12 @@ export const createStoryBuilderController = (
 
   const loadManifest = (manifest: string) => {
     if (!viewer) {
-      setError("Viewer not ready.");
+      setError(translate('storyBuilder.errors.viewerNotReady'));
       return;
     }
     const trimmed = manifest.trim();
     if (!trimmed) {
-      setError("Manifest URL is required.");
+      setError(translate('storyBuilder.errors.manifestRequired'));
       return;
     }
     viewer.setManifest(trimmed);

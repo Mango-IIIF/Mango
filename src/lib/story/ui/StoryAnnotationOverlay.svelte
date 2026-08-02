@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '../../i18n';
   import { readable, type Readable } from 'svelte/store';
   import { ANNOTATION_STROKE_WIDTH_PX } from '../../core/types/story';
   import type { ChapterDrawingAnnotation, StoryState } from '../../core/types/story';
@@ -185,7 +186,7 @@
       class="story-annotation-overlay__drawings"
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
-      aria-label="Chapter drawing annotations"
+      aria-label={$t('storyBuilder.annotations.drawing')}
     >
       {#each svgShapes as shape (shape.id)}
         {#if shape.kind === 'rect'}

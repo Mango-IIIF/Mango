@@ -3,6 +3,7 @@
   import type { Readable } from "svelte/store";
   import type { StoryState } from "../../core/types/story";
   import AudioRegionEditor from "./AudioRegionEditor.svelte";
+  import { t } from '../../i18n';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
@@ -98,16 +99,16 @@
         ><AudioLines aria-hidden="true" /></span
       >
       <span
-        ><strong id="story-wide-narration-title">Narration</strong><small
+        ><strong id="story-wide-narration-title">{$t('storyBuilder.narration.title')}</strong><small
           >{activeLanguage.toUpperCase()}</small
         ></span
       >
     </div>
-    <p>Choose the narration track and drag or resize the chapter region.</p>
+    <p>{$t('storyBuilder.narration.description')}</p>
     {#if availableLanguages.length > 1}
       <div
         class="story-wide-narration__languages"
-        aria-label="Narration language"
+        aria-label={$t('storyBuilder.narration.language')}
       >
         {#each availableLanguages as entry}
           <button
@@ -124,7 +125,7 @@
 
   <div class="story-wide-narration__editor">
     <label class="story-wide-narration__track">
-      <span>Narration audio URL</span>
+      <span>{$t('storyBuilder.narration.audioUrl')}</span>
       <input
         type="url"
         placeholder="https://example.org/narration.mp3"
@@ -138,12 +139,12 @@
         disabled={!trackSource || !validSegment}
         on:click={togglePreview}
       >
-        {#if previewing}<Square aria-hidden="true" /> Stop{:else}<Play
+        {#if previewing}<Square aria-hidden="true" /> {$t('storyBuilder.media.stop')}{:else}<Play
             aria-hidden="true"
-          /> Preview narration{/if}
+          /> {$t('storyBuilder.narration.preview')}{/if}
       </button>
       <span
-        ><Volume2 aria-hidden="true" /> Drag or resize the chapter selection</span
+        ><Volume2 aria-hidden="true" /> {$t('storyBuilder.narration.dragSelection')}</span
       >
     </div>
     <AudioRegionEditor
@@ -152,7 +153,7 @@
       start={Number(startDraft) || 0}
       end={Number(endDraft) || audioDuration}
       duration={audioDuration}
-      label="Narration waveform"
+      label={$t('storyBuilder.narration.waveform')}
       testId="chapter-narration-waveform"
       onChange={handleRegionChange}
       onReady={(duration) => {
@@ -167,7 +168,7 @@
     />
     <div class="story-wide-narration__range">
       <label
-        ><span>Start (seconds)</span><input
+        ><span>{$t('storyBuilder.media.startSeconds')}</span><input
           type="number"
           min="0"
           max={audioDuration || undefined}
@@ -177,9 +178,9 @@
           on:blur={normalizeAndCommitSegment}
         /></label
       >
-      <span>to</span>
+      <span>{$t('storyBuilder.media.to')}</span>
       <label
-        ><span>End (seconds)</span><input
+        ><span>{$t('storyBuilder.media.endSeconds')}</span><input
           type="number"
           min="0"
           max={audioDuration || undefined}
@@ -194,7 +195,7 @@
         type="button"
         disabled={!chapter || !validSegment}
         on:click={commitSegment}
-        ><Check aria-hidden="true" /> Apply to chapter</button
+        ><Check aria-hidden="true" /> {$t('storyBuilder.narration.apply')}</button
       >
     </div>
   </div>

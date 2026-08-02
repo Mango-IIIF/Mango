@@ -1279,7 +1279,7 @@
     } catch (cause) {
       controller.emitEvent('error', {
         scope: 'manifest',
-        message: 'Unable to open the selected collection item.',
+        message: $t('viewer.panels.collection.openError'),
         cause,
       });
     }
@@ -1386,14 +1386,14 @@
 
     const normalised = normaliseStoryInput(parsed);
     if (!normalised.ok || !normalised.story) {
-      setStoryError(normalised.error ?? 'Invalid story');
+    setStoryError(normalised.error ?? $t('storyViewer.invalid'));
       storyLoading = false;
       return;
     }
 
     const validation = validateStoryViewer(normalised.story);
     if (!validation.ok) {
-      setStoryError(validation.errors[0] ?? 'Invalid story');
+    setStoryError(validation.errors[0] ?? $t('storyViewer.invalid'));
       storyLoading = false;
       return;
     }
@@ -1639,7 +1639,7 @@
     <button
       type="button"
       class="viewer__backdrop viewer__backdrop--active"
-      aria-label="Close panels"
+      aria-label={$t('viewer.stage.controls.closePanels')}
       onclick={closeMobileLeftDrawer}
     ></button>
   {/if}
@@ -1672,15 +1672,15 @@
         type="button"
         class="viewer__fullscreen-btn viewer__fullscreen-btn--labelled"
         onclick={handleStoryFullscreen}
-        aria-label={isViewerFullscreen ? 'Close fullscreen' : 'Enter fullscreen'}
-        title={isViewerFullscreen ? 'Close fullscreen' : 'Enter fullscreen'}
+      aria-label={isViewerFullscreen ? $t('viewer.stage.controls.closeFullscreen') : $t('viewer.stage.controls.enterFullscreen')}
+      title={isViewerFullscreen ? $t('viewer.stage.controls.closeFullscreen') : $t('viewer.stage.controls.enterFullscreen')}
       >
         {#if isViewerFullscreen}
           <Shrink aria-hidden="true" />
         {:else}
           <Expand aria-hidden="true" />
         {/if}
-        <span>{isViewerFullscreen ? 'Close fullscreen' : 'Fullscreen'}</span>
+      <span>{isViewerFullscreen ? $t('viewer.stage.controls.closeFullscreen') : $t('viewer.stage.controls.fullscreen')}</span>
       </button>
     </div>
   </div>
@@ -1690,8 +1690,8 @@
       class="viewer__expand-sidebar"
       type="button"
       onclick={expandViewerSidebar}
-      aria-label="Expand sidebar"
-      title="Expand sidebar"
+      aria-label={$t('viewer.stage.controls.expandSidebar')}
+      title={$t('viewer.stage.controls.expandSidebar')}
     >
       <ChevronsRight aria-hidden="true" />
     </button>

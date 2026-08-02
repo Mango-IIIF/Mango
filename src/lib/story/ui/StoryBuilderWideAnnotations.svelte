@@ -2,6 +2,7 @@
   import { Shapes, Trash2 } from '@lucide/svelte';
   import { readable, type Readable } from 'svelte/store';
   import type { ChapterDrawingAnnotation, StoryState } from '../../core/types/story';
+  import { t } from '../../i18n';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
@@ -11,9 +12,7 @@
   export let onEditDrawing: (annotationId: string) => void;
 
   const typeLabel = (annotation: ChapterDrawingAnnotation): string =>
-    annotation.type === 'freehand'
-      ? 'Freehand'
-      : annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1);
+    $t(`viewer.panels.annotations.editor.tools.${annotation.type}`);
   const labelValue = (annotation: ChapterDrawingAnnotation): string =>
     annotation.label?.[language] ?? annotation.label?.en ?? Object.values(annotation.label ?? {})[0] ?? '';
 
@@ -24,11 +23,11 @@
 <section class="story-wide-annotations" aria-labelledby="story-wide-annotations-title">
   <header class="story-wide-annotations__header">
     <Shapes aria-hidden="true" />
-    <strong id="story-wide-annotations-title">Chapter annotations <span>{items.length}</span></strong>
+    <strong id="story-wide-annotations-title">{$t('storyBuilder.annotations.chapter')} <span>{items.length}</span></strong>
   </header>
 
   {#if items.length > 0}
-    <div class="story-wide-annotations__items" aria-label="Chapter annotations">
+    <div class="story-wide-annotations__items" aria-label={$t('storyBuilder.annotations.chapter')}>
       {#each items as annotation, index (annotation.id)}
         <article
           class="story-wide-annotations__item"
@@ -37,27 +36,27 @@
           <button
             class="story-wide-annotations__select"
             type="button"
-            aria-label={`Edit ${typeLabel(annotation)} annotation ${index + 1}`}
+            aria-label={$t('storyBuilder.annotations.editDrawing', { type: typeLabel(annotation), index: index + 1 })}
             aria-pressed={$selectedAnnotationId === annotation.id}
             on:click={() => onEditDrawing(annotation.id)}
           >
             <span class="story-wide-annotations__number" style={`--annotation-color:${annotation.color ?? '#e07a3f'}`}>{index + 1}</span>
             <span class="story-wide-annotations__copy">
               <strong>{labelValue(annotation) || typeLabel(annotation)}</strong>
-              <small>{typeLabel(annotation)} · {annotation.fillMode === 'solid' ? 'Solid' : 'Transparent'}</small>
+              <small>{typeLabel(annotation)} · {annotation.fillMode === 'solid' ? $t('storyBuilder.annotations.solid') : $t('storyBuilder.annotations.transparent')}</small>
             </span>
           </button>
           <button
             class="story-wide-annotations__delete"
             type="button"
-            aria-label={`Delete ${typeLabel(annotation)} annotation ${index + 1}`}
+            aria-label={$t('storyBuilder.annotations.deleteDrawing', { type: typeLabel(annotation), index: index + 1 })}
             on:click={() => onDeleteDrawing(annotation.id)}
           ><Trash2 aria-hidden="true" /></button>
         </article>
       {/each}
     </div>
   {:else}
-    <p class="story-wide-annotations__empty">No annotations in this chapter.</p>
+    <p class="story-wide-annotations__empty">{$t('storyBuilder.annotations.empty')}</p>
   {/if}
 </section>
 

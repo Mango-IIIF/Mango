@@ -86,6 +86,7 @@
     "build:dist": "npm run build:lib && npm run build:element && npm run build:types",
     "prepack": "npm run build:dist",
     "lint": "eslint .",
+    "i18n:check": "tsx src/locales/check-locales.ts",
     "format": "prettier --write .",
     "test": "vitest run --config vitest.config.ts",
     "test:e2e": "playwright test"

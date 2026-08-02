@@ -1,12 +1,13 @@
 import type { ViewerPlugin } from '../core/types/plugin';
 import { padViewBox, resolveAnnotationViewBox } from '../viewer/annotations/focus';
+import { translate } from '../i18n';
 
 export const createPlugin = (): ViewerPlugin => {
   let unsubscribe: (() => void) | null = null;
 
   return {
     id: 'annotation-focus',
-    label: 'Annotation Focus',
+    label: translate('plugins.annotation.focusLabel'),
     slot: 'overlay',
     init(ctx) {
       unsubscribe = ctx.events.on('annotationSelect', (payload) => {

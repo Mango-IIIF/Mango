@@ -9,6 +9,7 @@ import StoryBuilderSidebar from "../story/ui/StoryBuilderSidebar.svelte";
 import StoryBuilderOverlay from "../story/ui/StoryBuilderOverlay.svelte";
 import StoryBuilderTopBar from "../story/ui/StoryBuilderTopBar.svelte";
 import StoryBuilderWideAuthoring from "../story/ui/StoryBuilderWideAuthoring.svelte";
+import { translate } from '../i18n';
 
 export const createStoryBuilderPlugins = (
   options: StoryBuilderOptions = {},
@@ -46,7 +47,7 @@ export const createStoryBuilderPlugins = (
 
   const sidebar = makePlugin(
     "story-builder-sidebar",
-    "Story Builder",
+    translate('plugins.storyBuilder.sidebar'),
     "left",
     (target, ctx) => {
       controller.setSaveConfig(ctx.config?.story?.save ?? {});
@@ -79,7 +80,7 @@ export const createStoryBuilderPlugins = (
 
   const topBar = makePlugin(
     "story-builder-topbar",
-    "Story Builder Actions",
+    translate('plugins.storyBuilder.actions'),
     "top",
     (target) => {
       const instance = mount(StoryBuilderTopBar, {
@@ -197,21 +198,21 @@ export const createStoryBuilderPlugins = (
 
   const inspector = makePlugin(
     "story-builder-inspector",
-    "Chapter Inspector",
+    translate('plugins.storyBuilder.inspector'),
     "right",
     (target) => createEditorSurface(target, "inspector"),
   );
 
   const overlay = makePlugin(
     "story-builder-overlay",
-    "Story Builder Overlay",
+    translate('plugins.storyBuilder.overlay'),
     "overlay",
     (target) => createEditorSurface(target, "overlay"),
   );
 
   const wideAuthoring = makePlugin(
     "story-builder-wide-authoring",
-    "Chapter timeline",
+    translate('plugins.storyBuilder.timeline'),
     "bottom",
     (target) => {
       const instance = mount(StoryBuilderWideAuthoring, {

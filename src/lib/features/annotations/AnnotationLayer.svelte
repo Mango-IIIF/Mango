@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { ViewBox } from '../../core/types/viewer';
+  import { t } from '../../i18n';
 
   interface Props {
     annotations?: ResolvedAnnotation[];
@@ -64,7 +65,7 @@
     annotation.label?.trim() || '';
 
   const annotationAccessibleName = (annotation: ResolvedAnnotation): string =>
-    annotationLabel(annotation) || 'Annotation';
+    annotationLabel(annotation) || $t('viewer.panels.annotations.fallback');
 
   const selectAnnotation = (id: string) => {
     onannotationSelect?.({ id });
