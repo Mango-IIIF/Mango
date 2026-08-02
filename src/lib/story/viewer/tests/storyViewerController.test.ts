@@ -228,6 +228,62 @@ describe('storyViewerController.loadChapter', () => {
     expect(viewer.getCanvasIndex()).toBe(1);
   });
 
+  it('does not repaint the outgoing chapter camera while the next chapter loads', async () => {
+    const viewer = createMockViewer();
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      posePaintedTimeoutMs: 100,
+      sourceOpenTimeoutMs: 100,
+    });
+    // Both chapters pan across the canvas, and chapter one's opening keyframe
+    // is the opposite end of the canvas from where it finishes.
+    const motionStory: StoryWithDefaults = {
+      chapters: [
+        {
+          id: 'pan-right-to-left',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 1000, h: 800 },
+          cameraTrack: {
+            durationMs: 4000,
+            preset: 'custom',
+            keyframes: [
+              { id: 'a', timeMs: 0, viewBox: { x: 8000, y: 0, w: 500, h: 400 } },
+              { id: 'b', timeMs: 4000, viewBox: { x: 100, y: 0, w: 500, h: 400 } },
+            ],
+          },
+          transitionTimeMs: 200,
+        },
+        {
+          id: 'second',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 100, y: 0, w: 600, h: 480 },
+          cameraTrack: {
+            durationMs: 4000,
+            preset: 'custom',
+            keyframes: [
+              { id: 'c', timeMs: 0, viewBox: { x: 100, y: 0, w: 600, h: 480 } },
+              { id: 'd', timeMs: 4000, viewBox: { x: 900, y: 0, w: 600, h: 480 } },
+            ],
+          },
+          transitionTimeMs: 200,
+        },
+      ],
+    };
+
+    await runtime.loadStory(motionStory);
+    viewer.setViewBox.mockClear();
+
+    await runtime.loadChapter(1);
+
+    // Chapter one's opening keyframe sits at x=8000. Sampling it during the
+    // transition snapped the viewer back there before panning to chapter two.
+    const framings = viewer.setViewBox.mock.calls.map(([box]: [any]) => box);
+    expect(framings.some((box) => box?.x === 8000)).toBe(false);
+    expect(framings.length).toBeGreaterThan(0);
+    expect(framings.at(-1)).toMatchObject({ x: 100, w: 600 });
+  });
+
   it('auto advances silent chapters after transitionTimeMs', async () => {
     vi.useFakeTimers();
     const viewer = createMockViewer();

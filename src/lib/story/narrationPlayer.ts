@@ -17,6 +17,13 @@ type NarrationPlayerOptions = {
   onBufferingChange?: (isBuffering: boolean) => void;
 };
 
+/**
+ * How far before a segment's start the playhead may sit and still count as
+ * having landed. Browsers seek to the nearest decodable frame, so an exact
+ * match is not guaranteed.
+ */
+const SEEK_LANDING_TOLERANCE_SEC = 0.5;
+
 export const createNarrationPlayer = (
   options: NarrationPlayerOptions = {},
 ): NarrationPlayer => {
@@ -70,6 +77,7 @@ export const createNarrationPlayer = (
       let finished = false;
       let startupTimer: ReturnType<typeof setTimeout> | null = null;
       let started = false;
+      let armed = false;
 
       const finish = (ok: boolean) => {
         if (finished) return;
@@ -82,12 +90,37 @@ export const createNarrationPlayer = (
         resolve(ok);
       };
 
+      // Every chapter narrates from the same audio element, so starting a
+      // segment is a seek rather than a load. A seek is not instantaneous: the
+      // element keeps reporting the previous position until it lands. When the
+      // new segment sits earlier in the file — selecting an earlier chapter —
+      // that stale position is already past `segment.end`, and treating it as
+      // real ended the chapter the moment it began. So the end check stays
+      // disarmed until the playhead is observed inside the segment.
       const handleTimeUpdate = () => {
-        if (token !== activeToken) return;
-        if (audioEl.currentTime >= segment.end) {
+        if (token !== activeToken || !started) return;
+        const currentTime = audioEl.currentTime;
+        if (!armed) {
+          if (
+            !audioEl.seeking &&
+            currentTime >= segment.start - SEEK_LANDING_TOLERANCE_SEC &&
+            currentTime < segment.end
+          ) {
+            armed = true;
+          }
+          return;
+        }
+        if (currentTime >= segment.end) {
           audioEl.pause();
           finish(true);
         }
+      };
+
+      // A completed seek is authoritative: the playhead is at the requested
+      // position even if no timeupdate has been dispatched yet.
+      const handleSeeked = () => {
+        if (token !== activeToken) return;
+        armed = true;
       };
 
       const handleEnded = () => {
@@ -115,6 +148,7 @@ export const createNarrationPlayer = (
 
       const cleanup = () => {
         audioEl.removeEventListener('timeupdate', handleTimeUpdate);
+        audioEl.removeEventListener('seeked', handleSeeked);
         audioEl.removeEventListener('ended', handleEnded);
         audioEl.removeEventListener('canplay', handleCanPlay);
         audioEl.removeEventListener('canplaythrough', handleCanPlay);
@@ -131,6 +165,7 @@ export const createNarrationPlayer = (
       activeCleanup = cleanup;
 
       audioEl.addEventListener('timeupdate', handleTimeUpdate);
+      audioEl.addEventListener('seeked', handleSeeked);
       audioEl.addEventListener('ended', handleEnded);
       audioEl.addEventListener('waiting', handleWaiting);
       audioEl.addEventListener('playing', handlePlaying);

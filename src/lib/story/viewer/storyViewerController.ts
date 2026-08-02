@@ -126,6 +126,18 @@ export const createStoryViewerRuntime = (
     phase: null,
   });
   let chapterIndexValue = 0;
+  /**
+   * Chapter whose camera track the playback clock currently represents, or
+   * null while a chapter transition is in flight.
+   *
+   * The clock is reset at the start of a transition, long before the incoming
+   * chapter is ready. Sampling on that reset used to read the *outgoing*
+   * chapter's track at t=0, snapping the camera back to where that chapter
+   * opened before the pan to the new chapter began — read as the viewer
+   * resetting itself. Holding the camera still until the incoming chapter is
+   * loaded leaves the transition pan to the orchestrator, which owns it.
+   */
+  let cameraChapterIndex: number | null = null;
 
   const now = deps.now ?? (() => Date.now());
   const setTimeoutFn = deps.setTimeoutFn ?? setTimeout;
@@ -170,7 +182,8 @@ export const createStoryViewerRuntime = (
   // Applies the camera track for the active chapter at a given presentation
   // time. With reduced motion we jump straight to the final framing and hold.
   const applyCameraSample = (currentTimeSec: number) => {
-    const chapter = story?.chapters?.[chapterIndexValue];
+    if (cameraChapterIndex === null) return;
+    const chapter = story?.chapters?.[cameraChapterIndex];
     if (!chapter?.cameraTrack) return;
     const timeMs = prefersReducedMotion
       ? chapter.cameraTrack.durationMs
@@ -268,6 +281,7 @@ export const createStoryViewerRuntime = (
   const resetPlaybackForChapter = (chapterIdx: number) => {
     const chapter = story?.chapters?.[chapterIdx];
     const durationSec = toChapterDurationSec(chapter, activeLanguage);
+    cameraChapterIndex = chapterIdx;
     playbackClock.loadChapter(durationSec);
     playbackClock.setBuffering(false);
     activeTimerKind = null;
@@ -461,6 +475,9 @@ export const createStoryViewerRuntime = (
     const chapter = story.chapters[index];
     if (!chapter) return;
 
+    // Detach the camera from the clock before it is reset, so the outgoing
+    // chapter's track is not sampled while the incoming chapter loads.
+    cameraChapterIndex = null;
     narrationPlayer.stop();
     playbackClock.stop();
     playbackClock.setBuffering(true);
@@ -705,6 +722,9 @@ export const createStoryViewerRuntime = (
   };
 
   const stop = () => {
+    // Same reasoning as loadChapter: the clock reset below must not repaint
+    // the camera from the chapter we are leaving.
+    cameraChapterIndex = null;
     narrationPlayer.stop();
     playbackClock.stop();
     playbackClock.setBuffering(false);
