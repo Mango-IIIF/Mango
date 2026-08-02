@@ -120,6 +120,7 @@ export type StoryBuilderController = {
   addChapter: () => void;
   updateChapter: () => void;
   updateChapterPosition: () => void;
+  setChapterPosition: (viewBox: ViewBox) => void;
   deleteChapter: (chapterId: string) => void;
   duplicateChapter: (chapterId: string) => void;
   reorderChapter: (
@@ -188,6 +189,7 @@ export type StoryBuilderController = {
   isPreviewing: Readable<boolean>;
   startPreview: () => void;
   stopPreview: () => void;
+  previewChapter: (chapterId?: string) => void;
   positioningLanguage: Readable<string | null>;
   startAnnotationPositioning: (lang: string) => void;
   confirmAnnotationPositioning: () => void;
@@ -1543,10 +1545,7 @@ export const createStoryBuilderController = (
     });
   };
 
-  const updateChapterPosition = () => {
-    const chapterId = get(selectedChapterId);
-    const viewBox = viewer?.getViewBox?.() ?? null;
-    if (!chapterId || !viewBox) return;
+  const commitChapterViewBox = (chapterId: string, viewBox: ViewBox) => {
     pushHistorySnapshot();
     storyStoreWrapper.setChapterViewBox({ chapterId, viewBox });
     const chapter = get(storyStore).chapters.find(
@@ -1568,6 +1567,32 @@ export const createStoryBuilderController = (
       });
     }
     setError(null);
+  };
+
+  const updateChapterPosition = () => {
+    const chapterId = get(selectedChapterId);
+    const viewBox = viewer?.getViewBox?.() ?? null;
+    if (!chapterId || !viewBox) return;
+    commitChapterViewBox(chapterId, viewBox);
+  };
+
+  const setChapterPosition = (nextViewBox: ViewBox) => {
+    const chapterId = get(selectedChapterId);
+    if (!chapterId) return;
+    const viewBox = { ...nextViewBox };
+    if (
+      ![viewBox.x, viewBox.y, viewBox.w, viewBox.h].every(Number.isFinite) ||
+      viewBox.w <= 0 ||
+      viewBox.h <= 0
+    )
+      return;
+    commitChapterViewBox(chapterId, viewBox);
+    const current = viewer?.getViewBox?.() ?? null;
+    if (current && !viewBoxMatches(current, viewBox)) {
+      animateViewBox(current, viewBox);
+    } else if (!current) {
+      viewer?.setViewBox?.(viewBox);
+    }
   };
 
   const deleteChapter = (chapterId: string) => {
@@ -1692,8 +1717,17 @@ export const createStoryBuilderController = (
     uiMode.set("idle");
   };
 
-  const startPreview = preview.start;
+  const startPreview = () => {
+    void preview.start();
+  };
   const stopPreview = preview.stop;
+
+  /** Plays a single chapter exactly as the story viewer would present it. */
+  const previewChapter = (chapterId?: string) => {
+    const targetId = chapterId ?? get(selectedChapterId);
+    if (!targetId) return;
+    void preview.start({ chapterId: targetId, singleChapter: true });
+  };
 
   const markIn = () => {
     mediaMarks.markIn();
@@ -2327,6 +2361,7 @@ export const createStoryBuilderController = (
     addChapter,
     updateChapter,
     updateChapterPosition,
+    setChapterPosition,
     deleteChapter,
     duplicateChapter,
     reorderChapter,
@@ -2393,6 +2428,7 @@ export const createStoryBuilderController = (
     isPreviewing,
     startPreview,
     stopPreview,
+    previewChapter,
     positioningLanguage: { subscribe: positioningLanguage.subscribe },
     startAnnotationPositioning,
     confirmAnnotationPositioning,

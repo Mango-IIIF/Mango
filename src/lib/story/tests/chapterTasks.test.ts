@@ -128,11 +128,38 @@ describe('chapter task evaluation', () => {
     ).toBe('complete');
   });
 
+  it('offers viewer position for spatial chapters and explains it otherwise', () => {
+    expect(evaluateTaskAvailability('position', context())).toEqual({
+      state: 'available',
+    });
+    expect(evaluateTaskStatus('position', context()).completion).toBe('complete');
+    expect(
+      evaluateTaskStatus('position', {
+        ...context(),
+        chapter: { id: 'bare', manifest: 'https://example.org/manifest', canvasIndex: 0 },
+      }).completion,
+    ).toBe('empty');
+    expect(
+      evaluateTaskAvailability('position', { ...context(), mediaType: 'audio' }),
+    ).toMatchObject({ state: 'disabled', reason: expect.any(String) });
+  });
+
+  it('routes viewBox validation to viewer position rather than annotations', () => {
+    const messages = ['Chapter 1: viewBox width/height must be > 0'];
+    expect(
+      evaluateTaskStatus('position', { ...context(), validationErrors: messages }),
+    ).toMatchObject({ completion: 'attention', messages });
+    expect(
+      evaluateTaskStatus('focus', { ...context(), validationErrors: messages }).messages,
+    ).toEqual([]);
+  });
+
   it('returns all dashboard tasks in the agreed order', () => {
     expect(evaluateChapterTasks(context()).map((task) => task.id)).toEqual([
       'source',
       'transition-timing',
       'details',
+      'position',
       'audio-timing',
       'focus',
       'motion',

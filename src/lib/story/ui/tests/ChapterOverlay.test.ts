@@ -13,7 +13,57 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe("ChapterOverlay", () => {
-  it("only offers to update a saved position after the viewer moves", async () => {
+  it("previews the selected chapter on its own and toggles to stop", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-image",
+          manifest: "https://example.org/image-manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const storyPreviewing = writable(false);
+    const onPreviewChapter = vi.fn();
+    const onStopChapterPreview = vi.fn();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        docked: true,
+        chapterId: "chapter-image",
+        storyPreviewing,
+        onPreviewChapter,
+        onStopChapterPreview,
+      },
+    });
+
+    const preview = target.querySelector(
+      '[data-testid="chapter-preview"]',
+    ) as HTMLButtonElement;
+    expect(preview.textContent).toContain("Preview chapter");
+    expect(preview.textContent).toContain("exactly as the story presents it");
+
+    preview.click();
+    expect(onPreviewChapter).toHaveBeenCalledWith("chapter-image");
+    expect(onStopChapterPreview).not.toHaveBeenCalled();
+
+    storyPreviewing.set(true);
+    await tick();
+    expect(preview.textContent).toContain("Stop preview");
+
+    preview.click();
+    expect(onStopChapterPreview).toHaveBeenCalledOnce();
+    expect(onPreviewChapter).toHaveBeenCalledOnce();
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it("no longer shows the viewer position changed notice", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -26,7 +76,6 @@ describe("ChapterOverlay", () => {
     });
     const viewBox = writable({ x: 0, y: 0, w: 100, h: 100 });
     const target = createTarget();
-    const onUpdateChapterPosition = vi.fn();
     const instance = mount(ChapterOverlay, {
       target,
       props: {
@@ -35,68 +84,292 @@ describe("ChapterOverlay", () => {
         docked: true,
         chapterId: "chapter-image",
         viewBox,
-        onUpdateChapterPosition,
       },
     });
-
-    expect(
-      target.querySelector('[data-testid="chapter-update-view"]'),
-    ).toBeNull();
 
     await new Promise((resolve) => setTimeout(resolve, 550));
     viewBox.set({ x: 12, y: 18, w: 80, h: 80 });
     await tick();
 
-    const updateView = target.querySelector(
-      '[data-testid="chapter-update-view"]',
-    ) as HTMLButtonElement;
-    expect(updateView.textContent).toContain("Update chapter position");
-    expect(updateView.textContent).toContain("The viewer has moved");
-    expect(onUpdateChapterPosition).not.toHaveBeenCalled();
-
-    updateView.click();
-    await tick();
-
-    expect(onUpdateChapterPosition).toHaveBeenCalledWith("chapter-image");
-    expect(updateView.textContent).toContain("Position updated");
+    expect(
+      target.querySelector('[data-testid="chapter-update-view"]'),
+    ).toBeNull();
+    expect(target.textContent).not.toContain("The viewer has moved");
 
     unmount(instance);
     target.remove();
   });
 
-  it("offers to set a position when the chapter does not have one", async () => {
+  it("shows the saved viewer position in its own panel and commits manual edits", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
-          id: "chapter-image",
-          manifest: "https://example.org/image-manifest.json",
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 100.4, y: 200, w: 300, h: 400 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const onSetChapterPosition = vi.fn();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: "chapter-1",
+        language: "en",
+        viewBox: writable({ x: 5, y: 10, w: 90, h: 80 }),
+        onSetChapterPosition,
+      },
+    });
+
+    (
+      target.querySelector(
+        '[data-task-id="position"] button',
+      ) as HTMLButtonElement
+    ).click();
+    await tick();
+
+    const visibleTask = target.querySelector(
+      ".chapter-overlay__task:not([hidden])",
+    ) as HTMLElement;
+    expect(visibleTask.textContent).toContain("Viewer position");
+    expect(visibleTask.textContent).not.toContain("Content (EN)");
+
+    const xInput = target.querySelector(
+      '[data-testid="chapter-position-x"]',
+    ) as HTMLInputElement;
+    const yInput = target.querySelector(
+      '[data-testid="chapter-position-y"]',
+    ) as HTMLInputElement;
+    const wInput = target.querySelector(
+      '[data-testid="chapter-position-w"]',
+    ) as HTMLInputElement;
+    const hInput = target.querySelector(
+      '[data-testid="chapter-position-h"]',
+    ) as HTMLInputElement;
+    expect(xInput.value).toBe("100");
+    expect(yInput.value).toBe("200");
+    expect(wInput.value).toBe("300");
+    expect(hInput.value).toBe("400");
+    expect(
+      target.querySelector('[data-testid="chapter-position-current"]')
+        ?.textContent,
+    ).toContain("Current view: 5 · 10 · 90 · 80");
+
+    wInput.value = "640";
+    wInput.dispatchEvent(new Event("input"));
+    wInput.dispatchEvent(new Event("change"));
+    expect(onSetChapterPosition).toHaveBeenCalledWith("chapter-1", {
+      x: 100,
+      y: 200,
+      w: 640,
+      h: 400,
+    });
+
+    onSetChapterPosition.mockClear();
+    hInput.value = "-5";
+    hInput.dispatchEvent(new Event("input"));
+    await tick();
+    hInput.dispatchEvent(new Event("change"));
+    await tick();
+    expect(onSetChapterPosition).not.toHaveBeenCalled();
+    expect(hInput.value).toBe("400");
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it("supports capture and manual entry when no position is saved", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
           canvasIndex: 0,
         },
       ],
     });
     const target = createTarget();
+    const onSetChapterPosition = vi.fn();
     const onUpdateChapterPosition = vi.fn();
     const instance = mount(ChapterOverlay, {
       target,
       props: {
         story: store.story,
         open: true,
-        docked: true,
-        chapterId: "chapter-image",
+        chapterId: "chapter-1",
+        language: "en",
         viewBox: writable({ x: 5, y: 10, w: 90, h: 80 }),
+        onSetChapterPosition,
         onUpdateChapterPosition,
       },
     });
 
-    const setView = target.querySelector(
-      '[data-testid="chapter-update-view"]',
+    const section = target.querySelector(
+      '[data-testid="chapter-position-section"]',
+    ) as HTMLElement;
+    expect(section.textContent).toContain("No position is saved yet");
+    const goTo = target.querySelector(
+      '[data-testid="chapter-position-goto"]',
     ) as HTMLButtonElement;
-    expect(setView.textContent).toContain("Set current viewer position");
-    expect(setView.textContent).toContain("No position is saved");
-    expect(onUpdateChapterPosition).not.toHaveBeenCalled();
+    expect(goTo.disabled).toBe(true);
+
+    const inputs = Object.fromEntries(
+      (["x", "y", "w", "h"] as const).map((field) => [
+        field,
+        target.querySelector(
+          `[data-testid="chapter-position-${field}"]`,
+        ) as HTMLInputElement,
+      ]),
+    );
+    for (const input of Object.values(inputs)) {
+      expect(input.value).toBe("");
+    }
+
+    inputs.x.value = "10";
+    inputs.x.dispatchEvent(new Event("input"));
+    inputs.x.dispatchEvent(new Event("change"));
+    await tick();
+    expect(onSetChapterPosition).not.toHaveBeenCalled();
+    expect(inputs.x.value).toBe("10");
+
+    inputs.y.value = "20";
+    inputs.y.dispatchEvent(new Event("input"));
+    inputs.w.value = "800";
+    inputs.w.dispatchEvent(new Event("input"));
+    inputs.h.value = "600";
+    inputs.h.dispatchEvent(new Event("input"));
+    inputs.h.dispatchEvent(new Event("change"));
+    expect(onSetChapterPosition).toHaveBeenCalledWith("chapter-1", {
+      x: 10,
+      y: 20,
+      w: 800,
+      h: 600,
+    });
+
+    const capture = target.querySelector(
+      '[data-testid="chapter-position-capture"]',
+    ) as HTMLButtonElement;
+    capture.click();
+    await tick();
+    expect(onUpdateChapterPosition).toHaveBeenCalledWith("chapter-1");
+    expect(capture.textContent).toContain("Position updated");
 
     unmount(instance);
     target.remove();
+  });
+
+  it("exposes viewer position as its own chapter tool, disabled for audio chapters", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: "chapter-1",
+        language: "en",
+      },
+    });
+
+    const card = target.querySelector(
+      '[data-task-id="position"]',
+    ) as HTMLElement;
+    expect(card.textContent).toContain("Viewer position");
+    expect(card.textContent).toContain("Configured");
+    expect(
+      (card.querySelector("button") as HTMLButtonElement).disabled,
+    ).toBe(false);
+
+    unmount(instance);
+    target.remove();
+
+    const audioTarget = createTarget();
+    const audioInstance = mount(ChapterOverlay, {
+      target: audioTarget,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: "chapter-1",
+        language: "en",
+        mediaType: writable("audio"),
+      },
+    });
+
+    const audioCard = audioTarget.querySelector(
+      '[data-task-id="position"]',
+    ) as HTMLElement;
+    expect(audioCard.textContent).toContain(
+      "Viewer position is available for image and PDF chapters only.",
+    );
+
+    unmount(audioInstance);
+    audioTarget.remove();
+  });
+
+  it("routes go-to-saved-position through the revert callback and hides the section for audio", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const onRevertChapterPosition = vi.fn();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: "chapter-1",
+        language: "en",
+        onRevertChapterPosition,
+      },
+    });
+
+    const goTo = target.querySelector(
+      '[data-testid="chapter-position-goto"]',
+    ) as HTMLButtonElement;
+    expect(goTo.disabled).toBe(false);
+    goTo.click();
+    expect(onRevertChapterPosition).toHaveBeenCalledWith("chapter-1");
+
+    unmount(instance);
+    target.remove();
+
+    const audioTarget = createTarget();
+    const audioInstance = mount(ChapterOverlay, {
+      target: audioTarget,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: "chapter-1",
+        language: "en",
+        mediaType: writable("audio"),
+      },
+    });
+    expect(
+      audioTarget.querySelector('[data-testid="chapter-position-section"]'),
+    ).toBeNull();
+
+    unmount(audioInstance);
+    audioTarget.remove();
   });
 
   it("shows manifest audio editing instructions in the media timing sidebar", async () => {

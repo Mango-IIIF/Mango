@@ -124,6 +124,11 @@
           "description": "Título, descripción y traducciones.",
           "save": "Guardar los detalles"
         },
+        "position": {
+          "title": "Posición del visor",
+          "description": "El área del lienzo y el zoom con los que se abre este capítulo.",
+          "save": "Guardar la posición del visor"
+        },
         "focus": {
           "title": "Anotaciones",
           "description": "Cuadros de texto y anotaciones de dibujo.",
@@ -167,6 +172,7 @@
       },
       "availability": {
         "annotationsMedia": "Las anotaciones solo están disponibles en capítulos de imagen y PDF.",
+        "positionMedia": "La posición del visor solo está disponible en capítulos de imagen y PDF.",
         "chooseImage": "Elija una fuente de imagen o PDF para añadir anotaciones.",
         "annotationsSpatial": "Las anotaciones necesitan una vista espacial de imagen, PDF o 3D.",
         "captureSpatial": "Capture primero una vista de imagen, PDF o 3D.",
@@ -239,6 +245,20 @@
       "textPlaceholder": "Escriba el texto de este cuadro",
       "placeText": "Colocar el cuadro de texto sobre la obra",
       "captureHint": "Capture un capítulo para editar el texto y la colocación de la anotación."
+    },
+    "position": {
+      "title": "Posición del visor",
+      "hint": "El área del lienzo que encuadra este capítulo, en píxeles del lienzo.",
+      "empty": "Aún no hay ninguna posición guardada. Encuadre la obra en el visor y capture la vista actual.",
+      "x": "X",
+      "y": "Y",
+      "width": "Ancho",
+      "height": "Alto",
+      "capture": "Usar la vista actual",
+      "goTo": "Ir a la posición guardada",
+      "current": "Vista actual: {x} · {y} · {w} · {h}",
+      "expand": "Expandir la sección de posición del visor",
+      "collapse": "Contraer la sección de posición del visor"
     },
     "annotations": {
       "chapter": "Anotaciones del capítulo",
@@ -354,10 +374,10 @@
       "newStory": "Nueva historia",
       "loadSource": "Cargar una fuente",
       "positionUpdated": "Posición actualizada",
-      "setPosition": "Fijar la posición actual del visor",
-      "positionConfirmed": "Este capítulo usa ahora la posición confirmada.",
-      "positionMoved": "El visor se ha movido. Haga clic para confirmar esta posición y este zoom.",
-      "noPosition": "No hay ninguna posición guardada. Haga clic para usar esta posición y este zoom.",
+      "previewChapter": "Previsualizar el capítulo",
+      "previewChapterHint": "Reproduzca este capítulo por separado, tal como lo presenta la historia.",
+      "stopChapterPreview": "Detener la previsualización",
+      "chapterPreviewPlaying": "Reproduciendo este capítulo. Haga clic para detener.",
       "sourceHint": "Añada la fuente de su historia, elija su lienzo inicial y cree el primer capítulo. Después podrá ajustar la posición de la imagen desde las herramientas del capítulo.",
       "backToTools": "Volver a las herramientas del capítulo",
       "saveChapter": "Guardar el capítulo",

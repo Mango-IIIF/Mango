@@ -124,6 +124,11 @@
           "description": "Teitl, disgrifiad a chyfieithiadau.",
           "save": "Cadw'r manylion"
         },
+        "position": {
+          "title": "Safle'r gwyliwr",
+          "description": "Ardal y cynfas a'r chwyddiad y mae'r bennod hon yn agor arnynt.",
+          "save": "Cadw safle'r gwyliwr"
+        },
         "focus": {
           "title": "Anodiadau",
           "description": "Blychau testun ac anodiadau lluniadu.",
@@ -167,6 +172,7 @@
       },
       "availability": {
         "annotationsMedia": "Mae anodiadau ar gael ar gyfer penodau delwedd a PDF yn unig.",
+        "positionMedia": "Mae safle'r gwyliwr ar gael ar gyfer penodau delwedd a PDF yn unig.",
         "chooseImage": "Dewiswch ffynhonnell ddelwedd neu PDF i ychwanegu anodiadau.",
         "annotationsSpatial": "Mae angen golwg ofodol delwedd, PDF neu 3D ar anodiadau.",
         "captureSpatial": "Cipiwch olwg delwedd, PDF neu 3D yn gyntaf.",
@@ -239,6 +245,20 @@
       "textPlaceholder": "Rhowch destun ar gyfer y blwch testun hwn",
       "placeText": "Gosod y blwch testun ar y gwaith celf",
       "captureHint": "Cipiwch bennod i olygu testun a lleoliad yr anodiad."
+    },
+    "position": {
+      "title": "Safle'r gwyliwr",
+      "hint": "Ardal y cynfas y mae'r bennod hon yn ei fframio, mewn picseli'r cynfas.",
+      "empty": "Nid oes safle wedi'i gadw eto. Fframiwch y gwaith celf yn y gwyliwr, yna cipiwch yr olwg bresennol.",
+      "x": "X",
+      "y": "Y",
+      "width": "Lled",
+      "height": "Uchder",
+      "capture": "Defnyddio'r olwg bresennol",
+      "goTo": "Mynd i'r safle a gadwyd",
+      "current": "Golwg bresennol: {x} · {y} · {w} · {h}",
+      "expand": "Ehangu'r adran safle'r gwyliwr",
+      "collapse": "Crebachu'r adran safle'r gwyliwr"
     },
     "annotations": {
       "chapter": "Anodiadau'r bennod",
@@ -354,10 +374,10 @@
       "newStory": "Stori newydd",
       "loadSource": "Llwytho ffynhonnell",
       "positionUpdated": "Safle wedi'i ddiweddaru",
-      "setPosition": "Gosod safle cyfredol y gwyliwr",
-      "positionConfirmed": "Mae'r bennod hon bellach yn defnyddio'r safle a gadarnhawyd.",
-      "positionMoved": "Mae'r gwyliwr wedi symud. Cliciwch i gadarnhau'r safle a'r chwyddiad hwn.",
-      "noPosition": "Nid oes safle wedi'i gadw. Cliciwch i ddefnyddio'r safle a'r chwyddiad hwn.",
+      "previewChapter": "Rhagolwg o'r bennod",
+      "previewChapterHint": "Chwaraewch y bennod hon ar ei phen ei hun, yn union fel y mae'r stori'n ei chyflwyno.",
+      "stopChapterPreview": "Atal y rhagolwg",
+      "chapterPreviewPlaying": "Yn chwarae'r bennod hon. Cliciwch i atal.",
       "sourceHint": "Ychwanegwch ffynhonnell eich stori, dewiswch ei chynfas cychwynnol, a chrëwch y bennod gyntaf. Gallwch addasu lleoliad y ddelwedd o offer y bennod wedyn.",
       "backToTools": "Yn ôl i offer y bennod",
       "saveChapter": "Cadw'r bennod",

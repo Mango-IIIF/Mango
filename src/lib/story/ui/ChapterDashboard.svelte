@@ -5,6 +5,7 @@
     Film,
     Blend,
     FileText,
+    Frame,
     Layers3,
     Move3d,
     MessageSquareMore,
@@ -20,6 +21,9 @@
   const icons = {
     details: {
       icon: FileText,
+    },
+    position: {
+      icon: Frame,
     },
     focus: {
       icon: MessageSquareMore,

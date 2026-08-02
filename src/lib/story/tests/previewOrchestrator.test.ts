@@ -40,6 +40,61 @@ describe('story preview orchestration', () => {
     expect(get(preview.isPreviewing)).toBe(false);
   });
 
+  it('plays only the requested chapter when previewing a single chapter', async () => {
+    const multiChapterStory: StoryState = {
+      chapters: [
+        { id: 'chapter-1', manifest: 'manifest', canvasIndex: 0 },
+        { id: 'chapter-2', manifest: 'manifest', canvasIndex: 1 },
+        { id: 'chapter-3', manifest: 'manifest', canvasIndex: 2 },
+      ],
+    };
+    const selectChapter = vi.fn();
+    const applyChapter = vi.fn();
+    const closeEditors = vi.fn();
+    const preview = createStoryPreviewOrchestrator({
+      getStory: () => multiChapterStory,
+      getSelectedChapterId: () => 'chapter-2',
+      selectChapter,
+      applyChapter,
+      getNarrationSegment: () => null,
+      closeEditors,
+      stopPlayback: vi.fn(),
+      wait: vi.fn(async () => undefined),
+    });
+
+    await preview.start({ chapterId: 'chapter-2', singleChapter: true });
+
+    // Only the requested chapter plays; neighbours are never applied.
+    expect(applyChapter).toHaveBeenCalledWith(multiChapterStory.chapters[1]);
+    expect(applyChapter).not.toHaveBeenCalledWith(multiChapterStory.chapters[0]);
+    expect(applyChapter).not.toHaveBeenCalledWith(multiChapterStory.chapters[2]);
+    expect(closeEditors).toHaveBeenCalledOnce();
+    expect(get(preview.isPreviewing)).toBe(false);
+    // The editor returns to the chapter that was being edited.
+    expect(selectChapter).toHaveBeenLastCalledWith('chapter-2');
+  });
+
+  it('ignores a preview request for a chapter that is not in the story', async () => {
+    const applyChapter = vi.fn();
+    const closeEditors = vi.fn();
+    const preview = createStoryPreviewOrchestrator({
+      getStory: () => story,
+      getSelectedChapterId: () => 'chapter-1',
+      selectChapter: vi.fn(),
+      applyChapter,
+      getNarrationSegment: () => null,
+      closeEditors,
+      stopPlayback: vi.fn(),
+      wait: vi.fn(async () => undefined),
+    });
+
+    await preview.start({ chapterId: 'missing', singleChapter: true });
+
+    expect(applyChapter).not.toHaveBeenCalled();
+    expect(closeEditors).not.toHaveBeenCalled();
+    expect(get(preview.isPreviewing)).toBe(false);
+  });
+
   it('uses a visible default duration for silent chapters', () => {
     expect(
       getPreviewChapterDuration(

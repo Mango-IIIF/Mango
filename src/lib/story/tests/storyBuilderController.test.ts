@@ -301,6 +301,61 @@ describe("story builder narration defaults", () => {
     detach();
   });
 
+  it("sets an explicit chapter position and keeps preset motion in sync", () => {
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: "manual-position",
+            manifest: "https://example.org/manifest.json",
+            canvasIndex: 0,
+            viewBox: { x: 0, y: 0, w: 1000, h: 500 },
+            cameraTrack: {
+              durationMs: 5000,
+              preset: "zoom-in",
+              keyframes: [
+                {
+                  id: "zoom-in-start",
+                  timeMs: 0,
+                  focus: { x: 500, y: 250 },
+                  viewBox: { x: 0, y: 0, w: 1000, h: 500 },
+                },
+                {
+                  id: "zoom-in-end",
+                  timeMs: 5000,
+                  focus: { x: 500, y: 250 },
+                  viewBox: { x: 280, y: 140, w: 440, h: 220 },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    controller.selectedChapterId.set("manual-position");
+
+    controller.setChapterPosition({ x: 40, y: 60, w: 800, h: 400 });
+
+    const chapter = get(controller.story).chapters[0];
+    expect(chapter.viewBox).toEqual({ x: 40, y: 60, w: 800, h: 400 });
+    expect(chapter.cameraTrack?.preset).toBe("zoom-in");
+    expect(chapter.cameraTrack?.keyframes[0].viewBox).toEqual({
+      x: 100,
+      y: 50,
+      w: 800,
+      h: 400,
+    });
+
+    controller.setChapterPosition({ x: 0, y: 0, w: 0, h: 400 });
+    controller.setChapterPosition({ x: Number.NaN, y: 0, w: 100, h: 100 });
+    expect(get(controller.story).chapters[0].viewBox).toEqual({
+      x: 40,
+      y: 60,
+      w: 800,
+      h: 400,
+    });
+  });
+
   it("captures the full source by default and edits source-media timing independently", () => {
     const controller = createStoryBuilderController({
       initialStory: { chapters: [] },

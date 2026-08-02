@@ -124,6 +124,11 @@
           "description": "Titre, description et traductions.",
           "save": "Enregistrer les détails"
         },
+        "position": {
+          "title": "Position du visualiseur",
+          "description": "La zone du canevas et le zoom sur lesquels ce chapitre s'ouvre.",
+          "save": "Enregistrer la position du visualiseur"
+        },
         "focus": {
           "title": "Annotations",
           "description": "Zones de texte et annotations dessinées.",
@@ -167,6 +172,7 @@
       },
       "availability": {
         "annotationsMedia": "Les annotations ne sont disponibles que pour les chapitres image et PDF.",
+        "positionMedia": "La position du visualiseur n'est disponible que pour les chapitres image et PDF.",
         "chooseImage": "Choisissez une source image ou PDF pour ajouter des annotations.",
         "annotationsSpatial": "Les annotations nécessitent une vue spatiale image, PDF ou 3D.",
         "captureSpatial": "Capturez d'abord une vue image, PDF ou 3D.",
@@ -239,6 +245,20 @@
       "textPlaceholder": "Saisissez le texte de cette zone",
       "placeText": "Placer la zone de texte sur l'œuvre",
       "captureHint": "Capturez un chapitre pour modifier le texte et le placement de l'annotation."
+    },
+    "position": {
+      "title": "Position du visualiseur",
+      "hint": "La zone du canevas cadrée par ce chapitre, en pixels du canevas.",
+      "empty": "Aucune position n'est enregistrée pour l'instant. Cadrez l'œuvre dans le visualiseur, puis capturez la vue actuelle.",
+      "x": "X",
+      "y": "Y",
+      "width": "Largeur",
+      "height": "Hauteur",
+      "capture": "Utiliser la vue actuelle",
+      "goTo": "Aller à la position enregistrée",
+      "current": "Vue actuelle : {x} · {y} · {w} · {h}",
+      "expand": "Développer la section de position du visualiseur",
+      "collapse": "Réduire la section de position du visualiseur"
     },
     "annotations": {
       "chapter": "Annotations du chapitre",
@@ -354,10 +374,10 @@
       "newStory": "Nouvelle histoire",
       "loadSource": "Charger une source",
       "positionUpdated": "Position mise à jour",
-      "setPosition": "Définir la position actuelle du visualiseur",
-      "positionConfirmed": "Ce chapitre utilise désormais la position confirmée.",
-      "positionMoved": "Le visualiseur a bougé. Cliquez pour confirmer cette position et ce zoom.",
-      "noPosition": "Aucune position n'est enregistrée. Cliquez pour utiliser cette position et ce zoom.",
+      "previewChapter": "Prévisualiser le chapitre",
+      "previewChapterHint": "Lisez ce chapitre seul, exactement comme l'histoire le présente.",
+      "stopChapterPreview": "Arrêter la prévisualisation",
+      "chapterPreviewPlaying": "Lecture de ce chapitre. Cliquez pour arrêter.",
       "sourceHint": "Ajoutez la source de votre histoire, choisissez son canevas de départ et créez le premier chapitre. Vous pourrez ensuite ajuster le placement de l'image depuis les outils du chapitre.",
       "backToTools": "Retour aux outils du chapitre",
       "saveChapter": "Enregistrer le chapitre",

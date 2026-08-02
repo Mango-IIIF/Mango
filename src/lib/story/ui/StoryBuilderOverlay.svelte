@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Readable, Writable } from 'svelte/store';
+  import { readable } from 'svelte/store';
   import { MapPin } from '@lucide/svelte';
   import type { StoryState } from '../../core/types/story';
   import StoryNarrationOverlay from './NarrationOverlay.svelte';
@@ -84,6 +85,10 @@
   export let onUpdateAdvanceMode: (mode: ChapterAdvance['mode']) => void;
   export let onUpdateDelay: (delayMs?: number) => void;
   export let onUpdateChapterPosition: () => void;
+  export let onSetChapterPosition: (viewBox: ViewBox) => void;
+  export let storyPreviewing: Readable<boolean> = readable(false);
+  export let onPreviewChapter: (chapterId?: string) => void = () => {};
+  export let onStopChapterPreview: () => void = () => {};
   export let onRevertChapterPosition: () => void;
   export let onSaveChapterSettings: () => void;
   export let onUpdateMotionDuration: (durationMs: number) => void;
@@ -491,6 +496,10 @@
         onUpdateAdvanceMode={(chapterId, mode) => onUpdateAdvanceMode(mode)}
         onUpdateDelay={(chapterId, delayMs) => onUpdateDelay(delayMs)}
         onUpdateChapterPosition={() => onUpdateChapterPosition()}
+        onSetChapterPosition={(chapterId, viewBox) => onSetChapterPosition(viewBox)}
+        {storyPreviewing}
+        onPreviewChapter={(chapterId) => onPreviewChapter(chapterId)}
+        {onStopChapterPreview}
         onRevertChapterPosition={() => onRevertChapterPosition()}
         onSave={onSaveChapterSettings}
         {onSetAnnotationLanguage}
