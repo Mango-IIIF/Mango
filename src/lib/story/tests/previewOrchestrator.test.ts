@@ -74,6 +74,28 @@ describe('story preview orchestration', () => {
     expect(selectChapter).toHaveBeenLastCalledWith('chapter-2');
   });
 
+  it('releases chapter playback when a preview ends on its own', async () => {
+    const stopPlayback = vi.fn();
+    const preview = createStoryPreviewOrchestrator({
+      getStory: () => story,
+      getSelectedChapterId: () => 'chapter-1',
+      selectChapter: vi.fn(),
+      applyChapter: vi.fn(),
+      getNarrationSegment: () => null,
+      closeEditors: vi.fn(),
+      stopPlayback,
+      wait: vi.fn(async () => undefined),
+    });
+
+    await preview.start({ chapterId: 'chapter-1', singleChapter: true });
+
+    // Reaching the end of a preview has to release playback exactly as
+    // stopping it does. Otherwise the controller still believes this chapter
+    // is playing and silently skips its narration the next time it is
+    // previewed.
+    expect(stopPlayback).toHaveBeenCalled();
+  });
+
   it('ignores a preview request for a chapter that is not in the story', async () => {
     const applyChapter = vi.fn();
     const closeEditors = vi.fn();

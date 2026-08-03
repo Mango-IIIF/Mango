@@ -372,6 +372,77 @@ describe('storyViewerController.loadChapter', () => {
     runtime.destroy();
   });
 
+  it('replays narration when a chapter is selected again or revisited', async () => {
+    const viewer = createMockViewer();
+    // Mirrors the real player: stopping a segment settles its pending promise
+    // with false, which is what re-selecting a chapter triggers.
+    let pendingResolve: ((ok: boolean) => void) | null = null;
+    const mockNarration = {
+      playSegment: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            pendingResolve = resolve;
+          }),
+      ),
+      stop: vi.fn(() => {
+        pendingResolve?.(false);
+        pendingResolve = null;
+      }),
+      pause: vi.fn().mockReturnValue(true),
+      resume: vi.fn().mockReturnValue(true),
+      isPlaying: vi.fn().mockReturnValue(false),
+    };
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      createNarrationPlayer: () => mockNarration as any,
+      posePaintedTimeoutMs: 100,
+      sourceOpenTimeoutMs: 100,
+    });
+
+    const narrStory: StoryWithDefaults = {
+      narration: { tracks: { en: { src: 'audio.mp3' } } },
+      chapters: [
+        {
+          id: 'n1',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 10, h: 10 },
+          narrationSegment: { en: { start: 0, end: 5 } },
+          transitionTimeMs: 200,
+        },
+        {
+          id: 'n2',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 10, h: 10 },
+          narrationSegment: { en: { start: 5, end: 10 } },
+          transitionTimeMs: 200,
+        },
+      ],
+    };
+
+    await runtime.loadStory(narrStory);
+    runtime.play();
+    expect(mockNarration.playSegment).toHaveBeenCalledTimes(1);
+
+    // Selecting the chapter that is already playing must restart it.
+    await runtime.loadChapter(0, { autoPlay: true });
+    await Promise.resolve();
+    expect(mockNarration.playSegment).toHaveBeenCalledTimes(2);
+    expect(runtime.getState()).toBe('PLAYING_NARRATION');
+
+    // Going forward and then back again must narrate each time.
+    await runtime.loadChapter(1, { autoPlay: true });
+    await Promise.resolve();
+    expect(mockNarration.playSegment).toHaveBeenCalledTimes(3);
+
+    await runtime.loadChapter(0, { autoPlay: true });
+    await Promise.resolve();
+    expect(mockNarration.playSegment).toHaveBeenCalledTimes(4);
+    expect(runtime.getState()).toBe('PLAYING_NARRATION');
+
+    runtime.destroy();
+  });
+
   it('plays camera motion with narration, then waits before advancing', async () => {
     vi.useFakeTimers();
     const viewer = createMockViewer();

@@ -356,6 +356,79 @@ describe("story builder narration defaults", () => {
     });
   });
 
+  it("restarts chapter playback when the same chapter is previewed twice", async () => {
+    vi.useFakeTimers();
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: "replayed",
+            manifest: "https://example.org/manifest.json",
+            canvasIndex: 0,
+            media: { start: 0, end: 3 },
+            advance: { mode: "auto", delayMs: 0 },
+          },
+        ],
+      },
+    });
+    const events = createEventBus();
+    const viewer = {
+      getManifestId: () => "https://example.org/manifest.json",
+      getState: () => null,
+      getViewBox: () => null,
+      getCanvasIndex: () => 0,
+      getCanvasCount: () => 1,
+      getCanvasId: () => "canvas-1",
+      getMediaType: () => "audio",
+      getMediaSources: () => [],
+      getLayerOpacities: () => ({}),
+      setMediaSegment: vi.fn(),
+      seekTo: vi.fn(),
+      play: vi.fn(),
+      pause: vi.fn(),
+      setStoryAnnotations: vi.fn(),
+      setStoryAnnotationEditing: vi.fn(),
+      setStoryAnnotationSelection: vi.fn(),
+      setAnnotationTool: vi.fn(),
+      setCanvasByIndex: vi.fn(),
+      setCanvasById: vi.fn(),
+      setManifest: vi.fn(),
+      setViewBox: vi.fn(),
+      updateLayerOpacity: vi.fn(),
+      setModelOrbit: vi.fn(),
+      setModelTarget: vi.fn(),
+      setModelOrientation: vi.fn(),
+      addAnnotation: vi.fn(),
+      removeAnnotation: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    };
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+
+    controller.selectChapter("replayed");
+    viewer.play.mockClear();
+
+    controller.previewChapter("replayed");
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(viewer.play).toHaveBeenCalled();
+
+    // The first preview has finished on its own by now. Previewing the very
+    // same chapter again has to play it again rather than fall through the
+    // "this chapter is already playing" guard.
+    viewer.play.mockClear();
+    controller.previewChapter("replayed");
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(viewer.play).toHaveBeenCalled();
+
+    detach();
+    vi.useRealTimers();
+  });
+
   it("captures the full source by default and edits source-media timing independently", () => {
     const controller = createStoryBuilderController({
       initialStory: { chapters: [] },

@@ -106,6 +106,11 @@ export const createStoryPreviewOrchestrator = ({
 
     if (activeToken === token) {
       isPreviewing.set(false);
+      // Reaching the end releases playback just as stopping does. Without
+      // this the controller still holds the last previewed chapter as the
+      // one playing, and previewing that same chapter again is skipped by
+      // its "already playing" guard — the chapter replays silently.
+      stopPlayback();
       restoreEditorChapter();
     }
   };
