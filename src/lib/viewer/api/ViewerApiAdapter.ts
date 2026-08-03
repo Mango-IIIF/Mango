@@ -1,7 +1,7 @@
 import type { ViewerEventMap } from "../../core/types/events";
 import type { ModelPose, ModelPoseOptions } from "../../core/types/model";
 import type { ViewerApiTarget } from "../../core/types/viewer-api";
-import type { ViewBox, ViewerStateSnapshot } from "../../core/types/viewer";
+import type { ContentSize, ViewBox, ViewerStateSnapshot } from "../../core/types/viewer";
 import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
 
 /**
@@ -31,6 +31,9 @@ export class ViewerApiAdapter {
 
   getViewBox(): ViewBox | null {
     return this.getTarget()?.getViewBox?.() ?? null;
+  }
+  getContentSize(): ContentSize | null {
+    return this.getTarget()?.getContentSize?.() ?? null;
   }
   setViewBox(box: ViewBox): void {
     this.getTarget()?.setViewBox?.(box);

@@ -10,6 +10,7 @@ import {
   parseMangoViewerStateBody,
 } from "../storyAnnotationProfile";
 import { normalizeChapterAnnotations } from "../normalizeAnnotations";
+import { normaliseStoryFraming } from "../framing";
 import { translate } from '../../i18n';
 
 export type StoryWithDefaults = StoryState & {
@@ -47,6 +48,7 @@ type IiifStoryPage = {
   type: "AnnotationPage";
   "mango:storyVersion"?: string;
   "mango:draft"?: boolean;
+  "mango:presentationAspect"?: number;
   label?: Record<string, unknown>;
   items?: IiifStoryItem[];
 };
@@ -330,10 +332,17 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
     }
   }
 
+  const declaredAspect = input["mango:presentationAspect"];
+
   return {
     id: input["mango:draft"] ? undefined : input.id,
     ...(customAnnotationBase
       ? { publication: { annotationBase: customAnnotationBase } }
+      : {}),
+    ...(typeof declaredAspect === "number" &&
+    Number.isFinite(declaredAspect) &&
+    declaredAspect > 0
+      ? { presentationAspect: declaredAspect }
       : {}),
     title: titleMap,
     narration:
@@ -387,7 +396,12 @@ export const normaliseStoryInput = (
     return { ok: false, error: translate('storyViewer.errors.chapterState') };
   }
 
-  return { ok: true, story: withChapterDefaults(parseIiifStory(input)) };
+  // Framings are normalised on the way in so a story authored across several
+  // stage shapes presents consistently, without waiting for it to be re-saved.
+  return {
+    ok: true,
+    story: withChapterDefaults(normaliseStoryFraming(parseIiifStory(input))),
+  };
 };
 
 export const validateStoryViewer = (

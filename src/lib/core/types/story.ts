@@ -150,6 +150,13 @@ export type StoryState = {
   /** Stable identifier used as the exported AnnotationPage ID when provided. */
   id?: string;
   publication?: StoryPublication;
+  /**
+   * Width/height every stored framing in this story is normalised to. Captures
+   * come from the viewer's viewport, so without a single canonical aspect each
+   * chapter inherits the shape of the stage it was authored on and they
+   * disagree with each other during playback.
+   */
+  presentationAspect?: number;
   title?: LanguageMap;
   narration?: {
     tracks: Record<string, NarrationTrack>;

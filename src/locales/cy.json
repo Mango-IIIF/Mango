@@ -389,6 +389,9 @@
     "comparison": {
       "hint": "Llwythwch o leiaf ddwy ffynhonnell gydnaws i greu pennod gymharu."
     },
+    "framing": {
+      "guide": "Fframio'r stori"
+    },
     "errors": {
       "missingPublicId": "Gosodwch ID Stori canonaidd yng ngosodiadau'r stori cyn cyhoeddi.",
       "captureBlocked": "Cipio wedi'i rwystro: {reason}",

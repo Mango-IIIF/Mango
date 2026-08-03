@@ -389,6 +389,9 @@
     "comparison": {
       "hint": "Load at least two compatible sources to create a comparison chapter."
     },
+    "framing": {
+      "guide": "ストーリーのフレーミング"
+    },
     "errors": {
       "missingPublicId": "公開IDが見つかりません。",
       "captureBlocked": "キャプチャがブロックされました: {reason}",

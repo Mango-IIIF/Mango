@@ -389,6 +389,9 @@
     "comparison": {
       "hint": "Cargue al menos dos fuentes compatibles para crear un capítulo de comparación."
     },
+    "framing": {
+      "guide": "Encuadre de la historia"
+    },
     "errors": {
       "missingPublicId": "Defina un ID de historia canónico en los ajustes de la historia antes de publicar.",
       "captureBlocked": "Captura bloqueada: {reason}",

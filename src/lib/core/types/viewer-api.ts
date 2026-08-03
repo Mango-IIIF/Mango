@@ -1,13 +1,19 @@
 import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
 import type { ModelPose, ModelPoseOptions } from './model';
 import type { ViewerEventMap } from './events';
-import type { ViewBox, ViewerStateSnapshot } from './viewer';
+import type { ContentSize, ViewBox, ViewerStateSnapshot } from './viewer';
 import type { ChapterAnnotationTool } from './story';
 import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
 
 export type ViewerApi = {
   getViewBox: () => ViewBox | null;
   setViewBox: (box: ViewBox) => void;
+  /**
+   * Intrinsic dimensions of the open image, independent of the viewport. Lets
+   * callers reason about the source itself rather than the shape of whatever
+   * container it currently happens to be displayed in.
+   */
+  getContentSize?: () => ContentSize | null;
   /** Current zoom as a percentage of the fit-to-view baseline (100 = fit). */
   getZoom?: () => number;
   /** Zoom to a percentage of the fit-to-view baseline. Clamped to 10–2000. */

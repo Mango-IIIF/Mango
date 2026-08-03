@@ -45,7 +45,7 @@
   import type { ModelPose, ModelPoseOptions } from '../core/types/model';
   import type { ViewerApiTarget } from '../core/types/viewer-api';
   import { translate } from '../i18n';
-  import type { ViewBox } from '../core/types/viewer';
+  import type { ContentSize, ViewBox } from '../core/types/viewer';
   import type { MediaType, MediaSource } from '../iiif/mediaResolver';
   import type { ViewerPlugin } from '../core/types/plugin';
   import type { StoryState } from '../core/types/story';
@@ -153,6 +153,10 @@
 
   export function getViewBox(): ViewBox | null {
     return api.getViewBox();
+  }
+
+  export function getContentSize(): ContentSize | null {
+    return api.getContentSize?.() ?? null;
   }
 
   export function setViewBox(box: ViewBox): void {

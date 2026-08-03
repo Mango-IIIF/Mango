@@ -6,7 +6,7 @@
   import ViewerDock from './ViewerDock.svelte';
   import type { ImageFilters } from '../../core/types/filters';
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
-  import type { ViewBox } from '../../core/types/viewer';
+  import type { ContentSize, ViewBox } from '../../core/types/viewer';
   import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
   import type { AVPlayerController } from '@mango-iiif/av/core';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
@@ -180,6 +180,9 @@
   let pendingModelPoseOptions: ModelPoseOptions = $state({});
   let rendererError = $state('');
   export const getViewBox = (): ViewBox | null => rendererInstance?.getViewBox?.() ?? null;
+
+  export const getContentSize = (): ContentSize | null =>
+    rendererInstance?.getContentSize?.() ?? null;
 
   export const setViewBox = (box: ViewBox): void => {
     rendererInstance?.setViewBox?.(box);
