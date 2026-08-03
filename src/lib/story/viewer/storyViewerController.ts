@@ -2,7 +2,7 @@ import { writable, type Writable } from 'svelte/store';
 import type { ViewerApi } from '../../core/types/viewer-api';
 import type { StoryWithDefaults } from './storyLoader';
 import { resolveChapterTiming } from '../timing';
-import { sampleCameraTrack } from '../cameraTrack';
+import { animatableCameraDurationMs, sampleCameraTrack } from '../cameraTrack';
 import { createNarrationPlayer, type NarrationPlayer } from '../narrationPlayer';
 import type { NarrationSegment as PlayerSegment } from '../narrationPlayer';
 import {
@@ -103,7 +103,7 @@ const toChapterDurationSec = (
 
   return Math.max(
     narrationDuration + mediaDuration,
-    (chapter.cameraTrack?.durationMs ?? 0) / 1000,
+    animatableCameraDurationMs(chapter.cameraTrack) / 1000,
     resolveChapterTiming(chapter).presentationDurationMs / 1000,
   );
 };

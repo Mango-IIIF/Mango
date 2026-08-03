@@ -443,6 +443,69 @@ describe('storyViewerController.loadChapter', () => {
     runtime.destroy();
   });
 
+  it('advances as soon as narration ends when the camera track has no points', async () => {
+    vi.useFakeTimers();
+    const viewer = createMockViewer();
+    let finishNarration: ((ok: boolean) => void) | undefined;
+    const mockNarration = {
+      playSegment: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishNarration = resolve;
+          }),
+      ),
+      stop: vi.fn(),
+      pause: vi.fn().mockReturnValue(true),
+      resume: vi.fn().mockReturnValue(true),
+      isPlaying: vi.fn().mockReturnValue(true),
+      getCurrentTime: vi.fn(() => 0),
+    };
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      createNarrationPlayer: () => mockNarration as any,
+      posePaintedTimeoutMs: 50,
+      sourceOpenTimeoutMs: 50,
+    });
+    const emptyTrackStory: StoryWithDefaults = {
+      narration: { tracks: { en: { src: 'narration.mp3' } } },
+      chapters: [
+        {
+          id: 'empty-track',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          narrationSegment: { en: { start: 0, end: 4.67 } },
+          // Authored by opening the motion tools without placing any points.
+          cameraTrack: { durationMs: 8000, preset: 'custom', keyframes: [] },
+          advance: { mode: 'auto', delayMs: 0 },
+          transitionTimeMs: 0,
+        },
+        {
+          id: 'next',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          advance: { mode: 'manual' },
+        },
+      ],
+    };
+
+    const loadPromise = runtime.loadStory(emptyTrackStory);
+    await vi.advanceTimersByTimeAsync(200);
+    await loadPromise;
+
+    runtime.play();
+    finishNarration?.(true);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // The empty 8s track must not hold the chapter for a further 3.3s after
+    // the narration has finished, with nothing moving on screen.
+    expect(runtime.getState()).not.toBe('PRESENTING_SILENT');
+
+    runtime.destroy();
+    vi.useRealTimers();
+  });
+
   it('lets the newest chapter win when selections overlap', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {

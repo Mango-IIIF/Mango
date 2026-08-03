@@ -1,6 +1,7 @@
 import { get, writable, type Readable } from 'svelte/store';
 import type { Chapter, StoryState } from '../core/types/story';
 import { resolveChapterTiming } from './timing';
+import { animatableCameraDurationMs } from './cameraTrack';
 
 export type StoryPreviewStartOptions = {
   /** Chapter to start from. Defaults to the first chapter in the story. */
@@ -26,7 +27,7 @@ export const getPreviewChapterDuration = (
   }
   const presentationMs = Math.max(
     sequentialMediaMs,
-    chapter.cameraTrack?.durationMs ?? 0,
+    animatableCameraDurationMs(chapter.cameraTrack),
     resolveChapterTiming(chapter).presentationDurationMs,
   );
   let durationMs = presentationMs;

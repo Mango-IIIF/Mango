@@ -117,6 +117,56 @@ describe('story preview orchestration', () => {
     expect(get(preview.isPreviewing)).toBe(false);
   });
 
+  it('does not hold a chapter open for a camera track that cannot animate', () => {
+    const narrated = { start: 0, end: 4.67 };
+    const base = {
+      id: 'chapter_3',
+      manifest: 'manifest',
+      canvasIndex: 0,
+      narrationSegment: { en: narrated },
+    };
+
+    // Opening the motion tools and setting a duration without placing points
+    // leaves a track that moves nothing. It must not pad the chapter.
+    expect(
+      getPreviewChapterDuration(
+        { ...base, cameraTrack: { durationMs: 8000, keyframes: [] } },
+        narrated,
+      ),
+    ).toBe(4670);
+
+    // A single point cannot describe movement either.
+    expect(
+      getPreviewChapterDuration(
+        {
+          ...base,
+          cameraTrack: {
+            durationMs: 8000,
+            keyframes: [{ id: 'a', timeMs: 0, viewBox: { x: 0, y: 0, w: 10, h: 10 } }],
+          },
+        },
+        narrated,
+      ),
+    ).toBe(4670);
+
+    // Two points do, so the chapter waits for the camera to finish.
+    expect(
+      getPreviewChapterDuration(
+        {
+          ...base,
+          cameraTrack: {
+            durationMs: 8000,
+            keyframes: [
+              { id: 'a', timeMs: 0, viewBox: { x: 0, y: 0, w: 10, h: 10 } },
+              { id: 'b', timeMs: 8000, viewBox: { x: 5, y: 0, w: 10, h: 10 } },
+            ],
+          },
+        },
+        narrated,
+      ),
+    ).toBe(8000);
+  });
+
   it('uses a visible default duration for silent chapters', () => {
     expect(
       getPreviewChapterDuration(
