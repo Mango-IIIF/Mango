@@ -138,6 +138,8 @@ export const createStoryViewerRuntime = (
    * loaded leaves the transition pan to the orchestrator, which owns it.
    */
   let cameraChapterIndex: number | null = null;
+  /** Identifies the most recent chapter load, so superseded ones stand down. */
+  let chapterLoadToken = 0;
 
   const now = deps.now ?? (() => Date.now());
   const setTimeoutFn = deps.setTimeoutFn ?? setTimeout;
@@ -475,6 +477,12 @@ export const createStoryViewerRuntime = (
     const chapter = story.chapters[index];
     if (!chapter) return;
 
+    // Claim this load. A transition that gets superseded still settles its
+    // gates so nothing leaks, which means its continuation below can run
+    // after a newer chapter has already taken over — this token is what
+    // stops it applying the wrong chapter's state on top.
+    const token = ++chapterLoadToken;
+
     // Detach the camera from the clock before it is reset, so the outgoing
     // chapter's track is not sampled while the incoming chapter loads.
     cameraChapterIndex = null;
@@ -499,6 +507,7 @@ export const createStoryViewerRuntime = (
 
     try {
       await orchestrator.loadChapter(index, options);
+      if (token !== chapterLoadToken) return;
       currentChapterIndex.set(index);
       chapterIndexValue = index;
       resetPlaybackForChapter(index);
@@ -510,6 +519,7 @@ export const createStoryViewerRuntime = (
         play();
       }
     } catch (error) {
+      if (token !== chapterLoadToken) return;
       console.error('[StoryViewer] Chapter load error:', error);
       setState('IDLE');
       isLoading.set(false);
@@ -520,6 +530,9 @@ export const createStoryViewerRuntime = (
   const loadStory = async (value: StoryWithDefaults): Promise<void> => {
     story = value;
 
+    // Destroying the orchestrator settles any in-flight gate, releasing a
+    // chapter load that belongs to the story being replaced.
+    chapterLoadToken += 1;
     clearOrchestratorListeners();
     if (orchestrator) {
       orchestrator.destroy();
@@ -768,6 +781,7 @@ export const createStoryViewerRuntime = (
   const unsubscribeMediaTimeUpdate = viewer.on?.('mediaTimeUpdate', handleMediaTimeUpdate);
 
   const destroy = () => {
+    chapterLoadToken += 1;
     if (unsubscribeMediaSegmentEnd) {
       unsubscribeMediaSegmentEnd();
     }

@@ -43,6 +43,14 @@ const toFiniteNonNegative = (value: number | null | undefined): number => {
   return Math.max(0, Number(value));
 };
 
+/**
+ * How far past a phase's end its media source may report and still be treated
+ * as genuinely playing that phase. `timeupdate` is coarse, so a segment can
+ * overshoot its end slightly before playback is paused. Anything beyond this
+ * is a stale position from before a seek landed.
+ */
+const SOURCE_LANDING_TOLERANCE_SEC = 1;
+
 export class StoryPlaybackClock {
   state = $state<StoryPlaybackState>({
     currentTime: 0,
@@ -262,18 +270,27 @@ export class StoryPlaybackClock {
   }
 
   private computePhaseElapsedSec(phase: PhaseConfig): number {
-    if (phase.kind === 'timer') {
-      const elapsedWallClockSec = Math.max(0, (this.now() - this.phaseStartedAtMs) / 1000);
-      return this.phaseElapsedAtStartSec + elapsedWallClockSec;
-    }
+    const wallClockElapsedSec = () =>
+      this.phaseElapsedAtStartSec + Math.max(0, (this.now() - this.phaseStartedAtMs) / 1000);
+
+    if (phase.kind === 'timer') return wallClockElapsedSec();
 
     const rawTime = phase.getCurrentTime();
     if (Number.isFinite(rawTime)) {
-      return Math.max(0, Number(rawTime) - phase.sourceStartSec);
+      const elapsedSec = Number(rawTime) - phase.sourceStartSec;
+      // Narration and media phases share one element across chapters, so a
+      // phase can start before the element has seeked onto its segment. Until
+      // it lands the element still reports the previous chapter's position,
+      // which for an earlier chapter sits far beyond this segment's end —
+      // deriving from it clamped elapsed to the full duration and completed
+      // the phase on its first tick, freezing the timeline and the camera.
+      // A position outside the segment means the source has not landed yet.
+      if (elapsedSec <= toFiniteNonNegative(phase.durationSec) + SOURCE_LANDING_TOLERANCE_SEC) {
+        return Math.max(0, elapsedSec);
+      }
     }
 
-    const elapsedWallClockSec = Math.max(0, (this.now() - this.phaseStartedAtMs) / 1000);
-    return this.phaseElapsedAtStartSec + elapsedWallClockSec;
+    return wallClockElapsedSec();
   }
 
   private applyState(patch: Partial<StoryPlaybackState>): void {

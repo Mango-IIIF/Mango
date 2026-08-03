@@ -49,8 +49,14 @@ export const createTransitionGuard = (
         cleanup();
         resolve(result);
       };
+      const abandon = () => {
+        cleanup();
+        if (resolved) return;
+        resolved = true;
+        resolve({ ok: false, degraded: true });
+      };
 
-      ctx.registerCleanup(cleanup);
+      ctx.registerCleanup(abandon);
       if (viewer.getManifestId?.() === expectedManifestId) {
         resolveOnce({ ok: true, degraded: false });
         return;
@@ -94,7 +100,14 @@ export const createTransitionGuard = (
         resolve(result);
       };
 
-      ctx.registerCleanup(cleanup);
+      const abandon = () => {
+        cleanup();
+        if (resolved) return;
+        resolved = true;
+        resolve({ ok: false, degraded: true });
+      };
+
+      ctx.registerCleanup(abandon);
       if (checkCanvases()) {
         resolveOnce({ ok: true, degraded: false });
         return;
@@ -133,6 +146,12 @@ export const createTransitionGuard = (
         cleanup();
         resolve(result);
       };
+      const abandon = () => {
+        cleanup();
+        if (resolved) return;
+        resolved = true;
+        resolve({ ok: false, degraded: true });
+      };
       const waitFrames = (frames: number) => {
         let remaining = frames;
         const tick = () => {
@@ -151,7 +170,7 @@ export const createTransitionGuard = (
         rafHandle = rAF(tick);
       };
 
-      ctx.registerCleanup(cleanup);
+      ctx.registerCleanup(abandon);
       const isExpectedCanvas = (
         canvasId = viewer.getCanvasId?.(),
         index = viewer.getCanvasIndex?.(),
@@ -159,6 +178,13 @@ export const createTransitionGuard = (
         expectedCanvasId
           ? canvasId === expectedCanvasId || index === expectedCanvasIndex
           : index === expectedCanvasIndex;
+
+      // Armed before every exit path. The frame waits below depend on
+      // requestAnimationFrame, which a background tab pauses indefinitely —
+      // without this the transition would hang until the tab is foregrounded.
+      timeoutHandle = setTimeoutFn(() => {
+        if (checkResolved()) resolveOnce({ ok: true, degraded: true });
+      }, sourceOpenTimeoutMs);
 
       if (isExpectedCanvas()) {
         waitFrames(2);
@@ -176,10 +202,6 @@ export const createTransitionGuard = (
         },
       );
       if (unsubscribe) ctx.registerCleanup(unsubscribe);
-
-      timeoutHandle = setTimeoutFn(() => {
-        if (checkResolved()) resolveOnce({ ok: true, degraded: true });
-      }, sourceOpenTimeoutMs);
     });
   };
 
@@ -201,7 +223,14 @@ export const createTransitionGuard = (
         resolve(result);
       };
 
-      ctx.registerCleanup(cleanup);
+      const abandon = () => {
+        cleanup();
+        if (resolved) return;
+        resolved = true;
+        resolve({ ok: false, degraded: true });
+      };
+
+      ctx.registerCleanup(abandon);
       const onPaint = () => {
         if (!checkResolved()) return;
         paintEventReceived = true;
@@ -238,10 +267,12 @@ export const createTransitionGuard = (
     return new Promise((resolve) => {
       let resolved = false;
       let handles: number[] = [];
+      let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
       const checkResolved = () => runId === ctx.currentRunId() && !resolved;
       const cleanup = () => {
         if (cAF) handles.forEach((h) => cAF(h));
         handles = [];
+        if (timeoutHandle) clearTimeoutFn(timeoutHandle);
       };
       const resolveOnce = (result: GateResult) => {
         if (!checkResolved()) return;
@@ -249,12 +280,23 @@ export const createTransitionGuard = (
         cleanup();
         resolve(result);
       };
+      const abandon = () => {
+        cleanup();
+        if (resolved) return;
+        resolved = true;
+        resolve({ ok: false, degraded: true });
+      };
 
-      ctx.registerCleanup(cleanup);
+      ctx.registerCleanup(abandon);
       if (!rAF) {
         resolveOnce({ ok: true, degraded: true });
         return;
       }
+
+      // Frame counting alone stalls forever in a background tab.
+      timeoutHandle = setTimeoutFn(() => {
+        if (checkResolved()) resolveOnce({ ok: true, degraded: true });
+      }, posePaintedTimeoutMs);
 
       let remaining = layoutStabilityFrameCount;
       const tick = () => {
