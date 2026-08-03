@@ -13,6 +13,12 @@ import { createMediaMarks, type MediaMarksState } from "./mediaMarks";
 import { createModelPose } from "./modelPose";
 import { createNarrationPlayer } from "./narrationPlayer";
 import { captureAudioVideo, captureImagePdf, captureModel } from "./capture";
+import {
+  inferPresentationAspect,
+  normaliseStoryFraming,
+  normaliseViewBox,
+  viewBoxAspect,
+} from "./framing";
 import { resolveManifestForNewChapter } from "./manifestResolver";
 import {
   animateViewBoxTransition,
@@ -120,6 +126,7 @@ export type StoryBuilderController = {
   addChapter: () => void;
   updateChapter: () => void;
   updateChapterPosition: () => void;
+  setChapterPosition: (viewBox: ViewBox) => void;
   deleteChapter: (chapterId: string) => void;
   duplicateChapter: (chapterId: string) => void;
   reorderChapter: (
@@ -188,6 +195,7 @@ export type StoryBuilderController = {
   isPreviewing: Readable<boolean>;
   startPreview: () => void;
   stopPreview: () => void;
+  previewChapter: (chapterId?: string) => void;
   positioningLanguage: Readable<string | null>;
   startAnnotationPositioning: (lang: string) => void;
   confirmAnnotationPositioning: () => void;
@@ -1265,6 +1273,28 @@ export const createStoryBuilderController = (
     );
   };
 
+  /**
+   * Brings a capture's framing to the story's canonical aspect. Captures read
+   * the live viewport, so without this a chapter created with the inspector or
+   * the motion timeline open is stored at a different shape from its
+   * neighbours and reframes differently for a reader.
+   */
+  const withNormalisedFraming = <T extends { ok: boolean }>(result: T): T => {
+    if (!result.ok) return result;
+    const captured = (result as { capture?: { viewBox?: ViewBox } }).capture;
+    if (!captured?.viewBox) return result;
+    return {
+      ...result,
+      capture: {
+        ...captured,
+        viewBox: normaliseViewBox(
+          captured.viewBox,
+          presentationAspectFor(captured.viewBox),
+        ),
+      },
+    };
+  };
+
   const capture = () => {
     if (!viewer)
       return { ok: false as const, reason: "missing-manifest" as const };
@@ -1295,7 +1325,7 @@ export const createStoryBuilderController = (
     if (type === "model") {
       return captureModel(viewer, modelPose.getPose(), manifestOverride);
     }
-    return captureImagePdf(viewer, manifestOverride);
+    return withNormalisedFraming(captureImagePdf(viewer, manifestOverride));
   };
 
   const attach = (ctx: PluginContext) => {
@@ -1543,10 +1573,36 @@ export const createStoryBuilderController = (
     });
   };
 
-  const updateChapterPosition = () => {
-    const chapterId = get(selectedChapterId);
-    const viewBox = viewer?.getViewBox?.() ?? null;
-    if (!chapterId || !viewBox) return;
+  /**
+   * The aspect a framing should be stored at.
+   *
+   * An empty story has nothing to conform to, and the obvious candidate — the
+   * framing being captured — is the shape of the editor stage at that instant.
+   * Capture during a panel animation or before layout settles would then define
+   * the whole story. The canvas image is the one signal that does not move, so
+   * a new story takes its shape from the source it is about.
+   */
+  const presentationAspectFor = (box: ViewBox): number => {
+    const current = get(storyStore);
+    if (Number.isFinite(current.presentationAspect) && (current.presentationAspect ?? 0) > 0) {
+      return current.presentationAspect as number;
+    }
+    const inferred = inferPresentationAspect(current);
+    if (inferred !== null) return inferred;
+
+    const contentSize = viewer?.getContentSize?.() ?? null;
+    if (contentSize && contentSize.width > 0 && contentSize.height > 0) {
+      return contentSize.width / contentSize.height;
+    }
+    return viewBoxAspect(box) ?? 4 / 3;
+  };
+
+  const commitChapterViewBox = (chapterId: string, requested: ViewBox) => {
+    // Stored at the story's canonical aspect so every chapter responds to a
+    // reader's window the same way. A capture carries the editor stage's shape
+    // and manual entry carries whatever was typed; neither should decide how
+    // this chapter is framed relative to the others.
+    const viewBox = normaliseViewBox(requested, presentationAspectFor(requested));
     pushHistorySnapshot();
     storyStoreWrapper.setChapterViewBox({ chapterId, viewBox });
     const chapter = get(storyStore).chapters.find(
@@ -1568,6 +1624,32 @@ export const createStoryBuilderController = (
       });
     }
     setError(null);
+  };
+
+  const updateChapterPosition = () => {
+    const chapterId = get(selectedChapterId);
+    const viewBox = viewer?.getViewBox?.() ?? null;
+    if (!chapterId || !viewBox) return;
+    commitChapterViewBox(chapterId, viewBox);
+  };
+
+  const setChapterPosition = (nextViewBox: ViewBox) => {
+    const chapterId = get(selectedChapterId);
+    if (!chapterId) return;
+    const viewBox = { ...nextViewBox };
+    if (
+      ![viewBox.x, viewBox.y, viewBox.w, viewBox.h].every(Number.isFinite) ||
+      viewBox.w <= 0 ||
+      viewBox.h <= 0
+    )
+      return;
+    commitChapterViewBox(chapterId, viewBox);
+    const current = viewer?.getViewBox?.() ?? null;
+    if (current && !viewBoxMatches(current, viewBox)) {
+      animateViewBox(current, viewBox);
+    } else if (!current) {
+      viewer?.setViewBox?.(viewBox);
+    }
   };
 
   const deleteChapter = (chapterId: string) => {
@@ -1692,8 +1774,17 @@ export const createStoryBuilderController = (
     uiMode.set("idle");
   };
 
-  const startPreview = preview.start;
+  const startPreview = () => {
+    void preview.start();
+  };
   const stopPreview = preview.stop;
+
+  /** Plays a single chapter exactly as the story viewer would present it. */
+  const previewChapter = (chapterId?: string) => {
+    const targetId = chapterId ?? get(selectedChapterId);
+    if (!targetId) return;
+    void preview.start({ chapterId: targetId, singleChapter: true });
+  };
 
   const markIn = () => {
     mediaMarks.markIn();
@@ -1827,15 +1918,21 @@ export const createStoryBuilderController = (
         activePreset === "custom"
           ? (currentViewBox ?? existingPoint?.viewBox ?? stableViewBox)
           : (existingPoint?.viewBox ?? stableViewBox);
+      // The reference is the live viewport when capturing fresh, so it carries
+      // the editor stage's shape. Normalising here is what keeps every point
+      // in every chapter at one aspect.
+      const normalisedReference = referenceViewBox
+        ? normaliseViewBox(referenceViewBox, presentationAspectFor(referenceViewBox))
+        : referenceViewBox;
       const viewBox =
-        referenceViewBox && focus
+        normalisedReference && focus
           ? {
-              x: focus.x - referenceViewBox.w / 2,
-              y: focus.y - referenceViewBox.h / 2,
-              w: referenceViewBox.w,
-              h: referenceViewBox.h,
+              x: focus.x - normalisedReference.w / 2,
+              y: focus.y - normalisedReference.h / 2,
+              w: normalisedReference.w,
+              h: normalisedReference.h,
             }
-          : referenceViewBox;
+          : normalisedReference;
       const model =
         existingPoint?.model ?? viewer?.getModelPose?.() ?? chapter.model;
       const capturedLayers =
@@ -2265,7 +2362,12 @@ export const createStoryBuilderController = (
   };
 
   const loadStory = (storyToLoad: StoryState) => {
-    const normalizedStory = normalizeStoryAnnotations(storyToLoad);
+    // Bring framings to the story's canonical aspect on the way in, so
+    // everything captured from here on agrees and the next save writes them
+    // back normalised.
+    const normalizedStory = normalizeStoryAnnotations(
+      normaliseStoryFraming(storyToLoad),
+    );
     pushHistorySnapshot();
     loadStoryIntoStore(normalizedStory, storyStoreWrapper);
     latestNarrationSegments = collectLatestNarrationSegments(
@@ -2327,6 +2429,7 @@ export const createStoryBuilderController = (
     addChapter,
     updateChapter,
     updateChapterPosition,
+    setChapterPosition,
     deleteChapter,
     duplicateChapter,
     reorderChapter,
@@ -2393,6 +2496,7 @@ export const createStoryBuilderController = (
     isPreviewing,
     startPreview,
     stopPreview,
+    previewChapter,
     positioningLanguage: { subscribe: positioningLanguage.subscribe },
     startAnnotationPositioning,
     confirmAnnotationPositioning,

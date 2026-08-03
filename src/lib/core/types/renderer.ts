@@ -1,7 +1,7 @@
 import type { Component } from "svelte";
 import type { ImageFilters } from "./filters";
 import type { ModelPose, ModelPoseOptions } from "./model";
-import type { ViewBox } from "./viewer";
+import type { ContentSize, ViewBox } from "./viewer";
 import type { MediaSource } from "../../iiif/mediaResolver";
 
 export type RendererComponent = Component<Record<string, unknown>>;
@@ -15,6 +15,7 @@ export type ActiveLayoutImage = {
 
 export type RendererInstance = {
   getViewBox?: () => ViewBox | null;
+  getContentSize?: () => ContentSize | null;
   setViewBox?: (box: ViewBox) => void;
   zoomBy?: (factor: number) => void;
   goHome?: () => void;

@@ -22,7 +22,7 @@
   import type { ResolvedAnnotation } from '../iiif/annotationResolver';
   import type { MediaSource, TileSource } from '../iiif/mediaResolver';
   import type { ImageFilters } from '../core/types/filters';
-  import type { ViewBox } from '../core/types/viewer';
+  import type { ContentSize, ViewBox } from '../core/types/viewer';
   import type { ViewerConfig } from '../core/types/config';
   import type { ActiveLayoutImage } from '../core/types/renderer';
 
@@ -85,6 +85,10 @@
 
   export const getViewBox = (): ViewBox | null => {
     return osd?.getViewBox?.() ?? null;
+  };
+
+  export const getContentSize = (): ContentSize | null => {
+    return osd?.getContentSize?.() ?? null;
   };
 
   export const setViewBox = (box: ViewBox): void => {

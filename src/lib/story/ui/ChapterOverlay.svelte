@@ -6,6 +6,7 @@
     MousePointer2,
     Pencil,
     Pentagon,
+    Play,
     Square,
   } from "@lucide/svelte";
   import { readable, type Readable } from "svelte/store";
@@ -26,6 +27,7 @@
   } from "../annotationPlacement";
   import ChapterTimelineSection from "./ChapterTimelineSection.svelte";
   import ChapterTextForm from "./ChapterTextForm.svelte";
+  import ChapterPositionSection from "./ChapterPositionSection.svelte";
   import ChapterCameraConfig from "./ChapterCameraConfig.svelte";
   import ChapterDashboard from "./ChapterDashboard.svelte";
   import ChapterMotionPanel from "./ChapterMotionPanel.svelte";
@@ -119,6 +121,12 @@
   export let onUpdateDelay:
     ((chapterId: string, delayMs?: number) => void) | undefined;
   export let onUpdateChapterPosition: ((chapterId: string) => void) | undefined;
+  export let onSetChapterPosition:
+    ((chapterId: string, viewBox: ViewBox) => void) | undefined = undefined;
+  export let storyPreviewing: Readable<boolean> = readable(false);
+  export let onPreviewChapter: ((chapterId: string) => void) | undefined =
+    undefined;
+  export let onStopChapterPreview: (() => void) | undefined = undefined;
   export let onRevertChapterPosition: ((chapterId: string) => void) | undefined;
   export let onSave: (() => void) | undefined;
   export let onSetAnnotationPositioning: ((lang: string) => void) | undefined =
@@ -191,49 +199,9 @@
   let viewUpdateAcknowledged = false;
   let viewUpdateFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   let chapterHasSavedPosition = false;
-  let chapterPositionNeedsConfirmation = false;
-  let positionBaseline: ViewBox | null = null;
-  let positionTrackingReady = false;
-  let trackedPositionChapterId: string | null = null;
-  let trackedSavedPositionSignature = "";
-  let observedPositionSignature = "";
-  let positionSettleTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const positionSignature = (value: ViewBox | null | undefined): string =>
     value ? `${value.x}:${value.y}:${value.w}:${value.h}` : "";
-
-  const schedulePositionTracking = () => {
-    if (positionSettleTimeout) clearTimeout(positionSettleTimeout);
-    positionTrackingReady = false;
-    positionSettleTimeout = setTimeout(() => {
-      positionTrackingReady = true;
-      positionSettleTimeout = null;
-    }, 500);
-  };
-
-  const viewBoxesMatch = (
-    current: ViewBox | null,
-    saved: ViewBox | undefined,
-  ): boolean => {
-    if (!current || !saved) return false;
-    const currentCenterX = current.x + current.w / 2;
-    const currentCenterY = current.y + current.h / 2;
-    const savedCenterX = saved.x + saved.w / 2;
-    const savedCenterY = saved.y + saved.h / 2;
-    const centerTolerance = Math.max(0.5, Math.min(saved.w, saved.h) * 0.001);
-    const widthMatches =
-      Math.abs(current.w - saved.w) <= Math.max(0.5, saved.w * 0.001);
-    const heightMatches =
-      Math.abs(current.h - saved.h) <= Math.max(0.5, saved.h * 0.001);
-
-    // The renderer expands one axis to match the stage aspect ratio. Treat the
-    // position as unchanged when its centre and either captured axis still match.
-    return (
-      Math.abs(currentCenterX - savedCenterX) <= centerTolerance &&
-      Math.abs(currentCenterY - savedCenterY) <= centerTolerance &&
-      (widthMatches || heightMatches)
-    );
-  };
 
   const annotationTools: Array<{
     id: ChapterAnnotationTool;
@@ -297,10 +265,68 @@
 
   let activeNarrationUrl = "";
   let metadataSectionCollapsed = false;
+  let positionSectionCollapsed = false;
   let narrationSectionCollapsed = false;
   let avSectionCollapsed = false;
   let annotationSectionCollapsed = false;
   let lastSectionSyncKey = "";
+  let positionDrafts: { x: string; y: string; w: string; h: string } = {
+    x: "",
+    y: "",
+    w: "",
+    h: "",
+  };
+  let lastPositionSyncKey = "";
+  let positionSectionAvailable = false;
+
+  const formatPositionValue = (value: number | undefined): string =>
+    value === undefined || !Number.isFinite(value)
+      ? ""
+      : String(Math.round(value));
+
+  const positionDraftsFromViewBox = (
+    value: ViewBox | undefined,
+  ): { x: string; y: string; w: string; h: string } => ({
+    x: formatPositionValue(value?.x),
+    y: formatPositionValue(value?.y),
+    w: formatPositionValue(value?.w),
+    h: formatPositionValue(value?.h),
+  });
+
+  const handlePositionFieldInput = (
+    field: "x" | "y" | "w" | "h",
+    value: string,
+  ) => {
+    positionDrafts = { ...positionDrafts, [field]: value };
+  };
+
+  const commitPositionDrafts = () => {
+    if (!chapterId || !chapter) return;
+    const drafts = positionDrafts;
+    const parsed = {
+      x: Number(drafts.x),
+      y: Number(drafts.y),
+      w: Number(drafts.w),
+      h: Number(drafts.h),
+    };
+    const valid =
+      [drafts.x, drafts.y, drafts.w, drafts.h].every(
+        (entry) => entry.trim() !== "",
+      ) &&
+      [parsed.x, parsed.y, parsed.w, parsed.h].every(Number.isFinite) &&
+      parsed.w > 0 &&
+      parsed.h > 0;
+    if (!valid) {
+      // Keep partial manual entry while nothing is saved yet; otherwise snap
+      // back to the stored position.
+      if (chapter.viewBox) {
+        positionDrafts = positionDraftsFromViewBox(chapter.viewBox);
+      }
+      return;
+    }
+    if (positionSignature(parsed) === positionSignature(chapter.viewBox)) return;
+    onSetChapterPosition?.(chapterId, parsed);
+  };
 
   $: if (currentNarrationAudioRef) {
     narrationAudioRefs[activeLanguage] = currentNarrationAudioRef;
@@ -534,47 +560,20 @@
   $: chapter = $story.chapters.find((item) => item.id === chapterId) ?? null;
   $: selectedDrawingAnnotation =
     chapter?.drawingAnnotations?.find((item) => item.id === $selectedDrawingAnnotationId) ?? null;
+  $: chapterHasSavedPosition = Boolean(chapter?.viewBox);
   $: {
-    const currentPosition = $viewBox;
-    const currentSignature = positionSignature(currentPosition);
-    const savedSignature = positionSignature(chapter?.viewBox);
-    const positionContextChanged =
-      trackedPositionChapterId !== chapterId ||
-      trackedSavedPositionSignature !== savedSignature;
-    const hasSavedPosition = Boolean(chapter?.viewBox);
-
-    chapterHasSavedPosition = hasSavedPosition;
-
-    if (positionContextChanged) {
-      trackedPositionChapterId = chapterId;
-      trackedSavedPositionSignature = savedSignature;
-      observedPositionSignature = currentSignature;
-      positionBaseline = currentPosition ? { ...currentPosition } : null;
-      if (hasSavedPosition) schedulePositionTracking();
-    } else if (hasSavedPosition && !positionBaseline && currentPosition) {
-      observedPositionSignature = currentSignature;
-      positionBaseline = { ...currentPosition };
-      schedulePositionTracking();
-    } else if (
-      hasSavedPosition &&
-      !positionTrackingReady &&
-      observedPositionSignature !== currentSignature
-    ) {
-      observedPositionSignature = currentSignature;
-      positionBaseline = currentPosition ? { ...currentPosition } : null;
-    } else if (observedPositionSignature !== currentSignature) {
-      observedPositionSignature = currentSignature;
+    const positionSyncKey = `${chapterId ?? ""}:${positionSignature(chapter?.viewBox)}`;
+    if (positionSyncKey !== lastPositionSyncKey) {
+      lastPositionSyncKey = positionSyncKey;
+      positionDrafts = positionDraftsFromViewBox(chapter?.viewBox);
     }
-
-    chapterPositionNeedsConfirmation = Boolean(
-      chapter &&
-        currentPosition &&
-        (!hasSavedPosition ||
-          (positionTrackingReady &&
-            positionBaseline &&
-            !viewBoxesMatch(currentPosition, positionBaseline))),
-    );
   }
+  $: positionSectionAvailable =
+    Boolean(chapter) &&
+    mediaTypeValue !== "audio" &&
+    mediaTypeValue !== "video" &&
+    mediaTypeValue !== "model" &&
+    !chapter?.model;
   $: {
     chapterIndex = $story.chapters.findIndex((item) => item.id === chapterId);
     const prefix = `Chapter ${chapterIndex + 1}:`;
@@ -847,6 +846,14 @@
     if (chapterId) onRevertChapterPosition?.(chapterId);
   };
 
+  const handleChapterPreview = () => {
+    if ($storyPreviewing) {
+      onStopChapterPreview?.();
+      return;
+    }
+    if (chapterId) onPreviewChapter?.(chapterId);
+  };
+
   const handleUpdateView = () => {
     if (!chapterId) return;
     onUpdateChapterPosition?.(chapterId);
@@ -891,6 +898,8 @@
 
       metadataSectionCollapsed = false;
 
+      positionSectionCollapsed = false;
+
       narrationSectionCollapsed = false;
 
       avSectionCollapsed = !hasValidRange(markInDraft, markOutDraft);
@@ -902,7 +911,6 @@
   onDestroy(() => {
     if (saveFeedbackTimeout) clearTimeout(saveFeedbackTimeout);
     if (viewUpdateFeedbackTimeout) clearTimeout(viewUpdateFeedbackTimeout);
-    if (positionSettleTimeout) clearTimeout(positionSettleTimeout);
     clearNarrationPreviewListener();
   });
 
@@ -1008,28 +1016,28 @@
               : $t('storyBuilder.overlay.loadSource')}
         </div>
       </div>
-      {#if docked && chapter && (chapterPositionNeedsConfirmation || viewUpdateAcknowledged)}
+      {#if chapter}
         <button
-          class="chapter-overlay__set-view"
+          class="chapter-overlay__preview-chapter"
           type="button"
-          data-testid="chapter-update-view"
-          on:click={handleUpdateView}
+          data-testid="chapter-preview"
+          on:click={handleChapterPreview}
         >
-          <MousePointer2 aria-hidden="true" />
+          {#if $storyPreviewing}
+            <Square aria-hidden="true" />
+          {:else}
+            <Play aria-hidden="true" />
+          {/if}
           <span>
-            <strong aria-live="polite">
-              {viewUpdateAcknowledged
-                ? $t('storyBuilder.overlay.positionUpdated')
-                : chapterHasSavedPosition
-                  ? $t('storyBuilder.actions.updatePosition')
-                  : $t('storyBuilder.overlay.setPosition')}
+            <strong>
+              {$storyPreviewing
+                ? $t('storyBuilder.overlay.stopChapterPreview')
+                : $t('storyBuilder.overlay.previewChapter')}
             </strong>
             <small>
-              {viewUpdateAcknowledged
-                ? $t('storyBuilder.overlay.positionConfirmed')
-                : chapterHasSavedPosition
-                  ? $t('storyBuilder.overlay.positionMoved')
-                  : $t('storyBuilder.overlay.noPosition')}
+              {$storyPreviewing
+                ? $t('storyBuilder.overlay.chapterPreviewPlaying')
+                : $t('storyBuilder.overlay.previewChapterHint')}
             </small>
           </span>
         </button>
@@ -1122,6 +1130,38 @@
             onAnnotationInput={handleAnnotationInput}
             onSetPositionClick={handleSetPositionClick}
           />
+        </section>
+
+        <section
+          class="chapter-overlay__task"
+          hidden={inspectorView.mode !== "task" ||
+            inspectorView.task !== "position"}
+          aria-hidden={inspectorView.mode !== "task" ||
+            inspectorView.task !== "position"}
+        >
+          <button
+            class="chapter-overlay__task-back"
+            type="button"
+            on:click={returnToDashboard}
+          >
+            ← {$t('storyBuilder.overlay.backToTools')}
+          </button>
+          {#if positionSectionAvailable}
+            <ChapterPositionSection
+              collapsed={positionSectionCollapsed}
+              hasSavedPosition={chapterHasSavedPosition}
+              {positionDrafts}
+              currentViewBox={$viewBox}
+              captureAcknowledged={viewUpdateAcknowledged}
+              onToggle={() => {
+                positionSectionCollapsed = !positionSectionCollapsed;
+              }}
+              onFieldInput={handlePositionFieldInput}
+              onCommit={commitPositionDrafts}
+              onCapture={handleUpdateView}
+              onGoToPosition={handleRevertView}
+            />
+          {/if}
         </section>
 
         <section
@@ -1685,7 +1725,7 @@
       letter-spacing: 0.01em;
     }
 
-    .chapter-overlay__set-view {
+    .chapter-overlay__preview-chapter {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
       gap: 10px;
@@ -1700,28 +1740,28 @@
       cursor: pointer;
     }
 
-    .chapter-overlay__set-view:hover,
-    .chapter-overlay__set-view:focus-visible {
+    .chapter-overlay__preview-chapter:hover,
+    .chapter-overlay__preview-chapter:focus-visible {
       border-color: var(--accent, var(--story-builder-accent, #e07a3f));
       background: color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 16%, transparent);
     }
 
-    .chapter-overlay__set-view :global(svg) {
+    .chapter-overlay__preview-chapter :global(svg) {
       width: 17px;
       height: 17px;
       color: var(--accent, var(--story-builder-accent, #e07a3f));
     }
 
-    .chapter-overlay__set-view span {
+    .chapter-overlay__preview-chapter span {
       display: grid;
       gap: 2px;
     }
 
-    .chapter-overlay__set-view strong {
+    .chapter-overlay__preview-chapter strong {
       font-size: 12px;
     }
 
-    .chapter-overlay__set-view small {
+    .chapter-overlay__preview-chapter small {
       color: var(--viewer-muted, #9aa6b2);
       font-size: 10px;
       line-height: 1.35;

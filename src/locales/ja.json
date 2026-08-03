@@ -124,6 +124,11 @@
           "description": "タイトル、説明文、および翻訳。",
           "save": "詳細を保存"
         },
+        "position": {
+          "title": "ビューアの位置",
+          "description": "このチャプターを開いたときのキャンバス領域とズーム。",
+          "save": "ビューアの位置を保存"
+        },
         "focus": {
           "title": "注釈",
           "description": "テキストボックスと図形描画注釈。",
@@ -167,6 +172,7 @@
       },
       "availability": {
         "annotationsMedia": "注釈は画像およびPDFチャプターでのみ利用可能です。",
+        "positionMedia": "ビューアの位置は画像およびPDFチャプターでのみ利用可能です。",
         "chooseImage": "注釈を追加するには画像またはPDFソースを選択してください。",
         "annotationsSpatial": "注釈には画像、PDF、または3D空間ビューが必要です。",
         "captureSpatial": "最初に画像、PDF、または3Dビューをキャプチャしてください。",
@@ -239,6 +245,20 @@
       "textPlaceholder": "Enter text for this text box",
       "placeText": "Place text box on artwork",
       "captureHint": "Capture a chapter to edit annotation text and placement."
+    },
+    "position": {
+      "title": "ビューアの位置",
+      "hint": "この章が表示するキャンバス領域（キャンバスのピクセル単位）。",
+      "empty": "位置はまだ保存されていません。ビューアで作品を配置してから、現在のビューをキャプチャしてください。",
+      "x": "X",
+      "y": "Y",
+      "width": "幅",
+      "height": "高さ",
+      "capture": "現在のビューを使用",
+      "goTo": "保存した位置へ移動",
+      "current": "現在のビュー: {x} · {y} · {w} · {h}",
+      "expand": "ビューア位置セクションを展開",
+      "collapse": "ビューア位置セクションを折りたたむ"
     },
     "annotations": {
       "chapter": "Chapter annotations",
@@ -354,10 +374,10 @@
       "newStory": "新しいストーリー",
       "loadSource": "ソースを読み込む",
       "positionUpdated": "ビュー位置が更新されました",
-      "setPosition": "ビューアの位置を設定",
-      "positionConfirmed": "ビューアの位置が確定されました",
-      "positionMoved": "ビューアの位置が移動しました",
-      "noPosition": "ビュー位置未設定",
+      "previewChapter": "チャプターをプレビュー",
+      "previewChapterHint": "ストーリーでの見え方のまま、このチャプターだけを再生します。",
+      "stopChapterPreview": "プレビューを停止",
+      "chapterPreviewPlaying": "このチャプターを再生中です。クリックで停止します。",
       "sourceHint": "IIIFマニフェストを読み込んでコンテンツを選択します。",
       "backToTools": "ツールに戻る",
       "saveChapter": "チャプターを保存",
@@ -368,6 +388,9 @@
     },
     "comparison": {
       "hint": "Load at least two compatible sources to create a comparison chapter."
+    },
+    "framing": {
+      "guide": "ストーリーのフレーミング"
     },
     "errors": {
       "missingPublicId": "公開IDが見つかりません。",

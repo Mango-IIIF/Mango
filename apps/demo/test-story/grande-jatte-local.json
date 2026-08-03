@@ -1,0 +1,997 @@
+{
+  "@context": [
+    "http://iiif.io/api/presentation/3/context.json",
+    {
+      "mango": "https://mango-iiif.github.io/ns/story#",
+      "mangoState": {
+        "@id": "mango:state",
+        "@type": "@json"
+      }
+    }
+  ],
+  "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte",
+  "type": "AnnotationPage",
+  "mango:storyVersion": "1.0",
+  "label": {
+    "en": [
+      "A Sunday on La Grande Jatte \u2014 1884"
+    ]
+  },
+  "items": [
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_1",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The Icon"
+        ]
+      },
+      "summary": {
+        "en": [
+          "This may be the most iconic work of art in the Art Institute \u2014 Georges Seurat's monumental scene of Parisians at leisure on the island of La Grande Jatte."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=0,14",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_1",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 9310,
+              "h": 6237
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 12500,
+              "preset": "ken-burns",
+              "pathType": "spline",
+              "easing": "ease-in-out",
+              "keyframes": [
+                {
+                  "id": "icon-full",
+                  "timeMs": 0,
+                  "dwellMs": 1200,
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 9310,
+                    "h": 6237
+                  }
+                },
+                {
+                  "id": "icon-close",
+                  "timeMs": 12500,
+                  "viewBox": {
+                    "x": 650,
+                    "y": 435,
+                    "w": 8010,
+                    "h": 5366
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,9310,6237"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_2",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Sunday Best"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Figures from every walk of life have gathered on the banks of the Seine on a Sunday afternoon \u2014 most of them in their Sunday best."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=14,27",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_2",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 0,
+              "y": 900,
+              "w": 6200,
+              "h": 4154
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 12000,
+              "preset": "pan",
+              "pathType": "linear",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "id": "crowd-left",
+                  "timeMs": 0,
+                  "dwellMs": 500,
+                  "viewBox": {
+                    "x": 0,
+                    "y": 900,
+                    "w": 6200,
+                    "h": 4154
+                  }
+                },
+                {
+                  "id": "crowd-right",
+                  "timeMs": 12000,
+                  "viewBox": {
+                    "x": 3110,
+                    "y": 1080,
+                    "w": 6200,
+                    "h": 4154
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,900,6200,4154"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_3",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "A Curious Stillness"
+        ]
+      },
+      "summary": {
+        "en": [
+          "The scene seems alive because of the color \u2014 yet no one is really moving. There is a stillness."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=27,34",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_3",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 1700,
+              "y": 1050,
+              "w": 6200,
+              "h": 4154
+            },
+            "playback": {
+              "transitionMs": 1
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1700,1050,6200,4154"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_4",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "A Modern Parthenon"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Seurat wanted to distill modern life \u2014 to make of it, as he said, something like the Parthenon frieze, but using modern people in all their traits."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=34,45",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_4",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 300,
+              "y": 1500,
+              "w": 5200,
+              "h": 3484
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 10500,
+              "preset": "pan",
+              "pathType": "linear",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "id": "frieze-a",
+                  "timeMs": 0,
+                  "viewBox": {
+                    "x": 300,
+                    "y": 1500,
+                    "w": 5200,
+                    "h": 3484
+                  }
+                },
+                {
+                  "id": "frieze-b",
+                  "timeMs": 10500,
+                  "viewBox": {
+                    "x": 3800,
+                    "y": 1720,
+                    "w": 5200,
+                    "h": 3484
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=300,1500,5200,3484"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_5",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The Oversized Boater"
+        ]
+      },
+      "summary": {
+        "en": [
+          "On the left, the boater with the cap seems disproportionately large in relation to the couple seated next to him."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=45,55",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_5",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 150,
+              "y": 2850,
+              "w": 3900,
+              "h": 3250
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 9000,
+              "preset": "zoom-in",
+              "pathType": "spline",
+              "easing": "ease-in-out",
+              "keyframes": [
+                {
+                  "id": "boater-wide",
+                  "timeMs": 0,
+                  "dwellMs": 600,
+                  "viewBox": {
+                    "x": 100,
+                    "y": 2500,
+                    "w": 4400,
+                    "h": 3650
+                  }
+                },
+                {
+                  "id": "boater-close",
+                  "timeMs": 9000,
+                  "viewBox": {
+                    "x": 250,
+                    "y": 3250,
+                    "w": 3200,
+                    "h": 2850
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=150,2850,3900,3250"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_6",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The Girl in Orange"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Why is the little girl in orange the only one captured in movement?"
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=55,60",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_6",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 5850,
+              "y": 1100,
+              "w": 1600,
+              "h": 2100
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 4500,
+              "preset": "zoom-in",
+              "pathType": "spline",
+              "easing": "ease-in-out",
+              "keyframes": [
+                {
+                  "id": "girl-wide",
+                  "timeMs": 0,
+                  "viewBox": {
+                    "x": 5400,
+                    "y": 800,
+                    "w": 2600,
+                    "h": 3200
+                  }
+                },
+                {
+                  "id": "girl-close",
+                  "timeMs": 4500,
+                  "viewBox": {
+                    "x": 5950,
+                    "y": 1300,
+                    "w": 1450,
+                    "h": 1900
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=5850,1100,1600,2100"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_7",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Enigmas at the Edge"
+        ]
+      },
+      "summary": {
+        "en": [
+          "What are those two orange shapes at the far right?"
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=60,67",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_7",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 8300,
+              "y": 1780,
+              "w": 1010,
+              "h": 2350
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 6000,
+              "preset": "drift-zoom",
+              "pathType": "spline",
+              "easing": "ease-in-out",
+              "keyframes": [
+                {
+                  "id": "edge-wide",
+                  "timeMs": 0,
+                  "viewBox": {
+                    "x": 7600,
+                    "y": 1450,
+                    "w": 1710,
+                    "h": 3300
+                  }
+                },
+                {
+                  "id": "edge-close",
+                  "timeMs": 6000,
+                  "viewBox": {
+                    "x": 8390,
+                    "y": 1800,
+                    "w": 920,
+                    "h": 2140
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=8300,1780,1010,2350"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_8",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Return, and Look Again"
+        ]
+      },
+      "summary": {
+        "en": [
+          "An enigmatic painting \u2014 one we return to again and again, always finding something unusual that changes what we thought we knew."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=67,82",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_8",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 9310,
+              "h": 6237
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 14000,
+              "preset": "zoom-out",
+              "pathType": "spline",
+              "easing": "ease-in-out",
+              "keyframes": [
+                {
+                  "id": "return-close",
+                  "timeMs": 0,
+                  "dwellMs": 500,
+                  "viewBox": {
+                    "x": 7600,
+                    "y": 1450,
+                    "w": 1710,
+                    "h": 3300
+                  }
+                },
+                {
+                  "id": "return-full",
+                  "timeMs": 14000,
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 9310,
+                    "h": 6237
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,9310,6237"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_9",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Painted in Dots"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Seurat used a technique called pointillism \u2014 tiny little dots of paint, often in complementary colors. It is what he is famous for."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=82,92",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_9",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 1500,
+              "y": 4780,
+              "w": 1150,
+              "h": 770
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 9000,
+              "preset": "ken-burns",
+              "pathType": "spline",
+              "easing": "ease-in-out",
+              "keyframes": [
+                {
+                  "id": "dots-wide",
+                  "timeMs": 0,
+                  "dwellMs": 500,
+                  "viewBox": {
+                    "x": 1000,
+                    "y": 4420,
+                    "w": 2300,
+                    "h": 1541
+                  }
+                },
+                {
+                  "id": "dots-close",
+                  "timeMs": 9000,
+                  "viewBox": {
+                    "x": 1620,
+                    "y": 4840,
+                    "w": 900,
+                    "h": 603
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1500,4780,1150,770"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_10",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Complementary Colors"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Purple and yellow, blue and orange, red and green \u2014 complementaries from the color wheel, laid side by side without blending."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=92,109",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_10",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 4000,
+              "y": 650,
+              "w": 1400,
+              "h": 938
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 16000,
+              "preset": "drift-zoom",
+              "pathType": "spline",
+              "easing": "ease-in-out",
+              "keyframes": [
+                {
+                  "id": "comp-wide",
+                  "timeMs": 0,
+                  "dwellMs": 800,
+                  "viewBox": {
+                    "x": 3850,
+                    "y": 570,
+                    "w": 1650,
+                    "h": 1105
+                  }
+                },
+                {
+                  "id": "comp-close",
+                  "timeMs": 16000,
+                  "viewBox": {
+                    "x": 4180,
+                    "y": 780,
+                    "w": 1050,
+                    "h": 703
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=4000,650,1400,938"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_11",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "A Flickering Surface"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Laid down next to each other, unblended, the dots take on a flickering quality \u2014 Seurat breaks up the entire surface with little dots of pigment."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=109,119",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_11",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 4300,
+              "y": 1200,
+              "w": 1900,
+              "h": 1273
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 9500,
+              "preset": "pan",
+              "pathType": "linear",
+              "easing": "linear",
+              "keyframes": [
+                {
+                  "id": "flicker-a",
+                  "timeMs": 0,
+                  "viewBox": {
+                    "x": 4300,
+                    "y": 1200,
+                    "w": 1900,
+                    "h": 1273
+                  }
+                },
+                {
+                  "id": "flicker-b",
+                  "timeMs": 9500,
+                  "viewBox": {
+                    "x": 6100,
+                    "y": 2450,
+                    "w": 1900,
+                    "h": 1273
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=4300,1200,1900,1273"
+        }
+      }
+    },
+    {
+      "id": "https://mango-iiif.github.io/stories/a-sunday-on-la-grande-jatte/annotation/chapter_12",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "A New Way of Painting"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Every artist after the Grande Jatte had to reckon with what a painting should be \u2014 and how to accept this completely new technique."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://404mike.github.io/Mango-Narration/a-sunday-on-la-grande-jatte-1884.mp3#t=119,129",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_12",
+            "canvasIndex": 0,
+            "canvasId": "http://localhost:5173/test-story/local-iiif/canvas/0",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 9310,
+              "h": 6237
+            },
+            "playback": {
+              "transitionMs": 1
+            },
+            "cameraTrack": {
+              "durationMs": 9500,
+              "preset": "zoom-out",
+              "pathType": "spline",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "legacy-close",
+                  "timeMs": 0,
+                  "dwellMs": 400,
+                  "viewBox": {
+                    "x": 5000,
+                    "y": 2250,
+                    "w": 2600,
+                    "h": 1742
+                  }
+                },
+                {
+                  "id": "legacy-full",
+                  "timeMs": 9500,
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 9310,
+                    "h": 6237
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "http://localhost:5173/test-story/local-iiif/canvas/0",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "http://localhost:5173/test-story/local-iiif/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,9310,6237"
+        }
+      }
+    }
+  ]
+}

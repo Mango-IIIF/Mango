@@ -6,7 +6,7 @@ import type { ViewerEventMap } from './core/types/events';
 import type { ViewerPlugin } from './core/types/plugin';
 import type { ModelPose, ModelPoseOptions } from './core/types/model';
 import type { ViewerApi } from './core/types/viewer-api';
-import type { ViewBox, ViewerStateSnapshot } from './core/types/viewer';
+import type { ContentSize, ViewBox, ViewerStateSnapshot } from './core/types/viewer';
 import { registerPlugin } from './plugins/registry';
 import type { MediaType, MediaSource } from './iiif/mediaResolver';
 
@@ -49,6 +49,13 @@ export class Mango implements ViewerApi {
   getViewBox(): ViewBox | null {
     const instance = this.instance as { getViewBox?: () => ViewBox | null };
     return instance?.getViewBox?.() ?? null;
+  }
+
+  getContentSize(): ContentSize | null {
+    const instance = this.instance as {
+      getContentSize?: () => ContentSize | null;
+    };
+    return instance?.getContentSize?.() ?? null;
   }
 
   setViewBox(box: ViewBox): void {

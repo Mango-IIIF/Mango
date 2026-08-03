@@ -5,6 +5,12 @@ export type ViewBox = {
   h: number;
 };
 
+/** Intrinsic pixel dimensions of the media currently open in the viewer. */
+export type ContentSize = {
+  width: number;
+  height: number;
+};
+
 export type ViewerStateSnapshot = {
   manifestId: string;
   canvasId: string | null;

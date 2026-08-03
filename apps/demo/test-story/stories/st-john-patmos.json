@@ -1,0 +1,971 @@
+{
+  "@context": [
+    "http://iiif.io/api/presentation/3/context.json",
+    {
+      "mango": "https://mango-iiif.github.io/ns/story#",
+      "mangoState": {
+        "@id": "mango:state",
+        "@type": "@json"
+      }
+    }
+  ],
+  "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json",
+  "type": "AnnotationPage",
+  "mango:storyVersion": "1.0",
+  "label": {
+    "en": [
+      "Landscape with Saint John on Patmos — Nicolas Poussin"
+    ]
+  },
+  "items": [
+    {
+      "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json/annotation/chapter_1",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Saint John writes Revelation"
+        ]
+      },
+      "summary": {
+        "en": [
+          "In the foreground of this serene landscape, Saint John the Evangelist sits writing the Book of Revelation — the visionary last book of the New Testament."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/2364b23c-f4e0-ce4e-9d65-d31a6b0f5dff#t=0,10.05",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_1",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 6092,
+              "h": 4508
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 9850,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 3046.0,
+                    "y": 2254.0
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 6092,
+                    "h": 4508
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 9850,
+                  "focus": {
+                    "x": 3625.0,
+                    "y": 3799.5
+                  },
+                  "viewBox": {
+                    "x": 2950,
+                    "y": 3300,
+                    "w": 1350,
+                    "h": 999
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/5848/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,6092,4508"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json/annotation/chapter_2",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The eagle of Saint John"
+        ]
+      },
+      "summary": {
+        "en": [
+          "An eagle — Saint John's traditional symbol — stands just behind him."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/2364b23c-f4e0-ce4e-9d65-d31a6b0f5dff#t=10.05,14.76",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_2",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+            "viewBox": {
+              "x": 2950,
+              "y": 3300,
+              "w": 1920,
+              "h": 999
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 4510,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 3625.0,
+                    "y": 3799.5
+                  },
+                  "viewBox": {
+                    "x": 2950,
+                    "y": 3300,
+                    "w": 1350,
+                    "h": 999
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 4510,
+                  "focus": {
+                    "x": 4495.0,
+                    "y": 3707.5
+                  },
+                  "viewBox": {
+                    "x": 4120,
+                    "y": 3430,
+                    "w": 750,
+                    "h": 555
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/5848/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=2950,3300,1920,999"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json/annotation/chapter_3",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "A fallen pagan world"
+        ]
+      },
+      "summary": {
+        "en": [
+          "The saint represents the advent of the new Christian faith, which will replace the fallen pagan beliefs alluded to by the classical ruins around him."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/2364b23c-f4e0-ce4e-9d65-d31a6b0f5dff#t=14.76,24.29",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_3",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+            "viewBox": {
+              "x": 850,
+              "y": 2500,
+              "w": 4020,
+              "h": 1924
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 9330,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 4495.0,
+                    "y": 3707.5
+                  },
+                  "viewBox": {
+                    "x": 4120,
+                    "y": 3430,
+                    "w": 750,
+                    "h": 555
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 4665,
+                  "focus": {
+                    "x": 2150.0,
+                    "y": 3462.0
+                  },
+                  "viewBox": {
+                    "x": 850,
+                    "y": 2500,
+                    "w": 2600,
+                    "h": 1924
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 9330,
+                  "focus": {
+                    "x": 1850.0,
+                    "y": 3455.0
+                  },
+                  "viewBox": {
+                    "x": 1100,
+                    "y": 2900,
+                    "w": 1500,
+                    "h": 1110
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/5848/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=850,2500,4020,1924"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json/annotation/chapter_4",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Poussin in Rome"
+        ]
+      },
+      "summary": {
+        "en": [
+          "The painting was made by the great seventeenth-century French artist Nicolas Poussin in Rome, where he spent much of his working life."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/2364b23c-f4e0-ce4e-9d65-d31a6b0f5dff#t=24.29,33.41",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_4",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 6092,
+              "h": 4508
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 8920,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 1850.0,
+                    "y": 3455.0
+                  },
+                  "viewBox": {
+                    "x": 1100,
+                    "y": 2900,
+                    "w": 1500,
+                    "h": 1110
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 4460,
+                  "focus": {
+                    "x": 3050.0,
+                    "y": 2287.0
+                  },
+                  "viewBox": {
+                    "x": 500,
+                    "y": 400,
+                    "w": 5100,
+                    "h": 3774
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 8920,
+                  "focus": {
+                    "x": 3046.0,
+                    "y": 2254.0
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 6092,
+                    "h": 4508
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/5848/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,6092,4508"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json/annotation/chapter_5",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Clarity and geometry"
+        ]
+      },
+      "summary": {
+        "en": [
+          "A perfect example of Poussin's idealized classical landscapes, constructed with a sense of clarity and geometry."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/2364b23c-f4e0-ce4e-9d65-d31a6b0f5dff#t=33.41,42.37",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_5",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 6092,
+              "h": 4508
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 8760,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 3046.0,
+                    "y": 2254.0
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 6092,
+                    "h": 4508
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 4380,
+                  "focus": {
+                    "x": 2100.0,
+                    "y": 2354.0
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 800,
+                    "w": 4200,
+                    "h": 3108
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 8760,
+                  "focus": {
+                    "x": 3990.0,
+                    "y": 2354.0
+                  },
+                  "viewBox": {
+                    "x": 1890,
+                    "y": 800,
+                    "w": 4200,
+                    "h": 3108
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/5848/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,6092,4508"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json/annotation/chapter_6",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The zigzag path"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Notice how the path behind Saint John zigzags its way back into the middle distance, the trees diminishing in size to help create a sense of depth."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/2364b23c-f4e0-ce4e-9d65-d31a6b0f5dff#t=42.37,53.5",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_6",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+            "viewBox": {
+              "x": 1890,
+              "y": 800,
+              "w": 4200,
+              "h": 3108
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 10930,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 3990.0,
+                    "y": 2354.0
+                  },
+                  "viewBox": {
+                    "x": 1890,
+                    "y": 800,
+                    "w": 4200,
+                    "h": 3108
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 5465,
+                  "focus": {
+                    "x": 4750.0,
+                    "y": 2701.0
+                  },
+                  "viewBox": {
+                    "x": 3600,
+                    "y": 1850,
+                    "w": 2300,
+                    "h": 1702
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 10930,
+                  "focus": {
+                    "x": 4775.0,
+                    "y": 2136.5
+                  },
+                  "viewBox": {
+                    "x": 4050,
+                    "y": 1600,
+                    "w": 1450,
+                    "h": 1073
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/5848/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1890,800,4200,3108"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json/annotation/chapter_7",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Echoing verticals"
+        ]
+      },
+      "summary": {
+        "en": [
+          "The upright classical pedestal near the saint is echoed by the tall tree behind it — and again by the ancient temple columns and obelisk in the distance."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/2364b23c-f4e0-ce4e-9d65-d31a6b0f5dff#t=53.5,66.04",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_7",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+            "viewBox": {
+              "x": 850,
+              "y": 1300,
+              "w": 4650,
+              "h": 1904
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 12340,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 4775.0,
+                    "y": 2136.5
+                  },
+                  "viewBox": {
+                    "x": 4050,
+                    "y": 1600,
+                    "w": 1450,
+                    "h": 1073
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 6170,
+                  "focus": {
+                    "x": 1900.0,
+                    "y": 2427.0
+                  },
+                  "viewBox": {
+                    "x": 850,
+                    "y": 1650,
+                    "w": 2100,
+                    "h": 1554
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 12340,
+                  "focus": {
+                    "x": 2775.0,
+                    "y": 1762.5
+                  },
+                  "viewBox": {
+                    "x": 2150,
+                    "y": 1300,
+                    "w": 1250,
+                    "h": 925
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/5848/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=850,1300,4650,1904"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json/annotation/chapter_8",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Painted for connoisseurs"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Poussin's work was highly appreciated by cultivated, classically educated collectors among the Roman and French aristocracy. Curator Martha Wolff."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/2364b23c-f4e0-ce4e-9d65-d31a6b0f5dff#t=66.04,75.89",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_8",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 6092,
+              "h": 4508
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 9650,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 2775.0,
+                    "y": 1762.5
+                  },
+                  "viewBox": {
+                    "x": 2150,
+                    "y": 1300,
+                    "w": 1250,
+                    "h": 925
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 4825,
+                  "focus": {
+                    "x": 3050.0,
+                    "y": 2239.0
+                  },
+                  "viewBox": {
+                    "x": 700,
+                    "y": 500,
+                    "w": 4700,
+                    "h": 3478
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 9650,
+                  "focus": {
+                    "x": 3046.0,
+                    "y": 2254.0
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 6092,
+                    "h": 4508
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/5848/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,6092,4508"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/st-john-patmos.json/annotation/chapter_9",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Stoic calm"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Poussin and his admirers were drawn to Stoic philosophy — the rationality of the landscape and its calmness were probably very appealing."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/2364b23c-f4e0-ce4e-9d65-d31a6b0f5dff#t=75.89,88.5",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_9",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 6092,
+              "h": 4508
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "delayMs": 500
+            },
+            "cameraTrack": {
+              "durationMs": 12410,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 3046.0,
+                    "y": 2254.0
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 6092,
+                    "h": 4508
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 12410,
+                  "focus": {
+                    "x": 3050.0,
+                    "y": 2272.0
+                  },
+                  "viewBox": {
+                    "x": 250,
+                    "y": 200,
+                    "w": 5600,
+                    "h": 4144
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/aa870b0d-5a1b-660a-6dc6-56c12109cf6e",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/5848/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,6092,4508"
+        }
+      }
+    }
+  ]
+}

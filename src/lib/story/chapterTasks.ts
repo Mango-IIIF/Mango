@@ -4,6 +4,7 @@ import { translate } from '../i18n';
 
 export type ChapterTaskId =
   | 'details'
+  | 'position'
   | 'focus'
   | 'motion'
   | 'audio-timing'
@@ -51,7 +52,8 @@ const hasText = (value: string | undefined): boolean => Boolean(value?.trim());
 const validationForTask = (task: ChapterTaskId, messages: string[]): string[] => {
   const patterns: Record<ChapterTaskId, RegExp> = {
     details: /title|description|language|translation/i,
-    focus: /viewBox|capture|model pose|placement|annotation/i,
+    position: /viewBox|capture/i,
+    focus: /model pose|placement|annotation/i,
     motion: /motion|camera track|camera point|keyframe/i,
     'audio-timing': /narration|voiceover/i,
     'transition-timing': /advance|delay|chapter transition/i,
@@ -73,6 +75,21 @@ export const evaluateTaskAvailability = (
     case 'audio-timing':
     case 'transition-timing':
     case 'source':
+      return { state: 'available' };
+    case 'position':
+      // Framing is stored as a viewBox, which only applies to spatial media.
+      if (
+        context.mediaType === 'audio' ||
+        context.mediaType === 'video' ||
+        context.mediaType === 'model' ||
+        Boolean(chapter.model)
+      ) {
+        return {
+          state: 'disabled',
+          reason: translate('storyBuilder.tasks.availability.positionMedia'),
+          action: translate('storyBuilder.tasks.availability.chooseImage'),
+        };
+      }
       return { state: 'available' };
     case 'media-timing':
       return context.mediaType === 'audio' || context.mediaType === 'video'
@@ -161,6 +178,11 @@ export const evaluateTaskStatus = (
         { translated, languageTotal: configured.length },
       );
     }
+    case 'position': {
+      const viewBox = chapter.viewBox;
+      if (!viewBox) return withAttention('empty');
+      return withAttention(viewBox.w > 0 && viewBox.h > 0 ? 'complete' : 'attention');
+    }
     case 'focus': {
       const annotations = Object.values(chapter.annotations ?? {});
       const hasAnnotation = annotations.some((annotation) => hasText(annotation.text));
@@ -227,6 +249,7 @@ export const evaluateChapterTasks = (context: ChapterTaskContext): ChapterTaskEv
       'source',
       'transition-timing',
       'details',
+      'position',
       'audio-timing',
       'focus',
       'motion',
@@ -243,6 +266,7 @@ export const evaluateChapterTasks = (context: ChapterTaskContext): ChapterTaskEv
 export const taskForValidationMessage = (message: string): ChapterTaskId => {
   const ids: ChapterTaskId[] = [
     'details',
+    'position',
     'focus',
     'motion',
     'audio-timing',

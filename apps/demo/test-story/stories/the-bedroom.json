@@ -1,0 +1,1013 @@
+{
+  "@context": [
+    "http://iiif.io/api/presentation/3/context.json",
+    {
+      "mango": "https://mango-iiif.github.io/ns/story#",
+      "mangoState": {
+        "@id": "mango:state",
+        "@type": "@json"
+      }
+    }
+  ],
+  "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json",
+  "type": "AnnotationPage",
+  "mango:storyVersion": "1.0",
+  "label": {
+    "en": [
+      "The Bedroom — Vincent van Gogh"
+    ]
+  },
+  "items": [
+    {
+      "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json/annotation/chapter_1",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Why we are drawn to it"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Gloria Groom, curator of European painting and sculpture: one of the reasons people are so drawn to this painting is the subject matter itself."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/02e976d2-8c4a-3cc2-9d2b-3cee40fe8291#t=0,13.9",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_1",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 12614,
+              "h": 9875
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 13700,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 6307.0,
+                    "y": 4937.5
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 12614,
+                    "h": 9875
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 13700,
+                  "focus": {
+                    "x": 6300.0,
+                    "y": 4921.0
+                  },
+                  "viewBox": {
+                    "x": 1100,
+                    "y": 850,
+                    "w": 10400,
+                    "h": 8142
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/28560/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,12614,9875"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json/annotation/chapter_2",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "His paintings, his furniture"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Van Gogh is painting his own bedroom — with his paintings in it, and the furniture that he purchased."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/02e976d2-8c4a-3cc2-9d2b-3cee40fe8291#t=13.9,22.41",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_2",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+            "viewBox": {
+              "x": 1100,
+              "y": 0,
+              "w": 10400,
+              "h": 8992
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 8310,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 6300.0,
+                    "y": 4921.0
+                  },
+                  "viewBox": {
+                    "x": 1100,
+                    "y": 850,
+                    "w": 10400,
+                    "h": 8142
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 4155,
+                  "focus": {
+                    "x": 8700.0,
+                    "y": 1879.0
+                  },
+                  "viewBox": {
+                    "x": 6300,
+                    "y": 0,
+                    "w": 4800,
+                    "h": 3758
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 8310,
+                  "focus": {
+                    "x": 9000.0,
+                    "y": 1067.5
+                  },
+                  "viewBox": {
+                    "x": 7700,
+                    "y": 50,
+                    "w": 2600,
+                    "h": 2035
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/28560/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1100,0,10400,8992"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json/annotation/chapter_3",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The Yellow House at Arles"
+        ]
+      },
+      "summary": {
+        "en": [
+          "This was Van Gogh's bedroom in his house in Arles, where he lived in the late 1880s — and where he dreamt of establishing an artists' collective, a Studio of the South."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/02e976d2-8c4a-3cc2-9d2b-3cee40fe8291#t=22.41,35.21",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_3",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+            "viewBox": {
+              "x": 2000,
+              "y": 0,
+              "w": 8300,
+              "h": 3601
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 12600,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 9000.0,
+                    "y": 1067.5
+                  },
+                  "viewBox": {
+                    "x": 7700,
+                    "y": 50,
+                    "w": 2600,
+                    "h": 2035
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 6300,
+                  "focus": {
+                    "x": 4300.0,
+                    "y": 1800.5
+                  },
+                  "viewBox": {
+                    "x": 2000,
+                    "y": 0,
+                    "w": 4600,
+                    "h": 3601
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 12600,
+                  "focus": {
+                    "x": 3800.0,
+                    "y": 1367.5
+                  },
+                  "viewBox": {
+                    "x": 2500,
+                    "y": 350,
+                    "w": 2600,
+                    "h": 2035
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/28560/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=2000,0,8300,3601"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json/annotation/chapter_4",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "A place to call home"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Initially Van Gogh was filled with great optimism about the endeavor — and the idea of finally finding a place to call home."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/02e976d2-8c4a-3cc2-9d2b-3cee40fe8291#t=35.21,44.02",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_4",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+            "viewBox": {
+              "x": 2500,
+              "y": 350,
+              "w": 9000,
+              "h": 5977
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 8610,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 3800.0,
+                    "y": 1367.5
+                  },
+                  "viewBox": {
+                    "x": 2500,
+                    "y": 350,
+                    "w": 2600,
+                    "h": 2035
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 4305,
+                  "focus": {
+                    "x": 8800.0,
+                    "y": 4213.5
+                  },
+                  "viewBox": {
+                    "x": 6100,
+                    "y": 2100,
+                    "w": 5400,
+                    "h": 4227
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 8610,
+                  "focus": {
+                    "x": 8900.0,
+                    "y": 4300.5
+                  },
+                  "viewBox": {
+                    "x": 6600,
+                    "y": 2500,
+                    "w": 4600,
+                    "h": 3601
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/28560/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=2500,350,9000,5977"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json/annotation/chapter_5",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "\"An empty bedroom\""
+        ]
+      },
+      "summary": {
+        "en": [
+          "The room is simple, almost austere. To Theo he wrote: \"He'll probably find the interior the ugliest — an empty bedroom with a wooden bed and two chairs. Yet I've painted it twice on a large scale.\""
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/02e976d2-8c4a-3cc2-9d2b-3cee40fe8291#t=44.02,61.82",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_5",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+            "viewBox": {
+              "x": 300,
+              "y": 2500,
+              "w": 10900,
+              "h": 3645
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 17600,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 8900.0,
+                    "y": 4300.5
+                  },
+                  "viewBox": {
+                    "x": 6600,
+                    "y": 2500,
+                    "w": 4600,
+                    "h": 3601
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 5867,
+                  "focus": {
+                    "x": 1800.0,
+                    "y": 4874.5
+                  },
+                  "viewBox": {
+                    "x": 300,
+                    "y": 3700,
+                    "w": 3000,
+                    "h": 2349
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 11733,
+                  "focus": {
+                    "x": 4900.0,
+                    "y": 3874.5
+                  },
+                  "viewBox": {
+                    "x": 3400,
+                    "y": 2700,
+                    "w": 3000,
+                    "h": 2349
+                  }
+                },
+                {
+                  "id": "d",
+                  "timeMs": 17600,
+                  "focus": {
+                    "x": 8600.0,
+                    "y": 4422.5
+                  },
+                  "viewBox": {
+                    "x": 6400,
+                    "y": 2700,
+                    "w": 4400,
+                    "h": 3445
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/28560/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=300,2500,10900,3645"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json/annotation/chapter_6",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "One of his very best"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Van Gogh considered this painting one of his very best. He makes it look so interesting and inviting — and at the same time rather discomforting."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/02e976d2-8c4a-3cc2-9d2b-3cee40fe8291#t=61.82,74.89",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_6",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 12614,
+              "h": 9875
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 12870,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 8600.0,
+                    "y": 4422.5
+                  },
+                  "viewBox": {
+                    "x": 6400,
+                    "y": 2700,
+                    "w": 4400,
+                    "h": 3445
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 6435,
+                  "focus": {
+                    "x": 6500.0,
+                    "y": 5023.0
+                  },
+                  "viewBox": {
+                    "x": 2000,
+                    "y": 1500,
+                    "w": 9000,
+                    "h": 7046
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 12870,
+                  "focus": {
+                    "x": 6307.0,
+                    "y": 4937.5
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 12614,
+                    "h": 9875
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/28560/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,12614,9875"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json/annotation/chapter_7",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Splayed-out floorboards"
+        ]
+      },
+      "summary": {
+        "en": [
+          "The way the paint is laid on — its brokenness, the extreme radicalness of these splayed-out floorboards — brings a definite unease, an unsettledness."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/02e976d2-8c4a-3cc2-9d2b-3cee40fe8291#t=74.89,89.23",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_7",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 12614,
+              "h": 9875
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 14140,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 6307.0,
+                    "y": 4937.5
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 12614,
+                    "h": 9875
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 7070,
+                  "focus": {
+                    "x": 4700.0,
+                    "y": 7327.0
+                  },
+                  "viewBox": {
+                    "x": 1600,
+                    "y": 4900,
+                    "w": 6200,
+                    "h": 4854
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 14140,
+                  "focus": {
+                    "x": 4800.0,
+                    "y": 7539.5
+                  },
+                  "viewBox": {
+                    "x": 3600,
+                    "y": 6600,
+                    "w": 2400,
+                    "h": 1879
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/28560/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,12614,9875"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json/annotation/chapter_8",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Shattered dreams"
+        ]
+      },
+      "summary": {
+        "en": [
+          "That unease likely relates to Van Gogh's state of mind. He painted this version after a mental breakdown, from the asylum — knowing he would never have that kind of home of his own."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/02e976d2-8c4a-3cc2-9d2b-3cee40fe8291#t=89.23,109.26",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_8",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+            "viewBox": {
+              "x": 3600,
+              "y": 2400,
+              "w": 6900,
+              "h": 6079
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              }
+            },
+            "cameraTrack": {
+              "durationMs": 19830,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 4800.0,
+                    "y": 7539.5
+                  },
+                  "viewBox": {
+                    "x": 3600,
+                    "y": 6600,
+                    "w": 2400,
+                    "h": 1879
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 9915,
+                  "focus": {
+                    "x": 8600.0,
+                    "y": 3887.5
+                  },
+                  "viewBox": {
+                    "x": 6700,
+                    "y": 2400,
+                    "w": 3800,
+                    "h": 2975
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 19830,
+                  "focus": {
+                    "x": 8500.0,
+                    "y": 3889.5
+                  },
+                  "viewBox": {
+                    "x": 7300,
+                    "y": 2950,
+                    "w": 2400,
+                    "h": 1879
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/28560/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=3600,2400,6900,6079"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/the-bedroom.json/annotation/chapter_9",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Painted alive"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Ordinary furnishings — but the way the room is painted makes it alive, with an excitement we just don't expect in the art of that period. It is very unusual."
+        ]
+      },
+      "body": [
+        {
+          "id": "https://www.artic.edu/assets/02e976d2-8c4a-3cc2-9d2b-3cee40fe8291#t=109.26,127.5",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": "mango:ViewerState",
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "chapterId": "chapter_9",
+            "canvasIndex": 0,
+            "canvasId": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 12614,
+              "h": 9875
+            },
+            "playback": {
+              "transitionMs": 600,
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "delayMs": 500
+            },
+            "cameraTrack": {
+              "durationMs": 18040,
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out",
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 8500.0,
+                    "y": 3889.5
+                  },
+                  "viewBox": {
+                    "x": 7300,
+                    "y": 2950,
+                    "w": 2400,
+                    "h": 1879
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 9020,
+                  "focus": {
+                    "x": 6350.0,
+                    "y": 4931.5
+                  },
+                  "viewBox": {
+                    "x": 1200,
+                    "y": 900,
+                    "w": 10300,
+                    "h": 8063
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 18040,
+                  "focus": {
+                    "x": 6307.0,
+                    "y": 4937.5
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 12614,
+                    "h": 9875
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/6644829f-f292-c5c4-a73c-0356a6fdbf0d",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/28560/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,12614,9875"
+        }
+      }
+    }
+  ]
+}

@@ -166,6 +166,10 @@ export const createStoryBuilderPlugins = (
         onUpdateAdvanceMode: controller.updateAdvanceMode,
         onUpdateDelay: controller.updateDelay,
         onUpdateChapterPosition: controller.updateChapterPosition,
+        onSetChapterPosition: controller.setChapterPosition,
+        storyPreviewing: controller.isPreviewing,
+        onPreviewChapter: controller.previewChapter,
+        onStopChapterPreview: controller.stopPreview,
         onRevertChapterPosition: () => {
           const chapterId = get(controller.selectedChapterId);
           if (chapterId) controller.selectChapter(chapterId);

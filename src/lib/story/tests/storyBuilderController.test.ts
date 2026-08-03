@@ -292,13 +292,254 @@ describe("story builder narration defaults", () => {
 
     viewer.getViewBox.mockReturnValue({ x: 12, y: 18, w: 60, h: 55 });
     controller.updateChapterPosition();
-    expect(get(controller.story).chapters[0]).toMatchObject({
+    const stored = get(controller.story).chapters[0];
+    expect(stored).toMatchObject({
       manifest: "https://example.org/manifest.json",
       canvasIndex: 0,
-      viewBox: { x: 12, y: 18, w: 60, h: 55 },
       layerOpacities: { "painting-layer": 0.35 },
     });
+    // The captured viewport carries the stage's shape, so it is stored at the
+    // story's canonical aspect (1:1 here, from the chapter's existing framing)
+    // keeping the centre and the amount of image covered.
+    expect(stored.viewBox!.w / stored.viewBox!.h).toBeCloseTo(1, 6);
+    expect(stored.viewBox!.w * stored.viewBox!.h).toBeCloseTo(60 * 55, 4);
+    expect(stored.viewBox!.x + stored.viewBox!.w / 2).toBeCloseTo(12 + 30, 6);
+    expect(stored.viewBox!.y + stored.viewBox!.h / 2).toBeCloseTo(18 + 27.5, 6);
     detach();
+  });
+
+  it("takes a new story's shape from the canvas, not the stage it was captured on", () => {
+    const controller = createStoryBuilderController({
+      initialStory: { chapters: [] },
+    });
+    const events = createEventBus();
+    const viewer = {
+      getManifestId: () => "https://example.org/manifest.json",
+      getState: () => null,
+      // A stage caught mid-layout: tall and narrow, nothing like the image.
+      getViewBox: vi.fn(() => ({ x: 0, y: 0, w: 300, h: 900 })),
+      getContentSize: vi.fn(() => ({ width: 9310, height: 6237 })),
+      getCanvasIndex: () => 0,
+      getCanvasCount: () => 1,
+      getCanvasId: () => "canvas-1",
+      getMediaType: () => "image",
+      getMediaSources: () => [],
+      getLayerOpacities: () => ({}),
+      setStoryAnnotations: vi.fn(),
+      setStoryAnnotationEditing: vi.fn(),
+      setStoryAnnotationSelection: vi.fn(),
+      setAnnotationTool: vi.fn(),
+      setCanvasByIndex: vi.fn(),
+      setCanvasById: vi.fn(),
+      setManifest: vi.fn(),
+      setViewBox: vi.fn(),
+      updateLayerOpacity: vi.fn(),
+      setModelOrbit: vi.fn(),
+      setModelTarget: vi.fn(),
+      setModelOrientation: vi.fn(),
+      addAnnotation: vi.fn(),
+      removeAnnotation: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    };
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+
+    controller.addChapter();
+    const framing = get(controller.story).chapters[0].viewBox!;
+    expect(framing.w / framing.h).toBeCloseTo(9310 / 6237, 6);
+
+    detach();
+  });
+
+  it("lets the first capture define the story shape and conforms later ones", () => {
+    const controller = createStoryBuilderController({
+      initialStory: { chapters: [] },
+    });
+    const events = createEventBus();
+    const viewer = {
+      getManifestId: () => "https://example.org/manifest.json",
+      getState: () => null,
+      // The editor stage is 1.7 wide when the first chapter is captured.
+      getViewBox: vi.fn(() => ({ x: 0, y: 0, w: 1700, h: 1000 })),
+      getCanvasIndex: () => 0,
+      getCanvasCount: () => 1,
+      getCanvasId: () => "canvas-1",
+      getMediaType: () => "image",
+      getMediaSources: () => [],
+      getLayerOpacities: () => ({}),
+      setStoryAnnotations: vi.fn(),
+      setStoryAnnotationEditing: vi.fn(),
+      setStoryAnnotationSelection: vi.fn(),
+      setAnnotationTool: vi.fn(),
+      setCanvasByIndex: vi.fn(),
+      setCanvasById: vi.fn(),
+      setManifest: vi.fn(),
+      setViewBox: vi.fn(),
+      updateLayerOpacity: vi.fn(),
+      setModelOrbit: vi.fn(),
+      setModelTarget: vi.fn(),
+      setModelOrientation: vi.fn(),
+      addAnnotation: vi.fn(),
+      removeAnnotation: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    };
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+
+    controller.addChapter();
+    const first = get(controller.story).chapters[0].viewBox!;
+    // This viewer reports no content size, so the story falls back to taking
+    // its shape from the first framing captured.
+    expect(first.w / first.h).toBeCloseTo(1.7, 6);
+
+    // The stage is now a different shape — a panel opened, or the window was
+    // resized. The second chapter must still be stored at the story's shape.
+    viewer.getViewBox.mockReturnValue({ x: 0, y: 0, w: 1288, h: 1000 });
+    controller.addChapter();
+    const second = get(controller.story).chapters[1].viewBox!;
+    expect(second.w / second.h).toBeCloseTo(1.7, 6);
+    // ...while still covering what the author had on screen.
+    expect(second.w * second.h).toBeCloseTo(1288 * 1000, 2);
+
+    detach();
+  });
+
+  it("sets an explicit chapter position and keeps preset motion in sync", () => {
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: "manual-position",
+            manifest: "https://example.org/manifest.json",
+            canvasIndex: 0,
+            viewBox: { x: 0, y: 0, w: 1000, h: 500 },
+            cameraTrack: {
+              durationMs: 5000,
+              preset: "zoom-in",
+              keyframes: [
+                {
+                  id: "zoom-in-start",
+                  timeMs: 0,
+                  focus: { x: 500, y: 250 },
+                  viewBox: { x: 0, y: 0, w: 1000, h: 500 },
+                },
+                {
+                  id: "zoom-in-end",
+                  timeMs: 5000,
+                  focus: { x: 500, y: 250 },
+                  viewBox: { x: 280, y: 140, w: 440, h: 220 },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    controller.selectedChapterId.set("manual-position");
+
+    controller.setChapterPosition({ x: 40, y: 60, w: 800, h: 400 });
+
+    const chapter = get(controller.story).chapters[0];
+    expect(chapter.viewBox).toEqual({ x: 40, y: 60, w: 800, h: 400 });
+    expect(chapter.cameraTrack?.preset).toBe("zoom-in");
+    expect(chapter.cameraTrack?.keyframes[0].viewBox).toEqual({
+      x: 100,
+      y: 50,
+      w: 800,
+      h: 400,
+    });
+
+    controller.setChapterPosition({ x: 0, y: 0, w: 0, h: 400 });
+    controller.setChapterPosition({ x: Number.NaN, y: 0, w: 100, h: 100 });
+    expect(get(controller.story).chapters[0].viewBox).toEqual({
+      x: 40,
+      y: 60,
+      w: 800,
+      h: 400,
+    });
+  });
+
+  it("restarts chapter playback when the same chapter is previewed twice", async () => {
+    vi.useFakeTimers();
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: "replayed",
+            manifest: "https://example.org/manifest.json",
+            canvasIndex: 0,
+            media: { start: 0, end: 3 },
+            advance: { mode: "auto", delayMs: 0 },
+          },
+        ],
+      },
+    });
+    const events = createEventBus();
+    const viewer = {
+      getManifestId: () => "https://example.org/manifest.json",
+      getState: () => null,
+      getViewBox: () => null,
+      getCanvasIndex: () => 0,
+      getCanvasCount: () => 1,
+      getCanvasId: () => "canvas-1",
+      getMediaType: () => "audio",
+      getMediaSources: () => [],
+      getLayerOpacities: () => ({}),
+      setMediaSegment: vi.fn(),
+      seekTo: vi.fn(),
+      play: vi.fn(),
+      pause: vi.fn(),
+      setStoryAnnotations: vi.fn(),
+      setStoryAnnotationEditing: vi.fn(),
+      setStoryAnnotationSelection: vi.fn(),
+      setAnnotationTool: vi.fn(),
+      setCanvasByIndex: vi.fn(),
+      setCanvasById: vi.fn(),
+      setManifest: vi.fn(),
+      setViewBox: vi.fn(),
+      updateLayerOpacity: vi.fn(),
+      setModelOrbit: vi.fn(),
+      setModelTarget: vi.fn(),
+      setModelOrientation: vi.fn(),
+      addAnnotation: vi.fn(),
+      removeAnnotation: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    };
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+
+    controller.selectChapter("replayed");
+    viewer.play.mockClear();
+
+    controller.previewChapter("replayed");
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(viewer.play).toHaveBeenCalled();
+
+    // The first preview has finished on its own by now. Previewing the very
+    // same chapter again has to play it again rather than fall through the
+    // "this chapter is already playing" guard.
+    viewer.play.mockClear();
+    controller.previewChapter("replayed");
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(viewer.play).toHaveBeenCalled();
+
+    detach();
+    vi.useRealTimers();
   });
 
   it("captures the full source by default and edits source-media timing independently", () => {

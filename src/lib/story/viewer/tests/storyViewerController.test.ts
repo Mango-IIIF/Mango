@@ -228,6 +228,62 @@ describe('storyViewerController.loadChapter', () => {
     expect(viewer.getCanvasIndex()).toBe(1);
   });
 
+  it('does not repaint the outgoing chapter camera while the next chapter loads', async () => {
+    const viewer = createMockViewer();
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      posePaintedTimeoutMs: 100,
+      sourceOpenTimeoutMs: 100,
+    });
+    // Both chapters pan across the canvas, and chapter one's opening keyframe
+    // is the opposite end of the canvas from where it finishes.
+    const motionStory: StoryWithDefaults = {
+      chapters: [
+        {
+          id: 'pan-right-to-left',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 1000, h: 800 },
+          cameraTrack: {
+            durationMs: 4000,
+            preset: 'custom',
+            keyframes: [
+              { id: 'a', timeMs: 0, viewBox: { x: 8000, y: 0, w: 500, h: 400 } },
+              { id: 'b', timeMs: 4000, viewBox: { x: 100, y: 0, w: 500, h: 400 } },
+            ],
+          },
+          transitionTimeMs: 200,
+        },
+        {
+          id: 'second',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 100, y: 0, w: 600, h: 480 },
+          cameraTrack: {
+            durationMs: 4000,
+            preset: 'custom',
+            keyframes: [
+              { id: 'c', timeMs: 0, viewBox: { x: 100, y: 0, w: 600, h: 480 } },
+              { id: 'd', timeMs: 4000, viewBox: { x: 900, y: 0, w: 600, h: 480 } },
+            ],
+          },
+          transitionTimeMs: 200,
+        },
+      ],
+    };
+
+    await runtime.loadStory(motionStory);
+    viewer.setViewBox.mockClear();
+
+    await runtime.loadChapter(1);
+
+    // Chapter one's opening keyframe sits at x=8000. Sampling it during the
+    // transition snapped the viewer back there before panning to chapter two.
+    const framings = viewer.setViewBox.mock.calls.map(([box]: [any]) => box);
+    expect(framings.some((box) => box?.x === 8000)).toBe(false);
+    expect(framings.length).toBeGreaterThan(0);
+    expect(framings.at(-1)).toMatchObject({ x: 100, w: 600 });
+  });
+
   it('auto advances silent chapters after transitionTimeMs', async () => {
     vi.useFakeTimers();
     const viewer = createMockViewer();
@@ -314,6 +370,267 @@ describe('storyViewerController.loadChapter', () => {
     await runtime.loadChapter(1);
     expect(viewer.setCanvasByIndex).toHaveBeenCalledTimes(2);
     runtime.destroy();
+  });
+
+  it('replays narration when a chapter is selected again or revisited', async () => {
+    const viewer = createMockViewer();
+    // Mirrors the real player: stopping a segment settles its pending promise
+    // with false, which is what re-selecting a chapter triggers.
+    let pendingResolve: ((ok: boolean) => void) | null = null;
+    const mockNarration = {
+      playSegment: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            pendingResolve = resolve;
+          }),
+      ),
+      stop: vi.fn(() => {
+        pendingResolve?.(false);
+        pendingResolve = null;
+      }),
+      pause: vi.fn().mockReturnValue(true),
+      resume: vi.fn().mockReturnValue(true),
+      isPlaying: vi.fn().mockReturnValue(false),
+    };
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      createNarrationPlayer: () => mockNarration as any,
+      posePaintedTimeoutMs: 100,
+      sourceOpenTimeoutMs: 100,
+    });
+
+    const narrStory: StoryWithDefaults = {
+      narration: { tracks: { en: { src: 'audio.mp3' } } },
+      chapters: [
+        {
+          id: 'n1',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 10, h: 10 },
+          narrationSegment: { en: { start: 0, end: 5 } },
+          transitionTimeMs: 200,
+        },
+        {
+          id: 'n2',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 10, h: 10 },
+          narrationSegment: { en: { start: 5, end: 10 } },
+          transitionTimeMs: 200,
+        },
+      ],
+    };
+
+    await runtime.loadStory(narrStory);
+    runtime.play();
+    expect(mockNarration.playSegment).toHaveBeenCalledTimes(1);
+
+    // Selecting the chapter that is already playing must restart it.
+    await runtime.loadChapter(0, { autoPlay: true });
+    await Promise.resolve();
+    expect(mockNarration.playSegment).toHaveBeenCalledTimes(2);
+    expect(runtime.getState()).toBe('PLAYING_NARRATION');
+
+    // Going forward and then back again must narrate each time.
+    await runtime.loadChapter(1, { autoPlay: true });
+    await Promise.resolve();
+    expect(mockNarration.playSegment).toHaveBeenCalledTimes(3);
+
+    await runtime.loadChapter(0, { autoPlay: true });
+    await Promise.resolve();
+    expect(mockNarration.playSegment).toHaveBeenCalledTimes(4);
+    expect(runtime.getState()).toBe('PLAYING_NARRATION');
+
+    runtime.destroy();
+  });
+
+  it('advances as soon as narration ends when the camera track has no points', async () => {
+    vi.useFakeTimers();
+    const viewer = createMockViewer();
+    let finishNarration: ((ok: boolean) => void) | undefined;
+    const mockNarration = {
+      playSegment: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishNarration = resolve;
+          }),
+      ),
+      stop: vi.fn(),
+      pause: vi.fn().mockReturnValue(true),
+      resume: vi.fn().mockReturnValue(true),
+      isPlaying: vi.fn().mockReturnValue(true),
+      getCurrentTime: vi.fn(() => 0),
+    };
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      createNarrationPlayer: () => mockNarration as any,
+      posePaintedTimeoutMs: 50,
+      sourceOpenTimeoutMs: 50,
+    });
+    const emptyTrackStory: StoryWithDefaults = {
+      narration: { tracks: { en: { src: 'narration.mp3' } } },
+      chapters: [
+        {
+          id: 'empty-track',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          narrationSegment: { en: { start: 0, end: 4.67 } },
+          // Authored by opening the motion tools without placing any points.
+          cameraTrack: { durationMs: 8000, preset: 'custom', keyframes: [] },
+          advance: { mode: 'auto', delayMs: 0 },
+          transitionTimeMs: 0,
+        },
+        {
+          id: 'next',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          advance: { mode: 'manual' },
+        },
+      ],
+    };
+
+    const loadPromise = runtime.loadStory(emptyTrackStory);
+    await vi.advanceTimersByTimeAsync(200);
+    await loadPromise;
+
+    runtime.play();
+    finishNarration?.(true);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // The empty 8s track must not hold the chapter for a further 3.3s after
+    // the narration has finished, with nothing moving on screen.
+    expect(runtime.getState()).not.toBe('PRESENTING_SILENT');
+
+    runtime.destroy();
+    vi.useRealTimers();
+  });
+
+  it('lets the newest chapter win when selections overlap', async () => {
+    const viewer = createMockViewer();
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      posePaintedTimeoutMs: 50,
+      sourceOpenTimeoutMs: 50,
+    });
+    const rapidStory: StoryWithDefaults = {
+      chapters: [
+        { id: 'a', manifest: 'm1', canvasIndex: 0, viewBox: { x: 0, y: 0, w: 10, h: 10 } },
+        { id: 'b', manifest: 'm1', canvasIndex: 0, viewBox: { x: 20, y: 0, w: 10, h: 10 } },
+        { id: 'c', manifest: 'm1', canvasIndex: 0, viewBox: { x: 40, y: 0, w: 10, h: 10 } },
+      ],
+    };
+
+    await runtime.loadStory(rapidStory);
+
+    let observedIndex = -1;
+    const unsubscribe = runtime.currentChapterIndex.subscribe((value: any) => {
+      observedIndex = value ?? 0;
+    });
+
+    // Clicking through the chapter strip faster than transitions complete.
+    // Superseded loads settle rather than hang, so each one must stand down
+    // instead of applying its chapter after a newer one has taken over.
+    const first = runtime.loadChapter(1);
+    const second = runtime.loadChapter(2);
+    await Promise.all([first, second]);
+
+    expect(observedIndex).toBe(2);
+
+    let loading = true;
+    const unsubscribeLoading = runtime.isLoading.subscribe((value: any) => {
+      loading = value;
+    });
+    expect(loading).toBe(false);
+
+    unsubscribeLoading();
+    unsubscribe();
+    runtime.destroy();
+  });
+
+  it('keeps time and motion running when jumping back to an earlier chapter', async () => {
+    vi.useFakeTimers();
+    const viewer = createMockViewer();
+    // The shared audio element still reports the later chapter's position
+    // until the backwards seek lands.
+    const narrationTime = 20;
+    const mockNarration = {
+      playSegment: vi.fn(() => new Promise<boolean>(() => {})),
+      stop: vi.fn(),
+      pause: vi.fn().mockReturnValue(true),
+      resume: vi.fn().mockReturnValue(true),
+      isPlaying: vi.fn().mockReturnValue(true),
+      getCurrentTime: vi.fn(() => narrationTime),
+    };
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      createNarrationPlayer: () => mockNarration as any,
+      posePaintedTimeoutMs: 100,
+      sourceOpenTimeoutMs: 100,
+    });
+    const jumpStory: StoryWithDefaults = {
+      narration: { tracks: { en: { src: 'narration.mp3' } } },
+      chapters: [
+        {
+          id: 'early',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          narrationSegment: { en: { start: 0, end: 5 } },
+          presentationDurationMs: 5000,
+          cameraTrack: {
+            durationMs: 5000,
+            preset: 'pan',
+            easing: 'linear',
+            keyframes: [
+              { id: 'a', timeMs: 0, viewBox: { x: 0, y: 0, w: 50, h: 50 } },
+              { id: 'b', timeMs: 5000, viewBox: { x: 400, y: 0, w: 50, h: 50 } },
+            ],
+          },
+          advance: { mode: 'manual' },
+        },
+        {
+          id: 'later',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          narrationSegment: { en: { start: 20, end: 25 } },
+          advance: { mode: 'manual' },
+        },
+      ],
+    };
+
+    const loadPromise = runtime.loadStory(jumpStory);
+    await vi.advanceTimersByTimeAsync(150);
+    await loadPromise;
+
+    const laterLoad = runtime.loadChapter(1, { autoPlay: true });
+    await vi.advanceTimersByTimeAsync(300);
+    await laterLoad;
+
+    // Jump back to the first chapter while the element still reads 20s.
+    viewer.setViewBox.mockClear();
+    const backLoad = runtime.loadChapter(0, { autoPlay: true });
+    await vi.advanceTimersByTimeAsync(300);
+    await backLoad;
+    await vi.advanceTimersByTimeAsync(100);
+
+    // The chapter must actually be presenting, not skipped to its end.
+    expect(runtime.getState()).toBe('PLAYING_NARRATION');
+    const playback = runtime.playbackState;
+    let observed = { currentTime: 0, duration: 0 };
+    const unsubscribe = playback.subscribe((value: any) => {
+      observed = value;
+    });
+    expect(observed.duration).toBeGreaterThan(4);
+    expect(observed.currentTime).toBeLessThan(1);
+
+    // And the camera must be near the start of its track, not the far end.
+    const framings = viewer.setViewBox.mock.calls.map(([box]: [any]) => box);
+    expect(framings.length).toBeGreaterThan(0);
+    expect(framings.at(-1).x).toBeLessThan(100);
+
+    unsubscribe();
+    runtime.destroy();
+    vi.useRealTimers();
   });
 
   it('plays camera motion with narration, then waits before advancing', async () => {

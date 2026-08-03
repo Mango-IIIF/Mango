@@ -6,7 +6,7 @@
   import type { ViewerEventMap } from '../../core/types/events';
   import type { ViewerConfig } from '../../core/types/config';
   import type { ChapterAnnotationTool } from '../../core/types/story';
-  import type { ViewBox } from '../../core/types/viewer';
+  import type { ContentSize, ViewBox } from '../../core/types/viewer';
   import type { ViewerPlugin } from '../../core/types/plugin';
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
   import type { ViewerApi } from '../../core/types/viewer-api';
@@ -573,6 +573,7 @@
   const storyRuntime = createStoryViewerRuntime(
     {
       getViewBox: () => callViewerMethod('getViewBox', getViewBox),
+      getContentSize: () => callViewerMethod('getContentSize', getContentSize),
       setViewBox: (box) => callViewerMethod('setViewBox', setViewBox, box),
       getMediaType: () => callViewerMethod('getMediaType', getMediaType),
       getState: () => callViewerMethod('getState', getState),
@@ -932,6 +933,7 @@
 
   const viewerApi: ViewerApi = {
     getViewBox,
+    getContentSize,
     setViewBox,
     getZoom,
     setZoom,
@@ -1162,6 +1164,10 @@
 
   export function getViewBox(): ViewBox | null {
     return stageRef?.getViewBox?.() ?? null;
+  }
+
+  export function getContentSize(): ContentSize | null {
+    return stageRef?.getContentSize?.() ?? null;
   }
 
   export function setViewBox(box: ViewBox): void {

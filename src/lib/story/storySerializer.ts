@@ -62,6 +62,12 @@ export type StoryAnnotationPage = {
   type: 'AnnotationPage';
   'mango:storyVersion': typeof MANGO_STORY_VERSION;
   'mango:draft'?: true;
+  /**
+   * Aspect every framing in this story is stored at. Carried on the page so
+   * normalisation is reproducible: without it a reopened story re-infers the
+   * aspect from its own boxes, which drifts once chapters are added.
+   */
+  'mango:presentationAspect'?: number;
   label: Record<string, string[]>;
   items: StoryAnnotation[];
 };
@@ -372,6 +378,9 @@ export const serializeStoryToIiif = (
     type: 'AnnotationPage',
     'mango:storyVersion': MANGO_STORY_VERSION,
     ...(!raw.id && !options.id ? { 'mango:draft': true as const } : {}),
+    ...(Number.isFinite(raw.presentationAspect) && (raw.presentationAspect as number) > 0
+      ? { 'mango:presentationAspect': raw.presentationAspect as number }
+      : {}),
     label: Object.keys(label).length > 0 ? label : { en: [translate('storyBuilder.export.trackLabel')] },
     items,
   };
@@ -479,6 +488,7 @@ export const loadStoryIntoStore = (
   storyStoreWrapper.loadStory({
     id: storyToLoad.id,
     publication: storyToLoad.publication,
+    presentationAspect: storyToLoad.presentationAspect,
     title: storyToLoad.title,
     chapters: [],
   });

@@ -7,7 +7,7 @@
   import type { ResolvedAnnotation } from '../iiif/annotationResolver';
   import type { TileSource, MediaSource } from '../iiif/mediaResolver';
   import type { ImageFilters } from '../core/types/filters';
-  import type { ViewBox } from '../core/types/viewer';
+  import type { ContentSize, ViewBox } from '../core/types/viewer';
   import type { ViewerConfig } from '../core/types/config';
   import { applyIIIFExactTileLevelWorkaround } from '../viewer/osd/iiifTileSourceWorkaround';
   import type { ActiveLayoutImage } from '../core/types/renderer';
@@ -508,6 +508,12 @@
 
   export const getViewBox = (): ViewBox | null => {
     return lastViewBox;
+  };
+
+  export const getContentSize = (): ContentSize | null => {
+    const size = viewer?.world?.getItemAt(0)?.getContentSize?.();
+    if (!size || !(size.x > 0) || !(size.y > 0)) return null;
+    return { width: size.x, height: size.y };
   };
 
   export const getZoom = (): number => {

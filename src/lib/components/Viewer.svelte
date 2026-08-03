@@ -4,7 +4,7 @@
   import type { ViewerConfig } from '../core/types/config';
   import type { ViewerPlugin } from '../core/types/plugin';
   import type { ViewerEventMap } from '../core/types/events';
-  import type { ViewBox } from '../core/types/viewer';
+  import type { ContentSize, ViewBox } from '../core/types/viewer';
   import type { ModelPose, ModelPoseOptions } from '../core/types/model';
   import type { MediaSource } from '../iiif/mediaResolver';
   import type { ViewerApiTarget } from '../core/types/viewer-api';
@@ -61,6 +61,10 @@
 
   export function setEventTarget(target: EventTarget): void {
     api.setEventTarget(target);
+  }
+
+  export function getContentSize(): ContentSize | null {
+    return api.getContentSize?.() ?? null;
   }
 
   export function getViewBox(): ViewBox | null {

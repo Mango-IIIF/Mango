@@ -2,7 +2,7 @@ import { writable, type Writable } from 'svelte/store';
 import type { ViewerApi } from '../../core/types/viewer-api';
 import type { StoryWithDefaults } from './storyLoader';
 import { resolveChapterTiming } from '../timing';
-import { sampleCameraTrack } from '../cameraTrack';
+import { animatableCameraDurationMs, sampleCameraTrack } from '../cameraTrack';
 import { createNarrationPlayer, type NarrationPlayer } from '../narrationPlayer';
 import type { NarrationSegment as PlayerSegment } from '../narrationPlayer';
 import {
@@ -103,7 +103,7 @@ const toChapterDurationSec = (
 
   return Math.max(
     narrationDuration + mediaDuration,
-    (chapter.cameraTrack?.durationMs ?? 0) / 1000,
+    animatableCameraDurationMs(chapter.cameraTrack) / 1000,
     resolveChapterTiming(chapter).presentationDurationMs / 1000,
   );
 };
@@ -126,6 +126,20 @@ export const createStoryViewerRuntime = (
     phase: null,
   });
   let chapterIndexValue = 0;
+  /**
+   * Chapter whose camera track the playback clock currently represents, or
+   * null while a chapter transition is in flight.
+   *
+   * The clock is reset at the start of a transition, long before the incoming
+   * chapter is ready. Sampling on that reset used to read the *outgoing*
+   * chapter's track at t=0, snapping the camera back to where that chapter
+   * opened before the pan to the new chapter began — read as the viewer
+   * resetting itself. Holding the camera still until the incoming chapter is
+   * loaded leaves the transition pan to the orchestrator, which owns it.
+   */
+  let cameraChapterIndex: number | null = null;
+  /** Identifies the most recent chapter load, so superseded ones stand down. */
+  let chapterLoadToken = 0;
 
   const now = deps.now ?? (() => Date.now());
   const setTimeoutFn = deps.setTimeoutFn ?? setTimeout;
@@ -170,7 +184,8 @@ export const createStoryViewerRuntime = (
   // Applies the camera track for the active chapter at a given presentation
   // time. With reduced motion we jump straight to the final framing and hold.
   const applyCameraSample = (currentTimeSec: number) => {
-    const chapter = story?.chapters?.[chapterIndexValue];
+    if (cameraChapterIndex === null) return;
+    const chapter = story?.chapters?.[cameraChapterIndex];
     if (!chapter?.cameraTrack) return;
     const timeMs = prefersReducedMotion
       ? chapter.cameraTrack.durationMs
@@ -268,6 +283,7 @@ export const createStoryViewerRuntime = (
   const resetPlaybackForChapter = (chapterIdx: number) => {
     const chapter = story?.chapters?.[chapterIdx];
     const durationSec = toChapterDurationSec(chapter, activeLanguage);
+    cameraChapterIndex = chapterIdx;
     playbackClock.loadChapter(durationSec);
     playbackClock.setBuffering(false);
     activeTimerKind = null;
@@ -461,6 +477,15 @@ export const createStoryViewerRuntime = (
     const chapter = story.chapters[index];
     if (!chapter) return;
 
+    // Claim this load. A transition that gets superseded still settles its
+    // gates so nothing leaks, which means its continuation below can run
+    // after a newer chapter has already taken over — this token is what
+    // stops it applying the wrong chapter's state on top.
+    const token = ++chapterLoadToken;
+
+    // Detach the camera from the clock before it is reset, so the outgoing
+    // chapter's track is not sampled while the incoming chapter loads.
+    cameraChapterIndex = null;
     narrationPlayer.stop();
     playbackClock.stop();
     playbackClock.setBuffering(true);
@@ -482,6 +507,7 @@ export const createStoryViewerRuntime = (
 
     try {
       await orchestrator.loadChapter(index, options);
+      if (token !== chapterLoadToken) return;
       currentChapterIndex.set(index);
       chapterIndexValue = index;
       resetPlaybackForChapter(index);
@@ -493,6 +519,7 @@ export const createStoryViewerRuntime = (
         play();
       }
     } catch (error) {
+      if (token !== chapterLoadToken) return;
       console.error('[StoryViewer] Chapter load error:', error);
       setState('IDLE');
       isLoading.set(false);
@@ -503,6 +530,9 @@ export const createStoryViewerRuntime = (
   const loadStory = async (value: StoryWithDefaults): Promise<void> => {
     story = value;
 
+    // Destroying the orchestrator settles any in-flight gate, releasing a
+    // chapter load that belongs to the story being replaced.
+    chapterLoadToken += 1;
     clearOrchestratorListeners();
     if (orchestrator) {
       orchestrator.destroy();
@@ -705,6 +735,9 @@ export const createStoryViewerRuntime = (
   };
 
   const stop = () => {
+    // Same reasoning as loadChapter: the clock reset below must not repaint
+    // the camera from the chapter we are leaving.
+    cameraChapterIndex = null;
     narrationPlayer.stop();
     playbackClock.stop();
     playbackClock.setBuffering(false);
@@ -748,6 +781,7 @@ export const createStoryViewerRuntime = (
   const unsubscribeMediaTimeUpdate = viewer.on?.('mediaTimeUpdate', handleMediaTimeUpdate);
 
   const destroy = () => {
+    chapterLoadToken += 1;
     if (unsubscribeMediaSegmentEnd) {
       unsubscribeMediaSegmentEnd();
     }

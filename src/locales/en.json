@@ -124,6 +124,11 @@
           "description": "Title, description and translations.",
           "save": "Save details"
         },
+        "position": {
+          "title": "Viewer position",
+          "description": "The canvas area and zoom this chapter opens on.",
+          "save": "Save viewer position"
+        },
         "focus": {
           "title": "Annotations",
           "description": "Text boxes and drawing annotations.",
@@ -167,6 +172,7 @@
       },
       "availability": {
         "annotationsMedia": "Annotations are available for image and PDF chapters only.",
+        "positionMedia": "Viewer position is available for image and PDF chapters only.",
         "chooseImage": "Choose an image or PDF source to add annotations.",
         "annotationsSpatial": "Annotations need a spatial image, PDF, or 3D view.",
         "captureSpatial": "Capture an image, PDF, or 3D view first.",
@@ -239,6 +245,20 @@
       "textPlaceholder": "Enter text for this text box",
       "placeText": "Place text box on artwork",
       "captureHint": "Capture a chapter to edit annotation text and placement."
+    },
+    "position": {
+      "title": "Viewer position",
+      "hint": "The canvas area this chapter frames, in canvas pixels.",
+      "empty": "No position is saved yet. Frame the artwork in the viewer, then capture the current view.",
+      "x": "X",
+      "y": "Y",
+      "width": "Width",
+      "height": "Height",
+      "capture": "Use current view",
+      "goTo": "Go to saved position",
+      "current": "Current view: {x} · {y} · {w} · {h}",
+      "expand": "Expand viewer position section",
+      "collapse": "Collapse viewer position section"
     },
     "annotations": {
       "chapter": "Chapter annotations",
@@ -350,10 +370,10 @@
       "newStory": "New story",
       "loadSource": "Load a source",
       "positionUpdated": "Position updated",
-      "setPosition": "Set current viewer position",
-      "positionConfirmed": "This chapter now uses the confirmed position.",
-      "positionMoved": "The viewer has moved. Click to confirm this position and zoom.",
-      "noPosition": "No position is saved. Click to use this position and zoom.",
+      "previewChapter": "Preview chapter",
+      "previewChapterHint": "Play this chapter on its own, exactly as the story presents it.",
+      "stopChapterPreview": "Stop preview",
+      "chapterPreviewPlaying": "Playing this chapter. Click to stop.",
       "sourceHint": "Add the source for your story, choose its starting canvas, and create the first chapter. You can adjust image placement from the chapter tools afterwards.",
       "backToTools": "Back to chapter tools",
       "saveChapter": "Save chapter",
@@ -364,6 +384,9 @@
     },
     "comparison": {
       "hint": "Load at least two compatible sources to create a comparison chapter."
+    },
+    "framing": {
+      "guide": "Story framing"
     },
     "errors": {
       "missingPublicId": "Set a canonical Story ID in Story settings before publishing.",

@@ -1,10 +1,18 @@
 import { get, writable, type Readable } from 'svelte/store';
 import type { Chapter, StoryState } from '../core/types/story';
 import { resolveChapterTiming } from './timing';
+import { animatableCameraDurationMs } from './cameraTrack';
+
+export type StoryPreviewStartOptions = {
+  /** Chapter to start from. Defaults to the first chapter in the story. */
+  chapterId?: string;
+  /** Play only the starting chapter instead of continuing through the story. */
+  singleChapter?: boolean;
+};
 
 export type StoryPreviewOrchestrator = {
   isPreviewing: Readable<boolean>;
-  start: () => Promise<void>;
+  start: (options?: StoryPreviewStartOptions) => Promise<void>;
   stop: () => void;
 };
 
@@ -19,7 +27,7 @@ export const getPreviewChapterDuration = (
   }
   const presentationMs = Math.max(
     sequentialMediaMs,
-    chapter.cameraTrack?.durationMs ?? 0,
+    animatableCameraDurationMs(chapter.cameraTrack),
     resolveChapterTiming(chapter).presentationDurationMs,
   );
   let durationMs = presentationMs;
@@ -69,13 +77,21 @@ export const createStoryPreviewOrchestrator = ({
     restoreEditorChapter();
   };
 
-  const start = async () => {
+  const start = async (options: StoryPreviewStartOptions = {}) => {
     if (get(isPreviewing) || getStory().chapters.length === 0) return;
+
+    let chapterIndex = 0;
+    if (options.chapterId) {
+      chapterIndex = getStory().chapters.findIndex(
+        (entry) => entry.id === options.chapterId,
+      );
+      if (chapterIndex === -1) return;
+    }
+
     isPreviewing.set(true);
     restoreChapterId = getSelectedChapterId();
     closeEditors();
     const activeToken = ++token;
-    let chapterIndex = 0;
 
     while (activeToken === token) {
       const chapter = getStory().chapters[chapterIndex];
@@ -85,11 +101,17 @@ export const createStoryPreviewOrchestrator = ({
       await wait(300);
       await wait(getPreviewChapterDuration(chapter, getNarrationSegment(chapter)));
       if (activeToken !== token) break;
+      if (options.singleChapter) break;
       chapterIndex += 1;
     }
 
     if (activeToken === token) {
       isPreviewing.set(false);
+      // Reaching the end releases playback just as stopping does. Without
+      // this the controller still holds the last previewed chapter as the
+      // one playing, and previewing that same chapter again is skipped by
+      // its "already playing" guard — the chapter replays silently.
+      stopPlayback();
       restoreEditorChapter();
     }
   };

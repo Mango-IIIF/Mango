@@ -209,6 +209,24 @@ export const generateCameraPreset = (
   };
 };
 
+/**
+ * How long a track actually animates for, which is what a chapter's length
+ * should be measured against.
+ *
+ * A track needs two keyframes to move between — the motion editor says as much
+ * before it enables its controls. Opening the motion tools and setting a
+ * duration without placing points leaves a track that animates nothing, and
+ * counting its duration held chapters on screen long after their narration had
+ * finished, with no camera movement to show for it.
+ */
+export const animatableCameraDurationMs = (
+  track: ChapterCameraTrack | undefined,
+): number => {
+  if (!track || (track.keyframes?.length ?? 0) < 2) return 0;
+  const durationMs = track.durationMs;
+  return Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 0;
+};
+
 export const configureCameraTrackPreset = (
   track: ChapterCameraTrack | undefined,
   preset: NonNullable<ChapterCameraTrack['preset']>,
