@@ -16,8 +16,7 @@
   } from './rectangleLabelLayout';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { LayerItem } from './workspace/LeftSidebar.svelte';
-
-  type Tool = 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
+  import type { ChapterAnnotationTool as Tool } from '../../core/types/story';
 
   interface Props {
     enabled?: boolean;

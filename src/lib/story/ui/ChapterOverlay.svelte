@@ -1,14 +1,10 @@
 <script lang="ts">
-  import { onDestroy, type Component } from "svelte";
+  import { onDestroy } from "svelte";
+  import { Play, Square } from "@lucide/svelte";
   import {
-    MapPin,
-    Minus,
-    MousePointer2,
-    Pencil,
-    Pentagon,
-    Play,
-    Square,
-  } from "@lucide/svelte";
+    ANNOTATION_TOOLS,
+    annotationToolLabelKey,
+  } from "../../features/annotations/annotationTools";
   import { readable, type Readable } from "svelte/store";
   import type {
     AnnotationPlacement,
@@ -203,17 +199,7 @@
   const positionSignature = (value: ViewBox | null | undefined): string =>
     value ? `${value.x}:${value.y}:${value.w}:${value.h}` : "";
 
-  const annotationTools: Array<{
-    id: ChapterAnnotationTool;
-    icon: Component;
-  }> = [
-    { id: "select", icon: MousePointer2 },
-    { id: "rectangle", icon: Square },
-    { id: "polygon", icon: Pentagon },
-    { id: "point", icon: MapPin },
-    { id: "freehand", icon: Pencil },
-    { id: "line", icon: Minus },
-  ];
+  const annotationTools = ANNOTATION_TOOLS;
   const annotationPalette = ["#e07a3f", "#f6c343", "#39b57e", "#3aa0e0", "#a06eff", "#ef5f7a"];
 
   const openTask = (task: ChapterTaskId) => {
@@ -1249,7 +1235,7 @@
                   on:click={() => onSetAnnotationTool?.(tool.id)}
                 >
                   <svelte:component this={tool.icon} aria-hidden="true" />
-                  <span>{$t(`viewer.panels.annotations.editor.tools.${tool.id}`)}</span>
+                  <span>{$t(annotationToolLabelKey(tool.id))}</span>
                 </button>
               {/each}
             </div>

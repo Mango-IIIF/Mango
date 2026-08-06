@@ -5,7 +5,7 @@
   import RightInspector from './RightInspector.svelte';
   import AnnotationBrowserTable from './AnnotationBrowserTable.svelte';
 
-  type Tool = 'select' | 'rectangle' | 'polygon' | 'point' | 'freehand' | 'line';
+  import type { ChapterAnnotationTool as Tool } from '../../../core/types/story';
 
   interface Props {
     annotations?: ResolvedAnnotation[];

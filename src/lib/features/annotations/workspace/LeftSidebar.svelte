@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '../../../i18n';
-  type Tool = 'select' | 'rectangle' | 'polygon' | 'point' | 'freehand' | 'line';
+  import type { ChapterAnnotationTool as Tool } from '../../../core/types/story';
+  import { ANNOTATION_TOOLS, annotationToolLabelKey } from '../annotationTools';
   export interface LayerItem {
     id: string;
     name: string;
@@ -31,7 +32,7 @@
     onlayercolorchange = undefined,
   }: Props = $props();
 
-  const tools: Tool[] = ['select', 'rectangle', 'polygon', 'point', 'freehand', 'line'];
+  const tools = ANNOTATION_TOOLS;
   const layerName = (layer: LayerItem): string => {
     const key = `viewer.panels.annotations.editor.layers.${layer.id}`;
     const translated = $t(key);
@@ -46,18 +47,19 @@
       <button
         type="button"
         class="left-sidebar__tool"
-        class:left-sidebar__tool--active={tool === activeTool}
+        class:left-sidebar__tool--active={tool.id === activeTool}
         onclick={() => {
-          if (tool === activeTool) {
-            if (tool !== 'select') {
+          if (tool.id === activeTool) {
+            if (tool.id !== 'select') {
               ontoolchange?.({ tool: 'select' });
             }
           } else {
-            ontoolchange?.({ tool });
+            ontoolchange?.({ tool: tool.id });
           }
         }}
       >
-        <span>{$t(`viewer.panels.annotations.editor.tools.${tool}`)}</span>
+        <tool.icon aria-hidden="true" />
+        <span>{$t(annotationToolLabelKey(tool.id))}</span>
       </button>
     {/each}
   </div>

@@ -3,7 +3,9 @@ import { mount, unmount } from "svelte";
 import { tick } from "svelte";
 import { writable } from "svelte/store";
 import type { ChapterAdvance, StoryState } from "../../../core/types/story";
+import type { ChapterTaskId } from "../../chapterTasks";
 import ChapterOverlay from "../ChapterOverlay.svelte";
+import { ANNOTATION_TOOLS } from "../../../features/annotations/annotationTools";
 import { createStoryStoreForTest } from "./testHelpers";
 
 const createTarget = (): HTMLDivElement => {
@@ -13,6 +15,44 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe("ChapterOverlay", () => {
+  it("renders its annotation palette from the shared tool list", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-image",
+          manifest: "https://example.org/image-manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const onSetAnnotationTool = vi.fn();
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        docked: true,
+        chapterId: "chapter-image",
+        activeChapterTask: writable<ChapterTaskId | null>("focus"),
+        onSetAnnotationTool,
+      },
+    });
+    await tick();
+
+    const palette = target.querySelector(".chapter-overlay__annotation-tools");
+    const buttons = Array.from(palette?.querySelectorAll("button") ?? []);
+    // One button per shared tool: the builder no longer keeps its own list.
+    expect(buttons).toHaveLength(ANNOTATION_TOOLS.length);
+
+    buttons[0].click();
+    expect(onSetAnnotationTool).toHaveBeenCalledWith(ANNOTATION_TOOLS[0].id);
+
+    unmount(instance);
+    target.remove();
+  });
+
   it("previews the selected chapter on its own and toggles to stop", async () => {
     const store = createStoryStoreForTest({
       chapters: [
