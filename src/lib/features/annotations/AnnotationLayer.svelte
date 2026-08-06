@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
+  import { isOpenPathAnnotation, type ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { ViewBox } from '../../core/types/viewer';
   import { t } from '../../i18n';
 
@@ -125,7 +125,7 @@
           </text>
         {/if}
       {:else if annotation.polygon?.points?.length}
-        {#if annotation.polygon.svg && (annotation.polygon.svg.includes('<polyline') || annotation.polygon.svg.includes('<line'))}
+        {#if isOpenPathAnnotation(annotation)}
           <polyline
             class="annotation-layer__shape annotation-layer__shape--polyline"
             class:annotation-layer__shape--hit={highlightIds.includes(annotation.id)}

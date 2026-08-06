@@ -23,6 +23,30 @@ export type AnnotationPolygon = {
   svg?: string;
 };
 
+/** An SVG selector that describes an open path rather than a closed shape. */
+const svgDescribesOpenPath = (svg: string | undefined): boolean =>
+  Boolean(svg && (svg.includes('<polyline') || svg.includes('<line')));
+
+/**
+ * Whether an annotation's points describe an open path.
+ *
+ * Every path shape is carried in the single `polygon` slot, so `polygon` alone
+ * cannot say whether the last point joins back to the first. `shapeType` is the
+ * answer and every producer sets it; the SVG sniff behind it is only for legacy
+ * v2 annotations that arrive as a bare SvgSelector with no shape recorded.
+ *
+ * Shared so that the annotation editor, the plain viewer and the story overlay
+ * cannot disagree about the same annotation — they did, and a freehand drawn as
+ * an open curve came back closed and filled once committed.
+ */
+export const isOpenPathAnnotation = (
+  annotation: Pick<ResolvedAnnotation, 'shapeType' | 'polygon'>,
+): boolean => {
+  if (annotation.shapeType === 'freehand' || annotation.shapeType === 'line') return true;
+  if (annotation.shapeType === 'polygon') return false;
+  return svgDescribesOpenPath(annotation.polygon?.svg);
+};
+
 export type AnnotationTime = {
   start: number;
   end?: number;
@@ -493,6 +517,7 @@ const resolveAnnotation = (
   const targetData = extractTargetData(target as IIIFTarget);
   let { rect, time, point, polygon, targetId, targetStyleClass } = targetData;
   const { targetStyle } = targetData;
+  let shapeType: ResolvedAnnotation['shapeType'];
 
   // Presentation v3 annotations use the package parser as the canonical geometry decoder.
   // The legacy resolver remains below for v2 resources and non-W3C target forms.
@@ -501,13 +526,24 @@ const resolveAnnotation = (
       const parsed = W3CParser.parseAnnotation(annotationObj);
       targetId = parsed.canvasId || targetId;
       time = parsed.temporal ? { start: parsed.temporal.start, end: parsed.temporal.end } : time;
-      if (parsed.shape.type === 'rect') rect = parsed.shape.geometry;
-      if (parsed.shape.type === 'point') point = parsed.shape.geometry;
+      // Record which shape the parser decoded, not just its points. Without
+      // this the open/closed distinction is lost here and every renderer has to
+      // guess it back from the SVG string, which only legacy v2 targets carry.
+      if (parsed.shape.type === 'rect') {
+        rect = parsed.shape.geometry;
+        shapeType = 'rect';
+      }
+      if (parsed.shape.type === 'point') {
+        point = parsed.shape.geometry;
+        shapeType = 'point';
+      }
       if (parsed.shape.type === 'polygon' || parsed.shape.type === 'freehand') {
         polygon = { points: parsed.shape.geometry.points };
+        shapeType = parsed.shape.type;
       }
       if (parsed.shape.type === 'line') {
         polygon = { points: [parsed.shape.geometry.start, parsed.shape.geometry.end] };
+        shapeType = 'line';
       }
       targetStyleClass = parsed.layer || targetStyleClass;
     } catch {
@@ -541,9 +577,24 @@ const resolveAnnotation = (
     }
   }
 
+  // A v2 target that only carried an SvgSelector never reached the parser, so
+  // read the shape off the selector itself rather than leaving it unknown.
+  if (!shapeType) {
+    if (rect) shapeType = 'rect';
+    else if (point) shapeType = 'point';
+    else if (polygon) {
+      shapeType = svgDescribesOpenPath(polygon.svg)
+        ? polygon.svg?.includes('<line')
+          ? 'line'
+          : 'freehand'
+        : 'polygon';
+    }
+  }
+
   const id = readId(annotationObj as IIIFIdentifiable) || `anno-${fallback.value++}`;
   return {
     id,
+    shapeType,
     rect: rect ?? undefined,
     time: time ?? undefined,
     point: point ?? undefined,

@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import type OpenSeadragon from 'openseadragon';
   import { t } from '../i18n';
-  import type { ResolvedAnnotation } from '../iiif/annotationResolver';
+  import { isOpenPathAnnotation, type ResolvedAnnotation } from '../iiif/annotationResolver';
   import type { TileSource, MediaSource } from '../iiif/mediaResolver';
   import type { ImageFilters } from '../core/types/filters';
   import type { ContentSize, ViewBox } from '../core/types/viewer';
@@ -401,10 +401,7 @@
           const maxX = Math.max(...xs);
           const minY = Math.min(...ys);
           const maxY = Math.max(...ys);
-          const isPolyline =
-            annotation.polygon.svg &&
-            (annotation.polygon.svg.includes('<polyline') ||
-              annotation.polygon.svg.includes('<line'));
+          const isPolyline = isOpenPathAnnotation(annotation);
           return {
             id: annotation.id,
             type: isPolyline ? 'polyline' : 'polygon',

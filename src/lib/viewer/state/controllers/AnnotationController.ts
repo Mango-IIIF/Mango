@@ -105,6 +105,7 @@ export const createAnnotationController = ({
       time?: AnnotationTime;
       point?: { x: number; y: number };
       polygon?: { points: Array<{ x: number; y: number }>; svg?: string };
+      shapeType?: ResolvedAnnotation["shapeType"];
       text?: string;
       label?: string;
       notes?: string;
@@ -128,6 +129,9 @@ export const createAnnotationController = ({
         time: value.time,
         point: value.point,
         polygon: value.polygon,
+        // Every path shape shares the `polygon` slot, so dropping this here
+        // turned a committed freehand into a closed, filled polygon.
+        shapeType: value.shapeType,
         text: value.text,
         label: value.label,
         notes: value.notes,
@@ -149,6 +153,7 @@ export const createAnnotationController = ({
       const resolved = {
         id: value.id ?? "",
         rect: { x: value.x, y: value.y, w: value.w, h: value.h },
+        shapeType: "rect" as const,
         text: value.text,
       };
       return resolved;

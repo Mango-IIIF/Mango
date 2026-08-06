@@ -80,3 +80,55 @@ describe('AnnotationController search results', () => {
     expect(setCanvasById).toHaveBeenCalledWith('canvas-2');
   });
 });
+
+describe('AnnotationController shape preservation', () => {
+  const makeController = () => {
+    const state = createViewerState();
+    const controller = createAnnotationController({
+      state,
+      derived: {
+        annotations: writable([]),
+        canvases: writable([{ id: 'canvas-1', index: 0 }]),
+      } as any,
+      emitEvent: vi.fn(),
+      emitStateChange: vi.fn(),
+      getCanvasId: () => 'canvas-1',
+      getCanvasIndex: () => 0,
+      setCanvasById: vi.fn(),
+      setPendingViewBox: vi.fn(),
+      applyViewBox: vi.fn(),
+    });
+    const stored = (id: string) =>
+      Object.values(get(state.userAnnotations))
+        .flat()
+        .find((item) => item.id === id);
+    return { controller, stored };
+  };
+
+  it('keeps the shape of a path annotation it is given', async () => {
+    const { controller, stored } = makeController();
+
+    // Every path shape shares the `polygon` slot, so this field is the only
+    // thing separating an open freehand curve from a closed filled polygon.
+    // Dropping it here is what closed committed freehand annotations.
+    await controller.addAnnotation({
+      id: 'freehand-1',
+      shapeType: 'freehand',
+      polygon: { points: [{ x: 0, y: 0 }, { x: 10, y: 20 }, { x: 30, y: 5 }] },
+    });
+    await controller.addAnnotation({
+      id: 'polygon-1',
+      shapeType: 'polygon',
+      polygon: { points: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 5, y: 10 }] },
+    });
+
+    expect(stored('freehand-1')?.shapeType).toBe('freehand');
+    expect(stored('polygon-1')?.shapeType).toBe('polygon');
+  });
+
+  it('records a bare xywh annotation as a rectangle', async () => {
+    const { controller, stored } = makeController();
+    await controller.addAnnotation({ id: 'rect-1', x: 1, y: 2, w: 3, h: 4 });
+    expect(stored('rect-1')?.shapeType).toBe('rect');
+  });
+});
