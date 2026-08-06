@@ -261,8 +261,18 @@
     gap: 10px;
     min-height: 0;
   }
+  /*
+   * Opening the list should cost the page as little as possible. The element
+   * has a definite height, so the extra 220px has to come from somewhere: this
+   * holds the stage to a floor and makes the column the scroll owner once both
+   * no longer fit, rather than letting the list shrink the page it exists to
+   * describe. Same trade the story builder makes for its authoring panels.
+   */
   .annotation-workspace__center.is-list-open {
-    grid-template-rows: minmax(0, 1fr) 220px;
+    grid-template-rows: minmax(clamp(320px, 74cqh, 760px), 1fr) 220px;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
   }
   .annotation-workspace__stage {
     min-height: 0;
