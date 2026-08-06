@@ -474,6 +474,11 @@
         "keepVisibleDescription": "Dangos anodiadau ar ôl cau'r panel hwn.",
         "editor": {
           "createTitle": "Creu Anodiad",
+          "collapsePanel": "Cau'r panel",
+          "expandPanel": "Ehangu'r panel",
+          "toolsPanel": "Offer a haenau",
+          "showList": "Dangos rhestr anodiadau",
+          "hideList": "Cuddio rhestr anodiadau",
           "detailsTitle": "Manylion Anodiad",
           "details": "Manylion",
           "motivation": "Ysgogiad",

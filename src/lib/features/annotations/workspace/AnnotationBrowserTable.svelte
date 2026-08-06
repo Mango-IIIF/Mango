@@ -6,9 +6,18 @@
     annotations?: ResolvedAnnotation[];
     activeId?: string | null;
     onselect?: ((detail: { id: string }) => void) | undefined;
+    /** Collapsed, only the toolbar shows, so the stage keeps the height. */
+    open?: boolean;
+    ontoggle?: (() => void) | undefined;
   }
 
-  let { annotations = [], activeId = null, onselect = undefined }: Props = $props();
+  let {
+    annotations = [],
+    activeId = null,
+    onselect = undefined,
+    open = true,
+    ontoggle = undefined,
+  }: Props = $props();
   let query = $state('');
 
   const filtered = $derived.by(() => {
@@ -28,9 +37,27 @@
 
 <section class="annotation-table">
   <div class="annotation-table__toolbar">
-    <h3>{$t('viewer.panels.annotations.title')}</h3>
-    <input placeholder={$t('viewer.panels.annotations.editor.searchPlaceholder')} bind:value={query} />
+    <button
+      type="button"
+      class="annotation-table__disclosure"
+      aria-expanded={open}
+      aria-label={open
+        ? $t('viewer.panels.annotations.editor.hideList')
+        : $t('viewer.panels.annotations.editor.showList')}
+      title={open
+        ? $t('viewer.panels.annotations.editor.hideList')
+        : $t('viewer.panels.annotations.editor.showList')}
+      onclick={() => ontoggle?.()}
+    >
+      <span class="annotation-table__chevron" class:is-open={open}>›</span>
+      <h3>{$t('viewer.panels.annotations.title')}</h3>
+      <span class="annotation-table__count">{annotations.length}</span>
+    </button>
+    {#if open}
+      <input placeholder={$t('viewer.panels.annotations.editor.searchPlaceholder')} bind:value={query} />
+    {/if}
   </div>
+  {#if open}
   <div class="annotation-table__wrap">
     <table>
       <thead>
@@ -56,6 +83,7 @@
       </tbody>
     </table>
   </div>
+  {/if}
 </section>
 
 <style>
@@ -73,6 +101,34 @@
   .annotation-table__toolbar h3 {
     margin: 0;
     font-size: 14px;
+  }
+  .annotation-table__disclosure {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 4px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  .annotation-table__chevron {
+    display: inline-block;
+    font-size: 15px;
+    line-height: 1;
+    color: var(--viewer-muted, #9aa6b2);
+    transition: transform 140ms ease;
+  }
+  .annotation-table__chevron.is-open {
+    transform: rotate(90deg);
+  }
+  .annotation-table__count {
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--viewer-muted, #9aa6b2);
   }
   .annotation-table__toolbar input {
     min-width: 220px;

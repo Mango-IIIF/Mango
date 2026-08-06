@@ -854,10 +854,32 @@
           if (width === lastWidth && height === lastHeight) return;
           lastWidth = width;
           lastHeight = height;
+          /*
+           * Read this before `forceResize`, while the viewport still describes
+           * the old container. OSD preserves the viewport's width across a
+           * resize, so widening the surface scales the content up rather than
+           * revealing more of it — a portrait page that exactly fitted comes
+           * back cropped top and bottom. `keepHomeViewportCentered` cannot undo
+           * that on its own: it only pans, so it re-centres the crop.
+           *
+           * Only refit what was fitted. A reader who had zoomed in, or a caller
+           * that framed the viewport for a story chapter or a search hit, keeps
+           * exactly what they asked for.
+           */
+          const viewport = viewer?.viewport;
+          const zoom = viewport?.getZoom?.(true);
+          const homeZoom = viewport?.getHomeZoom?.();
+          const wasFitted =
+            Number.isFinite(zoom) &&
+            Number.isFinite(homeZoom) &&
+            (zoom as number) <= (homeZoom as number) * 1.001;
           if (resizeFrameId !== null) cancelAnimationFrame(resizeFrameId);
           resizeFrameId = requestAnimationFrame(() => {
             resizeFrameId = null;
             viewer?.forceResize();
+            if (wasFitted && !callerFramedViewport && !userDrivingViewport) {
+              viewer?.viewport?.goHome?.(true);
+            }
             keepHomeViewportCentered();
             viewer?.viewport?.applyConstraints?.();
             scheduleRenderedUpdate();

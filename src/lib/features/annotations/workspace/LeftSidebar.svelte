@@ -146,24 +146,39 @@
     text-transform: uppercase;
     color: var(--viewer-muted);
   }
-  .left-sidebar__tools,
   .left-sidebar__layers {
     display: grid;
     gap: 8px;
+  }
+  /*
+   * Three across rather than six stacked rows. The palette held 292px of the
+   * sidebar for six buttons; a portrait page only grows when the stage gets
+   * taller, so height spent on chrome is the expensive kind.
+   */
+  .left-sidebar__tools {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
   .left-sidebar__tool {
     border: 1px solid var(--viewer-panel-border);
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.05);
     color: var(--viewer-text);
-    min-height: 38px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 8px 10px;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
     cursor: pointer;
-    text-align: left;
+    text-align: center;
+  }
+  .left-sidebar__tool span {
+    font-size: 10px;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    overflow-wrap: anywhere;
   }
   .left-sidebar__tool--active {
     border-color: rgba(42, 199, 255, 0.75);
@@ -183,11 +198,17 @@
     }
 
     .left-sidebar__tool {
+      /* Chips, not tiles: the narrow layout wraps them into short rows, so the
+         icon sits beside its label rather than above it. */
       flex: 1 1 auto;
+      flex-direction: row;
       min-width: 0;
       min-height: 34px;
       justify-content: center;
       padding: 6px 10px;
+    }
+    .left-sidebar__tool span {
+      font-size: 12px;
     }
   }
   .left-sidebar__layers-head {

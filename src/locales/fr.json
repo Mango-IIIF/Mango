@@ -474,6 +474,11 @@
         "keepVisibleDescription": "Afficher les annotations après la fermeture de ce panneau.",
         "editor": {
           "createTitle": "Créer une annotation",
+          "collapsePanel": "Réduire le panneau",
+          "expandPanel": "Développer le panneau",
+          "toolsPanel": "Outils et calques",
+          "showList": "Afficher la liste des annotations",
+          "hideList": "Masquer la liste des annotations",
           "detailsTitle": "Détails de l'annotation",
           "details": "Détails",
           "motivation": "Motivation",

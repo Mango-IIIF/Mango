@@ -470,6 +470,11 @@
         "keepVisibleDescription": "Show annotations after this panel is closed.",
         "editor": {
           "createTitle": "Create Annotation",
+          "collapsePanel": "Collapse panel",
+          "expandPanel": "Expand panel",
+          "toolsPanel": "Tools and layers",
+          "showList": "Show annotation list",
+          "hideList": "Hide annotation list",
           "detailsTitle": "Annotation Details",
           "details": "Details",
           "motivation": "Motivation",

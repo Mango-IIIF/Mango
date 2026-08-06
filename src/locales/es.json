@@ -474,6 +474,11 @@
         "keepVisibleDescription": "Mostrar las anotaciones después de cerrar este panel.",
         "editor": {
           "createTitle": "Crear anotación",
+          "collapsePanel": "Contraer panel",
+          "expandPanel": "Expandir panel",
+          "toolsPanel": "Herramientas y capas",
+          "showList": "Mostrar lista de anotaciones",
+          "hideList": "Ocultar lista de anotaciones",
           "detailsTitle": "Detalles de la anotación",
           "details": "Detalles",
           "motivation": "Motivación",

@@ -4,6 +4,7 @@
   import LeftSidebar, { type LayerItem } from './LeftSidebar.svelte';
   import RightInspector from './RightInspector.svelte';
   import AnnotationBrowserTable from './AnnotationBrowserTable.svelte';
+  import { t } from '../../../i18n';
 
   import type { ChapterAnnotationTool as Tool } from '../../../core/types/story';
 
@@ -62,21 +63,61 @@
   const isDraft = $derived(
     draftAnnotation ? draftAnnotation.id === activeAnnotationId : false,
   );
+
+  /*
+   * A portrait page only grows when the stage grows *taller* — a contain fit
+   * binds on height, so extra width is dead space. Every reclaimable pixel of
+   * height therefore matters more than it looks, and the list below the stage
+   * was holding 220 of them open over an empty table.
+   *
+   * Null means "follow the content": closed until there is something to list.
+   * A click pins the choice, so opening an empty list to check it is empty
+   * does not then snap shut, and closing a populated one stays closed.
+   */
+  let listPinned = $state<boolean | null>(null);
+  const listOpen = $derived(listPinned ?? annotations.length > 0);
+
+  let leftOpen = $state(true);
+  let rightOpen = $state(true);
 </script>
 
-<section class="annotation-workspace">
-  <aside class="annotation-workspace__left">
-    <LeftSidebar
-      {activeTool}
-      {layers}
-      {ontoolchange}
-      {ontogglelayer}
-      {onaddlayer}
-      {onlayercolorchange}
-    />
+<section
+  class="annotation-workspace"
+  class:annotation-workspace--left-closed={!leftOpen}
+  class:annotation-workspace--right-closed={!rightOpen}
+>
+  <aside class="annotation-workspace__left" class:is-closed={!leftOpen}>
+    <button
+      type="button"
+      class="annotation-workspace__collapse"
+      aria-expanded={leftOpen}
+      aria-label={leftOpen
+        ? $t('viewer.panels.annotations.editor.collapsePanel')
+        : $t('viewer.panels.annotations.editor.expandPanel')}
+      title={leftOpen
+        ? $t('viewer.panels.annotations.editor.collapsePanel')
+        : $t('viewer.panels.annotations.editor.expandPanel')}
+      onclick={() => (leftOpen = !leftOpen)}
+    >
+      {leftOpen ? '‹' : '›'}
+    </button>
+    {#if leftOpen}
+      <LeftSidebar
+        {activeTool}
+        {layers}
+        {ontoolchange}
+        {ontogglelayer}
+        {onaddlayer}
+        {onlayercolorchange}
+      />
+    {:else}
+      <span class="annotation-workspace__rail-label">
+        {$t('viewer.panels.annotations.editor.toolsPanel')}
+      </span>
+    {/if}
   </aside>
 
-  <div class="annotation-workspace__center">
+  <div class="annotation-workspace__center" class:is-list-open={listOpen}>
     <div class="annotation-workspace__stage">
       {#if stage}
         {@render stage()}
@@ -87,21 +128,43 @@
         {annotations}
         activeId={activeAnnotationId}
         onselect={onannotationselect}
+        open={listOpen}
+        ontoggle={() => (listPinned = !listOpen)}
       />
     </div>
   </div>
 
-  <aside class="annotation-workspace__right">
-    <RightInspector
-      annotation={activeAnnotation}
-      total={annotations.length}
-      index={activeIndex}
-      {layers}
-      {isDraft}
-      ondelete={onannotationdelete}
-      onupdate={onannotationupdate}
-      onsave={onannotationsave}
-    />
+  <aside class="annotation-workspace__right" class:is-closed={!rightOpen}>
+    <button
+      type="button"
+      class="annotation-workspace__collapse"
+      aria-expanded={rightOpen}
+      aria-label={rightOpen
+        ? $t('viewer.panels.annotations.editor.collapsePanel')
+        : $t('viewer.panels.annotations.editor.expandPanel')}
+      title={rightOpen
+        ? $t('viewer.panels.annotations.editor.collapsePanel')
+        : $t('viewer.panels.annotations.editor.expandPanel')}
+      onclick={() => (rightOpen = !rightOpen)}
+    >
+      {rightOpen ? '›' : '‹'}
+    </button>
+    {#if rightOpen}
+      <RightInspector
+        annotation={activeAnnotation}
+        total={annotations.length}
+        index={activeIndex}
+        {layers}
+        {isDraft}
+        ondelete={onannotationdelete}
+        onupdate={onannotationupdate}
+        onsave={onannotationsave}
+      />
+    {:else}
+      <span class="annotation-workspace__rail-label">
+        {$t('viewer.panels.annotations.editor.detailsTitle')}
+      </span>
+    {/if}
   </aside>
 </section>
 
@@ -113,6 +176,15 @@
     height: 100%;
     min-height: 0;
   }
+  .annotation-workspace--left-closed {
+    grid-template-columns: 40px minmax(0, 1fr) 280px;
+  }
+  .annotation-workspace--right-closed {
+    grid-template-columns: 240px minmax(0, 1fr) 40px;
+  }
+  .annotation-workspace--left-closed.annotation-workspace--right-closed {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+  }
   .annotation-workspace__left,
   .annotation-workspace__right,
   .annotation-workspace__bottom {
@@ -123,11 +195,74 @@
     min-height: 0;
     overflow: auto;
   }
+  .annotation-workspace__left,
+  .annotation-workspace__right {
+    position: relative;
+  }
+  .annotation-workspace__left.is-closed,
+  .annotation-workspace__right.is-closed {
+    padding: 6px 4px;
+    overflow: hidden;
+  }
+
+  /* Each panel's toggle sits on its inner edge, so the chevron points the way
+     the panel will move and never lands on the header's own controls. */
+  .annotation-workspace__collapse {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--viewer-panel-border);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .annotation-workspace__collapse:hover {
+    color: var(--viewer-fg, #fff);
+  }
+  .annotation-workspace__right .annotation-workspace__collapse {
+    right: auto;
+    left: 6px;
+  }
+  /* Clear the toggle so the inspector's title and counter keep their row. */
+  .annotation-workspace__right :global(.right-inspector__head) {
+    padding-left: 26px;
+  }
+  .is-closed .annotation-workspace__collapse {
+    position: static;
+    margin: 0 auto;
+  }
+
+  /* Vertical so a 40px rail still says what it is. */
+  .annotation-workspace__rail-label {
+    display: block;
+    margin: 10px auto 0;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    white-space: nowrap;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--viewer-muted, #9aa6b2);
+    pointer-events: none;
+  }
+
   .annotation-workspace__center {
     display: grid;
-    grid-template-rows: minmax(0, 1fr) 220px;
+    /* Closed, the list is just its own header bar, and the stage takes the
+       rest — which on a portrait page is the only dimension that buys size. */
+    grid-template-rows: minmax(0, 1fr) auto;
     gap: 10px;
     min-height: 0;
+  }
+  .annotation-workspace__center.is-list-open {
+    grid-template-rows: minmax(0, 1fr) 220px;
   }
   .annotation-workspace__stage {
     min-height: 0;

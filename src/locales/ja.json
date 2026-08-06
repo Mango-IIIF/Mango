@@ -474,6 +474,11 @@
         "keepVisibleDescription": "このパネルを閉じた後も注釈を表示したままにします。",
         "editor": {
           "createTitle": "注釈を作成",
+          "collapsePanel": "パネルを折りたたむ",
+          "expandPanel": "パネルを展開",
+          "toolsPanel": "ツールとレイヤー",
+          "showList": "注釈リストを表示",
+          "hideList": "注釈リストを非表示",
           "detailsTitle": "注釈の詳細",
           "details": "詳細",
           "motivation": "動機 (Motivation)",
