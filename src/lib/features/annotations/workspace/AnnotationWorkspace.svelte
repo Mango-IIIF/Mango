@@ -24,6 +24,12 @@
       | ((detail: { id: string; patch: Partial<ResolvedAnnotation> }) => void)
       | undefined;
     onannotationsave?: (() => void) | undefined;
+    /**
+     * Reports whether the annotation list is showing. The list needs a box of
+     * its own to be usable, and the element grows to provide it rather than
+     * taking the space off the page being annotated.
+     */
+    onlistopenchange?: ((detail: { open: boolean }) => void) | undefined;
     stage?: Snippet;
   }
 
@@ -46,6 +52,7 @@
     onannotationdelete = undefined,
     onannotationupdate = undefined,
     onannotationsave = undefined,
+    onlistopenchange = undefined,
     stage,
   }: Props = $props();
 
@@ -76,6 +83,9 @@
    */
   let listPinned = $state<boolean | null>(null);
   const listOpen = $derived(listPinned ?? annotations.length > 0);
+  $effect(() => {
+    onlistopenchange?.({ open: listOpen });
+  });
 
   let leftOpen = $state(true);
   let rightOpen = $state(true);
@@ -262,17 +272,14 @@
     min-height: 0;
   }
   /*
-   * Opening the list should cost the page as little as possible. The element
-   * has a definite height, so the extra 220px has to come from somewhere: this
-   * holds the stage to a floor and makes the column the scroll owner once both
-   * no longer fit, rather than letting the list shrink the page it exists to
-   * describe. Same trade the story builder makes for its authoring panels.
+   * The list gets a real box of its own and scrolls its rows inside it. It
+   * must not become a second scroller nested in a scrolling column: that put
+   * the list below the fold, so reaching it meant scrolling the column and
+   * then scrolling the table again. The element grows to pay for this box
+   * instead — see the host height in ViewerElement.
    */
   .annotation-workspace__center.is-list-open {
-    grid-template-rows: minmax(clamp(320px, 74cqh, 760px), 1fr) 220px;
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
-    scrollbar-gutter: stable;
+    grid-template-rows: minmax(0, 1fr) 220px;
   }
   .annotation-workspace__stage {
     min-height: 0;

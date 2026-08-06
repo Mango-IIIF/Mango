@@ -361,4 +361,19 @@
     height: var(--mango-viewer-height, 100vh);
     height: var(--mango-viewer-height, 100dvh);
   }
+
+  /*
+   * The annotation editor's list needs a box of its own to be usable, so the
+   * element grows to provide one rather than taking the height off the page
+   * being annotated. Still a single definite block size — only its value
+   * changes — which is what the shadow layout depends on.
+   *
+   * An embedder who sets `mango-viewer { height: ... }` in site CSS wins over
+   * this, as they do over the base rule; the list then shares the height they
+   * chose.
+   */
+  :host([data-annotation-list='open']) {
+    height: calc(var(--mango-viewer-height, min(720px, 100vh)) + 230px);
+    height: calc(var(--mango-viewer-height, min(720px, 100svh)) + 230px);
+  }
 </style>

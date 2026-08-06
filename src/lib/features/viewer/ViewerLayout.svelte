@@ -1015,6 +1015,22 @@
     off,
   };
 
+  /**
+   * The annotation list needs a box of its own to be usable, and taking that
+   * off the page being annotated is the wrong side of the trade. The element
+   * grows to pay for it instead.
+   *
+   * The host keeps a *definite* height throughout — only its value changes,
+   * which is the property the shadow layout depends on. Mirrors how
+   * `:host([mode='workspace'])` already varies the height by attribute.
+   */
+  const setAnnotationListHostState = (open: boolean): void => {
+    const host = getShadowHost();
+    if (!host) return;
+    if (open) host.setAttribute('data-annotation-list', 'open');
+    else host.removeAttribute('data-annotation-list');
+  };
+
   const pluginContext = {
     viewer: viewerApi,
     events: controller.events,
@@ -1942,6 +1958,8 @@
             onannotationdelete={(detail) => handleAnnotationDelete(detail.id)}
             onannotationupdate={(detail) => handleAnnotationUpdate(detail.id, detail.patch)}
             onannotationsave={handleAnnotationSave}
+            onlistopenchange={(detail: { open: boolean }) =>
+              setAnnotationListHostState(detail.open)}
           >
             {#snippet stage()}
               <div class="stage__story-slot">
