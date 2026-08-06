@@ -385,9 +385,6 @@
     "comparison": {
       "hint": "Load at least two compatible sources to create a comparison chapter."
     },
-    "framing": {
-      "guide": "Story framing"
-    },
     "errors": {
       "missingPublicId": "Set a canonical Story ID in Story settings before publishing.",
       "captureBlocked": "Capture blocked: {reason}",

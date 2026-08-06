@@ -6,8 +6,6 @@
   import StoryNarrationOverlay from './NarrationOverlay.svelte';
   import StoryChapterOverlay from './ChapterOverlay.svelte';
   import StoryAnnotationOverlay from './StoryAnnotationOverlay.svelte';
-  import FramingGuide from './FramingGuide.svelte';
-  import { resolvePresentationAspect } from '../framing';
   import SaveExportModal from './SaveExportModal.svelte';
   import RectanglePlacementEditor from '../../features/annotations/RectanglePlacementEditor.svelte';
   import type {
@@ -538,12 +536,6 @@
     bind:clientWidth={overlayWidth}
     bind:clientHeight={overlayHeight}
   >
-    <FramingGuide
-      aspect={resolvePresentationAspect($story)}
-      stageWidth={overlayWidth}
-      stageHeight={overlayHeight}
-    />
-
     {#if currentMode !== 'annotationPositioning'}
       <StoryAnnotationOverlay
         {story}
