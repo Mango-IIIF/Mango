@@ -416,7 +416,13 @@
     --stage-toolbar-value-width: 90px;
     --stage-toolbar-zoom-width: 78px;
     --stage-toolbar-icon-size: 18px;
-    margin-top: -6px;
+    /*
+     * Clear of the media, not tucked into it. This was -6px, which pulled the
+     * bar up over the stage panel's bottom edge so the buttons straddled its
+     * border. Every surface that lays the bar out statically had to override
+     * that away, and the annotation editor was the one that never did.
+     */
+    margin-top: 6px;
   }
 
   .stage__toolbar--above {

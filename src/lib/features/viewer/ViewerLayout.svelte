@@ -3461,7 +3461,9 @@
   }
 
   .stage--story-builder :global(.stage__toolbar--below) {
-    margin-top: 0;
+    /* `margin-top: 0` used to sit here to cancel the bar's old negative tuck.
+       That tuck is gone, so zeroing the margin only reintroduced the overlap
+       it was written to prevent. */
     padding-top: 8px;
   }
 
