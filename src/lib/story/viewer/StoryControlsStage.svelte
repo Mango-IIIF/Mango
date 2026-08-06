@@ -24,6 +24,9 @@
     onrefresh?: () => void;
     onpreviousChapter?: () => void;
     onnextChapter?: () => void;
+    /** Stage opacity, ramped by the runtime to hide a source swap. */
+    stageOpacity?: number;
+    stageFadeMs?: number;
     stage?: Snippet;
   }
 
@@ -49,6 +52,8 @@
     onrefresh: _onrefresh = undefined,
     onpreviousChapter = undefined,
     onnextChapter = undefined,
+    stageOpacity = 1,
+    stageFadeMs = 0,
     stage = undefined,
   }: Props = $props();
 
@@ -189,7 +194,10 @@
 >
   <div class="story-shell__body">
     <section class="story-shell__stage-wrap">
-      <div class="story-shell__stage-frame">
+      <div
+        class="story-shell__stage-frame"
+        style={`opacity: ${stageOpacity}; transition: opacity ${stageFadeMs}ms ease-in-out;`}
+      >
         {#if stage}
           {@render stage()}
         {/if}

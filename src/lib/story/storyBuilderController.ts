@@ -27,6 +27,8 @@ import {
 import { cloneStoryValue, createStoryHistory } from "./storyHistory";
 import { createChapterActions } from "./chapterActions";
 import { createStoryPreviewOrchestrator } from "./previewOrchestrator";
+import { STAGE_CROSSFADE_MS } from "./viewer/chapterTransitionOrchestrator";
+import type { StageFade } from "./viewer/storyViewerController";
 import {
   configureCameraTrackPreset,
   generateCameraPreset,
@@ -193,6 +195,8 @@ export type StoryBuilderController = {
   undo: () => void;
   redo: () => void;
   isPreviewing: Readable<boolean>;
+  /** Stage opacity while a chapter change swaps the Manifest or Canvas. */
+  stageFade: Readable<StageFade>;
   startPreview: () => void;
   stopPreview: () => void;
   previewChapter: (chapterId?: string) => void;
@@ -388,6 +392,7 @@ export const createStoryBuilderController = (
     collectLatestNarrationSegments(initialStoryData);
 
   let viewer: PluginContext["viewer"] | null = null;
+  let eventBus: PluginContext["events"] | null = null;
   let attachedCount = 0;
   let detachEvents: (() => void) | null = null;
   let lastManifest: string | null = null;
@@ -851,6 +856,8 @@ export const createStoryBuilderController = (
     narrationPlayer.stop();
     viewer?.pause?.();
     stopMotionPreview();
+    // Leaving a preview part-way through a swap must not strand a blank stage.
+    revealStage(0);
   };
 
   const startMediaSegment = (chapter: Chapter) => {
@@ -1034,12 +1041,13 @@ export const createStoryBuilderController = (
     if (!viewer || !chapter.model) return;
     applyChapterView({ ...chapter, viewBox: undefined });
     pendingChapterApply = null;
+    revealStageWhenPainted();
   };
 
   let cancelAnimation: (() => void) | null = null;
   let cancelLayersAnimation: (() => void) | null = null;
 
-  const animateViewBox = (from: ViewBox, to: ViewBox, durationMs = 320) => {
+  const animateViewBox = (to: ViewBox, durationMs = 320) => {
     if (!viewer) return;
     pendingApplyToken += 1;
 
@@ -1067,28 +1075,138 @@ export const createStoryBuilderController = (
       if (!viewer || token !== pendingApplyToken) return;
       applyChapterView(chapter);
       maybeStartPlayback(chapter);
+      // Every terminal branch reveals: this is the one place the incoming
+      // framing is known to have landed, which is what a hidden stage is
+      // waiting for. Both source-swap resume paths end up here.
       if (!chapter.viewBox) {
         pendingChapterApply = null;
+        revealStageWhenPainted();
         return;
       }
       const current = viewer.getViewBox?.() ?? null;
       if (viewBoxMatches(current, chapter.viewBox)) {
         pendingChapterApply = null;
+        revealStageWhenPainted();
         return;
       }
       if (pendingApplyRetries >= maxPendingApplyRetries) {
         pendingChapterApply = null;
+        revealStageWhenPainted();
         return;
       }
       pendingApplyRetries += 1;
       setTimeout(attempt, 80);
     };
 
+    // A frame is the natural moment to read the viewer back, but frame
+    // callbacks stop arriving in a background tab. Racing a short timer keeps
+    // the apply — and the stage reveal that follows it — from stalling there.
+    let started = false;
+    const startAttempt = () => {
+      if (started || token !== pendingApplyToken) return;
+      started = true;
+      attempt();
+    };
     if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
-      window.requestAnimationFrame(() => attempt());
-    } else {
-      setTimeout(attempt, 0);
+      window.requestAnimationFrame(startAttempt);
     }
+    setTimeout(startAttempt, 32);
+  };
+
+  /**
+   * Stage crossfade, matching the story viewer.
+   *
+   * The editor swaps its source through the same viewer the reader sees, so a
+   * chapter that changes Manifest or Canvas cuts between two unrelated images
+   * mid-preview. Fading the stage down for the swap and back up once the new
+   * framing is set makes the editor show what a reader will get.
+   */
+  const stageFade = writable<StageFade>({ opacity: 1, durationMs: 0 });
+  let stageHidden = false;
+  let stageRevealTimer: ReturnType<typeof setTimeout> | null = null;
+  let stageSwapTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const crossfadeMs = () => {
+    const reduceMotion = globalThis.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    )?.matches;
+    return reduceMotion ? 0 : STAGE_CROSSFADE_MS;
+  };
+
+  // The stage belongs to the viewer layout, not to any builder panel, so the
+  // request travels on the viewer's own event bus.
+  const setStageFade = (opacity: number, durationMs: number) => {
+    stageFade.set({ opacity, durationMs });
+    eventBus?.emit("stageFade", { opacity, durationMs });
+  };
+
+  const revealStage = (durationMs = crossfadeMs()) => {
+    if (stageRevealTimer) {
+      clearTimeout(stageRevealTimer);
+      stageRevealTimer = null;
+    }
+    // Revealing abandons the swap this fade was covering — stopping a preview
+    // must not have the source change land afterwards.
+    if (stageSwapTimer) {
+      clearTimeout(stageSwapTimer);
+      stageSwapTimer = null;
+    }
+    if (!stageHidden) return;
+    stageHidden = false;
+    setStageFade(1, durationMs);
+  };
+
+  /**
+   * Hides the stage, then runs the swap once it is actually hidden. A source
+   * that never arrives must not stall the editor behind a blank stage, so the
+   * hide carries its own deadline.
+   */
+  const afterStageHidden = (swap: () => void) => {
+    const ms = crossfadeMs();
+    // A swap still waiting on the fade belongs to a chapter that has since been
+    // superseded. Letting it land would move the viewer back to the old source
+    // after the new one had already arrived.
+    if (stageSwapTimer) {
+      clearTimeout(stageSwapTimer);
+      stageSwapTimer = null;
+    }
+    if (stageHidden) {
+      swap();
+      return;
+    }
+    stageHidden = true;
+    setStageFade(0, ms);
+    if (stageRevealTimer) clearTimeout(stageRevealTimer);
+    stageRevealTimer = setTimeout(() => {
+      stageRevealTimer = null;
+      revealStage(0);
+    }, ms + 4000);
+    if (ms <= 0) {
+      swap();
+      return;
+    }
+    stageSwapTimer = setTimeout(() => {
+      stageSwapTimer = null;
+      swap();
+    }, ms);
+  };
+
+  const revealStageWhenPainted = () => {
+    if (!stageHidden) return;
+    // A frame after the framing call, so what fades up is the new canvas in
+    // position rather than the tail of the viewer settling onto it. Frame
+    // callbacks stop arriving in a background tab, so a short timer races them
+    // — otherwise the stage waits on the deadline below to be released.
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      revealStage();
+    };
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => requestAnimationFrame(reveal));
+    }
+    setTimeout(reveal, 120);
   };
 
   const applyChapter = (chapter: Chapter) => {
@@ -1097,12 +1215,22 @@ export const createStoryBuilderController = (
       cancelLayersAnimation();
       cancelLayersAnimation = null;
     }
+
+    // A source swap is a two-phase affair here: the branches below hand off to
+    // the viewer and return, and a manifest or page event resumes the apply
+    // through `beginPendingApply`, which is where the stage is revealed.
     const viewerManifest =
       viewer.getManifestId?.() ?? viewer.getState?.()?.manifestId ?? null;
     if (chapter.manifest && chapter.manifest !== viewerManifest) {
       pendingChapterApply = chapter;
-      viewer.setManifest(chapter.manifest);
-      currentManifest.set(chapter.manifest);
+      // Abandon any apply still retrying for the outgoing chapter. Its framing
+      // belongs to the source being replaced, and letting it finish would also
+      // reveal the stage this swap has just hidden.
+      pendingApplyToken += 1;
+      afterStageHidden(() => {
+        viewer?.setManifest(chapter.manifest);
+        currentManifest.set(chapter.manifest);
+      });
       return;
     }
     const currentIndex = viewer.getCanvasIndex?.() ?? -1;
@@ -1111,7 +1239,10 @@ export const createStoryBuilderController = (
       chapter.canvasIndex !== currentIndex
     ) {
       pendingChapterApply = chapter;
-      viewer.setCanvasByIndex(chapter.canvasIndex);
+      pendingApplyToken += 1;
+      afterStageHidden(() => {
+        viewer?.setCanvasByIndex(chapter.canvasIndex);
+      });
       return;
     }
     pendingChapterApply = null;
@@ -1128,7 +1259,7 @@ export const createStoryBuilderController = (
     if (chapter.viewBox) {
       const currentViewBox = viewer.getViewBox?.() ?? null;
       if (currentViewBox && !viewBoxMatches(currentViewBox, chapter.viewBox)) {
-        animateViewBox(currentViewBox, chapter.viewBox);
+        animateViewBox(chapter.viewBox);
         if (chapter.model) {
           applyChapterView({ ...chapter, viewBox: undefined });
         }
@@ -1333,6 +1464,7 @@ export const createStoryBuilderController = (
       return () => undefined;
     }
     viewer = ctx.viewer;
+    eventBus = ctx.events;
     viewer.setStoryAnnotationEditing?.(get(activeChapterTask) === "focus");
     syncEditableStoryAnnotations();
     lastManifest =
@@ -1524,6 +1656,10 @@ export const createStoryBuilderController = (
         // No polling to stop - cleanup handled by event unsubscribes
         detachEvents?.();
         detachEvents = null;
+        // Detaching mid-fade must not leave a swap or a reveal queued against a
+        // viewer that is going away.
+        revealStage(0);
+        eventBus = null;
       }
     };
   };
@@ -1571,6 +1707,36 @@ export const createStoryBuilderController = (
       result = capture();
       handleUpdateResult(result, id);
     });
+  };
+
+  /**
+   * The source task can retarget a chapter at a different Manifest or Canvas,
+   * but the canvas the chapter stores is only ever written by a capture. Moving
+   * the dropdown moves the viewer alone, so without this the chapter keeps the
+   * canvas it was created on and silently replays the wrong image. A full
+   * re-capture is the right tool because the stored framing belongs to the old
+   * canvas too, and only re-reading the viewer brings both back into agreement.
+   */
+  const captureSourceRetarget = () => {
+    const chapterId = get(selectedChapterId);
+    if (!chapterId || !viewer) return;
+    const chapter = get(storyStore).chapters.find(
+      (entry) => entry.id === chapterId,
+    );
+    if (!chapter) return;
+
+    const canvasId = viewer.getCanvasId?.() ?? null;
+    const canvasIndex = viewer.getCanvasIndex?.() ?? -1;
+    // A viewer that has not settled on a canvas has nothing to capture from.
+    if (!canvasId && canvasIndex < 0) return;
+
+    const unchanged =
+      chapter.canvasId && canvasId
+        ? chapter.canvasId === canvasId
+        : chapter.canvasIndex === canvasIndex;
+    if (unchanged) return;
+
+    updateChapter();
   };
 
   /**
@@ -1646,7 +1812,7 @@ export const createStoryBuilderController = (
     commitChapterViewBox(chapterId, viewBox);
     const current = viewer?.getViewBox?.() ?? null;
     if (current && !viewBoxMatches(current, viewBox)) {
-      animateViewBox(current, viewBox);
+      animateViewBox(viewBox);
     } else if (!current) {
       viewer?.setViewBox?.(viewBox);
     }
@@ -1716,14 +1882,15 @@ export const createStoryBuilderController = (
    * This ensures the editor shows content on load instead of placeholder messages.
    */
   const autoSelectFirstChapterIfNeeded = () => {
-    const currentStory = get(storyStore);
-    const firstChapter = currentStory.chapters?.[0];
-    if (firstChapter?.id && get(selectedChapterId) === null) {
-      // Use setTimeout to ensure viewer is fully initialized after attach
-      setTimeout(() => {
+    // Deferred so the viewer is fully initialised after attach. The guard is
+    // re-checked on arrival rather than when scheduling, so a selection made in
+    // the meantime is not overridden by the chapter that was first at load.
+    setTimeout(() => {
+      const firstChapter = get(storyStore).chapters?.[0];
+      if (firstChapter?.id && get(selectedChapterId) === null) {
         selectChapter(firstChapter.id);
-      }, 0);
-    }
+      }
+    }, 0);
   };
 
   const selectChapter = (chapterId: string | null) => {
@@ -2336,6 +2503,9 @@ export const createStoryBuilderController = (
       uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
       return;
     }
+    if (get(activeChapterTask) === "source") {
+      captureSourceRetarget();
+    }
     activeChapterTask.set(null);
     uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
   };
@@ -2494,6 +2664,7 @@ export const createStoryBuilderController = (
     modelPoseDebug,
     loadStory,
     isPreviewing,
+    stageFade,
     startPreview,
     stopPreview,
     previewChapter,

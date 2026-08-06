@@ -490,6 +490,8 @@
   const storyThumbnailCache = new Map<string, string>();
   let storyChapterDurationSec = $state(0);
   let storyChapterElapsedSec = $state(0);
+  let storyStageOpacity = $state(1);
+  let storyStageFadeMs = $state(0);
   let chapterTitle = $derived.by(() => {
     const activeChapter = storyData?.chapters?.[storyCurrentChapterIndex];
     const resolvedTitle = resolveLanguageValue(activeChapter?.title, storyLanguage);
@@ -634,6 +636,16 @@
   const unsubscribeStoryPlaybackState = storyRuntime.playbackState.subscribe((value) => {
     storyChapterDurationSec = value?.duration ?? 0;
     storyChapterElapsedSec = value?.currentTime ?? 0;
+  });
+  const unsubscribeStoryStageFade = storyRuntime.stageFade.subscribe((value) => {
+    storyStageOpacity = value?.opacity ?? 1;
+    storyStageFadeMs = value?.durationMs ?? 0;
+  });
+  // The story builder drives the same stage through the event bus, since its
+  // controller lives in a plugin rather than in this layout.
+  const offStageFade = controller.on('stageFade', ({ opacity, durationMs }) => {
+    storyStageOpacity = opacity;
+    storyStageFadeMs = durationMs;
   });
   const handleStoryPlay = () => {
     if (storyControlsDisabled) return;
@@ -1416,6 +1428,8 @@
   onDestroy(unsubscribeStoryLoading);
   onDestroy(unsubscribeStoryPlayState);
   onDestroy(unsubscribeStoryPlaybackState);
+  onDestroy(unsubscribeStoryStageFade);
+  onDestroy(offStageFade);
   $effect.pre(() => {
     normalisedConfig = normaliseConfigForMode(config);
   });
@@ -1798,6 +1812,8 @@
             chapterThumbnails={storyChapterThumbnails}
             chapterDurationSec={storyChapterDurationSec}
             chapterElapsedSec={storyChapterElapsedSec}
+            stageOpacity={storyStageOpacity}
+            stageFadeMs={storyStageFadeMs}
             {chapterTitle}
             {chapterDescription}
             disabled={storyControlsDisabled || storyLoading}
@@ -2039,6 +2055,9 @@
             class:stage__viewer-frame--controls-visible={isPlainViewerMode &&
               viewerControlsVisible}
             class="stage__primary"
+            style={isStoryBuilder
+              ? `opacity: ${storyStageOpacity}; transition: opacity ${storyStageFadeMs}ms ease-in-out;`
+              : undefined}
             use:trackViewerControlsActivity
           >
             {#if toolbarAboveMedia && $layoutMode !== 'gallery'}

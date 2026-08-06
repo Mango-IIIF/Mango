@@ -44,6 +44,22 @@ type TransitionGateConfig = {
   sourceOpenTimeoutMs?: number;
 };
 
+/**
+ * Hides or reveals the stage. Called with the ramp length so the consumer can
+ * match its own transition to the wait the orchestrator performs.
+ */
+type StageFader = (visible: boolean, durationMs: number) => void;
+
+/**
+ * How long the stage takes to fade each way around a source change.
+ *
+ * Deliberately not read from `entryTransition.durationMs`: that field still
+ * carries the legacy `transitionTimeMs`, which is a presentation length
+ * measured in seconds, and ramping opacity over two seconds reads as a fault
+ * rather than a transition.
+ */
+export const STAGE_CROSSFADE_MS = 260;
+
 export type ChapterTransitionOrchestrator = {
   loadChapter: (index: number, options?: TransitionOptions) => Promise<void>;
   cancelCurrentTransition: () => void;
@@ -62,6 +78,8 @@ type RuntimeDeps = {
   clearTimeoutFn?: typeof clearTimeout;
   requestAnimationFrame?: (callback: FrameRequestCallback) => number;
   cancelAnimationFrame?: (handle: number) => void;
+  stageFader?: StageFader;
+  crossfadeMs?: number;
 };
 
 export const createChapterTransitionOrchestrator = (
@@ -77,6 +95,8 @@ export const createChapterTransitionOrchestrator = (
     cancelAnimationFrame: cAF = globalThis.cancelAnimationFrame?.bind(globalThis),
     posePaintedTimeoutMs = 500,
     sourceOpenTimeoutMs = 500,
+    stageFader,
+    crossfadeMs = STAGE_CROSSFADE_MS,
   } = deps;
 
   let currentRunId: string | null = null;
@@ -84,8 +104,39 @@ export const createChapterTransitionOrchestrator = (
   let currentChapterIndex = 0;
   let cancelViewBoxAnimation: (() => void) | null = null;
   let cancelLayersAnimation: (() => void) | null = null;
+  let stageHidden = false;
   const eventHandlers: EventHandlers = {};
   const activeCleanups: (() => void)[] = [];
+
+  /**
+   * The stage must never be left hidden. Every exit from a transition — normal,
+   * cancelled or failed — runs through here.
+   */
+  const revealStage = (durationMs = crossfadeMs) => {
+    if (!stageFader || !stageHidden) return;
+    stageHidden = false;
+    stageFader(true, durationMs);
+  };
+
+  const hideStage = () => {
+    if (!stageFader || stageHidden) return;
+    stageHidden = true;
+    stageFader(false, crossfadeMs);
+  };
+
+  const wait = (ms: number): Promise<void> =>
+    new Promise((resolve) => {
+      if (ms <= 0) {
+        resolve();
+        return;
+      }
+      const handle = setTimeoutFn(() => resolve(), ms);
+      // A superseded transition settles its waits rather than stranding them.
+      activeCleanups.push(() => {
+        clearTimeoutFn(handle);
+        resolve();
+      });
+    });
 
   const guard = createTransitionGuard(
     viewer,
@@ -161,6 +212,27 @@ export const createChapterTransitionOrchestrator = (
 
   const generateRunId = (): string => `run-${now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+  /**
+   * Whether a chapter opens on a different canvas than the one on screen.
+   *
+   * The stored canvasId cannot be trusted on its own. When a chapter is
+   * captured without one, the serializer writes a synthetic
+   * `${manifest}/canvas/${index}` into the target and the loader reads it back
+   * as the chapter's canvasId — an ID that no manifest ever contains, so
+   * comparing it to the viewer reports a change on every single chapter. The
+   * index is the value that synthetic ID was built from, so where a chapter has
+   * one it decides, and the ID only settles the case of a real ID that matches
+   * or a chapter carrying no index at all.
+   */
+  const targetsAnotherCanvas = (chapter: StoryWithDefaults['chapters'][number]): boolean => {
+    const currentCanvasId = viewer.getCanvasId?.() ?? null;
+    if (chapter.canvasId && chapter.canvasId === currentCanvasId) return false;
+    if (typeof chapter.canvasIndex === 'number') {
+      return chapter.canvasIndex !== (viewer.getCanvasIndex?.() ?? -1);
+    }
+    return Boolean(chapter.canvasId) && chapter.canvasId !== currentCanvasId;
+  };
+
   const applyModelPose = (pose: ModelPose, options?: ModelPoseOptions) => {
     viewer.setModelPose?.(pose, options);
     if (options && viewer.setModelPose) return;
@@ -191,6 +263,24 @@ export const createChapterTransitionOrchestrator = (
 
       if (viewer.getManifestId) currentManifest = viewer.getManifestId() ?? null;
 
+      // Decided before anything moves: once the manifest is swapped the viewer
+      // no longer reports what the reader is still looking at.
+      const manifestWillChange = Boolean(chapter.manifest && chapter.manifest !== currentManifest);
+      const canvasWillChange = targetsAnotherCanvas(chapter);
+      // An author who asked for a cut gets one; everything else fades, because
+      // a source change replaces the image outright and there is nothing for
+      // the camera to carry across.
+      const crossfade =
+        (manifestWillChange || canvasWillChange) && chapter.entryTransition?.type !== 'cut';
+
+      if (crossfade) {
+        hideStage();
+        await wait(crossfadeMs);
+        if (checkCancelled()) return;
+      } else {
+        revealStage(0);
+      }
+
       let manifestChanged = false;
 
       if (chapter.manifest && chapter.manifest !== currentManifest) {
@@ -212,11 +302,11 @@ export const createChapterTransitionOrchestrator = (
         currentManifest = chapter.manifest;
       }
 
-      const currentCanvasIndex = viewer.getCanvasIndex?.() ?? -1;
-      const currentCanvasId = viewer.getCanvasId?.() ?? null;
-      const pageChanged = chapter.canvasId
-        ? chapter.canvasId !== currentCanvasId
-        : typeof chapter.canvasIndex === 'number' && chapter.canvasIndex !== currentCanvasIndex;
+      // Re-read rather than reusing the pre-fade answer: a manifest swap has
+      // already moved the viewer, so what counts now is whether the canvas is
+      // still going to change from where it currently sits. The crossfade and
+      // this must agree, so both go through the same rule.
+      const pageChanged = targetsAnotherCanvas(chapter);
 
       if (chapter.canvasId || typeof chapter.canvasIndex === 'number') {
         if (chapter.canvasId) {
@@ -304,7 +394,11 @@ export const createChapterTransitionOrchestrator = (
             cancelViewBoxAnimation();
             cancelViewBoxAnimation = null;
           }
-          cancelViewBoxAnimation = panToViewBox(viewer, targetViewBox, manifestChanged, {
+          // `sameCanvas`, not `manifestChanged`: a canvas swap within one
+          // Manifest changes the coordinate space just as completely, and the
+          // viewer resets its viewBox on page change, so there is no coherent
+          // framing to animate away from.
+          cancelViewBoxAnimation = panToViewBox(viewer, targetViewBox, !sameCanvas, {
             now,
             requestAnimationFrame: rAF,
             cancelAnimationFrame: cAF,
@@ -332,8 +426,13 @@ export const createChapterTransitionOrchestrator = (
         degraded: posePaintedResult.degraded,
       });
 
+      // The framing is applied and painted, so what fades up is the new canvas
+      // already in position rather than a fitted image that then jumps.
+      revealStage();
+
       emit('transition:ready', { chapterId: chapter.id, runId });
     } catch (error) {
+      revealStage(0);
       if (checkCancelled()) return;
       emit('transition:error', {
         chapterId: chapter.id,
@@ -348,6 +447,7 @@ export const createChapterTransitionOrchestrator = (
 
   const destroy = () => {
     cancelCurrentTransition();
+    revealStage(0);
     Object.keys(eventHandlers).forEach((key) => {
       delete eventHandlers[key as keyof TransitionEventMap];
     });

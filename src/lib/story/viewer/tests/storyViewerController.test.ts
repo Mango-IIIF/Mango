@@ -105,6 +105,8 @@ describe('storyViewerController.loadChapter', () => {
   it('applies viewBox, media seek, and model pose', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -127,6 +129,8 @@ describe('storyViewerController.loadChapter', () => {
   it('does not set manifest again for same manifest', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -143,6 +147,8 @@ describe('storyViewerController.loadChapter', () => {
     const viewer = createMockViewer();
     viewer.setModelPose = undefined as any;
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -172,6 +178,8 @@ describe('storyViewerController.loadChapter', () => {
   it('uses a stable canvas ID in preference to its fallback index', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -198,6 +206,8 @@ describe('storyViewerController.loadChapter', () => {
     const viewer = createMockViewer();
     viewer.setCanvasById.mockImplementation(() => undefined);
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -231,6 +241,8 @@ describe('storyViewerController.loadChapter', () => {
   it('does not repaint the outgoing chapter camera while the next chapter loads', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -288,6 +300,8 @@ describe('storyViewerController.loadChapter', () => {
     vi.useFakeTimers();
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -335,6 +349,8 @@ describe('storyViewerController.loadChapter', () => {
       isPlaying: vi.fn().mockReturnValue(false),
     };
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       createNarrationPlayer: () => mockNarration as any,
       now: () => Date.now(),
       posePaintedTimeoutMs: 100,
@@ -393,6 +409,8 @@ describe('storyViewerController.loadChapter', () => {
       isPlaying: vi.fn().mockReturnValue(false),
     };
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       createNarrationPlayer: () => mockNarration as any,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
@@ -461,6 +479,8 @@ describe('storyViewerController.loadChapter', () => {
       getCurrentTime: vi.fn(() => 0),
     };
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       createNarrationPlayer: () => mockNarration as any,
       posePaintedTimeoutMs: 50,
       sourceOpenTimeoutMs: 50,
@@ -509,6 +529,8 @@ describe('storyViewerController.loadChapter', () => {
   it('lets the newest chapter win when selections overlap', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 50,
       sourceOpenTimeoutMs: 50,
     });
@@ -562,6 +584,8 @@ describe('storyViewerController.loadChapter', () => {
       getCurrentTime: vi.fn(() => narrationTime),
     };
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       createNarrationPlayer: () => mockNarration as any,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
@@ -652,6 +676,8 @@ describe('storyViewerController.loadChapter', () => {
       getCurrentTime: vi.fn(() => narrationTime),
     };
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       createNarrationPlayer: () => mockNarration as any,
       now: () => Date.now(),
       posePaintedTimeoutMs: 100,
@@ -720,6 +746,8 @@ describe('storyViewerController.loadChapter', () => {
     vi.useFakeTimers();
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       now: () => Date.now(),
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
@@ -761,6 +789,8 @@ describe('storyViewerController.loadChapter', () => {
   it('chapter click stops media playback and stays idle', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -792,6 +822,8 @@ describe('storyViewerController.loadChapter', () => {
     vi.useFakeTimers();
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       now: () => Date.now(),
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
@@ -822,6 +854,8 @@ describe('storyViewerController.loadChapter', () => {
   it('stop resets to first chapter start', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -840,6 +874,8 @@ describe('storyViewerController.loadChapter', () => {
   it('waits for manifestChange and pageChange events before applying viewBox', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -897,6 +933,8 @@ describe('storyViewerController.loadChapter', () => {
   it('updates manifest when chapter selection changes after rapid transitions', async () => {
     const viewer = createMockViewer();
     const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
       posePaintedTimeoutMs: 100,
       sourceOpenTimeoutMs: 100,
     });
@@ -931,5 +969,233 @@ describe('storyViewerController.loadChapter', () => {
     // The last setManifest call should be for 'm1' (chapter 2)
     expect(lastManifestCall[0]).toBe('m1');
     expect(viewer.setCanvasByIndex).toHaveBeenLastCalledWith(1);
+  });
+});
+
+describe('storyViewerController timeline', () => {
+  it('keeps the chapter timeline moving forward across narration and the transition delay', async () => {
+    vi.useFakeTimers();
+    const viewer = createMockViewer();
+    let narrationTime = 0;
+    let finishNarration: ((ok: boolean) => void) | undefined;
+    const mockNarration = {
+      playSegment: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishNarration = resolve;
+          }),
+      ),
+      stop: vi.fn(),
+      pause: vi.fn().mockReturnValue(true),
+      resume: vi.fn().mockReturnValue(true),
+      isPlaying: vi.fn().mockReturnValue(true),
+      getCurrentTime: vi.fn(() => narrationTime),
+    };
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      // These cover sequencing, not the source-change fade.
+      crossfadeMs: 0,
+      createNarrationPlayer: () => mockNarration as any,
+      posePaintedTimeoutMs: 50,
+      sourceOpenTimeoutMs: 50,
+    });
+
+    // Five seconds of narration followed by a five second hold — the shape the
+    // builder writes by default, where a shrinking denominator would send the
+    // fill back to exactly the midpoint.
+    const timelineStory: StoryWithDefaults = {
+      narration: { tracks: { en: { src: 'narration.mp3' } } },
+      chapters: [
+        {
+          id: 't1',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 10, h: 10 },
+          narrationSegment: { en: { start: 0, end: 5 } },
+          advance: { mode: 'auto', delayMs: 5000 },
+          transitionTimeMs: 5000,
+        },
+        {
+          id: 't2',
+          manifest: 'm1',
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 10, h: 10 },
+          transitionTimeMs: 5000,
+        },
+      ],
+    };
+
+    const samples: { currentTime: number; duration: number }[] = [];
+    const unsubscribe = runtime.playbackState.subscribe((value: any) => {
+      if (value) samples.push({ currentTime: value.currentTime, duration: value.duration });
+    });
+
+    const load = runtime.loadStory(timelineStory);
+    await vi.advanceTimersByTimeAsync(200);
+    await load;
+    runtime.play();
+
+    // Play out the narration.
+    for (let step = 0; step < 5; step += 1) {
+      narrationTime += 1;
+      await vi.advanceTimersByTimeAsync(1000);
+    }
+    const duringNarration = samples[samples.length - 1];
+    expect(duringNarration.duration).toBeCloseTo(10, 3);
+
+    finishNarration?.(true);
+    await vi.advanceTimersByTimeAsync(0);
+
+    // And the hold that follows it.
+    await vi.advanceTimersByTimeAsync(2000);
+    const duringDelay = samples[samples.length - 1];
+    expect(duringDelay.duration).toBeCloseTo(10, 3);
+    expect(duringDelay.currentTime).toBeGreaterThan(5);
+
+    // The denominator is fixed for the whole chapter, so the fill only grows.
+    const chapterSamples = samples.filter((sample) => sample.duration > 0);
+    const fractions = chapterSamples.map((sample) => sample.currentTime / sample.duration);
+    const regressions = fractions.filter(
+      (fraction, index) => index > 0 && fraction < fractions[index - 1] - 1e-9,
+    );
+    expect(regressions).toEqual([]);
+    expect(new Set(chapterSamples.map((sample) => sample.duration)).size).toBe(1);
+
+    unsubscribe();
+    runtime.destroy();
+    vi.useRealTimers();
+  });
+});
+
+describe('storyViewerController stage crossfade', () => {
+  const fadeStory: StoryWithDefaults = {
+    chapters: [
+      {
+        id: 'f1',
+        manifest: 'm1',
+        canvasIndex: 0,
+        canvasId: 'canvas-0',
+        viewBox: { x: 0, y: 0, w: 10, h: 10 },
+        transitionTimeMs: 200,
+      },
+      {
+        id: 'f2',
+        manifest: 'm1',
+        canvasIndex: 1,
+        canvasId: 'canvas-1',
+        viewBox: { x: 5, y: 5, w: 10, h: 10 },
+        transitionTimeMs: 200,
+      },
+    ],
+  };
+
+  it('hides the stage before swapping the canvas and reveals it once framed', async () => {
+    vi.useFakeTimers();
+    const viewer = createMockViewer();
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      crossfadeMs: 100,
+      posePaintedTimeoutMs: 50,
+      sourceOpenTimeoutMs: 50,
+    });
+
+    const fades: { opacity: number; durationMs: number }[] = [];
+    const unsubscribe = runtime.stageFade.subscribe((value: any) => {
+      fades.push({ opacity: value.opacity, durationMs: value.durationMs });
+    });
+
+    const load = runtime.loadStory(fadeStory);
+    await vi.advanceTimersByTimeAsync(400);
+    await load;
+
+    viewer.setCanvasById.mockClear();
+    viewer.setCanvasByIndex.mockClear();
+    fades.length = 0;
+
+    const toSecond = runtime.loadChapter(1);
+    // Part-way into the ramp the stage is hidden and nothing has moved yet.
+    await vi.advanceTimersByTimeAsync(50);
+    expect(fades[0]?.opacity).toBe(0);
+    expect(fades[0]?.durationMs).toBe(100);
+    expect(viewer.setCanvasById).not.toHaveBeenCalled();
+    expect(viewer.setCanvasByIndex).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(400);
+    await toSecond;
+
+    // The swap happened while hidden, and the reveal is the last thing to run.
+    expect(viewer.setCanvasById).toHaveBeenCalled();
+    expect(fades[fades.length - 1].opacity).toBe(1);
+
+    unsubscribe();
+    runtime.destroy();
+    vi.useRealTimers();
+  });
+
+  it('leaves the stage alone when the chapter stays on the same canvas', async () => {
+    vi.useFakeTimers();
+    const viewer = createMockViewer();
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      crossfadeMs: 100,
+      posePaintedTimeoutMs: 50,
+      sourceOpenTimeoutMs: 50,
+    });
+
+    const sameCanvasStory: StoryWithDefaults = {
+      chapters: [
+        { ...fadeStory.chapters[0] },
+        { ...fadeStory.chapters[1], canvasIndex: 0, canvasId: 'canvas-0' },
+      ],
+    };
+
+    const load = runtime.loadStory(sameCanvasStory);
+    await vi.advanceTimersByTimeAsync(400);
+    await load;
+
+    const fades: number[] = [];
+    const unsubscribe = runtime.stageFade.subscribe((value: any) => {
+      fades.push(value.opacity);
+    });
+
+    const toSecond = runtime.loadChapter(1);
+    await vi.advanceTimersByTimeAsync(400);
+    await toSecond;
+
+    expect(fades.every((opacity) => opacity === 1)).toBe(true);
+
+    unsubscribe();
+    runtime.destroy();
+    vi.useRealTimers();
+  });
+
+  it('never leaves the stage hidden when a transition is superseded', async () => {
+    vi.useFakeTimers();
+    const viewer = createMockViewer();
+    const runtime = createStoryViewerRuntime(viewer as any, {
+      crossfadeMs: 100,
+      posePaintedTimeoutMs: 50,
+      sourceOpenTimeoutMs: 50,
+    });
+
+    const load = runtime.loadStory(fadeStory);
+    await vi.advanceTimersByTimeAsync(400);
+    await load;
+
+    let opacity = 1;
+    const unsubscribe = runtime.stageFade.subscribe((value: any) => {
+      opacity = value.opacity;
+    });
+
+    // Interrupt mid-fade, then let everything settle.
+    const first = runtime.loadChapter(1);
+    await vi.advanceTimersByTimeAsync(40);
+    const second = runtime.loadChapter(0);
+    await vi.advanceTimersByTimeAsync(600);
+    await first;
+    await second;
+
+    expect(opacity).toBe(1);
+
+    unsubscribe();
+    runtime.destroy();
+    vi.useRealTimers();
   });
 });

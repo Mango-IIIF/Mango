@@ -12,6 +12,7 @@ import {
 } from '../playbackClock.svelte';
 import {
   createChapterTransitionOrchestrator,
+  STAGE_CROSSFADE_MS,
   type ChapterTransitionOrchestrator,
   type TransitionEventMap,
 } from './chapterTransitionOrchestrator';
@@ -40,6 +41,7 @@ type RuntimeDeps = {
   prefersReducedMotion?: boolean;
   posePaintedTimeoutMs?: number;
   sourceOpenTimeoutMs?: number;
+  crossfadeMs?: number;
   onTransitionEvent?: <K extends keyof TransitionEventMap>(
     event: K,
     payload: TransitionEventMap[K]
@@ -58,8 +60,12 @@ export type StoryViewerRuntime = {
   isLoading: Writable<boolean>;
   playState: Writable<'idle' | 'playing' | 'paused'>;
   playbackState: Writable<StoryPlaybackState>;
+  stageFade: Writable<StageFade>;
   getStory: () => StoryWithDefaults | null;
 };
+
+/** Target opacity for the story stage, and how long it has to get there. */
+export type StageFade = { opacity: number; durationMs: number };
 
 const toNarrationSegment = (
   story: StoryWithDefaults | null,
@@ -108,6 +114,28 @@ const toChapterDurationSec = (
   );
 };
 
+/**
+ * The pause a chapter holds after its content before advancing.
+ *
+ * It runs on the same timeline as the content, so it has to be known when the
+ * chapter loads. Discovering it only once the content ends would grow the
+ * timeline's denominator under a bar that had already reached the end, sending
+ * the fill backwards — to the midpoint whenever the delay matches the
+ * presentation, which is what the builder writes by default.
+ *
+ * A manually advanced chapter waits for the reader instead, so it contributes
+ * nothing measurable.
+ */
+const toChapterTransitionDelaySec = (
+  chapter: StoryWithDefaults['chapters'][number] | undefined,
+): number => {
+  if (!chapter) return 0;
+  if (chapter.advance?.mode === 'manual') return 0;
+  const timing = resolveChapterTiming(chapter);
+  const legacyDelayMs = timing.migratedFromLegacy ? timing.presentationDurationMs : 0;
+  return Math.max(0, (timing.advanceDelayMs ?? legacyDelayMs) / 1000);
+};
+
 export const createStoryViewerRuntime = (
   viewer: ViewerApi,
   deps: RuntimeDeps = {},
@@ -125,6 +153,7 @@ export const createStoryViewerRuntime = (
     isBuffering: false,
     phase: null,
   });
+  const stageFade = writable<StageFade>({ opacity: 1, durationMs: 0 });
   let chapterIndexValue = 0;
   /**
    * Chapter whose camera track the playback clock currently represents, or
@@ -282,7 +311,8 @@ export const createStoryViewerRuntime = (
 
   const resetPlaybackForChapter = (chapterIdx: number) => {
     const chapter = story?.chapters?.[chapterIdx];
-    const durationSec = toChapterDurationSec(chapter, activeLanguage);
+    const durationSec =
+      toChapterDurationSec(chapter, activeLanguage) + toChapterTransitionDelaySec(chapter);
     cameraChapterIndex = chapterIdx;
     playbackClock.loadChapter(durationSec);
     playbackClock.setBuffering(false);
@@ -325,11 +355,12 @@ export const createStoryViewerRuntime = (
       bumpCall('setCanvasByIndex');
     }
 
-    const timing = resolveChapterTiming(chapter);
-    const legacyDelayMs = timing.migratedFromLegacy ? timing.presentationDurationMs : 0;
     playbackClock.startTimerPhase({
-      offsetSec: playbackClock.getState().duration,
-      durationSec: (timing.advanceDelayMs ?? legacyDelayMs) / 1000,
+      // The content's length, not the clock's total — the total now already
+      // includes this delay, so reading it back would offset the phase past the
+      // end of its own timeline.
+      offsetSec: toChapterDurationSec(chapter, activeLanguage),
+      durationSec: toChapterTransitionDelaySec(chapter),
       onComplete: () => {
         advanceToNextChapter(true);
       },
@@ -547,6 +578,12 @@ export const createStoryViewerRuntime = (
       cancelAnimationFrame: cancelAnimationFrameFn,
       posePaintedTimeoutMs: deps.posePaintedTimeoutMs,
       sourceOpenTimeoutMs: deps.sourceOpenTimeoutMs,
+      stageFader: (visible, durationMs) => {
+        stageFade.set({ opacity: visible ? 1 : 0, durationMs });
+      },
+      // Reduced motion keeps the framing-before-reveal ordering but drops the
+      // ramp, so the swap lands as a single clean cut instead of an animation.
+      crossfadeMs: deps.crossfadeMs ?? (prefersReducedMotion ? 0 : STAGE_CROSSFADE_MS),
     });
 
     if (onTransitionEvent) {
@@ -818,6 +855,7 @@ export const createStoryViewerRuntime = (
     isLoading,
     playState,
     playbackState,
+    stageFade,
     getStory,
   };
 };

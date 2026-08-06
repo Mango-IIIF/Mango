@@ -46,6 +46,12 @@ export type ViewerEventMap = {
     open: boolean;
   };
   stateChange: { snapshot: ViewerStateSnapshot };
+  /**
+   * Requests a stage opacity, so a mode driving chapter changes can hide the
+   * swap between two unrelated sources. Emitted by the story builder; the story
+   * viewer reaches its stage through its own runtime.
+   */
+  stageFade: { opacity: number; durationMs: number };
   storyViewerError: { message: string; cause?: unknown };
   pluginError: {
     pluginId: string;

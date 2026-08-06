@@ -24,13 +24,23 @@ type PanDeps = {
   cancelAnimationFrame?: (handle: number) => void;
 };
 
+/**
+ * Moves the viewer to a chapter's framing, animating only when that framing is
+ * expressed in the coordinate space the viewer is already showing.
+ *
+ * A viewBox is in canvas pixels, so tweening one across a source change
+ * interpolates numbers that describe two different images — the camera sweeps
+ * through positions meaningful on neither. Callers pass `sourceChanged` for any
+ * transition that swapped the Manifest or the Canvas underneath, and the target
+ * is applied in one step instead.
+ */
 export const panToViewBox = (
   viewer: ViewerApi,
   targetViewBox: ViewBox,
-  manifestChanged: boolean,
+  sourceChanged: boolean,
   deps: PanDeps,
 ): (() => void) | null => {
-  if (manifestChanged) {
+  if (sourceChanged) {
     viewer.setViewBox?.(targetViewBox);
     return null;
   }

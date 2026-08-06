@@ -629,3 +629,283 @@ describe("story builder narration defaults", () => {
     detach();
   });
 });
+
+describe("story builder source task", () => {
+  const createSourceViewer = () => {
+    const canvases = [
+      { id: "https://example.org/canvas/1", viewBox: { x: 0, y: 0, w: 80, h: 80 } },
+      { id: "https://example.org/canvas/2", viewBox: { x: 5, y: 5, w: 40, h: 40 } },
+    ];
+    let index = 0;
+    return {
+      canvases,
+      getManifestId: () => "https://example.org/manifest.json",
+      getState: () => null,
+      getViewBox: vi.fn(() => ({ ...canvases[index].viewBox })),
+      getCanvasIndex: () => index,
+      getCanvasCount: () => canvases.length,
+      getCanvasId: () => canvases[index].id,
+      getMediaType: () => "image",
+      getMediaSources: () => [],
+      getLayerOpacities: () => ({}),
+      setStoryAnnotations: vi.fn(),
+      setStoryAnnotationEditing: vi.fn(),
+      setStoryAnnotationSelection: vi.fn(),
+      setAnnotationTool: vi.fn(),
+      setCanvasByIndex: vi.fn((next: number) => {
+        index = next;
+      }),
+      setCanvasById: vi.fn(),
+      setManifest: vi.fn(),
+      setViewBox: vi.fn(),
+      updateLayerOpacity: vi.fn(),
+      setModelOrbit: vi.fn(),
+      setModelTarget: vi.fn(),
+      setModelOrientation: vi.fn(),
+      addAnnotation: vi.fn(),
+      removeAnnotation: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    };
+  };
+
+  const attachSourceController = (viewer: ReturnType<typeof createSourceViewer>) => {
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: "chapter-1",
+            manifest: "https://example.org/manifest.json",
+            canvasIndex: 0,
+            canvasId: "https://example.org/canvas/1",
+            viewBox: { x: 0, y: 0, w: 80, h: 80 },
+          },
+        ],
+      },
+    });
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events: createEventBus(),
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+    controller.selectChapter("chapter-1");
+    controller.activeChapterTask.set("source");
+    return { controller, detach };
+  };
+
+  it("stores the chosen canvas on the chapter when the source task is saved", () => {
+    const viewer = createSourceViewer();
+    const { controller, detach } = attachSourceController(viewer);
+
+    controller.selectCanvas(1);
+    controller.saveChapterSettings();
+
+    const chapter = get(controller.story).chapters[0];
+    expect(chapter.canvasIndex).toBe(1);
+    expect(chapter.canvasId).toBe("https://example.org/canvas/2");
+    // The old framing belonged to the previous canvas, so it is re-read too.
+    expect(chapter.viewBox).toMatchObject({ x: 5, y: 5 });
+    detach();
+  });
+
+  it("leaves a chapter untouched when the source task is saved on the same canvas", () => {
+    const viewer = createSourceViewer();
+    const { controller, detach } = attachSourceController(viewer);
+    const before = get(controller.story).chapters[0];
+
+    controller.saveChapterSettings();
+
+    expect(get(controller.story).chapters[0]).toEqual(before);
+    detach();
+  });
+});
+
+describe("story builder stage crossfade", () => {
+  const createFadeViewer = () => {
+    let canvasIndex = 0;
+    let viewBox = { x: 0, y: 0, w: 100, h: 100 };
+    const viewer = {
+      getManifestId: () => "https://example.org/manifest.json",
+      getState: () => null,
+      getViewBox: vi.fn(() => viewBox),
+      getCanvasIndex: () => canvasIndex,
+      getCanvasCount: () => 2,
+      getCanvasId: () => `https://example.org/canvas/${canvasIndex}`,
+      getMediaType: () => "image",
+      getMediaSources: () => [],
+      getLayerOpacities: () => ({}),
+      setStoryAnnotations: vi.fn(),
+      setStoryAnnotationEditing: vi.fn(),
+      setStoryAnnotationSelection: vi.fn(),
+      setAnnotationTool: vi.fn(),
+      setCanvasByIndex: vi.fn((next: number) => {
+        canvasIndex = next;
+      }),
+      setCanvasById: vi.fn(),
+      setManifest: vi.fn(),
+      setViewBox: vi.fn((next: typeof viewBox) => {
+        viewBox = next;
+      }),
+      updateLayerOpacity: vi.fn(),
+      setModelOrbit: vi.fn(),
+      setModelTarget: vi.fn(),
+      setModelOrientation: vi.fn(),
+      addAnnotation: vi.fn(),
+      removeAnnotation: vi.fn(),
+      pause: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    };
+    return viewer;
+  };
+
+  const twoCanvasStory = {
+    chapters: [
+      {
+        id: "chapter-1",
+        manifest: "https://example.org/manifest.json",
+        canvasIndex: 0,
+        canvasId: "https://example.org/canvas/0",
+        viewBox: { x: 0, y: 0, w: 100, h: 100 },
+      },
+      {
+        id: "chapter-2",
+        manifest: "https://example.org/manifest.json",
+        canvasIndex: 1,
+        canvasId: "https://example.org/canvas/1",
+        viewBox: { x: 10, y: 10, w: 40, h: 40 },
+      },
+    ],
+  };
+
+  it("hides the stage before the canvas swap and reveals it once framed", () => {
+    vi.useFakeTimers();
+    const controller = createStoryBuilderController({ initialStory: twoCanvasStory });
+    const viewer = createFadeViewer();
+    const events = createEventBus();
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+
+    const fades: { opacity: number; durationMs: number }[] = [];
+    const unsubscribe = controller.stageFade.subscribe((value) => {
+      fades.push({ ...value });
+    });
+
+    controller.selectChapter("chapter-2");
+
+    // The stage goes down first and nothing has moved yet.
+    expect(fades[fades.length - 1].opacity).toBe(0);
+    expect(viewer.setCanvasByIndex).not.toHaveBeenCalled();
+
+    // The swap lands once the stage is hidden.
+    vi.advanceTimersByTime(300);
+    expect(viewer.setCanvasByIndex).toHaveBeenCalledWith(1);
+    expect(fades[fades.length - 1].opacity).toBe(0);
+
+    // The viewer reports the page change, which resumes the apply.
+    events.emit("pageChange", { canvasId: "https://example.org/canvas/1", index: 1 });
+    vi.advanceTimersByTime(300);
+
+    expect(viewer.setViewBox).toHaveBeenCalledWith({ x: 10, y: 10, w: 40, h: 40 });
+    expect(fades[fades.length - 1].opacity).toBe(1);
+
+    unsubscribe();
+    detach();
+    vi.useRealTimers();
+  });
+
+  it("leaves the stage alone when the chapter stays on the same canvas", () => {
+    vi.useFakeTimers();
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          twoCanvasStory.chapters[0],
+          { ...twoCanvasStory.chapters[1], canvasIndex: 0, canvasId: "https://example.org/canvas/0" },
+        ],
+      },
+    });
+    const viewer = createFadeViewer();
+    const events = createEventBus();
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+
+    const opacities: number[] = [];
+    const unsubscribe = controller.stageFade.subscribe((value) => {
+      opacities.push(value.opacity);
+    });
+
+    controller.selectChapter("chapter-2");
+    vi.advanceTimersByTime(600);
+
+    expect(opacities.every((opacity) => opacity === 1)).toBe(true);
+    expect(viewer.setCanvasByIndex).not.toHaveBeenCalled();
+
+    unsubscribe();
+    detach();
+    vi.useRealTimers();
+  });
+
+  it("drops a swap that a newer chapter has superseded", () => {
+    vi.useFakeTimers();
+    const controller = createStoryBuilderController({ initialStory: twoCanvasStory });
+    const viewer = createFadeViewer();
+    const events = createEventBus();
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+
+    // Move to canvas 2, then change our mind before the fade has finished.
+    controller.selectChapter("chapter-2");
+    vi.advanceTimersByTime(100);
+    controller.selectChapter("chapter-1");
+    vi.advanceTimersByTime(1000);
+
+    // The abandoned swap must not land after the chapter that replaced it.
+    const targets = viewer.setCanvasByIndex.mock.calls.map(([index]: [number]) => index);
+    expect(targets).not.toContain(1);
+
+    detach();
+    vi.useRealTimers();
+  });
+
+  it("never leaves the stage hidden when a source never arrives", () => {
+    vi.useFakeTimers();
+    const controller = createStoryBuilderController({ initialStory: twoCanvasStory });
+    const viewer = createFadeViewer();
+    const events = createEventBus();
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+
+    let opacity = 1;
+    const unsubscribe = controller.stageFade.subscribe((value) => {
+      opacity = value.opacity;
+    });
+
+    controller.selectChapter("chapter-2");
+    expect(opacity).toBe(0);
+
+    // No pageChange ever arrives; the deadline releases the stage.
+    vi.advanceTimersByTime(6000);
+    expect(opacity).toBe(1);
+
+    unsubscribe();
+    detach();
+    vi.useRealTimers();
+  });
+});
