@@ -102,6 +102,54 @@ test.describe("responsive mode matrix", () => {
   }
 });
 
+/*
+ * The checks above ask whether the viewer fits its host. They cannot see the
+ * failure where the *host* is what overflows: `.page--editor` locks the demo
+ * page to the viewport and clips rather than scrolls, so an element taller than
+ * the room left under the hero loses its bottom with no scrollbar to reach it.
+ *
+ * That only bites below roughly 800px of viewport height — hero and padding
+ * take ~82px, and the element's default is 720px — which is why a matrix that
+ * stopped at 900 tall never saw it, and why the story editor shipped with its
+ * stage toolbar off the bottom of the window.
+ */
+const reachablePaths = [
+  "/story-edit.html",
+  "/story-builder.html",
+  "/annotation-editor.html",
+  "/viewer.html",
+];
+
+const shortViewports = [
+  { name: "short desktop", width: 1440, height: 700 },
+  { name: "laptop", width: 1440, height: 800 },
+  { name: "desktop", width: 1440, height: 900 },
+];
+
+test.describe("no surface is cut off below the fold", () => {
+  for (const viewport of shortViewports) {
+    for (const path of reachablePaths) {
+      test(`${path} stays reachable on ${viewport.name}`, async ({ page }) => {
+        await openAt(page, path, viewport);
+        await expect(page.locator("mango-viewer").locator(".viewer")).toBeVisible();
+
+        const overhang = await page.evaluate(() => {
+          const host = document.querySelector("mango-viewer");
+          if (!host) return Number.NaN;
+          const doc = document.documentElement;
+          // A page that scrolls can reach its whole document; one that clips
+          // can only ever reach the viewport.
+          const canScroll = doc.scrollHeight > doc.clientHeight + 1;
+          const reachable = canScroll ? doc.scrollHeight : window.innerHeight;
+          return host.getBoundingClientRect().bottom + window.scrollY - reachable;
+        });
+
+        expect(overhang).toBeLessThanOrEqual(1);
+      });
+    }
+  }
+});
+
 test.describe("iPad fullscreen and story rail", () => {
   test.use({ viewport: { width: 1024, height: 1366 }, hasTouch: true });
 

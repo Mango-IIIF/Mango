@@ -41,12 +41,19 @@
   let localMotivation = $state('sc:painting');
   let localLayer = $state('mine');
   const DEFAULT_LAYER_COLOR = '#a78bfa';
+  const DEFAULT_LAYER_ID = 'mine';
   const LAYER_FILL_OPACITY = 0.18;
-  const firstLayerId = () => layers[0]?.id ?? 'mine';
+  const firstLayerId = () => layers[0]?.id ?? DEFAULT_LAYER_ID;
   const findLayer = (layerId?: string): LayerItem | undefined =>
     layers.find((layer) => layer.id === layerId);
+  /*
+   * Falls back to the same layer the stage draws an unassigned annotation on
+   * (see `normalizeLayerId` in ViewerLayout). Falling back to the first layer
+   * instead had the inspector reporting "Research Notes" for annotations
+   * rendered in the "My Annotations" colour.
+   */
   const normalizeLayer = (layer?: string): string =>
-    findLayer(layer)?.id ?? firstLayerId();
+    findLayer(layer)?.id ?? findLayer(DEFAULT_LAYER_ID)?.id ?? firstLayerId();
   const layerColorById = (layerId?: string): string =>
     findLayer(layerId)?.color ?? DEFAULT_LAYER_COLOR;
 

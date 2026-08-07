@@ -39,6 +39,12 @@ export type ViewerStateStores = {
   mediaDuration: ReturnType<typeof writable<number | undefined>>;
   userAnnotations: ReturnType<typeof writable<Record<string, ResolvedAnnotation[]>>>;
   externalAnnotations: ReturnType<typeof writable<Record<string, ResolvedAnnotation[]>>>;
+  /**
+   * Ids of annotations the user has deleted, keyed by canvas. Manifest and
+   * external annotations are re-derived from the fetched IIIF, so dropping one
+   * from `userAnnotations` is not enough to make it stay gone.
+   */
+  removedAnnotationIds: ReturnType<typeof writable<Record<string, string[]>>>;
   iiifSearchResults: ReturnType<typeof writable<IIIFSearchAnnotation[]>>;
 };
 
@@ -91,6 +97,7 @@ export const createViewerState = (
     mediaDuration: writable(undefined),
     userAnnotations: writable({}),
     externalAnnotations: writable({}),
+    removedAnnotationIds: writable({}),
     iiifSearchResults: writable([]),
   };
 };
