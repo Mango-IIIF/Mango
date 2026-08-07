@@ -74,9 +74,20 @@ export const createAnnotationController = ({
   setPendingViewBox,
   applyViewBox,
 }: AnnotationControllerConfig): AnnotationController => {
+  const currentCanvasKey = () =>
+    resolveCanvasKey(getCanvasId(), getCanvasIndex());
+
+  const forgetRemoval = (key: string, annotationId: string) => {
+    state.removedAnnotationIds.update((current) => {
+      const items = current[key] ?? [];
+      return items.includes(annotationId)
+        ? { ...current, [key]: items.filter((id) => id !== annotationId) }
+        : current;
+    });
+  };
+
   const addAnnotationValue = (annotation: ResolvedAnnotation) => {
-    const canvasId = getCanvasId();
-    const key = resolveCanvasKey(canvasId, getCanvasIndex());
+    const key = currentCanvasKey();
     const next = {
       ...annotation,
       id:
@@ -88,6 +99,9 @@ export const createAnnotationController = ({
       const updated = updateRecord(current, key, [...items, next]);
       return updated;
     });
+    // Re-adding an id that was deleted earlier has to lift its tombstone,
+    // or the merge would filter the new annotation straight back out.
+    forgetRemoval(key, next.id);
     emitEvent("addAnnotation", { annotation: next });
     emitEvent("annotationCreate", { annotation: next });
     emitStateChange();
@@ -193,6 +207,20 @@ export const createAnnotationController = ({
       }
       return next;
     });
+    /*
+     * A manifest or external annotation cannot be taken out of its source, and
+     * for an edited one the user copy is only an override — dropping it above
+     * would have restored the unedited original rather than removed anything.
+     * The tombstone is what actually deletes it, and it is harmless for
+     * annotations that only ever lived in `userAnnotations`.
+     */
+    const key = currentCanvasKey();
+    state.removedAnnotationIds.update((current) => {
+      const items = current[key] ?? [];
+      return items.includes(annotationId)
+        ? current
+        : { ...current, [key]: [...items, annotationId] };
+    });
     emitEvent("removeAnnotation", { annotationId });
     emitEvent("annotationDelete", { annotationId });
     emitStateChange();
@@ -202,28 +230,68 @@ export const createAnnotationController = ({
     state.annotationMode.set(mode);
   };
 
+  const patchAnnotation = (
+    annotation: ResolvedAnnotation,
+    patch: Partial<ResolvedAnnotation>,
+  ): ResolvedAnnotation => ({
+    ...annotation,
+    ...patch,
+    bodies:
+      patch.text !== undefined
+        ? [{ type: "text", value: patch.text }]
+        : annotation.bodies,
+  });
+
+  // Shallow, so a patch carrying an equal-but-new rect or tags array still
+  // counts as a change. Erring that way only costs a redundant write; erring
+  // the other way would drop a real edit.
+  const changesNothing = (
+    annotation: ResolvedAnnotation,
+    patch: Partial<ResolvedAnnotation>,
+  ): boolean =>
+    Object.entries(patch).every(([field, value]) =>
+      Object.is(annotation[field as keyof ResolvedAnnotation], value),
+    );
+
   const updateAnnotation = async (
     annotationId: string,
     patch: Partial<ResolvedAnnotation>,
   ): Promise<void> => {
+    let owned = false;
     state.userAnnotations.update((current) => {
       const next: Record<string, ResolvedAnnotation[]> = {};
       for (const [key, items] of Object.entries(current)) {
-        next[key] = items.map((item) =>
-          item.id === annotationId
-            ? {
-                ...item,
-                ...patch,
-                bodies:
-                  patch.text !== undefined
-                    ? [{ type: "text", value: patch.text }]
-                    : item.bodies,
-              }
-            : item,
-        );
+        next[key] = items.map((item) => {
+          if (item.id !== annotationId) return item;
+          owned = true;
+          return patchAnnotation(item, patch);
+        });
       }
       return next;
     });
+
+    /*
+     * Manifest and external annotations are not ours to mutate: patching them
+     * in place is thrown away the next time the derived list rebuilds from the
+     * fetched IIIF, which is why editing a Wellcome OCR annotation used to
+     * silently revert. Store the edit as a user annotation under the same id
+     * instead and let `mergeCanvasAnnotations` prefer it. A patch that changes
+     * nothing — the empty one an explicit Save sends — is not worth taking
+     * ownership for, or every save would copy the source into the export.
+     */
+    if (!owned) {
+      const source = resolveAnnotation(derivedStores, annotationId);
+      if (source && !changesNothing(source, patch)) {
+        const key = currentCanvasKey();
+        state.userAnnotations.update((current) =>
+          updateRecord(current, key, [
+            ...(current[key] ?? []),
+            patchAnnotation(source, patch),
+          ]),
+        );
+      }
+    }
+
     emitEvent("annotationUpdate", { annotationId, patch });
     emitStateChange();
   };

@@ -792,12 +792,18 @@
       targetStyleClass: detail.id,
       targetStyle: styleForLayerColor(detail.color),
     };
+    /*
+     * Only annotations that name this layer, not the manifest ones that merely
+     * fall back to it for rendering. Recolouring is a real edit, so matching on
+     * the fallback would copy every external annotation on the page into the
+     * user's own set — and into their export — over a swatch change.
+     */
     const affectedAnnotationIds = new Set(
       editorAnnotations
-        .filter((annotation) => normalizeLayerId(annotation.targetStyleClass) === detail.id)
+        .filter((annotation) => annotation.targetStyleClass?.trim() === detail.id)
         .map((annotation) => annotation.id),
     );
-    if (draftAnno && normalizeLayerId(draftAnno.targetStyleClass) === detail.id) {
+    if (draftAnno && draftAnno.targetStyleClass?.trim() === detail.id) {
       affectedAnnotationIds.add(draftAnno.id);
     }
     for (const annotationId of affectedAnnotationIds) {

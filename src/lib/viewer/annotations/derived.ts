@@ -15,6 +15,32 @@ const getCanvasKey = (
   index: number,
 ): string => canvas?.id ?? `index-${index}`;
 
+/**
+ * Manifest and external annotations are read-only sources — they are rebuilt
+ * from the fetched IIIF on every recompute, so an edit to one is kept as a user
+ * annotation carrying the same id and a delete as a tombstone. Applying both
+ * here is what makes those edits survive; overriding in place rather than
+ * appending also keeps the annotation where it was in the list, so editing the
+ * text of "21 of 35" does not send it to the end.
+ */
+const mergeCanvasAnnotations = (
+  sourceItems: ResolvedAnnotation[],
+  userItems: ResolvedAnnotation[],
+  removedIds: string[],
+): ResolvedAnnotation[] => {
+  const removed = new Set(removedIds);
+  const overrides = new Map(userItems.map((item) => [item.id, item]));
+  const sourceIds = new Set(sourceItems.map((item) => item.id));
+  return [
+    ...sourceItems
+      .filter((item) => !removed.has(item.id))
+      .map((item) => overrides.get(item.id) ?? item),
+    ...userItems.filter(
+      (item) => !sourceIds.has(item.id) && !removed.has(item.id),
+    ),
+  ];
+};
+
 const isPaintingMotivation = (annotation: ResolvedAnnotation): boolean =>
   annotation.motivation?.some((m) => m === "painting" || m === "sc:painting") ??
   false;
@@ -174,8 +200,16 @@ export const createAnnotationDerivedStores = ({
       state.selectedCanvasIndex,
       state.userAnnotations,
       state.externalAnnotations,
+      state.removedAnnotationIds,
     ],
-    ([entry, list, index, userAnnotations, externalAnnotations]) => {
+    ([
+      entry,
+      list,
+      index,
+      userAnnotations,
+      externalAnnotations,
+      removedAnnotationIds,
+    ]) => {
       if (!entry?.manifesto || list.length === 0) {
         return [] as ResolvedAnnotation[];
       }
@@ -186,27 +220,34 @@ export const createAnnotationDerivedStores = ({
         index,
       );
       const key = getCanvasKey(canvas, index);
-      const userItems = userAnnotations[key] ?? [];
-      const externalItems = externalAnnotations[key] ?? [];
-      const merged = [...manifestAnnotations, ...externalItems, ...userItems];
-      return merged;
+      return mergeCanvasAnnotations(
+        [...manifestAnnotations, ...(externalAnnotations[key] ?? [])],
+        userAnnotations[key] ?? [],
+        removedAnnotationIds[key] ?? [],
+      );
     },
   );
 
   const allCanvasAnnotations = derived(
-    [manifestEntry, canvases, state.userAnnotations, state.externalAnnotations],
-    ([entry, list, userAnnotations, externalAnnotations]) => {
+    [
+      manifestEntry,
+      canvases,
+      state.userAnnotations,
+      state.externalAnnotations,
+      state.removedAnnotationIds,
+    ],
+    ([entry, list, userAnnotations, externalAnnotations, removedAnnotationIds]) => {
       if (list.length === 0) return [] as IIIFSearchAnnotation[];
       return list.flatMap((canvas, index) => {
         const manifestAnnotations = entry?.manifesto
           ? getCanvasAnnotations(entry.manifesto, canvas.id, index)
           : [];
         const key = getCanvasKey(canvas, index);
-        return [
-          ...manifestAnnotations,
-          ...(externalAnnotations[key] ?? []),
-          ...(userAnnotations[key] ?? []),
-        ].map((annotation) => ({ ...annotation, canvasId: canvas.id }));
+        return mergeCanvasAnnotations(
+          [...manifestAnnotations, ...(externalAnnotations[key] ?? [])],
+          userAnnotations[key] ?? [],
+          removedAnnotationIds[key] ?? [],
+        ).map((annotation) => ({ ...annotation, canvasId: canvas.id }));
       });
     },
   );

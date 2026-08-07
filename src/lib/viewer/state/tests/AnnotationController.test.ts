@@ -132,3 +132,90 @@ describe('AnnotationController shape preservation', () => {
     expect(stored('rect-1')?.shapeType).toBe('rect');
   });
 });
+
+describe('AnnotationController edits to read-only annotations', () => {
+  /*
+   * Manifest and external annotations (the Wellcome OCR lists, say) are rebuilt
+   * from the fetched IIIF on every recompute, so the controller cannot patch
+   * them where they live. It takes a copy under the same id instead, and
+   * `mergeCanvasAnnotations` prefers that copy — see derived.test.ts.
+   */
+  const external: ResolvedAnnotation = {
+    id: 'external-1',
+    text: 'BILD DER JAHRHUNDERTE',
+    rect: { x: 10, y: 20, w: 30, h: 40 },
+  };
+
+  const makeController = () => {
+    const state = createViewerState();
+    const controller = createAnnotationController({
+      state,
+      derived: {
+        annotations: writable([external]),
+        canvases: writable([{ id: 'canvas-1', index: 0 }]),
+      } as any,
+      emitEvent: vi.fn(),
+      emitStateChange: vi.fn(),
+      getCanvasId: () => 'canvas-1',
+      getCanvasIndex: () => 0,
+      setCanvasById: vi.fn(),
+      setPendingViewBox: vi.fn(),
+      applyViewBox: vi.fn(),
+    });
+    return { controller, state };
+  };
+
+  it('copies an external annotation on first edit instead of dropping it', async () => {
+    const { controller, state } = makeController();
+
+    await controller.updateAnnotation('external-1', { text: 'Edited' });
+
+    const stored = get(state.userAnnotations)['canvas-1'] ?? [];
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({
+      id: 'external-1',
+      text: 'Edited',
+      rect: { x: 10, y: 20, w: 30, h: 40 },
+      bodies: [{ type: 'text', value: 'Edited' }],
+    });
+  });
+
+  it('edits the copy on subsequent edits rather than stacking another', async () => {
+    const { controller, state } = makeController();
+
+    await controller.updateAnnotation('external-1', { text: 'First' });
+    await controller.updateAnnotation('external-1', { text: 'Second' });
+
+    const stored = get(state.userAnnotations)['canvas-1'] ?? [];
+    expect(stored).toHaveLength(1);
+    expect(stored[0].text).toBe('Second');
+  });
+
+  it('does not take ownership for a patch that changes nothing', async () => {
+    const { controller, state } = makeController();
+
+    // What an explicit "Save Changes" sends; copying on it would put every
+    // annotation the user merely looked at into their export.
+    await controller.updateAnnotation('external-1', {});
+
+    expect(get(state.userAnnotations)['canvas-1'] ?? []).toEqual([]);
+  });
+
+  it('tombstones a deleted external annotation', async () => {
+    const { controller, state } = makeController();
+
+    await controller.removeAnnotation('external-1');
+
+    expect(get(state.removedAnnotationIds)['canvas-1']).toEqual(['external-1']);
+  });
+
+  it('lifts the tombstone when an id is added back', async () => {
+    const { controller, state } = makeController();
+
+    await controller.removeAnnotation('external-1');
+    await controller.addAnnotation({ ...external, id: 'external-1' });
+
+    expect(get(state.removedAnnotationIds)['canvas-1']).toEqual([]);
+    expect(get(state.userAnnotations)['canvas-1']).toHaveLength(1);
+  });
+});

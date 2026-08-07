@@ -212,6 +212,19 @@ body {
   height: auto;
   min-height: 0;
   overflow: hidden;
+  /*
+   * This page is locked to the viewport and clips rather than scrolls, so the
+   * element has to be told how much room is left under the hero. Its own
+   * default is a flat 720px that knows nothing about what sits above it: on any
+   * viewport under ~800px tall that ran past the bottom edge, and `overflow:
+   * hidden` here meant there was no scrollbar to reach what had been cut off.
+   *
+   * The shell is the grid's `1fr` row, so it has a definite height for the
+   * percentage to resolve against — which is the condition the element's own
+   * default exists to cover, and why this belongs on the embedding page rather
+   * than in the element.
+   */
+  --mango-viewer-height: 100%;
 }
 
 .viewer-shell mango-viewer {
@@ -233,6 +246,13 @@ body {
   .page--editor .viewer-shell {
     height: auto;
     overflow: visible;
+    /*
+     * The viewport lock is released here and the page scrolls, so the shell is
+     * auto-height again and a percentage would have nothing to resolve against.
+     * `initial` makes the custom property guaranteed-invalid, which hands the
+     * element back its own default rather than restating it here.
+     */
+    --mango-viewer-height: initial;
   }
 
   .viewer-shell {

@@ -156,6 +156,7 @@ export const resetManifestScopedState = (
   state.mediaDuration.set(undefined);
   state.externalAnnotations.set({});
   state.userAnnotations.set({});
+  state.removedAnnotationIds.set({});
 };
 
 export const createViewerController = ({

@@ -496,6 +496,11 @@ const extractTargetData = (
  */
 const collectAnnotationItems = (page: unknown): unknown[] => {
   if (!page || typeof page !== 'object') return [];
+  // Some annotation servers answer a page request with the bare list rather
+  // than an AnnotationList wrapping it — Simple Annotation Server's
+  // `/annotation/search?uri=` does. The annotations inside are ordinary ones,
+  // so the only thing missing was the envelope.
+  if (Array.isArray(page)) return page;
   const pageObj = page as Record<string, unknown>;
   if (Array.isArray(pageObj.items)) return pageObj.items;
   if (Array.isArray(pageObj.resources)) return pageObj.resources;

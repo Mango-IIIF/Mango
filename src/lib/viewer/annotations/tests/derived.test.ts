@@ -47,3 +47,86 @@ describe('annotation overlay visibility', () => {
     expect(get(stores.overlayAnnotations)).toEqual([]);
   });
 });
+
+describe('read-only annotation overrides', () => {
+  const canvasId = 'canvas-1';
+  const canvases = [{ id: canvasId, index: 0 }];
+
+  const makeStores = () => {
+    const canvas = { id: canvasId, getAnnotations: () => [], getOtherContent: () => [] };
+    const manifestEntry = writable({
+      id: 'manifest-1',
+      manifesto: { getSequences: () => [{ getCanvases: () => [canvas] }] },
+      canvases,
+      isFetching: false,
+    });
+    const state = createViewerState();
+    state.externalAnnotations.set({
+      [canvasId]: [
+        { id: 'external-1', text: 'First' },
+        { id: 'external-2', text: 'Second' },
+        { id: 'external-3', text: 'Third' },
+      ],
+    });
+    const stores = createAnnotationDerivedStores({
+      manifestEntry,
+      canvases: writable(canvases),
+      state,
+    });
+    return { state, stores };
+  };
+
+  it('replaces an external annotation in place with the user copy', () => {
+    const { state, stores } = makeStores();
+
+    // In place, so an edit does not move the annotation to the end of the list
+    // and renumber every "N of 35" counter around it.
+    state.userAnnotations.set({ [canvasId]: [{ id: 'external-2', text: 'Edited' }] });
+
+    expect(get(stores.annotations).map((item) => item.id)).toEqual([
+      'external-1',
+      'external-2',
+      'external-3',
+    ]);
+    expect(get(stores.annotations)[1].text).toBe('Edited');
+  });
+
+  it('appends user annotations that have no source counterpart', () => {
+    const { state, stores } = makeStores();
+
+    state.userAnnotations.set({ [canvasId]: [{ id: 'user-1', text: 'Mine' }] });
+
+    expect(get(stores.annotations).map((item) => item.id)).toEqual([
+      'external-1',
+      'external-2',
+      'external-3',
+      'user-1',
+    ]);
+  });
+
+  it('honours a tombstone over both the source and its user copy', () => {
+    const { state, stores } = makeStores();
+
+    state.userAnnotations.set({ [canvasId]: [{ id: 'external-2', text: 'Edited' }] });
+    state.removedAnnotationIds.set({ [canvasId]: ['external-2'] });
+
+    expect(get(stores.annotations).map((item) => item.id)).toEqual([
+      'external-1',
+      'external-3',
+    ]);
+  });
+
+  it('applies the same overrides to the cross-canvas list search reads', () => {
+    const { state, stores } = makeStores();
+
+    state.userAnnotations.set({ [canvasId]: [{ id: 'external-1', text: 'Edited' }] });
+    state.removedAnnotationIds.set({ [canvasId]: ['external-3'] });
+    state.showSearch.set(true);
+    state.searchQuery.set('Edited');
+
+    expect(get(stores.searchHits).map((item) => item.id)).toEqual(['external-1']);
+
+    state.searchQuery.set('Third');
+    expect(get(stores.searchHits)).toEqual([]);
+  });
+});
