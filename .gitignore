@@ -8,3 +8,5 @@ test-results
 playwright-report
 .vscode
 **/.DS_Store
+.claude
+docs
