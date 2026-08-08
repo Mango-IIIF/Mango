@@ -52,6 +52,48 @@ describe('RightInspector semantic edits', () => {
     target.remove();
   });
 
+  /*
+   * The expert purpose control is only reachable in expert mode and is easy to
+   * leave inert: it once wrote a local variable and never patched, so a
+   * selection looked accepted, was reverted by the next projection, and never
+   * reached the export.
+   */
+  it('patches body purpose when the expert control is changed directly', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const onupdate = vi.fn();
+    const instance = mount(RightInspector, {
+      target,
+      props: {
+        annotation: annotation(),
+        expertMode: true,
+        layers: [{ id: 'mine', name: 'My Annotations', color: '#a78bfa', visible: true }],
+        total: 1,
+        index: 0,
+        onupdate,
+      },
+    });
+    await tick();
+
+    const purpose = target.querySelector('#anno-purpose') as HTMLSelectElement;
+    expect(purpose).not.toBeNull();
+    purpose.value = 'describing';
+    purpose.dispatchEvent(new Event('change', { bubbles: true }));
+    await tick();
+
+    expect(onupdate).toHaveBeenLastCalledWith({
+      id: 'https://example.org/annotation/1',
+      patch: {},
+      options: {
+        bodyPurpose: 'describing',
+        bodyPath: annotation().bodies?.[0]?.path,
+      },
+    });
+
+    unmount(instance);
+    target.remove();
+  });
+
   it('creates a parallel body by switching to a configured language', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
