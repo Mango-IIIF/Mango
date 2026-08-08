@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { translate } from '../i18n';
+import { translate } from '../core/i18n';
 import type { ViewerPlugin } from '../core/types/plugin';
 
 const dedupePlugins = (plugins: ViewerPlugin[]): ViewerPlugin[] => {

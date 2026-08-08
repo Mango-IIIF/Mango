@@ -11,7 +11,7 @@ import {
   type ChapterMetadataPayload,
   type StoryMetadataPayload,
   type NarrationTrackPayload,
-} from '../../../state/story.svelte';
+} from '../../../core/state/story.svelte';
 import type { StoryState } from '../../../core/types/story';
 
 /**

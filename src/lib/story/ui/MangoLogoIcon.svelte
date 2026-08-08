@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let size = 24;
   export let color = 'currentColor';

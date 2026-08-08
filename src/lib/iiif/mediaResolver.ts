@@ -379,7 +379,7 @@ const toMediaSource = (body: unknown, canvas: unknown): MediaSource | null => {
 /**
  * Resolves media sources from a canvas object
  */
-export const resolveMediaFromCanvas = (canvas: unknown): ResolvedMedia => {
+const resolveMediaFromCanvas = (canvas: unknown): ResolvedMedia => {
   if (!canvas) return { primary: null, alternates: [] };
 
   let sources: MediaSource[] = [];

@@ -35,7 +35,7 @@
     type ChapterTaskEvaluation,
     type ChapterTaskId,
   } from "../chapterTasks";
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let layers: MediaSource[] = [];

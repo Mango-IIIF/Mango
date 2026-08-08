@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Clock3, Play, Square } from '@lucide/svelte';
   import type { ChapterCameraTrack } from '../../core/types/story';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let track: ChapterCameraTrack | undefined;
   export let previewing = false;

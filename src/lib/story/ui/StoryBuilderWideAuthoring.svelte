@@ -8,7 +8,7 @@
   import StoryBuilderWideNarration from "./StoryBuilderWideNarration.svelte";
   import StoryBuilderWideMediaTiming from "./StoryBuilderWideMediaTiming.svelte";
   import StoryBuilderWideAnnotations from "./StoryBuilderWideAnnotations.svelte";
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;

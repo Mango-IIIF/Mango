@@ -10,7 +10,7 @@ type MangoWindow = Window &
     __setMangoViewerCss?: typeof setCssText;
   };
 
-export function setCssText(text: string): void {
+function setCssText(text: string): void {
   cssText = text;
   if (adoptedSheet) {
     try {

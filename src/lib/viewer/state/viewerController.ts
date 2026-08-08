@@ -6,13 +6,13 @@
  */
 
 import { get } from "svelte/store";
-import { createEventBus } from "../../events/eventBus";
+import { createEventBus } from "../../core/events/eventBus";
 import type {
   ViewerEventBus,
   ViewerEventEmitter,
   ViewerEventMap,
 } from "../../core/types/events";
-import { fetchManifest } from "../../state/manifests";
+import { fetchManifest } from "../../core/state/manifests";
 import {
   DEFAULT_IMAGE_FILTERS,
   type ImageFilters,
@@ -20,7 +20,7 @@ import {
 import type { ResolvedAnnotation } from "../../iiif/annotationResolver";
 import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
 import type { ViewBox, ViewerStateSnapshot } from "../../core/types/viewer";
-import { setLocale } from "../../i18n";
+import { setLocale } from "../../core/i18n";
 import { createAnnotationInteractionHandlers } from "../annotations/interactions";
 import { createExternalAnnotationEffects } from "../annotations/externalAnnotations";
 import type { ViewerDerivedStores } from "./viewerDerived";

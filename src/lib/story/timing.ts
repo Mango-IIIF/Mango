@@ -1,6 +1,6 @@
 import type { Chapter, ChapterEntryTransition } from '../core/types/story';
 
-export const DEFAULT_ENTRY_TRANSITION: ChapterEntryTransition = {
+const DEFAULT_ENTRY_TRANSITION: ChapterEntryTransition = {
   type: 'tween',
   durationMs: 2000,
   easing: 'ease-in-out',

@@ -16,7 +16,7 @@
 </script>
 
 <script lang="ts">
-  import { t } from '../i18n';
+  import { t } from '../core/i18n';
   import type OpenSeadragon from 'openseadragon';
   import OSDViewer from './OSDViewer.svelte';
   import type { ResolvedAnnotation } from '../iiif/annotationResolver';

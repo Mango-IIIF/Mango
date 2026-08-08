@@ -5,7 +5,7 @@
   import LeftSidebar, { type LayerItem } from './LeftSidebar.svelte';
   import RightInspector from './RightInspector.svelte';
   import AnnotationBrowserTable from './AnnotationBrowserTable.svelte';
-  import { t } from '../../../i18n';
+  import { t } from '../../../core/i18n';
 
   import type { ChapterAnnotationTool as Tool } from '../../../core/types/story';
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { ViewerPlugin, PluginContext } from '../../core/types/plugin';
-import { createEventBus } from '../../events/eventBus';
+import { createEventBus } from '../../core/events/eventBus';
 import type { ViewerConfig } from '../../core/types/config';
 
 describe('Plugin Error Boundaries', () => {

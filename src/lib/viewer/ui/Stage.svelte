@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getContext } from 'svelte';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import PluginSlot from '../../plugins/PluginSlot.svelte';
   import RendererHost from './RendererHost.svelte';
   import ViewerDock from './ViewerDock.svelte';

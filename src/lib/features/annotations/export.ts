@@ -25,7 +25,7 @@ import {
   type ValidationResult,
 } from '@mango-iiif/w3c-parser';
 import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
-import { translate } from '../../i18n';
+import { translate } from '../../core/i18n';
 import { createMangoAnnotation, shapeFromResolved } from './canonical';
 import { toMangoDiagnostics, type MangoDiagnostic } from './diagnostics';
 import {

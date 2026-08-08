@@ -7,8 +7,8 @@ import {
 } from "../../iiif/mediaResolver";
 import { pluginsStore } from "../../plugins/registry";
 import type { ViewerPlugin } from "../../core/types/plugin";
-import type { CanvasSummary, ManifestEntry } from "../../state/manifests";
-import { manifestsStore } from "../../state/manifests";
+import type { CanvasSummary, ManifestEntry } from "../../core/state/manifests";
+import { manifestsStore } from "../../core/state/manifests";
 import type { ViewBox } from "../../core/types/viewer";
 import type { ViewerConfig } from "../../core/types/config";
 import { createAnnotationDerivedStores } from "../annotations/derived";

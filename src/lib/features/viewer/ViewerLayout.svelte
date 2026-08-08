@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount, setContext } from 'svelte';
   import { get, writable } from 'svelte/store';
-  import { t } from '../../i18n';
-  import { normaliseViewerConfig } from '../../config/normalise';
+  import { t } from '../../core/i18n';
+  import { normaliseViewerConfig } from '../../core/config/normalise';
   import type { ViewerEventMap } from '../../core/types/events';
   import type { ViewerConfig } from '../../core/types/config';
   import type { ChapterAnnotationTool } from '../../core/types/story';
@@ -54,7 +54,7 @@
   import { createViewerState } from '../../viewer/state/viewerState';
   import { createViewerDerived } from '../../viewer/state/viewerDerived';
   import { createViewerController } from '../../viewer/state/viewerController';
-  import { manifestsStore, fetchManifest } from '../../state/manifests';
+  import { manifestsStore, fetchManifest } from '../../core/state/manifests';
   import { resolveCanvasThumbnail } from '../../viewer/iiif/thumbnails';
   import type { RendererEventHandlers } from '../../viewer/types/rendererEvents';
   import {
@@ -64,7 +64,7 @@
   } from '../../story/viewer/storyLoader';
   import { createStoryViewerRuntime } from '../../story/viewer/storyViewerController';
   import { ViewportState, VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
-  import { setLocale } from '../../i18n';
+  import { setLocale } from '../../core/i18n';
   import GridContainer from '../workspace/GridContainer.svelte';
   import ManifestManager from '../workspace/ManifestManager.svelte';
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';

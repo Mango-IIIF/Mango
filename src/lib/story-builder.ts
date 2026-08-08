@@ -10,7 +10,7 @@ export {
 } from './story/capture';
 export { createMediaMarks } from './story/mediaMarks';
 export { createModelPose } from './story/modelPose';
-export { setChapterManifest } from './state/story.svelte';
+export { setChapterManifest } from './core/state/story.svelte';
 export { resolveManifestForNewChapter } from './story/manifestResolver';
 export { validateStory } from './story/validation';
 export {
@@ -72,7 +72,7 @@ export {
   setChapterCameraTrack,
   updateChapterFromCapture,
   type StoryStoreRunes,
-} from './state/story.svelte';
+} from './core/state/story.svelte';
 export { createStoryBuilderPlugins } from './plugins/storyBuilder';
 export type {
   AnnotationPlacement,

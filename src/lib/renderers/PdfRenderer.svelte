@@ -23,7 +23,7 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
-  import { t } from '../i18n';
+  import { t } from '../core/i18n';
   import type { MediaSource } from '../iiif/mediaResolver';
   import type { ViewBox } from '../core/types/viewer';
 

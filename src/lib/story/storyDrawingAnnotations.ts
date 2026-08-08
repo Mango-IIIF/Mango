@@ -12,7 +12,7 @@ import {
   styleClassForLayer,
 } from '../features/annotations/style';
 
-export const drawingAnnotationShape = (
+const drawingAnnotationShape = (
   annotation: ChapterDrawingAnnotation,
 ): NeutralShape | null => {
   if (annotation.rect) return { type: 'rect', geometry: annotation.rect };

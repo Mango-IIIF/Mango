@@ -17,7 +17,7 @@ import {
   type MangoViewerStateBody,
 } from './storyAnnotationProfile';
 import { buildChapterAnnotationId, deriveChapterAnnotationBase } from './publicIdentifiers';
-import { translate } from '../i18n';
+import { translate } from '../core/i18n';
 import { storyDrawingDocument } from './storyDrawingAnnotations';
 
 export type SaveConfig = {

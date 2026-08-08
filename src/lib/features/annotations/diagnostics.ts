@@ -63,10 +63,10 @@ const MESSAGE_KEYS: Partial<Record<DiagnosticCode, string>> = {
 /** Every `limit.*` code means the same thing to a user: the document is too big. */
 const LIMIT_KEY = `${KEY_ROOT}.limitExceeded`;
 
-export const messageKeyForCode = (code: DiagnosticCode): string | undefined =>
+const messageKeyForCode = (code: DiagnosticCode): string | undefined =>
   code.startsWith('limit.') ? LIMIT_KEY : MESSAGE_KEYS[code];
 
-export const toMangoDiagnostic = (
+const toMangoDiagnostic = (
   diagnostic: Diagnostic,
   category: DiagnosticCategory,
 ): MangoDiagnostic => ({

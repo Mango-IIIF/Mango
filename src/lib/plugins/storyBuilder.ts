@@ -9,7 +9,7 @@ import StoryBuilderSidebar from "../story/ui/StoryBuilderSidebar.svelte";
 import StoryBuilderOverlay from "../story/ui/StoryBuilderOverlay.svelte";
 import StoryBuilderTopBar from "../story/ui/StoryBuilderTopBar.svelte";
 import StoryBuilderWideAuthoring from "../story/ui/StoryBuilderWideAuthoring.svelte";
-import { translate } from '../i18n';
+import { translate } from '../core/i18n';
 
 export const createStoryBuilderPlugins = (
   options: StoryBuilderOptions = {},

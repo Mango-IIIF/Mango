@@ -1,6 +1,6 @@
 import { mount, unmount } from 'svelte';
 import ViewerComponent from './components/Viewer.svelte';
-import { normaliseViewerConfig, parseViewerConfig } from './config/normalise';
+import { normaliseViewerConfig, parseViewerConfig } from './core/config/normalise';
 import type { ViewerConfig } from './core/types/config';
 import type { ViewerEventMap } from './core/types/events';
 import type { ViewerPlugin } from './core/types/plugin';

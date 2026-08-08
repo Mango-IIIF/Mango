@@ -3,7 +3,7 @@
   import type { Readable } from 'svelte/store';
   import type { StoryState } from '../../core/types/story';
   import { deriveChapterAnnotationBase, validatePublicIdentifier } from '../publicIdentifiers';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let open = false;

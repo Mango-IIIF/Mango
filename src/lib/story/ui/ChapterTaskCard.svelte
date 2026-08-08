@@ -7,7 +7,7 @@
     TaskAvailability,
     TaskStatus,
   } from '../chapterTasks';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let id: ChapterTaskId;
   export let title: string;

@@ -1,5 +1,5 @@
 /** Canonicalises host-supplied authoring languages without accepting free text. */
-export const canonicalLanguageTag = (value: string): string | null => {
+const canonicalLanguageTag = (value: string): string | null => {
   const candidate = value.trim();
   if (!candidate) return null;
   try {

@@ -1,7 +1,7 @@
 import { derived, type Readable } from "svelte/store";
 import { getCanvasAnnotations } from "../../iiif/annotationResolver";
 import type { ResolvedAnnotation } from "../../iiif/annotationResolver";
-import type { CanvasSummary, ManifestEntry } from "../../state/manifests";
+import type { CanvasSummary, ManifestEntry } from "../../core/state/manifests";
 import type { ViewerStateStores } from "../state/viewerState";
 import {
   IIIFSearchClient,

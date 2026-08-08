@@ -2,7 +2,7 @@
   import { Shapes, Trash2 } from '@lucide/svelte';
   import { readable, type Readable } from 'svelte/store';
   import type { ChapterDrawingAnnotation, StoryState } from '../../core/types/story';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;

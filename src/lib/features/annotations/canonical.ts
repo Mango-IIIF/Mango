@@ -485,7 +485,7 @@ export const createMangoAnnotation = (input: CreateInput): CanonicalAnnotation =
  * stored as one is a private note that gets published the first time anybody
  * exports — which is exactly what Mango used to do with `describing` bodies.
  */
-export const withNote = (
+const withNote = (
   annotation: CanonicalAnnotation,
   note: string | undefined,
 ): CanonicalAnnotation => {
@@ -529,7 +529,7 @@ const displayBody = (
  * changes the label cannot rewrite the geometry, and an edit Mango has no
  * operation for leaves the document alone rather than approximating it.
  */
-export const operationsForPatch = (
+const operationsForPatch = (
   annotation: CanonicalAnnotation,
   patch: Partial<ResolvedAnnotation>,
   options: {

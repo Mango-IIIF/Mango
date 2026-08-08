@@ -6,9 +6,9 @@ import {
   type Writable,
 } from "svelte/store";
 import type { MediaSource, MediaType } from "../iiif/mediaResolver";
-import { translate } from '../i18n';
+import { translate } from '../core/i18n';
 import type { PluginContext } from "../core/types/plugin";
-import { createStoryStore } from "../state/story.svelte";
+import { createStoryStore } from "../core/state/story.svelte";
 import { createMediaMarks, type MediaMarksState } from "./mediaMarks";
 import { createModelPose } from "./modelPose";
 import { createNarrationPlayer } from "./narrationPlayer";
@@ -250,7 +250,7 @@ export const collectLatestNarrationSegments = (
   return latest;
 };
 
-export const DEFAULT_CHAPTER_TRANSITION_DELAY_MS = 2000;
+const DEFAULT_CHAPTER_TRANSITION_DELAY_MS = 2000;
 
 /**
  * How close the viewer has to be to a chapter's stored framing for the builder
@@ -263,7 +263,7 @@ export const DEFAULT_CHAPTER_TRANSITION_DELAY_MS = 2000;
  */
 const APPLIED_FRAMING_TOLERANCE = 0.5;
 
-export const collectLatestTransitionDelay = (story: StoryState): number => {
+const collectLatestTransitionDelay = (story: StoryState): number => {
   let latest = DEFAULT_CHAPTER_TRANSITION_DELAY_MS;
   for (const chapter of story.chapters) {
     const delay = chapter.advance?.delayMs;

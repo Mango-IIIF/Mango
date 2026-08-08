@@ -8,7 +8,7 @@ import { framingsWithin } from '../framing';
  * the viewer is already showing. A framing that is off by more than a rounding
  * error is a framing worth moving to.
  */
-export const VIEWBOX_EQUALITY_TOLERANCE = 0.01;
+const VIEWBOX_EQUALITY_TOLERANCE = 0.01;
 
 export const isViewBoxEqual = (
   a: ViewBox | null | undefined,

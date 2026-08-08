@@ -4,7 +4,7 @@
   import RegionsPlugin, {
     type Region,
   } from "wavesurfer.js/dist/plugins/regions.esm.js";
-  import { t, translate } from '../../i18n';
+  import { t, translate } from '../../core/i18n';
 
   export let url = "";
   export let start = 0;

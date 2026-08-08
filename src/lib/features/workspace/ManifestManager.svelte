@@ -13,11 +13,11 @@
     Star,
     X,
   } from '@lucide/svelte';
-  import { fetchManifest, manifestsStore } from '../../state/manifests';
+  import { fetchManifest, manifestsStore } from '../../core/state/manifests';
   import { resolveCanvasThumbnail } from '../../viewer/iiif/thumbnails';
   import iiifIcon from './iiif_bw.svg';
   import type { WorkspaceStore } from './workspaceStore.svelte';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   interface Props {
     workspace?: WorkspaceStore | null;

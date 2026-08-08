@@ -1,6 +1,6 @@
 <script lang="ts">
   import { X } from '@lucide/svelte';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   interface Props {
     label?: string;

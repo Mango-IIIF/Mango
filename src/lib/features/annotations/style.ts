@@ -147,7 +147,7 @@ export const parseAnnotationCss = (css: string): StylesheetParseResult => {
 };
 
 /** Turns allowlisted declarations into the hints the renderer understands. */
-export const hintsFromDeclarations = (
+const hintsFromDeclarations = (
   declarations: Record<string, string>,
 ): PresentationHints => {
   const strokeWidth = Number.parseFloat(declarations['stroke-width'] ?? '');
@@ -202,7 +202,7 @@ export type AnnotationAppearance = {
   strokeWidth?: number;
 };
 
-export const LAYER_FILL_OPACITY = 0.18;
+const LAYER_FILL_OPACITY = 0.18;
 
 /**
  * CSS class name for a layer.
@@ -261,7 +261,7 @@ export const buildAnnotationStylesheet = (
   return createStylesheet(`.${className} { ${declarations.join('; ')}; }`);
 };
 
-export const cssForLayer = (layer: LayerAppearance): string =>
+const cssForLayer = (layer: LayerAppearance): string =>
   `.${styleClassForLayer(layer.id)} { stroke: ${safeAnnotationColor(layer.color)}; fill: ${rgbaFromHex(
     safeAnnotationColor(layer.color),
     LAYER_FILL_OPACITY,

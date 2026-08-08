@@ -5,7 +5,7 @@
     CollectionTreeElement,
     CollectionTreeMessages,
   } from '@mango-iiif/collection-navigator';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import { getViewerContext } from '../context';
 
   interface Props {

@@ -30,7 +30,7 @@ export const pickCanvasFromManifest = (
   return canvases[0];
 };
 
-export const normaliseThumbnailSrc = (src: string): string => {
+const normaliseThumbnailSrc = (src: string): string => {
   if (src.endsWith("info.json")) {
     return src.replace(/info\.json$/, "full/200,/0/default.jpg");
   }

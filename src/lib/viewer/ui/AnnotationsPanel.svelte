@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getViewerContext } from '../context';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import { sanitizeHtml } from '../util/sanitiseHtml';
   import PanelCloseButton from './PanelCloseButton.svelte';
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   interface Props {
     onloadmanifest?: ((url: string) => void) | undefined;
     onopenmanifestmanager?: (() => void) | undefined;

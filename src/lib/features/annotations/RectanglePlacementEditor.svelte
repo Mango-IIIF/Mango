@@ -4,7 +4,7 @@
     OSDAnnotationEditor,
     type RectAnnotation,
   } from '@mango-iiif/annotation';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   type PlacementRect = { x: number; y: number; w: number; h: number };
   type InteractionSource = 'create' | 'move' | 'resize';

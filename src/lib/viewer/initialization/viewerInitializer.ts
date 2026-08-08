@@ -6,7 +6,7 @@
  * recommendation 1.3: "Extract Viewer Initialization Logic"
  */
 
-import type { ManifestEntry } from '../../state/manifests';
+import type { ManifestEntry } from '../../core/state/manifests';
 import { resolveMedia } from '../../iiif/mediaResolver';
 import type { MediaSource } from '../../iiif/mediaResolver';
 import { DEFAULT_IMAGE_FILTERS, type ImageFilters } from '../../core/types/filters';

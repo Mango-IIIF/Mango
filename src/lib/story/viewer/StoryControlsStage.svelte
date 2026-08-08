@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   interface Props {
     currentChapterIndex?: number;

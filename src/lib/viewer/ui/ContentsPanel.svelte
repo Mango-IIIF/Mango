@@ -6,7 +6,7 @@
     MangoAVTranscriptElement,
   } from '@mango-iiif/av';
   import { getViewerContext } from '../context';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {

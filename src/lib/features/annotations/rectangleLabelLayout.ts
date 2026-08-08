@@ -61,7 +61,7 @@ export const BASE_ROOT_FONT_SIZE = 16;
  * transformed overlay where a `rem` is scaled by the viewer's zoom like any
  * other length, which reintroduces exactly the unbounded growth being fixed.
  */
-export const rootFontSize = (): number => {
+const rootFontSize = (): number => {
   if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') {
     return BASE_ROOT_FONT_SIZE;
   }

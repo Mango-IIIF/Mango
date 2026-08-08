@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import { readable, type Readable } from 'svelte/store';
   import { ANNOTATION_STROKE_WIDTH_PX } from '../../core/types/story';
   import type { ChapterDrawingAnnotation, StoryState } from '../../core/types/story';

@@ -1,7 +1,7 @@
 import type { Chapter, StoryState } from '../core/types/story';
 import type { ViewBox } from '../core/types/viewer';
 import type { MediaSource, MediaType } from '../iiif/mediaResolver';
-import { translate } from '../i18n';
+import { translate } from '../core/i18n';
 
 export type ChapterTaskId =
   | 'details'

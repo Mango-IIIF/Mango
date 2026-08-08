@@ -12,7 +12,7 @@ import {
 } from "../storyAnnotationProfile";
 import { normalizeChapterAnnotations } from "../normalizeAnnotations";
 import { normaliseStoryFraming } from "../framing";
-import { translate } from '../../i18n';
+import { translate } from '../../core/i18n';
 
 export type StoryWithDefaults = StoryState & {
   chapters: Array<Chapter & { transitionTimeMs: number }>;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import MangoLogoIcon from './MangoLogoIcon.svelte';
   import MangoAboutModal from './MangoAboutModal.svelte';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let position: 'fixed' | 'absolute' | 'relative' | 'inline' = 'relative';
   export let size = 16;

@@ -31,7 +31,7 @@ export type AnnotationLayer = {
 };
 
 /** Colours offered to a new layer, in order. */
-export const LAYER_PALETTE = [
+const LAYER_PALETTE = [
   '#fb7185',
   '#2ac7ff',
   '#22c55e',
@@ -50,7 +50,7 @@ export const DEFAULT_LAYER_ID = 'mine';
  * tool, or from a colleague's export. Rather than dropping it or inventing a
  * number, the id itself is made presentable and the layer joins the list.
  */
-export const nameForLayerId = (layerId: string): string =>
+const nameForLayerId = (layerId: string): string =>
   layerId
     .split(/[-_\s]+/)
     .filter(Boolean)
@@ -58,7 +58,7 @@ export const nameForLayerId = (layerId: string): string =>
     .join(' ') || 'Layer';
 
 /** The next unused `layer-N` id. */
-export const nextLayerId = (layers: readonly AnnotationLayer[]): string => {
+const nextLayerId = (layers: readonly AnnotationLayer[]): string => {
   let index = layers.length + 1;
   let id = `layer-${index}`;
   while (layers.some((layer) => layer.id === id)) {

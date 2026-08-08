@@ -19,7 +19,7 @@
   import type { MediaMarksState } from '../mediaMarks';
   import type { ExportEnvelope } from '../storySerializer';
   import type { ChapterTaskId } from '../chapterTasks';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let surface: 'overlay' | 'inspector' = 'overlay';

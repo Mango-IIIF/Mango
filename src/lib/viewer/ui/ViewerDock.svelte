@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import iiifIcon from '../../features/workspace/iiif_bw.svg';
   import {
     ChevronsLeft,

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { get } from "svelte/store";
 import * as manifesto from "manifesto.js";
-import { manifestsStore } from "../../../state/manifests";
+import { manifestsStore } from "../../../core/state/manifests";
 import { createViewerDerived } from "../viewerDerived";
 import { createViewerState } from "../viewerState";
 

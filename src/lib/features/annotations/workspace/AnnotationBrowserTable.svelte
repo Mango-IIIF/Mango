@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../../../i18n';
+  import { t } from '../../../core/i18n';
   import type { ResolvedAnnotation } from '../../../iiif/annotationResolver';
   import type { LayerItem } from './LeftSidebar.svelte';
   import { searchTextFor } from '../canonical';

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ViewBox } from '../../core/types/viewer';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let collapsed = false;
   export let hasSavedPosition = false;

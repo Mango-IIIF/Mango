@@ -43,7 +43,7 @@ export type MotivationPreset = {
  * annotation paints its Canvas, and defaulting to it is how Presentation 3
  * consumers end up treating a note as canvas content.
  */
-export const MOTIVATION_PRESETS: readonly MotivationPreset[] = [
+const MOTIVATION_PRESETS: readonly MotivationPreset[] = [
   { id: 'comment', motivation: 'commenting', bodyPurpose: 'commenting' },
   { id: 'describe', motivation: 'describing', bodyPurpose: 'describing' },
   { id: 'transcribe', motivation: 'supplementing', bodyPurpose: 'transcribing' },
@@ -58,7 +58,7 @@ export const DEFAULT_MOTIVATION = 'commenting';
 export const DEFAULT_BODY_PURPOSE = 'commenting';
 
 /** Motivations Mango will author. Everything else is read-only if imported. */
-export const AUTHORING_MOTIVATIONS: readonly string[] = [
+const AUTHORING_MOTIVATIONS: readonly string[] = [
   'commenting',
   'describing',
   'tagging',
@@ -76,7 +76,7 @@ export const AUTHORING_MOTIVATIONS: readonly string[] = [
  * `painting` says the annotation *is* the Canvas content. A viewer that
  * believes it will render a research note as the image.
  */
-export const EXPERT_MOTIVATIONS: readonly string[] = ['painting'];
+const EXPERT_MOTIVATIONS: readonly string[] = ['painting'];
 
 export const isExpertMotivation = (value: string): boolean =>
   EXPERT_MOTIVATIONS.includes(value);
@@ -140,7 +140,7 @@ export const mintDraftId = (): string =>
 /* Mango extension namespace                                                  */
 /* ------------------------------------------------------------------------- */
 
-export const MANGO_EXTENSION_PREFIX = 'mango:';
+const MANGO_EXTENSION_PREFIX = 'mango:';
 
 /**
  * Annotation-level extension keys Mango writes.
@@ -151,8 +151,8 @@ export const MANGO_EXTENSION_PREFIX = 'mango:';
  * private note that will be published the first time someone exports.
  */
 export const MANGO_NOTE_KEY = `${MANGO_EXTENSION_PREFIX}note`;
-export const MANGO_PROVENANCE_KEY = `${MANGO_EXTENSION_PREFIX}provenance`;
-export const MANGO_LAYER_KEY = `${MANGO_EXTENSION_PREFIX}layer`;
+const MANGO_PROVENANCE_KEY = `${MANGO_EXTENSION_PREFIX}provenance`;
+const MANGO_LAYER_KEY = `${MANGO_EXTENSION_PREFIX}layer`;
 
 /** Extension keys removed from any export not explicitly marked private. */
 export const PRIVATE_EXTENSION_KEYS: readonly string[] = [MANGO_NOTE_KEY];
@@ -187,7 +187,7 @@ export type MangoProfileOptions = {
  * structural validity is the parser's judgement and this only narrows which
  * valid documents Mango is willing to have authored.
  */
-export const mangoAuthoringProfile = (options: MangoProfileOptions = {}): ValidationProfile =>
+const mangoAuthoringProfile = (options: MangoProfileOptions = {}): ValidationProfile =>
   strictAuthoringProfile({
     name: 'mango-authoring',
     allowedMotivations: authoringMotivations(options.expert),

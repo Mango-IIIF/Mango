@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Columns2, Grid2x2, LayoutPanelLeft, Square } from '@lucide/svelte';
   import { getViewerContext } from '../context';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { get } from "svelte/store";
   import { Info, MessageSquareText, Monitor, Search } from "@lucide/svelte";
-  import { manifestsStore } from "../../state/manifests";
+  import { manifestsStore } from "../../core/state/manifests";
   import type { ViewerConfig } from "../../core/types/config";
   import type { ViewerPlugin } from "../../core/types/plugin";
   import type { WorkspaceLayoutPreset } from "../../core/types/workspace";
@@ -10,7 +10,7 @@
   import { WorkspaceStore } from "./workspaceStore.svelte";
   import ManifestManager from "./ManifestManager.svelte";
   import iiifIcon from "./iiif_bw.svg";
-  import { setLocale, t } from "../../i18n";
+  import { setLocale, t } from "../../core/i18n";
 
   interface Props {
     manifestId?: string;

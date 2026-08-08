@@ -49,7 +49,7 @@ const call = (value: unknown, method: string): unknown => {
 const resolveResourceId = (value: unknown): string =>
   normaliseLangValue(property(value, "id") ?? property(value, "@id"), "en");
 
-export const normaliseLangValue = (value: unknown, locale: string): string => {
+const normaliseLangValue = (value: unknown, locale: string): string => {
   if (value == null) return "";
   if (typeof value === "string" || typeof value === "number") {
     return String(value);

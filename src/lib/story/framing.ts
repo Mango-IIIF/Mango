@@ -102,7 +102,7 @@ const boundingBox = (boxes: ViewBox[]): ViewBox | null => {
 };
 
 /** Bounding box of a chapter's keyframe framings, if it has any. */
-export const keyframeEnvelope = (chapter: Chapter): ViewBox | null =>
+const keyframeEnvelope = (chapter: Chapter): ViewBox | null =>
   boundingBox(
     (chapter.cameraTrack?.keyframes ?? [])
       .map((keyframe) => keyframe.viewBox)

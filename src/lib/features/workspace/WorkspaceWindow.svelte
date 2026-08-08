@@ -1,9 +1,9 @@
 <script lang="ts">
   import ViewerLayout from '../viewer/ViewerLayout.svelte';
   import type { ViewerConfig } from '../../core/types/config';
-  import { fetchManifest, manifestsStore } from '../../state/manifests';
+  import { fetchManifest, manifestsStore } from '../../core/state/manifests';
   import { resolveMedia } from '../../iiif/mediaResolver';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import type { WindowNode } from '../../core/types/workspace';
   import EmptySlotPlaceholder from './EmptySlotPlaceholder.svelte';
   import iiifIcon from './iiif_bw.svg';

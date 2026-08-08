@@ -1,7 +1,7 @@
 <script lang="ts">
   import { isOpenPathAnnotation, type ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { ViewBox } from '../../core/types/viewer';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   interface Props {
     annotations?: ResolvedAnnotation[];

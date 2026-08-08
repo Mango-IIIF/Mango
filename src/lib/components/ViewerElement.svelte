@@ -39,12 +39,12 @@
 
 <script lang="ts">
   import Viewer from './Viewer.svelte';
-  import { normaliseViewerConfig, parseViewerConfig } from '../config/normalise';
+  import { normaliseViewerConfig, parseViewerConfig } from '../core/config/normalise';
   import type { ViewerConfig } from '../core/types/config';
   import type { ViewerEventMap } from '../core/types/events';
   import type { ModelPose, ModelPoseOptions } from '../core/types/model';
   import type { ViewerApiTarget } from '../core/types/viewer-api';
-  import { translate } from '../i18n';
+  import { translate } from '../core/i18n';
   import type { ContentSize, ViewBox } from '../core/types/viewer';
   import type { MediaType, MediaSource } from '../iiif/mediaResolver';
   import type { ViewerPlugin } from '../core/types/plugin';

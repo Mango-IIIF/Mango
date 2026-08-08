@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount, tick, unmount } from 'svelte';
 import ManifestManager from './ManifestManager.svelte';
-import { manifestsStore } from '../../state/manifests';
+import { manifestsStore } from '../../core/state/manifests';
 
 const FAVOURITES_STORAGE_KEY = 'mango-workspace-manifest-favourites:v1';
 const FIRST_SEEDED_ID =
