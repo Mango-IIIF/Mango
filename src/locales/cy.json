@@ -116,7 +116,8 @@
         "empty": "Heb ei ffurfweddu",
         "partial": "Wedi'i ffurfweddu'n rhannol",
         "complete": "Wedi'i ffurfweddu",
-        "attention": "Angen sylw"
+        "attention": "Angen sylw",
+        "positionDrift": "Ddim yn cyfateb i'r olwg bresennol"
       },
       "items": {
         "details": {
@@ -482,15 +483,6 @@
           "detailsTitle": "Manylion Anodiad",
           "details": "Manylion",
           "motivation": "Ysgogiad",
-          "motivations": {
-            "painting": "peintio (painting)",
-            "supplementing": "ategu (supplementing)",
-            "contextualizing": "cyd-destunoli (contextualizing)",
-            "contentState": "cyflwr cynnwys (contentState)",
-            "highlighting": "amlygu (highlighting)",
-            "commenting": "sylwi (commenting)",
-            "tagging": "tagio (tagging)"
-          },
           "layer": "Haen",
           "layersLabel": "Haenau",
           "addLayer": "Ychwanegu haen",
@@ -530,7 +522,104 @@
             "point": "Pwynt",
             "freehand": "Llaw rydd",
             "line": "Llinell"
-          }
+          },
+          "task": "Tasg",
+          "motivationPresets": {
+            "comment": "Rhoi sylw ar y rhan hon",
+            "describe": "Disgrifio’r rhan hon",
+            "transcribe": "Trawsgrifio’r testun yma",
+            "tag": "Tagio’r rhan hon",
+            "highlight": "Amlygu’r rhan hon",
+            "classify": "Dosbarthu’r rhan hon",
+            "identify": "Nodi beth yw hwn",
+            "paint": "Cynnwys y cynfas (arbenigwr)"
+          },
+          "motivations": {
+            "other": "Arall ({motivation})"
+          },
+          "rawMotivation": "Gosod y cymhelliant yn uniongyrchol",
+          "paintingWarning": "Mae gwylwyr eraill yn trin anodiadau paentio fel cynnwys y cynfas.",
+          "language": "Iaith",
+          "textDirection": "Cyfeiriad y testun",
+          "direction": {
+            "ltr": "Chwith i’r dde",
+            "rtl": "De i’r chwith",
+            "auto": "Awtomatig"
+          },
+          "bodyPurpose": "Pwrpas y corff",
+          "privateNotesHint": "Mae nodiadau preifat yn aros yn Mango ac ni chânt eu hallforio.",
+          "advanced": "Data a gadwyd",
+          "advancedHint": "Darllen yn unig. Cedwir yn union fel y daeth a’i ysgrifennu’n ôl heb ei newid.",
+          "provenance": {
+            "manifest": "O’r maniffest",
+            "external": "O dudalen anodiadau",
+            "local": "Eich un chi",
+            "override": "Eich golygiad",
+            "draft": "Drafft",
+            "persisted": "Wedi’i gadw"
+          },
+          "readOnlyHint": "Bydd golygu hwn yn creu copi sy’n eiddo i chi.",
+          "renderOnlyHint": "Ni ellir golygu’r siâp hwn yma, ond fe’i cedwir yn gyfan.",
+          "saveState": {
+            "clean": "Dim newidiadau heb eu cadw",
+            "dirty": "Newidiadau heb eu cadw",
+            "saving": "Wrthi’n cadw…",
+            "saved": "Wedi’i gadw",
+            "failed": "Methu cadw",
+            "conflicted": "Newidiwyd mewn man arall"
+          },
+          "cancel": "Canslo",
+          "languagePlaceholder": "cy",
+          "drawInLayer": "Tynnu yn {layer}",
+          "undo": "Dadwneud",
+          "redo": "Ailwneud",
+          "confirmDelete": "Dileu “{name}”? Gallwch ddadwneud hyn.",
+          "filterByLayer": "Hidlo yn ôl haen",
+          "allLayers": "Pob haen",
+          "sortBy": "Trefnu yn ôl",
+          "listCount": "Yn dangos {shown} o {total}",
+          "sort": {
+            "document": "Trefn y ddogfen",
+            "label": "Label",
+            "type": "Math",
+            "layer": "Haen"
+          },
+          "renameLayer": "Ailenwi {layer}",
+          "moveLayerUp": "Symud yr haen i fyny",
+          "moveLayerDown": "Symud yr haen i lawr",
+          "archiveLayer": "Archifo {layer}",
+          "restoreLayer": "Adfer {layer}",
+          "archivedLayers": "Haenau wedi’u harchifo ({count})",
+          "position": "Safle",
+          "positionHint": "Picseli’r ddelwedd. Mae newidiadau’n un cam dadwneud, fel llusgo.",
+          "layerOptions": "Opsiynau ar gyfer {layer}",
+          "rename": "Ailenwi",
+          "archive": "Archifo"
+        },
+        "diagnostics": {
+          "layerAsMotivation": "Mae’r cymhelliant yn edrych fel enw haen yn hytrach na therm safonol.",
+          "legacyMotivation": "Darllenwyd hen derm cymhelliant; mae allbwn newydd yn defnyddio’r un cyfredol.",
+          "unknownMotivation": "Nid yw Mango yn adnabod y cymhelliant hwn.",
+          "unknownPurpose": "Nid yw Mango yn adnabod pwrpas y corff hwn.",
+          "styleClassWithoutStylesheet": "Nid oes taflen arddull i’r dosbarth hwn, felly defnyddir y thema arferol.",
+          "inlineStyleNotPortable": "Nid yw lliw mewnol yn gludadwy ac fe’i hepgorir o allforion safonol.",
+          "stylesheetUnreadable": "Ni ellid darllen y daflen arddull ac fe’i hanwybyddwyd.",
+          "legacyPoint": "Cadwyd pwynt fel rhanbarth 1×1; caiff ei allforio fel pwynt.",
+          "unsupportedSelector": "Cedwir math o ddetholydd ond ni chaiff ei ddangos.",
+          "invalidFragment": "Ni ellid darllen darn cyfryngau.",
+          "geometryUnreadable": "Ni ellid darllen y siâp o’i ddetholydd.",
+          "curvesFlattened": "Amcangyfrifwyd cromliniau gyda segmentau syth.",
+          "pathPartiallyRead": "Mae rhan o’r llwybr yn defnyddio gorchmynion nad yw Mango yn eu tynnu.",
+          "multipleShapes": "Mae’r detholydd yn dal sawl siâp; dangosir y cyntaf.",
+          "missingId": "Nid oes dynodydd gan yr anodiad.",
+          "missingTarget": "Nid oes targed gan yr anodiad.",
+          "draftIdentifier": "Mae angen dynodydd gan y gweinydd cyn y gellir cyhoeddi hwn.",
+          "droppedExtension": "Hepgorwyd meysydd ansafonol o’r allforio hwn.",
+          "lossyNormalization": "Newidiodd rhywfaint o ddata ei siâp i ffitio’r proffil allforio.",
+          "editTargetGone": "Nid yw’r rhan o’r anodiad sy’n cael ei golygu yn bodoli mwyach.",
+          "editRefused": "Gwrthodwyd y newid hwnnw, felly ni newidiwyd dim.",
+          "migrationAmbiguous": "Mae angen penderfyniad cyn y gellir diweddaru hwn, felly fe’i gadawyd fel y mae.",
+          "limitExceeded": "Mae’r anodiad yn fwy nag y mae’r terfynau diogelwch yn ei ganiatáu; ni ddarllenwyd rhan ohono."
         }
       },
       "contents": {

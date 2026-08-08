@@ -20,7 +20,33 @@
   import StageToolbar from '../../viewer/ui/StageToolbar.svelte';
   import Gallery from '../../viewer/ui/Gallery.svelte';
   import type { LayerItem } from '../annotations/workspace/LeftSidebar.svelte';
-  import { w3cShapeTool, w3cToResolved } from '../annotations/w3c';
+  import {
+    applyResolvedPatch,
+    resolveAnnotationJson,
+    shapeFromResolved,
+    shapeTool,
+  } from '../annotations/canonical';
+  import { buildLayerStylesheet, colorFromInlineStyle, styleClassForLayer } from '../annotations/style';
+  import {
+    archiveLayer,
+    createLayer,
+    mergeDiscoveredLayers,
+    moveLayer,
+    recolourLayer,
+    renameLayer,
+    resolveActiveLayer,
+    setLayerVisibility,
+  } from '../annotations/layers';
+  import { exportAnnotationPage } from '../annotations/export';
+  import { STORY_LABEL_SIZING } from '../annotations/rectangleLabelLayout';
+  import type { AnnotationSaveState } from '../annotations/model';
+  import {
+    createCommandStack,
+    labelForPatch,
+    type CommandStackState,
+  } from '../annotations/commands';
+  import type { OSDAnnotationEditor } from '@mango-iiif/annotation';
+  import type { CanonicalStylesheet } from '@mango-iiif/w3c-parser';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import { createViewerState } from '../../viewer/state/viewerState';
   import { createViewerDerived } from '../../viewer/state/viewerDerived';
@@ -69,9 +95,6 @@
     oncanvaschange?: ((detail: { canvasIndex: number }) => void) | undefined;
   }
 
-  const DEFAULT_LAYER_COLOR = '#a78bfa';
-  const LAYER_FILL_OPACITY = 0.18;
-  const NEW_LAYER_COLORS = ['#fb7185', '#2ac7ff', '#22c55e', '#06b6d4', '#818cf8', '#ec4899'];
   const DEFAULT_ANNOTATION_LAYERS: LayerItem[] = [
     { id: 'research', name: 'Research Notes', color: '#fb7185', visible: true },
     {
@@ -92,30 +115,6 @@
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia(`(max-width: ${MOBILE_LAYOUT_WIDTH}px)`).matches;
-
-  const styleForLayerColor = (color: string): string => {
-    const r = parseInt(color.slice(1, 3), 16) || 0;
-    const g = parseInt(color.slice(3, 5), 16) || 0;
-    const b = parseInt(color.slice(5, 7), 16) || 0;
-    return `stroke: ${color}; fill: rgba(${r}, ${g}, ${b}, ${LAYER_FILL_OPACITY});`;
-  };
-
-  const parseLayerColorFromStyle = (style?: string): string | null => {
-    if (!style) return null;
-    const match = style.match(/stroke:\s*([^;]+)/i);
-    if (!match) return null;
-    const value = match[1]?.trim();
-    if (!value) return null;
-    const hexMatch = value.match(/^#([0-9a-f]{6})$/i);
-    return hexMatch ? `#${hexMatch[1].toLowerCase()}` : null;
-  };
-
-  const labelForLayerId = (layerId: string): string =>
-    layerId
-      .split(/[-_\s]+/)
-      .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ') || 'Layer';
 
   let {
     manifestId = $bindable(''),
@@ -733,7 +732,62 @@
   });
 
   let draftAnno = $state.raw<ResolvedAnnotation | null>(null);
+  let annotationDirty = $state(false);
+  let annotationSaveState = $state<AnnotationSaveState>({ status: 'clean' });
+  /**
+   * Expert content-authoring mode.
+   *
+   * Off by default, and the only route to `painting`. An ordinary comment
+   * exported as `painting` tells every Presentation 3 consumer that the note is
+   * the Canvas image, so the term is behind a deliberate choice rather than
+   * sitting in a list next to `commenting`.
+   */
+  let annotationExpertMode = $state(false);
+  /**
+   * The annotation as it was when editing began, for Cancel to restore.
+   *
+   * Taken on the first change rather than on selection: selecting an annotation
+   * to read it should not arm a transaction, and taking the snapshot on the
+   * first edit is what makes Cancel restore the state the user last saw.
+   */
+  let editSnapshot = $state.raw<{ id: string; annotation: ResolvedAnnotation } | null>(null);
   let annotationLayers = $state<LayerItem[]>([...DEFAULT_ANNOTATION_LAYERS]);
+  /** Layer new annotations are created in. */
+  let activeAnnotationLayerId = $state('mine');
+
+  /*
+   * The live canvas editor, handed out by the editor layer.
+   *
+   * Held so undo/redo and exact coordinate editing can reach the package's own
+   * geometry history and `setGeometry` rather than Mango synthesising pointer
+   * events or keeping a second copy of the geometry.
+   */
+  let annotationEditor = $state.raw<OSDAnnotationEditor | null>(null);
+  let commandState = $state<CommandStackState>({ canUndo: false, canRedo: false });
+
+  const commandStack = createCommandStack({
+    apply: (annotationId, annotation) => {
+      if (!annotation) {
+        void controller.removeAnnotation(annotationId);
+        return;
+      }
+      if (draftAnno && draftAnno.id === annotationId) {
+        draftAnno = annotation;
+        return;
+      }
+      // Replace, not patch. A snapshot restores a whole earlier state, and a
+      // field that was empty before the edit is absent from it — which a patch
+      // reads as "leave alone", so the edit would never be undone.
+      void controller.replaceAnnotation(annotationId, annotation);
+    },
+    geometry: () => annotationEditor,
+    onChange: (state) => (commandState = state),
+  });
+
+  const annotationById = (id: string): ResolvedAnnotation | null =>
+    (draftAnno && draftAnno.id === id ? draftAnno : null) ??
+    editorAnnotations.find((annotation) => annotation.id === id) ??
+    null;
   let visibleLayerIds = $derived(
     new Set(annotationLayers.filter((layer) => layer.visible).map((layer) => layer.id)),
   );
@@ -743,6 +797,13 @@
     return visibleLayerIds.has(layerId);
   };
   let editorAnnotations = $derived(isAnnotationEditor ? $annotations : $overlayAnnotations);
+  /*
+   * Hiding a layer takes its annotations off the stage. It does not take them
+   * out of the browser list: the list is how an annotation is found, selected,
+   * edited, and moved to another layer, so filtering it too made a hidden
+   * annotation unmanageable — including unhideable, because the control for
+   * changing its layer is in the inspector the list opens.
+   */
   let filteredOverlayAnnotations = $derived(
     editorAnnotations.filter((annotation) => isAnnotationVisibleByLayer(annotation)),
   );
@@ -754,83 +815,82 @@
       ? [...filteredOverlayAnnotations, visibleDraftAnno]
       : filteredOverlayAnnotations,
   );
-  const findLayerById = (layerId: string): LayerItem | undefined =>
-    annotationLayers.find((layer) => layer.id === layerId);
-
   const handleToggleLayer = (detail: { id: string }) => {
-    annotationLayers = annotationLayers.map((layer) =>
-      layer.id === detail.id ? { ...layer, visible: !layer.visible } : layer,
-    );
+    const current = annotationLayers.find((layer) => layer.id === detail.id);
+    annotationLayers = setLayerVisibility(annotationLayers, detail.id, !current?.visible);
   };
 
   const handleAddLayer = () => {
-    let nextIndex = annotationLayers.length + 1;
-    let nextId = `layer-${nextIndex}`;
-    while (annotationLayers.some((layer) => layer.id === nextId)) {
-      nextIndex += 1;
-      nextId = `layer-${nextIndex}`;
-    }
-    const color =
-      NEW_LAYER_COLORS[(nextIndex - 1) % NEW_LAYER_COLORS.length] ?? DEFAULT_LAYER_COLOR;
-    annotationLayers = [
-      ...annotationLayers,
-      {
-        id: nextId,
-        name: `Layer ${nextIndex}`,
-        color,
-        visible: true,
-      },
-    ];
+    annotationLayers = [...annotationLayers, createLayer(annotationLayers)];
+  };
+
+  const handleLayerRename = (detail: { id: string; name: string }) => {
+    annotationLayers = renameLayer(annotationLayers, detail.id, detail.name);
+  };
+
+  const handleLayerMove = (detail: { id: string; direction: -1 | 1 }) => {
+    annotationLayers = moveLayer(annotationLayers, detail.id, detail.direction);
+  };
+
+  const handleLayerArchive = (detail: { id: string; archived: boolean }) => {
+    annotationLayers = archiveLayer(annotationLayers, detail.id, detail.archived);
+    // Archiving the layer being drawn into would leave new annotations landing
+    // somewhere the user can no longer see.
+    activeAnnotationLayerId = resolveActiveLayer(annotationLayers, activeAnnotationLayerId);
   };
 
   const handleLayerColorChange = (detail: { id: string; color: string }) => {
-    annotationLayers = annotationLayers.map((layer) =>
-      layer.id === detail.id ? { ...layer, color: detail.color } : layer,
-    );
+    annotationLayers = recolourLayer(annotationLayers, detail.id, detail.color);
 
+    /*
+     * Recolouring writes a new stylesheet, not an inline `target.style`. The
+     * inline form has no portable Web Annotation representation, so it was
+     * dropped the moment anything exported in a standards profile; a class plus
+     * an Annotation-level stylesheet survives the round trip.
+     *
+     * The class does not change, because the class is the layer's identity.
+     * Changing the colour must not change membership.
+     */
     const patch: Partial<ResolvedAnnotation> = {
-      targetStyleClass: detail.id,
-      targetStyle: styleForLayerColor(detail.color),
+      targetStyleClass: styleClassForLayer(detail.id),
     };
+    const stylesheet = buildLayerStylesheet([{ id: detail.id, color: detail.color }]);
     /*
      * Only annotations that name this layer, not the manifest ones that merely
      * fall back to it for rendering. Recolouring is a real edit, so matching on
      * the fallback would copy every external annotation on the page into the
      * user's own set — and into their export — over a swatch change.
      */
+    const styleClass = styleClassForLayer(detail.id);
+    const inLayer = (annotation: ResolvedAnnotation): boolean => {
+      const current = annotation.targetStyleClass?.trim();
+      return current === detail.id || current === styleClass;
+    };
     const affectedAnnotationIds = new Set(
-      editorAnnotations
-        .filter((annotation) => annotation.targetStyleClass?.trim() === detail.id)
-        .map((annotation) => annotation.id),
+      editorAnnotations.filter(inLayer).map((annotation) => annotation.id),
     );
-    if (draftAnno && draftAnno.targetStyleClass?.trim() === detail.id) {
+    if (draftAnno && inLayer(draftAnno)) {
       affectedAnnotationIds.add(draftAnno.id);
     }
     for (const annotationId of affectedAnnotationIds) {
-      handleAnnotationUpdate(annotationId, patch);
+      handleAnnotationUpdate(annotationId, patch, { stylesheet });
     }
   };
 
   $effect(() => {
-    const knownLayerIds = new Set(annotationLayers.map((layer) => layer.id));
-    const additions: LayerItem[] = [];
     const source = draftAnno ? [...editorAnnotations, draftAnno] : editorAnnotations;
+    const discovered = source
+      .map((annotation) => ({
+        id: annotation.targetStyleClass?.trim() ?? '',
+        color:
+          annotation.styleHints?.strokeColor ??
+          colorFromInlineStyle(annotation.targetStyle) ??
+          undefined,
+      }))
+      .filter((entry) => entry.id);
 
-    for (const annotation of source) {
-      const layerId = annotation.targetStyleClass?.trim();
-      if (!layerId || knownLayerIds.has(layerId)) continue;
-      knownLayerIds.add(layerId);
-      additions.push({
-        id: layerId,
-        name: labelForLayerId(layerId),
-        color: parseLayerColorFromStyle(annotation.targetStyle) ?? DEFAULT_LAYER_COLOR,
-        visible: true,
-      });
-    }
-
-    if (additions.length > 0) {
-      annotationLayers = [...annotationLayers, ...additions];
-    }
+    const merged = mergeDiscoveredLayers(annotationLayers, discovered);
+    if (merged.length !== annotationLayers.length) annotationLayers = merged;
   });
 
   const unsubscribeActiveId = activeAnnotationId.subscribe((activeId) => {
@@ -847,21 +907,21 @@
     const annotation = payload?.annotation;
     if (!annotation || typeof annotation !== 'object') return;
 
-    const resolved = w3cToResolved(annotation);
+    const { annotation: resolved } = resolveAnnotationJson(annotation, {
+      provenance: 'draft',
+    });
     if (!resolved) return;
 
-    // Set default properties
-    resolved.targetStyleClass = 'mine';
-    resolved.targetStyle = styleForLayerColor(findLayerById('mine')?.color ?? DEFAULT_LAYER_COLOR);
-    resolved.motivation =
-      resolved.motivation && resolved.motivation.length > 0
-        ? resolved.motivation
-        : ['oa:commenting'];
-
+    /*
+     * No defaults are applied here any more. The editor layer builds the
+     * annotation through the profile's builders, which set `commenting` as the
+     * motivation and put the layer in `styleClass` — the two things this used
+     * to overwrite afterwards, one of them with a legacy `oa:` term.
+     */
     if (isStoryBuilder) {
       controller.emitEvent('annotationCreate', {
         annotation: resolved,
-        tool: payload.tool ?? w3cShapeTool(annotation) ?? undefined,
+        tool: payload.tool ?? shapeTool(shapeFromResolved(resolved)) ?? undefined,
       });
       annotationEditorTool = 'select';
       controller.setAnnotationMode('edit');
@@ -869,9 +929,43 @@
     }
 
     draftAnno = resolved;
+    annotationSaveState = { status: 'clean' };
     controller.handleAnnotationSelect({ id: resolved.id, preventZoom: true });
   };
 
+  /**
+   * Discards the pending edit.
+   *
+   * A draft has nothing behind it, so cancelling removes it. An edit to a saved
+   * annotation is undone by restoring the snapshot taken when editing began —
+   * geometry and metadata together, because they are one transaction from the
+   * user's point of view even though they arrive through different callbacks.
+   */
+  const handleAnnotationCancel = () => {
+    if (draftAnno) {
+      draftAnno = null;
+      annotationDirty = false;
+      annotationSaveState = { status: 'clean' };
+      annotationEditorTool = 'select';
+      controller.setAnnotationMode('edit');
+      controller.handleAnnotationClear();
+      return;
+    }
+
+    const snapshot = editSnapshot;
+    editSnapshot = null;
+    annotationDirty = false;
+    annotationSaveState = { status: 'clean' };
+    if (snapshot) controller.updateAnnotation(snapshot.id, snapshot.annotation);
+  };
+
+  /**
+   * Deletes an annotation, after confirming.
+   *
+   * A draft has nothing behind it, so removing it is not a loss and needs no
+   * confirmation. Anything else is confirmed, and is undoable afterwards —
+   * a confirmation the user can also reverse is cheaper to get wrong.
+   */
   const handleAnnotationDelete = async (id: string) => {
     if (isStoryBuilder) {
       controller.emitEvent('annotationDelete', { annotationId: id });
@@ -882,44 +976,168 @@
       controller.handleAnnotationClear();
       return;
     }
+
+    const existing = annotationById(id);
+    if (existing && !confirmDeletion(existing)) return;
+    if (existing) {
+      commandStack.record({
+        annotationId: id,
+        before: existing,
+        after: null,
+        label: 'delete',
+      });
+    }
     await controller.removeAnnotation(id);
   };
 
-  const handleAnnotationUpdate = (id: string, patch: Partial<ResolvedAnnotation>) => {
+  /**
+   * Asks before destroying something the user cannot redraw.
+   *
+   * `confirm` is a blunt instrument, but it is the one that is guaranteed to be
+   * reachable by keyboard and announced by a screen reader without Mango
+   * building a dialog and getting focus management wrong.
+   */
+  const confirmDeletion = (annotation: ResolvedAnnotation): boolean => {
+    if (typeof window === 'undefined' || typeof window.confirm !== 'function') return true;
+    const name = annotation.label?.trim() || annotation.text?.trim() || annotation.id;
+    return window.confirm($t('viewer.panels.annotations.editor.confirmDelete', { name }));
+  };
+
+  const handleAnnotationUndo = () => {
+    if (commandStack.undo()) annotationDirty = true;
+  };
+
+  const handleAnnotationRedo = () => {
+    if (commandStack.redo()) annotationDirty = true;
+  };
+
+  /**
+   * Undo and redo from the keyboard.
+   *
+   * Bound on the annotation editor rather than globally: the viewer is embedded
+   * in host pages, and swallowing the platform undo shortcut everywhere would
+   * break the host's own editing surfaces.
+   */
+  const handleAnnotationKeydown = (event: KeyboardEvent) => {
+    if (!isAnnotationEditor) return;
+    const modifier = event.metaKey || event.ctrlKey;
+    if (!modifier || event.key.toLowerCase() !== 'z') return;
+    const target = event.target as HTMLElement | null;
+    // Text fields have their own undo, and taking it would be worse than not
+    // offering ours.
+    if (target?.closest('input, textarea, [contenteditable="true"]')) return;
+    event.preventDefault();
+    if (event.shiftKey) handleAnnotationRedo();
+    else handleAnnotationUndo();
+  };
+
+  const handleAnnotationUpdate = (
+    id: string,
+    patch: Partial<ResolvedAnnotation>,
+    options: {
+      stylesheet?: CanonicalStylesheet | null;
+      language?: string;
+      textDirection?: string;
+    } = {},
+  ) => {
     if (isStoryBuilder) {
       controller.emitEvent('annotationUpdate', { annotationId: id, patch });
       return;
     }
+    /*
+     * Recorded after the edit lands, not before, so the entry holds both ends
+     * of it. Recording `after: null` meant redo restored "no annotation" — it
+     * deleted the very thing it was meant to bring back.
+     */
+    const previous = annotationById(id);
+
     if (draftAnno && draftAnno.id === id) {
-      draftAnno = { ...draftAnno, ...patch };
+      draftAnno = applyResolvedPatch(draftAnno, patch, options);
+      annotationDirty = true;
+      if (previous) {
+        commandStack.record({
+          annotationId: id,
+          before: previous,
+          after: draftAnno,
+          label: labelForPatch(patch),
+        });
+      }
       return;
     }
-    controller.updateAnnotation(id, patch);
+    if (!editSnapshot || editSnapshot.id !== id) {
+      const current = editorAnnotations.find((annotation) => annotation.id === id);
+      if (current) editSnapshot = { id, annotation: current };
+    }
+    annotationDirty = true;
+    annotationSaveState = { status: 'clean' };
+    controller.updateAnnotation(id, patch, options);
+
+    const next = annotationById(id);
+    if (previous && next && next !== previous) {
+      commandStack.record({
+        annotationId: id,
+        before: previous,
+        after: next,
+        label: labelForPatch(patch),
+      });
+    }
   };
 
   const handleAnnotationSave = async () => {
-    if (draftAnno) {
-      await controller.addAnnotation(draftAnno);
-      draftAnno = null;
+    annotationSaveState = { status: 'saving' };
+    try {
+      if (draftAnno) {
+        await controller.addAnnotation(draftAnno);
+        draftAnno = null;
+      } else {
+        const activeId = get(activeAnnotationId);
+        if (!activeId) {
+          annotationSaveState = { status: 'clean' };
+          return;
+        }
+        /*
+         * Edits are already applied to the store as they are made, so this
+         * commits the transaction rather than sending a patch. It used to send
+         * an empty one, which the controller then had to recognise and ignore
+         * so that merely saving did not copy a manifest annotation into the
+         * user's own set.
+         */
+        await controller.commitAnnotation(activeId);
+      }
+      editSnapshot = null;
+      annotationDirty = false;
+      annotationSaveState = { status: 'saved' };
       annotationEditorTool = 'select';
       controller.setAnnotationMode('edit');
       controller.handleAnnotationClear();
-      return;
+    } catch (error) {
+      annotationSaveState = {
+        status: 'failed',
+        message: error instanceof Error ? error.message : $t('viewer.panels.annotations.editor.saveState.failed'),
+      };
     }
-
-    const activeId = get(activeAnnotationId);
-    if (!activeId) return;
-
-    // Existing annotations are updated live while editing; this commits an explicit save action.
-    await controller.updateAnnotation(activeId, {});
-    annotationEditorTool = 'select';
-    controller.setAnnotationMode('edit');
-    controller.handleAnnotationClear();
   };
 
   const handleExportAnnotations = () => {
     const userAnnosMap = get(userAnnotations) ?? {};
     const allUserAnnos = Object.values(userAnnosMap).flat();
+
+    const result = exportAnnotationPage(allUserAnnos, {
+      canvasId: getCanvasId() ?? undefined,
+      expert: annotationExpertMode,
+    });
+    controller.emitEvent('exportAnnotationPage', {
+      page: result.page,
+      valid: result.validation.valid,
+      excludedPrivateFields: result.excludedPrivateFields,
+      unresolvedIdentities: result.unresolvedIdentities,
+    });
+
+    /*
+     * The old payload still fires for one deprecation cycle. Hosts wired to it
+     * keep working; hosts that want portable JSON-LD move to the event above
+     * rather than reverse-engineering `ResolvedAnnotation`.
+     */
     controller.emitEvent('exportAnnotations', { annotations: allUserAnnos });
   };
 
@@ -1063,7 +1281,16 @@
       annotationEditorTool = 'select';
       controller.setAnnotationMode('edit');
     },
-    onAnnotationClear: () => controller.handleAnnotationClear(),
+    /*
+     * The pointer-up that finishes a drawn shape reaches the stage background
+     * as an ordinary click, so an unconditional clear deselected the annotation
+     * the user had just drawn — the draft stayed on the canvas with no way to
+     * reach it. A pending draft is dismissed through Cancel, deliberately, not
+     * by clicking away.
+     */
+    onAnnotationClear: () => {
+      if (!draftAnno) controller.handleAnnotationClear();
+    },
   };
 
   const getRoundedZoomTarget = (direction: 'in' | 'out', current: number): number => {
@@ -1926,11 +2153,22 @@
       <main class="stage stage--story" aria-label={$t('viewer.stage.label')}>
         {#if AnnotationWorkspaceComponent}
           <AnnotationWorkspaceComponent
-            annotations={filteredOverlayAnnotations}
+            annotations={editorAnnotations}
             activeAnnotationId={$activeAnnotationId}
-            draftAnnotation={visibleDraftAnno}
+            draftAnnotation={draftAnno}
+            isDirty={annotationDirty}
+            saveState={annotationSaveState}
+            expertMode={annotationExpertMode}
+            onannotationcancel={handleAnnotationCancel}
+            canUndo={commandState.canUndo}
+            canRedo={commandState.canRedo}
+            onundo={handleAnnotationUndo}
+            onredo={handleAnnotationRedo}
+            onkeydown={handleAnnotationKeydown}
             activeTool={annotationEditorTool}
             layers={annotationLayers}
+            activeLayerId={activeAnnotationLayerId}
+            onactivelayerchange={(detail) => (activeAnnotationLayerId = detail.id)}
             ontoolchange={(detail) => {
               if (
                 detail.tool === 'rectangle' ||
@@ -1944,12 +2182,25 @@
               } else {
                 annotationEditorTool = detail.tool;
                 controller.setAnnotationMode('edit');
-                controller.handleAnnotationClear();
+                /*
+                 * A pending draft keeps the selection.
+                 *
+                 * The editor returns to select mode on its own the moment a
+                 * shape is finished, which arrives here as an ordinary tool
+                 * change — so clearing unconditionally deselected the very
+                 * annotation the user had just drawn, leaving the inspector
+                 * empty and the draft unreachable. Picking the select tool
+                 * deliberately still clears, because then there is no draft.
+                 */
+                if (!draftAnno) controller.handleAnnotationClear();
               }
             }}
             ontogglelayer={handleToggleLayer}
             onaddlayer={handleAddLayer}
             onlayercolorchange={handleLayerColorChange}
+            onlayerrename={handleLayerRename}
+            onlayermove={handleLayerMove}
+            onlayerarchive={handleLayerArchive}
             onannotationselect={(detail) => {
               const selectedDraft = draftAnno?.id === detail.id;
               if (draftAnno && draftAnno.id !== detail.id) {
@@ -1962,7 +2213,8 @@
               }
             }}
             onannotationdelete={(detail) => handleAnnotationDelete(detail.id)}
-            onannotationupdate={(detail) => handleAnnotationUpdate(detail.id, detail.patch)}
+            onannotationupdate={(detail) =>
+              handleAnnotationUpdate(detail.id, detail.patch, detail.options ?? {})}
             onannotationsave={handleAnnotationSave}
             onlistopenchange={(detail: { open: boolean }) =>
               setAnnotationListHostState(detail.open)}
@@ -2011,6 +2263,10 @@
                   annotationTool={annotationEditorTool}
                   annotationEditorEnabled={true}
                   {annotationLayers}
+                  activeLayerId={activeAnnotationLayerId}
+                  oneditorready={(instance) => (annotationEditor = instance)}
+                  ongeometrycommit={(detail) =>
+                    commandStack.recordGeometry(detail.id, 'geometry')}
                   canvasId={activeCanvasId}
                   onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
                   onzoomchange={handleStageZoomChange}
@@ -2198,6 +2454,7 @@
                 annotationTool={annotationEditorTool}
                 annotationEditorEnabled={isStoryBuilder && storyAnnotationEditing}
                 annotationEditorAnnotations={storyBuilderAnnotations}
+                labelSizing={STORY_LABEL_SIZING}
                 {annotationLayers}
                 onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
                 onannotationselect={(payload) => {

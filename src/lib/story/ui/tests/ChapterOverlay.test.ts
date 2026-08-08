@@ -7,6 +7,7 @@ import type { ChapterTaskId } from "../../chapterTasks";
 import ChapterOverlay from "../ChapterOverlay.svelte";
 import { ANNOTATION_TOOLS } from "../../../features/annotations/annotationTools";
 import { createStoryStoreForTest } from "./testHelpers";
+import { reactiveProps } from "./reactiveProps.svelte";
 
 const createTarget = (): HTMLDivElement => {
   const target = document.createElement("div");
@@ -982,6 +983,99 @@ describe("ChapterOverlay", () => {
     skip.click();
 
     expect(onSkipNarration).toHaveBeenCalledWith("en");
+
+    unmount(instance);
+    target.remove();
+  });
+});
+
+describe("ChapterOverlay viewer position drift", () => {
+  /*
+   * The Viewer position card used to read "Configured" from the moment a
+   * chapter was created and could never say anything else, because a chapter
+   * always captures a view. These cover the wiring that makes it answer the
+   * question the author actually has: is the saved framing still the one on
+   * screen?
+   */
+  const SETTLE = 500;
+  const settle = () => new Promise((resolve) => setTimeout(resolve, SETTLE));
+
+  const positionStatus = (target: HTMLElement): string =>
+    target
+      .querySelector('[data-task-id="position"]')
+      ?.querySelector(".chapter-task-card__state")
+      ?.textContent?.trim() ?? "(missing)";
+
+  const mountOverlay = (viewBox: ReturnType<typeof writable>, chapterId = "one") => {
+    const store = createStoryStoreForTest({
+
+      chapters: [
+        {
+          id: "one",
+          manifest: "https://example.org/image-manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 1000, h: 1000 },
+        },
+        {
+          id: "two",
+          manifest: "https://example.org/image-manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 5000, y: 5000, w: 800, h: 800 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const props = reactiveProps({
+      story: store.story,
+      open: true,
+      docked: true,
+      chapterId,
+      activeChapterTask: writable<ChapterTaskId | null>(null),
+      mediaType: writable("image" as const),
+      viewBox,
+    });
+    const instance = mount(ChapterOverlay, { target, props });
+    return { instance, target, props };
+  };
+
+  it("stays quiet until the author moves, then names the mismatch", async () => {
+    const viewBox = writable({ x: 0, y: 0, w: 1000, h: 1000 });
+    const { instance, target } = mountOverlay(viewBox);
+    await tick();
+    await settle();
+    await tick();
+    expect(positionStatus(target)).toBe("Configured");
+
+    viewBox.set({ x: 600, y: 600, w: 200, h: 200 });
+    await settle();
+    await tick();
+    expect(positionStatus(target)).toBe("Doesn't match current view");
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it("does not fire when selecting a chapter leaves the viewer where it was", async () => {
+    /*
+     * Selecting a chapter does not move the viewer, so the framing on screen
+     * belongs to the chapter just left. Treating that as a reframing lit the
+     * warning permanently in any story with more than one chapter.
+     */
+    const viewBox = writable({ x: 5000, y: 5000, w: 800, h: 800 });
+    const { instance, target, props } = mountOverlay(viewBox, "two");
+    await tick();
+    await settle();
+    await tick();
+    expect(positionStatus(target)).toBe("Configured");
+
+    // Switch to a chapter framed somewhere entirely different, without moving.
+    props.chapterId = "one";
+    await tick();
+    // The viewer republishes its position on selection without having moved.
+    viewBox.set({ x: 5000, y: 5000, w: 800, h: 800 });
+    await settle();
+    await tick();
+    expect(positionStatus(target)).toBe("Configured");
 
     unmount(instance);
     target.remove();

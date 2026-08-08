@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ResolvedAnnotation } from '../../../iiif/annotationResolver';
+  import type { AnnotationSaveState } from '../model';
   import LeftSidebar, { type LayerItem } from './LeftSidebar.svelte';
   import RightInspector from './RightInspector.svelte';
   import AnnotationBrowserTable from './AnnotationBrowserTable.svelte';
@@ -16,14 +17,35 @@
     layers?: LayerItem[];
     ontoolchange?: ((detail: { tool: Tool }) => void) | undefined;
     ontogglelayer?: ((detail: { id: string }) => void) | undefined;
+    /** Layer new annotations are created in. */
+    activeLayerId?: string;
+    onactivelayerchange?: ((detail: { id: string }) => void) | undefined;
     onaddlayer?: (() => void) | undefined;
     onlayercolorchange?: ((detail: { id: string; color: string }) => void) | undefined;
+    onlayerrename?: ((detail: { id: string; name: string }) => void) | undefined;
+    onlayermove?: ((detail: { id: string; direction: -1 | 1 }) => void) | undefined;
+    onlayerarchive?: ((detail: { id: string; archived: boolean }) => void) | undefined;
     onannotationselect?: ((detail: { id: string }) => void) | undefined;
     onannotationdelete?: ((detail: { id: string }) => void) | undefined;
     onannotationupdate?:
-      | ((detail: { id: string; patch: Partial<ResolvedAnnotation> }) => void)
+      | ((detail: {
+          id: string;
+          patch: Partial<ResolvedAnnotation>;
+          options?: { language?: string; textDirection?: string };
+        }) => void)
       | undefined;
     onannotationsave?: (() => void) | undefined;
+    onannotationcancel?: (() => void) | undefined;
+    canUndo?: boolean;
+    canRedo?: boolean;
+    onundo?: (() => void) | undefined;
+    onredo?: (() => void) | undefined;
+    onkeydown?: ((event: KeyboardEvent) => void) | undefined;
+    /** Unsaved changes are pending on the selected annotation. */
+    isDirty?: boolean;
+    saveState?: AnnotationSaveState;
+    /** Permits `painting` authoring and the raw motivation control. */
+    expertMode?: boolean;
     /**
      * Reports whether the annotation list is showing. The list needs a box of
      * its own to be usable, and the element grows to provide it rather than
@@ -46,12 +68,26 @@
     ],
     ontoolchange = undefined,
     ontogglelayer = undefined,
+    activeLayerId = 'mine',
+    onactivelayerchange = undefined,
     onaddlayer = undefined,
     onlayercolorchange = undefined,
+    onlayerrename = undefined,
+    onlayermove = undefined,
+    onlayerarchive = undefined,
     onannotationselect = undefined,
     onannotationdelete = undefined,
     onannotationupdate = undefined,
     onannotationsave = undefined,
+    onannotationcancel = undefined,
+    canUndo = false,
+    canRedo = false,
+    onundo = undefined,
+    onredo = undefined,
+    onkeydown = undefined,
+    isDirty = false,
+    saveState = { status: 'clean' },
+    expertMode = false,
     onlistopenchange = undefined,
     stage,
   }: Props = $props();
@@ -91,7 +127,9 @@
   let rightOpen = $state(true);
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <section
+  onkeydown={(event) => onkeydown?.(event)}
   class="annotation-workspace"
   class:annotation-workspace--left-closed={!leftOpen}
   class:annotation-workspace--right-closed={!rightOpen}
@@ -115,10 +153,19 @@
       <LeftSidebar
         {activeTool}
         {layers}
+        {activeLayerId}
+        {onactivelayerchange}
+        {canUndo}
+        {canRedo}
+        {onundo}
+        {onredo}
         {ontoolchange}
         {ontogglelayer}
         {onaddlayer}
         {onlayercolorchange}
+        {onlayerrename}
+        {onlayermove}
+        {onlayerarchive}
       />
     {:else}
       <span class="annotation-workspace__rail-label">
@@ -166,6 +213,10 @@
         index={activeIndex}
         {layers}
         {isDraft}
+        {isDirty}
+        {saveState}
+        {expertMode}
+        oncancel={onannotationcancel}
         ondelete={onannotationdelete}
         onupdate={onannotationupdate}
         onsave={onannotationsave}

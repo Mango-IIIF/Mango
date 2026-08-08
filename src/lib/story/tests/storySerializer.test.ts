@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { W3CParser } from "@mango-iiif/w3c-parser";
+import { parseWebAnnotation, projectAnnotation } from "@mango-iiif/w3c-parser";
+
+/** The shape a serialized story overlay projects to, read back through the parser. */
+const shapeOf = (annotation: unknown) =>
+  projectAnnotation(parseWebAnnotation(annotation).document).targets[0].shape;
 import { loadStoryIntoStore, serializeStoryToIiif } from "../storySerializer";
 import { normaliseStoryInput } from "../viewer/storyLoader";
 import type { StoryState } from "../../core/types/story";
@@ -142,11 +146,11 @@ describe("Story IIIF Serialization and Parsing", () => {
     expect(
       drawingOverlays.every((item) => item.motivation === "highlighting"),
     ).toBe(true);
-    expect(W3CParser.parseAnnotation(drawingOverlays[0]).shape).toEqual({
+    expect(shapeOf(drawingOverlays[0])).toEqual({
       type: "point",
       geometry: { x: 120, y: 180 },
     });
-    expect(W3CParser.parseAnnotation(drawingOverlays[1]).shape).toEqual({
+    expect(shapeOf(drawingOverlays[1])).toEqual({
       type: "polygon",
       geometry: {
         points: [
@@ -358,7 +362,7 @@ describe("Story IIIF Serialization and Parsing", () => {
     );
     expect(drawings).toHaveLength(3);
     expect(
-      drawings.map((item) => W3CParser.parseAnnotation(item).shape.type),
+      drawings.map((item) => shapeOf(item).type),
     ).toEqual(["rect", "line", "freehand"]);
     expect(drawings[0].motivation).toBe("highlighting");
     expect(drawings[0].body).toBeUndefined();

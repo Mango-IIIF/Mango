@@ -1,143 +1,70 @@
-import { W3CParser, type NormalizedShape, type W3CAnnotation } from '@mango-iiif/w3c-parser';
-import type { AnnotationBody, ResolvedAnnotation } from '../../iiif/annotationResolver';
+/**
+ * Compatibility surface over the canonical adapter.
+ *
+ * Everything here is a thin wrapper on `canonical.ts`. It exists so the call
+ * sites that spoke in terms of "a W3C annotation object" keep working through
+ * one deprecation cycle; new code should take a `CanonicalAnnotation` and stay
+ * in the document model rather than round-tripping through JSON.
+ *
+ * @deprecated Use `canonical.ts` directly.
+ */
+
+import { serializeWebAnnotation, type NeutralShape } from '@mango-iiif/w3c-parser';
+import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
 import type { ChapterAnnotationTool } from '../../core/types/story';
+import {
+  createMangoAnnotation,
+  resolveAnnotationJson,
+  shapeFromResolved,
+  shapeTool,
+} from './canonical';
 
-const normaliseTag = (value: string): string => value.trim().replace(/\s+/g, ' ');
+export type W3CAnnotation = Record<string, unknown>;
 
-const readBodies = (annotation: unknown): Array<Record<string, unknown>> => {
-  if (!annotation || typeof annotation !== 'object') return [];
-  const body = (annotation as { body?: unknown }).body;
-  if (!body) return [];
-  return (Array.isArray(body) ? body : [body]).filter(
-    (entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object',
-  );
-};
-
-const resolvedShape = (annotation: ResolvedAnnotation): NormalizedShape | null => {
-  if (annotation.rect) return { type: 'rect', geometry: annotation.rect };
-  if (annotation.point) return { type: 'point', geometry: annotation.point };
-  if (annotation.polygon?.points?.length) {
-    return { type: 'polygon', geometry: { points: annotation.polygon.points } };
-  }
-  return null;
-};
-
-const shapeToResolved = (
-  shape: NormalizedShape,
-): Pick<ResolvedAnnotation, 'rect' | 'point' | 'polygon'> => {
-  if (shape.type === 'rect') return { rect: shape.geometry };
-  if (shape.type === 'point') return { point: shape.geometry };
-  if (shape.type === 'polygon') return { polygon: { points: shape.geometry.points } };
-  if (shape.type === 'line') {
-    return { polygon: { points: [shape.geometry.start, shape.geometry.end] } };
-  }
-  if (shape.type === 'freehand') return { polygon: { points: shape.geometry.points } };
-  return {};
-};
-
-const toAnnotationBodies = (annotation: unknown): AnnotationBody[] =>
-  readBodies(annotation).map((body) => {
-    const format = typeof body.format === 'string' ? body.format : undefined;
-    return {
-      type: format === 'text/html' ? 'html' : 'text',
-      value: typeof body.value === 'string' ? body.value : '',
-      format,
-      language: typeof body.language === 'string' ? body.language : undefined,
-      purpose: typeof body.purpose === 'string' ? body.purpose : undefined,
-    };
-  });
-
+/**
+ * Serializes a projection as standards-shaped JSON.
+ *
+ * Only for the export event's legacy payload and for tests. Building a document
+ * from a projection is lossy by construction — anything the projection does not
+ * model is not there to write — so an annotation that already has a canonical
+ * document is serialized from that instead.
+ */
 export const resolvedToW3C = (
   annotation: ResolvedAnnotation,
   canvasSource: string,
 ): W3CAnnotation | null => {
-  const shape = resolvedShape(annotation);
-  if (!shape) return null;
+  if (annotation.document) {
+    return serializeWebAnnotation(annotation.document, { profile: 'iiif-presentation-3' }).json;
+  }
 
-  const serialized = W3CParser.serialize({
-    id: annotation.id || `anno-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+  const shape = shapeFromResolved(annotation);
+  if (shape.type === 'none') return null;
+
+  const document = createMangoAnnotation({
+    id: annotation.id || undefined,
     canvasId: canvasSource,
-    text: (annotation.text ?? annotation.bodies?.[0]?.value ?? '').trim(),
-    label: annotation.label || undefined,
-    layer: annotation.targetStyleClass || undefined,
     shape,
+    text: annotation.text ?? annotation.bodies?.[0]?.value,
+    label: annotation.label,
+    note: annotation.notes,
+    tags: annotation.tags,
+    motivation: annotation.motivation?.[0],
+    styleClass: annotation.targetStyleClass,
   });
-
-  const body = [...serialized.body];
-  const notes = annotation.notes?.trim();
-  if (notes) {
-    body.push({ type: 'TextualBody', value: notes, format: 'text/plain', purpose: 'describing' });
-  }
-  for (const tag of (annotation.tags ?? []).map(normaliseTag).filter(Boolean)) {
-    body.push({ type: 'TextualBody', value: tag, format: 'text/plain', purpose: 'tagging' });
-  }
-
-  return {
-    ...serialized,
-    motivation: annotation.motivation?.[0] || serialized.motivation,
-    body,
-  };
+  return serializeWebAnnotation(document, { profile: 'iiif-presentation-3' }).json;
 };
 
-export const w3cToResolved = (annotation: unknown): ResolvedAnnotation | null => {
-  let parsed;
-  try {
-    parsed = W3CParser.parseAnnotation(annotation);
-  } catch {
-    return null;
-  }
-
-  const source = annotation as {
-    motivation?: string | string[];
-    target?: { styleClass?: string; style?: string } | string;
-  };
-  const bodies = toAnnotationBodies(annotation);
-  const tags = bodies
-    .filter((body) => body.purpose?.toLowerCase().endsWith('tagging'))
-    .map((body) => normaliseTag(body.value ?? ''))
-    .filter(Boolean);
-  const notes = bodies
-    .filter((body) => body.purpose?.toLowerCase().endsWith('describing'))
-    .map((body) => body.value ?? '')
-    .filter(Boolean)
-    .join('\n\n');
-  const motivations = Array.isArray(source.motivation)
-    ? source.motivation
-    : source.motivation
-      ? [source.motivation]
-      : undefined;
-  const target = typeof source.target === 'object' ? source.target : undefined;
-
-  return {
-    id: parsed.id,
-    shapeType: parsed.shape.type === 'none' ? undefined : parsed.shape.type,
-    ...shapeToResolved(parsed.shape),
-    time: parsed.temporal ? { start: parsed.temporal.start, end: parsed.temporal.end } : undefined,
-    text: parsed.text,
-    label: parsed.label,
-    notes,
-    tags: Array.from(new Set(tags)),
-    bodies,
-    motivation: motivations,
-    targetStyleClass: target?.styleClass ?? parsed.layer,
-    targetStyle: target?.style,
-  };
-};
+export const w3cToResolved = (annotation: unknown): ResolvedAnnotation | null =>
+  resolveAnnotationJson(annotation, { provenance: 'local' }).annotation;
 
 export const normalizedShapeTool = (
-  shape: NormalizedShape,
-): Exclude<ChapterAnnotationTool, 'select'> | null =>
-  shape.type === 'none' ? null : shape.type === 'rect' ? 'rectangle' : shape.type;
+  shape: NeutralShape,
+): Exclude<ChapterAnnotationTool, 'select'> | null => shapeTool(shape);
 
 export const w3cShapeTool = (
   annotation: unknown,
 ): Exclude<ChapterAnnotationTool, 'select'> | null => {
-  try {
-    return normalizedShapeTool(W3CParser.parseAnnotation(annotation).shape);
-  } catch {
-    // Invalid W3C geometry is ignored by the annotation creation flow.
-  }
-  return null;
+  const resolved = w3cToResolved(annotation);
+  if (!resolved) return null;
+  return shapeTool(shapeFromResolved(resolved));
 };
-
-export type { W3CAnnotation } from '@mango-iiif/w3c-parser';

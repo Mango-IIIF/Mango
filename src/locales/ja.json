@@ -116,7 +116,8 @@
         "empty": "未設定",
         "partial": "一部設定済み",
         "complete": "設定完了",
-        "attention": "要確認"
+        "attention": "要確認",
+        "positionDrift": "現在の表示と一致しません"
       },
       "items": {
         "details": {
@@ -482,15 +483,6 @@
           "detailsTitle": "注釈の詳細",
           "details": "詳細",
           "motivation": "動機 (Motivation)",
-          "motivations": {
-            "painting": "描写 (painting)",
-            "supplementing": "補足 (supplementing)",
-            "contextualizing": "文脈化 (contextualizing)",
-            "contentState": "コンテンツ状態 (contentState)",
-            "highlighting": "ハイライト (highlighting)",
-            "commenting": "コメント (commenting)",
-            "tagging": "タグ付け (tagging)"
-          },
           "layer": "レイヤー",
           "layersLabel": "レイヤー一覧",
           "addLayer": "レイヤーを追加",
@@ -530,7 +522,104 @@
             "point": "ポイント",
             "freehand": "フリーハンド",
             "line": "直線"
-          }
+          },
+          "task": "タスク",
+          "motivationPresets": {
+            "comment": "この領域にコメントする",
+            "describe": "この領域を説明する",
+            "transcribe": "ここのテキストを翻刻する",
+            "tag": "この領域にタグを付ける",
+            "highlight": "この領域を強調する",
+            "classify": "この領域を分類する",
+            "identify": "これが何かを特定する",
+            "paint": "キャンバスの内容（上級者向け）"
+          },
+          "motivations": {
+            "other": "その他（{motivation}）"
+          },
+          "rawMotivation": "モチベーションを直接指定する",
+          "paintingWarning": "他のビューアは painting 注釈をキャンバスの内容として扱います。",
+          "language": "言語",
+          "textDirection": "文字方向",
+          "direction": {
+            "ltr": "左から右",
+            "rtl": "右から左",
+            "auto": "自動"
+          },
+          "bodyPurpose": "ボディの目的",
+          "privateNotesHint": "プライベートメモは Mango 内にとどまり、書き出しには含まれません。",
+          "advanced": "保持されたデータ",
+          "advancedHint": "読み取り専用。受け取ったまま保持し、変更せずに書き戻します。",
+          "provenance": {
+            "manifest": "マニフェスト由来",
+            "external": "注釈ページ由来",
+            "local": "あなたの注釈",
+            "override": "あなたの編集",
+            "draft": "下書き",
+            "persisted": "保存済み"
+          },
+          "readOnlyHint": "編集すると、あなたが所有するコピーが作成されます。",
+          "renderOnlyHint": "この図形はここでは編集できませんが、そのまま保持されます。",
+          "saveState": {
+            "clean": "未保存の変更はありません",
+            "dirty": "未保存の変更があります",
+            "saving": "保存中…",
+            "saved": "保存しました",
+            "failed": "保存できませんでした",
+            "conflicted": "別の場所で変更されました"
+          },
+          "cancel": "キャンセル",
+          "languagePlaceholder": "ja",
+          "drawInLayer": "{layer} に描画",
+          "undo": "元に戻す",
+          "redo": "やり直す",
+          "confirmDelete": "「{name}」を削除しますか？元に戻せます。",
+          "filterByLayer": "レイヤーで絞り込む",
+          "allLayers": "すべてのレイヤー",
+          "sortBy": "並べ替え",
+          "listCount": "{total} 件中 {shown} 件を表示",
+          "sort": {
+            "document": "ドキュメント順",
+            "label": "ラベル",
+            "type": "種類",
+            "layer": "レイヤー"
+          },
+          "renameLayer": "{layer} の名前を変更",
+          "moveLayerUp": "レイヤーを上へ",
+          "moveLayerDown": "レイヤーを下へ",
+          "archiveLayer": "{layer} をアーカイブ",
+          "restoreLayer": "{layer} を戻す",
+          "archivedLayers": "アーカイブ済みレイヤー（{count}）",
+          "position": "位置",
+          "positionHint": "画像のピクセル単位。ドラッグと同じく、変更は 1 つの取り消し単位です。",
+          "layerOptions": "{layer} のオプション",
+          "rename": "名前を変更",
+          "archive": "アーカイブ"
+        },
+        "diagnostics": {
+          "layerAsMotivation": "モチベーションが標準の用語ではなく、レイヤー名のように見えます。",
+          "legacyMotivation": "古いモチベーション用語を読み込みました。新しい出力では現行の用語を使います。",
+          "unknownMotivation": "Mango が認識できないモチベーションです。",
+          "unknownPurpose": "Mango が認識できないボディの目的です。",
+          "styleClassWithoutStylesheet": "スタイルクラスに対応するスタイルシートがないため、通常のテーマを使います。",
+          "inlineStyleNotPortable": "インラインの色は可搬性がないため、標準の書き出しには含めません。",
+          "stylesheetUnreadable": "スタイルシートを読み取れなかったため無視しました。",
+          "legacyPoint": "点が 1×1 の領域として保存されていました。点として書き出します。",
+          "unsupportedSelector": "セレクターの種類は保持しますが、表示はしません。",
+          "invalidFragment": "メディアフラグメントを読み取れませんでした。",
+          "geometryUnreadable": "セレクターから図形を読み取れませんでした。",
+          "curvesFlattened": "曲線を直線の区間で近似しました。",
+          "pathPartiallyRead": "パスの一部に Mango が描画しないコマンドが含まれています。",
+          "multipleShapes": "セレクターに複数の図形があります。最初のものを表示します。",
+          "missingId": "注釈に識別子がありません。",
+          "missingTarget": "注釈にターゲットがありません。",
+          "draftIdentifier": "公開する前にサーバーが割り当てた識別子が必要です。",
+          "droppedExtension": "標準外のフィールドはこの書き出しから除外しました。",
+          "lossyNormalization": "選択した書き出しプロファイルに合わせて一部のデータの形が変わりました。",
+          "editTargetGone": "編集中の注釈の該当部分は存在しなくなりました。",
+          "editRefused": "その変更は拒否されたため、何も変更されていません。",
+          "migrationAmbiguous": "更新するには判断が必要なため、そのままにしました。",
+          "limitExceeded": "注釈が安全上の上限を超えているため、一部を読み取っていません。"
         }
       },
       "contents": {

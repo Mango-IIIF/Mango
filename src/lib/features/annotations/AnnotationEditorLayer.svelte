@@ -5,15 +5,15 @@
     type AnnotationStyle,
     type AnnotationTheme,
     type EditorMode,
+    type LabelSpec,
     type OSDLikeViewer,
+    type RenderContext,
     type ShapeData,
   } from '@mango-iiif/annotation';
-  import { W3CParser } from '@mango-iiif/w3c-parser';
-  import { normalizedShapeTool } from './w3c';
-  import {
-    fitRectangleLabelLayout,
-    rectangleLabelOutlineWidth,
-  } from './rectangleLabelLayout';
+  import { serializeWebAnnotation } from '@mango-iiif/w3c-parser';
+  import { createMangoAnnotation, shapeTool } from './canonical';
+  import { buildLayerStylesheet, hintsFromInlineStyle, styleClassForLayer } from './style';
+  import { EDITOR_LABEL_SIZING, type LabelSizing } from './rectangleLabelLayout';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { LayerItem } from './workspace/LeftSidebar.svelte';
   import type { ChapterAnnotationTool as Tool } from '../../core/types/story';
@@ -28,6 +28,16 @@
     activeAnnotationId?: string | null;
     activeTool?: Tool;
     layers?: LayerItem[];
+    /** Layer new annotations are created in. A presentation and grouping choice. */
+    activeLayerId?: string;
+    /**
+     * Size band for shape labels, in screen pixels.
+     *
+     * Story labels are read from further back than editor labels, so the two
+     * surfaces use different bands — but each surface uses one band for both
+     * viewing and editing, which is the point.
+     */
+    labelSizing?: LabelSizing;
     ontoolchange?: ((payload: { tool: Tool }) => void) | undefined;
     onannotationcreate?:
       ((payload: { annotation: unknown; tool: Exclude<Tool, 'select'> }) => void) | undefined;
@@ -35,6 +45,10 @@
       ((payload: { id: string; patch: Partial<ResolvedAnnotation> }) => void) | undefined;
     onannotationdelete?: ((payload: { id: string }) => void) | undefined;
     onannotationselect?: ((payload: { id: string }) => void) | undefined;
+    /** Hands the live editor out so undo/redo and exact edits can reach it. */
+    oneditorready?: ((editor: OSDAnnotationEditor | null) => void) | undefined;
+    /** A committed geometry change, already one undo step in the editor. */
+    ongeometrycommit?: ((payload: { id: string }) => void) | undefined;
   }
 
   let {
@@ -47,97 +61,109 @@
     activeAnnotationId = null,
     activeTool = 'rectangle',
     layers = [],
+    activeLayerId = 'mine',
+    labelSizing = EDITOR_LABEL_SIZING,
     ontoolchange = undefined,
     onannotationcreate = undefined,
     onannotationupdate = undefined,
     onannotationdelete = undefined,
     onannotationselect = undefined,
+    oneditorready = undefined,
+    ongeometrycommit = undefined,
   }: Props = $props();
 
   let editor: OSDAnnotationEditor | null = $state(null);
 
-  const fitRectangleLabels = () => {
-    const root = viewer?.container.querySelector('.mango-annotation-editor');
-    if (!root) return;
-    const labelsById = new Map(
-      annotations.flatMap((annotation) => {
-        const label = annotation.label?.trim();
-        return annotation.rect && label ? [[annotation.id, label] as const] : [];
-      }),
-    );
+  /**
+   * Geometry last handed to the editor, per annotation.
+   *
+   * Deliberately not reactive: it is a record of what was sent, read only to
+   * decide whether an incoming change is news. Making it state would put it in
+   * the very dependency graph it exists to keep quiet.
+   */
+  const pushedGeometry = new Map<string, string>();
 
-    for (const shape of root.querySelectorAll<SVGElement>('[data-annotation-id]')) {
-      const id = shape.dataset.annotationId;
-      const label = id ? labelsById.get(id) : undefined;
-      const text = shape.nextElementSibling;
-      if (
-        !label ||
-        shape.tagName.toLowerCase() !== 'rect' ||
-        text?.tagName.toLowerCase() !== 'text'
-      ) {
-        continue;
-      }
+  /*
+   * Labels are the canvas package's to draw.
+   *
+   * Mango used to fit them by walking the package's own SVG after every
+   * mutation — reading a rect's attributes, rewriting the sibling `text`, and
+   * re-running on a MutationObserver. That workaround existed because there was
+   * no extension point; there is one now, and `LabelSpec` clamps in screen
+   * pixels, which is the thing Mango could not do from the outside. Sizes in
+   * image coordinates grew without limit as the viewer zoomed in, so a large
+   * region rendered its label at headline size.
+   */
+  /**
+   * Label text for a shape.
+   *
+   * Shortened rather than wrapped. The canvas package clamps a label's size in
+   * screen pixels and keeps doing so as the viewer zooms, which is the part
+   * that has to stay right; what it cannot do is wrap, and Mango cannot wrap it
+   * from outside either — `renderShape` is sampled once and never re-run on
+   * zoom, so anything fitted there freezes at whatever the first frame
+   * happened to be.
+   *
+   * The same goes for trimming to the shape's width: the callback is not
+   * re-invoked on zoom either, so any width Mango measured would be a width
+   * from some earlier frame. The cap is therefore a fixed number of characters
+   * — short enough to read as a label rather than a sentence.
+   *
+   * A sentence belongs to the annotation's text, which the inspector and the
+   * chapter annotation list show in full.
+   */
+  const SHAPE_LABEL_LIMIT = 30;
 
-      const x = Number(shape.getAttribute('x'));
-      const y = Number(shape.getAttribute('y'));
-      const width = Number(shape.getAttribute('width'));
-      const height = Number(shape.getAttribute('height'));
-      if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
-        continue;
-      }
-
-      const { fontSize, lineHeight, lines } = fitRectangleLabelLayout(width, height, label);
-      const centreX = x + width / 2;
-      const firstLineY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
-      text.setAttribute('x', String(centreX));
-      text.setAttribute('y', String(firstLineY));
-      text.setAttribute('font-size', fontSize.toFixed(2));
-      text.setAttribute('stroke-width', rectangleLabelOutlineWidth(fontSize).toFixed(2));
-      text.setAttribute('dominant-baseline', 'middle');
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('data-fitted-rectangle-label', id);
-      const signature = `${label}|${x}|${y}|${width}|${height}|${lines.join('|')}`;
-      if (
-        text.getAttribute('data-label-layout') !== signature ||
-        text.querySelectorAll('tspan').length !== lines.length
-      ) {
-        text.setAttribute('data-label-layout', signature);
-        text.replaceChildren(
-          ...lines.map((line, index) => {
-            const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-            tspan.textContent = line;
-            tspan.setAttribute('x', String(centreX));
-            tspan.setAttribute('dy', index === 0 ? '0' : lineHeight.toFixed(2));
-            return tspan;
-          }),
-        );
-      }
-    }
+  const shapeLabelText = (label: string | undefined): string | undefined => {
+    const value = label?.trim();
+    if (!value) return undefined;
+    return value.length > SHAPE_LABEL_LIMIT
+      ? `${value.slice(0, SHAPE_LABEL_LIMIT - 1).trimEnd()}\u2026`
+      : value;
   };
 
-  const editorStyle = (annotation: ResolvedAnnotation): Partial<AnnotationStyle> | undefined => {
-    const declarations = annotation.targetStyle
-      ?.split(';')
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-    if (!declarations?.length) return undefined;
-
-    const values = new Map<string, string>();
-    for (const declaration of declarations) {
-      const separator = declaration.indexOf(':');
-      if (separator < 0) continue;
-      values.set(
-        declaration.slice(0, separator).trim().toLowerCase(),
-        declaration.slice(separator + 1).trim(),
-      );
-    }
-
-    const strokeWidth = Number.parseFloat(values.get('stroke-width') ?? '');
+  const labelSpec = (context: RenderContext): LabelSpec => {
+    const text = shapeLabelText(context.annotation.label);
+    /*
+     * Placement depends on the shape, never on the label.
+     *
+     * A rectangle has an interior and its label sits in the middle of it, which
+     * is where story playback puts it too. Deciding by length instead made the
+     * label jump from the centre of the region to underneath it as the text
+     * changed — one annotation, two positions.
+     *
+     * Points and lines have no interior, so theirs sits below. That is a
+     * property of the shape and holds for every label on it.
+     */
     return {
-      ...(values.get('stroke') ? { strokeColor: values.get('stroke') } : {}),
-      ...(values.get('fill') ? { fillColor: values.get('fill') } : {}),
-      ...(Number.isFinite(strokeWidth) ? { strokeWidth } : {}),
+      text,
+      placement: context.annotation.type === 'rect' ? 'center' : 'below',
+      minFontSize: labelSizing.min,
+      maxFontSize: labelSizing.max,
+      orientation: 'upright',
+      visible: Boolean(text),
     };
+  };
+
+  /*
+   * Presentation hints are resolved once, when the annotation is projected —
+   * from its own stylesheet, or from a legacy inline `target.style` for
+   * documents Mango wrote before stylesheets. Re-parsing CSS here would be a
+   * second interpretation of the same string, and the sanitising that keeps a
+   * stranger's stylesheet out of the document lives on the projection side.
+   */
+  const editorStyle = (annotation: ResolvedAnnotation): Partial<AnnotationStyle> | undefined => {
+    /*
+     * Falls back to the legacy inline value when nothing has resolved hints.
+     * Story drawings carry their colour that way — they are built directly as
+     * projections rather than parsed from a document — so reading `styleHints`
+     * alone dropped them onto the layer palette, and a chapter's orange
+     * annotation turned purple the moment it was opened for editing.
+     */
+    const hints = annotation.styleHints ?? hintsFromInlineStyle(annotation.targetStyle);
+    if (!hints) return undefined;
+    const { opacity: _opacity, ...style } = hints;
+    return Object.keys(style).length > 0 ? style : undefined;
   };
 
   const toShape = (annotation: ResolvedAnnotation): ShapeData | null => {
@@ -252,8 +278,9 @@
       ),
       selectedId: untrack(() => activeAnnotationId),
       mode: untrack(() => modeForTool(activeTool)),
-      currentLayer: 'mine',
+      currentLayer: untrack(() => activeLayerId),
       theme: untrack(() => themeForLayers(layers)),
+      renderer: { label: labelSpec },
       onSelectionChanged: (id) => {
         if (id && annotations.some((annotation) => annotation.id === id)) {
           onannotationselect?.({ id });
@@ -261,20 +288,70 @@
       },
       onAnnotationCreated: (shape) => {
         if (!canvasId) return;
-        const tool = normalizedShapeTool(shape);
+        const tool = shapeTool(shape);
         if (!tool) return;
-        const annotation = W3CParser.serialize({
+        /*
+         * The layer becomes a `styleClass` and the motivation is a real term.
+         * These used to be the same argument: the canvas package's `layer` is a
+         * presentation key, it was handed to the serializer as `layer`, and the
+         * serializer wrote it as `motivation` — which is how every annotation
+         * drawn on the stage was exported as `motivation: "mine"`.
+         */
+        const layerId = shape.layer ?? activeLayerId;
+        const layer = layers.find((entry) => entry.id === layerId);
+        const document = createMangoAnnotation({
           id: shape.id,
           canvasId,
-          text: shape.text ?? '',
-          label: shape.label,
-          layer: shape.layer,
           shape,
+          text: shape.text,
+          label: shape.label,
+          styleClass: layerId ? styleClassForLayer(layerId) : undefined,
+          stylesheet: layer ? buildLayerStylesheet([layer]) : null,
         });
-        onannotationcreate?.({ annotation, tool });
+        onannotationcreate?.({
+          annotation: serializeWebAnnotation(document, { profile: 'iiif-presentation-3' }).json,
+          tool,
+        });
       },
-      onAnnotationUpdated: (shape) => {
-        onannotationupdate?.({ id: shape.id, patch: toPatch(shape) });
+      /*
+       * Geometry edits come through `onAnnotationChanged`, not the older
+       * `onAnnotationUpdated`, because only this one says where the change came
+       * from — and that distinction is load bearing rather than tidiness.
+       *
+       * Mango mirrors editor changes into its own state and syncs the result
+       * back. `onAnnotationUpdated` fires for that echo exactly as it does for a
+       * real drag, so reporting it produced a new projection object, which
+       * re-ran the sync, which echoed again: an effect loop Svelte aborts after
+       * a thousand rounds, leaving the editor frozen mid-update. That is why a
+       * saved annotation kept showing as an unsaved draft.
+       *
+       * `transient` changes are the in-flight samples of a drag; only the
+       * committed one is an undo step, already coalesced by the editor.
+       */
+      onAnnotationChanged: (change) => {
+        if (change.transient) return;
+        if (change.kind === 'update' && change.after) {
+          /*
+           * Report only geometry the editor did not get from us.
+           *
+           * Mango mirrors editor changes into its own state and syncs the
+           * result back, and the editor reports that echo as an ordinary
+           * committed change — `operation: 'batch'`, indistinguishable by label
+           * from a real multi-shape edit. Feeding it back produced a fresh
+           * projection object, which re-ran the sync, which echoed again: an
+           * effect loop Svelte aborts after a thousand rounds, leaving the
+           * editor frozen mid-update. That is why a saved annotation went on
+           * showing as an unsaved draft.
+           *
+           * Comparing against what we last pushed is what makes this robust:
+           * it does not depend on how the package labels a sync.
+           */
+          const geometry = JSON.stringify(change.after.geometry);
+          if (pushedGeometry.get(change.id) === geometry) return;
+          pushedGeometry.set(change.id, geometry);
+          onannotationupdate?.({ id: change.id, patch: toPatch(change.after) });
+        }
+        ongeometrycommit?.({ id: change.id });
       },
       onAnnotationDeleted: (id) => onannotationdelete?.({ id }),
       onModeChanged: (mode) => {
@@ -282,15 +359,9 @@
       },
     });
     editor = instance;
-    const annotationRoot = viewer.container.querySelector('.mango-annotation-editor');
-    let labelObserver: MutationObserver | null = null;
-    if (annotationRoot && typeof MutationObserver !== 'undefined') {
-      labelObserver = new MutationObserver(() => fitRectangleLabels());
-      labelObserver.observe(annotationRoot, { childList: true, subtree: true });
-    }
-    fitRectangleLabels();
+    oneditorready?.(instance);
     return () => {
-      labelObserver?.disconnect();
+      oneditorready?.(null);
       instance.destroy();
       if (editor === instance) editor = null;
     };
@@ -298,11 +369,18 @@
 
   $effect(() => {
     if (!editor) return;
-    editor.setAnnotations(
-      annotations.map(toShape).filter((shape): shape is ShapeData => Boolean(shape)),
-    );
+    /*
+     * `preserve`, not the default. Mango mirrors every editor change into its
+     * own state and passes the result straight back, so the default `reset`
+     * would wipe the undo stack on every single edit — silently, because
+     * nothing errors and undo simply stops working.
+     */
+    const shapes = annotations.map(toShape).filter((shape): shape is ShapeData => Boolean(shape));
+    // Recorded before the push, so the echo it provokes is recognised as ours.
+    pushedGeometry.clear();
+    for (const shape of shapes) pushedGeometry.set(shape.id, JSON.stringify(shape.geometry));
+    editor.setAnnotations(shapes, { history: 'preserve' });
     editor.select(activeAnnotationId);
-    fitRectangleLabels();
   });
 
   $effect(() => {
@@ -315,5 +393,9 @@
 
   $effect(() => {
     editor?.updateTheme(themeForLayers(layers));
+  });
+
+  $effect(() => {
+    editor?.setCurrentLayer(activeLayerId);
   });
 </script>

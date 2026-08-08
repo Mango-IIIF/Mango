@@ -1,3 +1,4 @@
+import type { JsonObject } from '@mango-iiif/w3c-parser';
 import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
 import type { ChapterAnnotationTool } from './story';
 import type { MediaType } from '../../iiif/mediaResolver';
@@ -28,6 +29,8 @@ export type ViewerEventMap = {
     annotationId: string;
     patch: Partial<ResolvedAnnotation>;
   };
+  /** Edits on an annotation were committed as one save. */
+  annotationSave: { annotationId: string; annotation: ResolvedAnnotation };
   annotationDelete: { annotationId: string };
   annotationHover: {
     id: string | null;
@@ -40,7 +43,20 @@ export type ViewerEventMap = {
   };
   annotationClear: void;
   rotationChange: { rotation: number };
+  /**
+   * @deprecated Internal projections, kept for one cycle. Use
+   * `exportAnnotationPage`, which carries portable JSON-LD instead.
+   */
   exportAnnotations: { annotations: ResolvedAnnotation[] };
+  /** Standards-shaped export: an AnnotationPage plus what the host must decide. */
+  exportAnnotationPage: {
+    page: JsonObject;
+    valid: boolean;
+    /** Private fields withheld from this export. */
+    excludedPrivateFields: Array<{ annotationId: string; keys: string[] }>;
+    /** Annotations that still need a server-assigned identifier. */
+    unresolvedIdentities: string[];
+  };
   panelToggle: {
     panel: 'thumbnails' | 'search' | 'metadata' | 'annotations' | 'tools' | string;
     open: boolean;

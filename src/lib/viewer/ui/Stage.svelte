@@ -15,7 +15,8 @@
   import type { ViewerConfig } from '../../core/types/config';
   import AnnotationLayer from '../../features/annotations/AnnotationLayer.svelte';
   import AnnotationEditorLayer from '../../features/annotations/AnnotationEditorLayer.svelte';
-  import { resolvedToW3C, w3cToResolved } from '../../features/annotations/w3c';
+  import type { OSDAnnotationEditor } from '@mango-iiif/annotation';
+  import type { LabelSizing } from '../../features/annotations/rectangleLabelLayout';
   import type { LayerItem } from '../../features/annotations/workspace/LeftSidebar.svelte';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
   import { VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
@@ -84,6 +85,12 @@
     annotationEditorEnabled?: boolean;
     annotationEditorAnnotations?: ResolvedAnnotation[];
     annotationLayers?: LayerItem[];
+    /** Layer new annotations are created in. */
+    activeLayerId?: string;
+    /** Size band for shape labels, in screen pixels. */
+    labelSizing?: LabelSizing;
+    oneditorready?: ((editor: OSDAnnotationEditor | null) => void) | undefined;
+    ongeometrycommit?: ((payload: { id: string }) => void) | undefined;
     canvasId?: string | null;
     onannotationcreate?:
       | ((payload: {
@@ -151,6 +158,10 @@
     annotationEditorEnabled = false,
     annotationEditorAnnotations = undefined,
     annotationLayers = [],
+    activeLayerId = 'mine',
+    labelSizing = undefined,
+    oneditorready = undefined,
+    ongeometrycommit = undefined,
     canvasId = null,
     onannotationcreate = undefined,
     onannotationupdate = undefined,
@@ -339,13 +350,6 @@
     observer.observe(mediaBounds);
     return () => observer.disconnect();
   });
-  const projectedAnnotations = $derived(
-    annotations
-      .map((item) => resolvedToW3C(item, canvasId ?? ''))
-      .filter((item): item is NonNullable<typeof item> => Boolean(item))
-      .map((item) => w3cToResolved(item))
-      .filter((item): item is ResolvedAnnotation => Boolean(item)),
-  );
 </script>
 
 <div class="stage__container">
@@ -432,7 +436,7 @@
 
     {#if !useRendererNativeAnnotationLayer}
       <AnnotationLayer
-        annotations={projectedAnnotations}
+        annotations={annotations}
         viewBox={stageViewBox}
         width={stageWidth}
         height={stageHeight}
@@ -455,6 +459,10 @@
       annotations={annotationEditorAnnotations ?? annotations}
       {activeAnnotationId}
       layers={annotationLayers}
+      {activeLayerId}
+      {...(labelSizing ? { labelSizing } : {})}
+      {oneditorready}
+      {ongeometrycommit}
       onannotationcreate={(payload) => onannotationcreate?.(payload)}
       onannotationupdate={(payload) => onannotationupdate?.(payload)}
       onannotationdelete={(payload) => onannotationdelete?.(payload)}

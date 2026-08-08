@@ -116,7 +116,8 @@
         "empty": "Not configured",
         "partial": "Partially configured",
         "complete": "Configured",
-        "attention": "Needs attention"
+        "attention": "Needs attention",
+        "positionDrift": "Doesn't match current view"
       },
       "items": {
         "details": {
@@ -277,7 +278,11 @@
       "transparent": "Transparent",
       "solid": "Solid",
       "stroke": "Stroke",
-      "strokeWidth": { "thin": "Thin", "medium": "Medium", "thick": "Thick" },
+      "strokeWidth": {
+        "thin": "Thin",
+        "medium": "Medium",
+        "thick": "Thick"
+      },
       "emptySelection": "Draw an annotation, or select one from the footer to edit its text and appearance.",
       "empty": "No annotations in this chapter."
     },
@@ -478,15 +483,6 @@
           "detailsTitle": "Annotation Details",
           "details": "Details",
           "motivation": "Motivation",
-          "motivations": {
-            "painting": "painting",
-            "supplementing": "supplementing",
-            "contextualizing": "contextualizing",
-            "contentState": "contentState",
-            "highlighting": "highlighting",
-            "commenting": "commenting",
-            "tagging": "tagging"
-          },
           "layer": "Layer",
           "layersLabel": "Layers",
           "addLayer": "Add layer",
@@ -526,7 +522,104 @@
             "point": "Point",
             "freehand": "Freehand",
             "line": "Line"
-          }
+          },
+          "task": "Task",
+          "motivationPresets": {
+            "comment": "Comment on this region",
+            "describe": "Describe this region",
+            "transcribe": "Transcribe the text here",
+            "tag": "Tag this region",
+            "highlight": "Highlight this region",
+            "classify": "Classify this region",
+            "identify": "Identify what this is",
+            "paint": "Canvas content (expert)"
+          },
+          "motivations": {
+            "other": "Other ({motivation})"
+          },
+          "rawMotivation": "Set the motivation directly",
+          "paintingWarning": "Painting annotations are treated as Canvas content by other viewers.",
+          "language": "Language",
+          "textDirection": "Text direction",
+          "direction": {
+            "ltr": "Left to right",
+            "rtl": "Right to left",
+            "auto": "Automatic"
+          },
+          "bodyPurpose": "Body purpose",
+          "privateNotesHint": "Private notes stay in Mango and are left out of exports.",
+          "advanced": "Preserved data",
+          "advancedHint": "Read-only. Kept exactly as it arrived and written back unchanged.",
+          "provenance": {
+            "manifest": "From the manifest",
+            "external": "From an annotation page",
+            "local": "Yours",
+            "override": "Your edit",
+            "draft": "Draft",
+            "persisted": "Saved"
+          },
+          "readOnlyHint": "Editing this makes a copy you own.",
+          "renderOnlyHint": "This shape cannot be edited here, but it is kept intact.",
+          "saveState": {
+            "clean": "No unsaved changes",
+            "dirty": "Unsaved changes",
+            "saving": "Saving…",
+            "saved": "Saved",
+            "failed": "Could not save",
+            "conflicted": "Changed elsewhere"
+          },
+          "cancel": "Cancel",
+          "languagePlaceholder": "en",
+          "drawInLayer": "Draw in {layer}",
+          "undo": "Undo",
+          "redo": "Redo",
+          "confirmDelete": "Delete “{name}”? You can undo this.",
+          "filterByLayer": "Filter by layer",
+          "allLayers": "All layers",
+          "sortBy": "Sort by",
+          "listCount": "Showing {shown} of {total}",
+          "sort": {
+            "document": "Document order",
+            "label": "Label",
+            "type": "Type",
+            "layer": "Layer"
+          },
+          "renameLayer": "Rename {layer}",
+          "moveLayerUp": "Move layer up",
+          "moveLayerDown": "Move layer down",
+          "archiveLayer": "Archive {layer}",
+          "restoreLayer": "Restore {layer}",
+          "archivedLayers": "Archived layers ({count})",
+          "position": "Position",
+          "positionHint": "Image pixels. Changes are one undo step, the same as a drag.",
+          "layerOptions": "Options for {layer}",
+          "rename": "Rename",
+          "archive": "Archive"
+        },
+        "diagnostics": {
+          "layerAsMotivation": "The motivation looks like an application layer name rather than a standard term.",
+          "legacyMotivation": "An older motivation term was read; new output uses the current one.",
+          "unknownMotivation": "The motivation is not a term Mango recognises.",
+          "unknownPurpose": "A body purpose is not a term Mango recognises.",
+          "styleClassWithoutStylesheet": "A style class has no stylesheet, so the normal theme is used.",
+          "inlineStyleNotPortable": "Inline colour is not portable and is left out of standard exports.",
+          "stylesheetUnreadable": "The stylesheet could not be read and was ignored.",
+          "legacyPoint": "A point was stored as a 1×1 region; it is exported as a point.",
+          "unsupportedSelector": "A selector type is kept but not shown.",
+          "invalidFragment": "A media fragment could not be read.",
+          "geometryUnreadable": "The shape could not be read from its selector.",
+          "curvesFlattened": "Curves were approximated with straight segments.",
+          "pathPartiallyRead": "Part of the path uses commands Mango does not draw.",
+          "multipleShapes": "The selector holds several shapes; the first is shown.",
+          "missingId": "The annotation has no identifier.",
+          "missingTarget": "The annotation has no target.",
+          "draftIdentifier": "This needs a server-assigned identifier before it can be published.",
+          "droppedExtension": "Non-standard fields were left out of this export.",
+          "lossyNormalization": "Some data changed shape to fit the chosen export profile.",
+          "editTargetGone": "The part of the annotation being edited no longer exists.",
+          "editRefused": "That change was refused, so nothing was altered.",
+          "migrationAmbiguous": "This needs a decision before it can be updated, so it was left as it is.",
+          "limitExceeded": "The annotation is larger than the safety limits allow; part of it was not read."
         }
       },
       "contents": {

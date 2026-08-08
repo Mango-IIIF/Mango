@@ -116,7 +116,8 @@
         "empty": "Sin configurar",
         "partial": "Parcialmente configurado",
         "complete": "Configurado",
-        "attention": "Requiere atención"
+        "attention": "Requiere atención",
+        "positionDrift": "No coincide con la vista actual"
       },
       "items": {
         "details": {
@@ -482,15 +483,6 @@
           "detailsTitle": "Detalles de la anotación",
           "details": "Detalles",
           "motivation": "Motivación",
-          "motivations": {
-            "painting": "pintura (painting)",
-            "supplementing": "suplemento (supplementing)",
-            "contextualizing": "contextualización (contextualizing)",
-            "contentState": "estado de contenido (contentState)",
-            "highlighting": "resaltado (highlighting)",
-            "commenting": "comentario (commenting)",
-            "tagging": "etiquetado (tagging)"
-          },
           "layer": "Capa",
           "layersLabel": "Capas",
           "addLayer": "Añadir una capa",
@@ -530,7 +522,104 @@
             "point": "Punto",
             "freehand": "Mano alzada",
             "line": "Línea"
-          }
+          },
+          "task": "Tarea",
+          "motivationPresets": {
+            "comment": "Comentar esta región",
+            "describe": "Describir esta región",
+            "transcribe": "Transcribir el texto de aquí",
+            "tag": "Etiquetar esta región",
+            "highlight": "Resaltar esta región",
+            "classify": "Clasificar esta región",
+            "identify": "Identificar qué es esto",
+            "paint": "Contenido del lienzo (experto)"
+          },
+          "motivations": {
+            "other": "Otro ({motivation})"
+          },
+          "rawMotivation": "Definir la motivación directamente",
+          "paintingWarning": "Otros visores tratan las anotaciones painting como contenido del lienzo.",
+          "language": "Idioma",
+          "textDirection": "Dirección del texto",
+          "direction": {
+            "ltr": "De izquierda a derecha",
+            "rtl": "De derecha a izquierda",
+            "auto": "Automática"
+          },
+          "bodyPurpose": "Propósito del cuerpo",
+          "privateNotesHint": "Las notas privadas se quedan en Mango y no se exportan.",
+          "advanced": "Datos conservados",
+          "advancedHint": "Solo lectura. Se conservan tal como llegaron y se reescriben sin cambios.",
+          "provenance": {
+            "manifest": "Del manifiesto",
+            "external": "De una página de anotaciones",
+            "local": "Tuya",
+            "override": "Tu edición",
+            "draft": "Borrador",
+            "persisted": "Guardada"
+          },
+          "readOnlyHint": "Al editarla se crea una copia de tu propiedad.",
+          "renderOnlyHint": "Esta forma no se puede editar aquí, pero se conserva intacta.",
+          "saveState": {
+            "clean": "Sin cambios sin guardar",
+            "dirty": "Cambios sin guardar",
+            "saving": "Guardando…",
+            "saved": "Guardada",
+            "failed": "No se pudo guardar",
+            "conflicted": "Modificada en otro lugar"
+          },
+          "cancel": "Cancelar",
+          "languagePlaceholder": "es",
+          "drawInLayer": "Dibujar en {layer}",
+          "undo": "Deshacer",
+          "redo": "Rehacer",
+          "confirmDelete": "¿Eliminar «{name}»? Puedes deshacerlo.",
+          "filterByLayer": "Filtrar por capa",
+          "allLayers": "Todas las capas",
+          "sortBy": "Ordenar por",
+          "listCount": "Mostrando {shown} de {total}",
+          "sort": {
+            "document": "Orden del documento",
+            "label": "Etiqueta",
+            "type": "Tipo",
+            "layer": "Capa"
+          },
+          "renameLayer": "Renombrar {layer}",
+          "moveLayerUp": "Subir la capa",
+          "moveLayerDown": "Bajar la capa",
+          "archiveLayer": "Archivar {layer}",
+          "restoreLayer": "Restaurar {layer}",
+          "archivedLayers": "Capas archivadas ({count})",
+          "position": "Posición",
+          "positionHint": "Píxeles de la imagen. Los cambios son un paso de deshacer, igual que arrastrar.",
+          "layerOptions": "Opciones de {layer}",
+          "rename": "Renombrar",
+          "archive": "Archivar"
+        },
+        "diagnostics": {
+          "layerAsMotivation": "La motivación parece un nombre de capa en lugar de un término estándar.",
+          "legacyMotivation": "Se leyó un término de motivación antiguo; la salida nueva usa el actual.",
+          "unknownMotivation": "Mango no reconoce esta motivación.",
+          "unknownPurpose": "Mango no reconoce el propósito de este cuerpo.",
+          "styleClassWithoutStylesheet": "La clase de estilo no tiene hoja de estilos, así que se usa el tema normal.",
+          "inlineStyleNotPortable": "El color en línea no es portable y se omite en las exportaciones estándar.",
+          "stylesheetUnreadable": "No se pudo leer la hoja de estilos y se ignoró.",
+          "legacyPoint": "Un punto se guardó como región de 1×1; se exporta como punto.",
+          "unsupportedSelector": "Se conserva un tipo de selector, pero no se muestra.",
+          "invalidFragment": "No se pudo leer un fragmento de medios.",
+          "geometryUnreadable": "No se pudo leer la forma a partir de su selector.",
+          "curvesFlattened": "Las curvas se aproximaron con segmentos rectos.",
+          "pathPartiallyRead": "Parte del trazado usa comandos que Mango no dibuja.",
+          "multipleShapes": "El selector contiene varias formas; se muestra la primera.",
+          "missingId": "La anotación no tiene identificador.",
+          "missingTarget": "La anotación no tiene destino.",
+          "draftIdentifier": "Necesita un identificador asignado por el servidor antes de publicarse.",
+          "droppedExtension": "Se omitieron campos no estándar en esta exportación.",
+          "lossyNormalization": "Algunos datos cambiaron de forma para ajustarse al perfil de exportación.",
+          "editTargetGone": "La parte de la anotación que se está editando ya no existe.",
+          "editRefused": "Ese cambio se rechazó, así que no se modificó nada.",
+          "migrationAmbiguous": "Requiere una decisión antes de actualizarse, así que se dejó como está.",
+          "limitExceeded": "La anotación supera los límites de seguridad; parte de ella no se leyó."
         }
       },
       "contents": {

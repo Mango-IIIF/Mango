@@ -38,6 +38,7 @@ import {
 import {
   createAnnotationController,
   type AnnotationController,
+  type AnnotationPatchOptions,
 } from "./controllers/AnnotationController";
 import {
   createPanelController,
@@ -73,8 +74,16 @@ export type ViewerController = {
   updateAnnotation: (
     annotationId: string,
     patch: Partial<ResolvedAnnotation>,
+    options?: AnnotationPatchOptions,
   ) => Promise<void>;
   removeAnnotation: (annotationId: string) => Promise<void>;
+  /** Replaces an annotation wholesale. For undo and redo. */
+  replaceAnnotation: (
+    annotationId: string,
+    annotation: ResolvedAnnotation,
+  ) => Promise<void>;
+  /** Commits the edits already applied to an annotation as one save. */
+  commitAnnotation: (annotationId: string) => Promise<void>;
   updateImageFilter: <K extends keyof ImageFilters>(
     key: K,
     value: ImageFilters[K],
@@ -475,6 +484,8 @@ export const createViewerController = ({
     addAnnotation: annotationController.addAnnotation,
     updateAnnotation: annotationController.updateAnnotation,
     removeAnnotation: annotationController.removeAnnotation,
+    replaceAnnotation: annotationController.replaceAnnotation,
+    commitAnnotation: annotationController.commitAnnotation,
     setAnnotationMode: annotationController.setAnnotationMode,
     setSearchQuery: annotationController.setSearchQuery,
     handleSearchResultClick: annotationController.handleSearchResultClick,

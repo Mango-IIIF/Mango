@@ -29,6 +29,7 @@
   import ChapterMotionPanel from "./ChapterMotionPanel.svelte";
   import {
     evaluateChapterTasks,
+    framingsDiffer,
     type ChapterInspectorView,
     type ChapterTaskEvaluation,
     type ChapterTaskId,
@@ -851,6 +852,66 @@
     }, 1800);
   };
 
+  /*
+   * Selecting a chapter flies the viewer to its saved frame, so the live and
+   * saved boxes genuinely disagree for the length of that animation. Comparing
+   * against a settled view stops the position card flashing a warning on every
+   * chapter click, and stops it strobing while the author is mid-drag.
+   */
+  const VIEW_SETTLE_MS = 400;
+  /*
+   * The timer handle lives on an object rather than in a `let`. A `$:` block
+   * that both reads and reassigns a component-level binding depends on itself
+   * and re-runs when it changes, so clearing the handle from the reset below
+   * immediately restarted the settle it had just cancelled — resurrecting the
+   * stale comparison the chapter switch was meant to drop.
+   */
+  const viewSettle: { timer: ReturnType<typeof setTimeout> | null } = { timer: null };
+  let settledViewBox: ViewBox | null = null;
+  let viewAtSelection: ViewBox | null = null;
+  let viewBaselineChapterId: string | null = null;
+
+  /*
+   * Selecting a chapter does not move the viewer, so straight after a switch
+   * the framing on screen belongs to the chapter the author just left. That is
+   * not a statement about this chapter, and treating it as one would leave the
+   * warning permanently lit in any story with more than one chapter — a signal
+   * as useless as the tick that could never go red. Start afresh on each
+   * selection and stay quiet until the author actually moves the view.
+   */
+  $: if (chapterId !== viewBaselineChapterId) {
+    viewBaselineChapterId = chapterId;
+    if (viewSettle.timer) {
+      clearTimeout(viewSettle.timer);
+      viewSettle.timer = null;
+    }
+    viewAtSelection = $viewBox;
+    settledViewBox = null;
+  }
+
+  /*
+   * The framing only becomes a question about *this* chapter once the author
+   * has moved since selecting it. Remembering where the view was at selection
+   * is what makes that robust: the viewer republishes its position on selection
+   * without actually moving, and comparing against the saved frame directly
+   * would read that as the author having reframed the chapter.
+   */
+  $: authorHasMovedView = Boolean(
+    settledViewBox && viewAtSelection && framingsDiffer(viewAtSelection, settledViewBox),
+  );
+
+  $: {
+    const nextViewBox = $viewBox;
+    if (viewSettle.timer) clearTimeout(viewSettle.timer);
+    viewSettle.timer = setTimeout(() => {
+      settledViewBox = nextViewBox;
+      viewSettle.timer = null;
+    }, VIEW_SETTLE_MS);
+  }
+  onDestroy(() => {
+    if (viewSettle.timer) clearTimeout(viewSettle.timer);
+  });
+
   $: mediaTypeValue = $mediaType;
   $: taskEvaluations = chapter
     ? evaluateChapterTasks({
@@ -862,6 +923,9 @@
         loadedSources: layers,
         validationErrors: chapterValidationErrors,
         languages,
+        // During a preview the viewer is following the story, not the author.
+        currentViewBox:
+          $storyPreviewing || !authorHasMovedView ? null : settledViewBox,
       })
     : [];
   $: hasAvMedia = mediaTypeValue === "audio" || mediaTypeValue === "video";

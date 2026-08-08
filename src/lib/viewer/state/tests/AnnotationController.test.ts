@@ -1,6 +1,10 @@
 import { get, writable } from 'svelte/store';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ResolvedAnnotation } from '../../../iiif/annotationResolver';
+import {
+  createMangoAnnotation,
+  projectToResolved,
+} from '../../../features/annotations/canonical';
 import { createAnnotationController } from '../controllers/AnnotationController';
 import { createViewerState } from '../viewerState';
 
@@ -140,11 +144,22 @@ describe('AnnotationController edits to read-only annotations', () => {
    * them where they live. It takes a copy under the same id instead, and
    * `mergeCanvasAnnotations` prefers that copy — see derived.test.ts.
    */
-  const external: ResolvedAnnotation = {
+  /*
+   * A real canonical document, not a hand-built projection: editing one is the
+   * behaviour under test, and a projection with no document behind it takes the
+   * lossy fallback path instead. The second body is here so an edit to the text
+   * has something to destroy if the patch ever stops being addressed.
+   */
+  const externalDocument = createMangoAnnotation({
     id: 'external-1',
+    canvasId: 'canvas-1',
+    shape: { type: 'rect', geometry: { x: 10, y: 20, w: 30, h: 40 } },
     text: 'BILD DER JAHRHUNDERTE',
-    rect: { x: 10, y: 20, w: 30, h: 40 },
-  };
+    tags: ['bookplate'],
+  });
+  const external = projectToResolved(externalDocument, {
+    provenance: 'external',
+  }) as ResolvedAnnotation;
 
   const makeController = () => {
     const state = createViewerState();
@@ -176,8 +191,11 @@ describe('AnnotationController edits to read-only annotations', () => {
       id: 'external-1',
       text: 'Edited',
       rect: { x: 10, y: 20, w: 30, h: 40 },
-      bodies: [{ type: 'text', value: 'Edited' }],
     });
+    // The comment changed and the tag did not. Replacing the whole body list on
+    // a text edit is what used to lose it.
+    expect(stored[0].tags).toEqual(['bookplate']);
+    expect(stored[0].bodies?.map((body) => body.value)).toEqual(['Edited', 'bookplate']);
   });
 
   it('edits the copy on subsequent edits rather than stacking another', async () => {

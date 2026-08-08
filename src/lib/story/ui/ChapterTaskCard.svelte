@@ -26,7 +26,7 @@
   };
 
   $: disabled = availability.state !== 'available';
-  $: statusLabel = $t(`storyBuilder.tasks.status.${status.completion}`);
+  $: statusLabel = $t(status.labelKey ?? `storyBuilder.tasks.status.${status.completion}`);
   $: StatusIcon = statusIcons[status.completion];
   $: translationLabel =
     status.languageTotal !== undefined

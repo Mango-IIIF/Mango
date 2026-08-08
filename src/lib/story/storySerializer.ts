@@ -2,11 +2,13 @@ import { validateStory } from './validation';
 import type { ChapterDrawingAnnotation, StoryState } from '../core/types/story';
 import type { CapturePayload } from '../core/state/story.svelte';
 import {
-  W3CParser,
-  type NormalizedShape,
+  createSelectors,
+  serializeWebAnnotation,
+  type NeutralShape,
   type RectGeometry,
   type TemporalFragment,
 } from '@mango-iiif/w3c-parser';
+import { createMangoAnnotation } from '../features/annotations/canonical';
 import {
   createMangoViewerStateBody,
   IIIF_PRESENTATION_3_CONTEXT,
@@ -90,25 +92,16 @@ export type SaveState =
 
 const normaliseStoryFragment = (value: string): string => value.replace('xywh=pixel:', 'xywh=');
 
-const serializeFragment = (
-  id: string,
-  canvasId: string,
-  rect?: RectGeometry,
-  temporal?: TemporalFragment,
-): string => {
-  const annotation = W3CParser.serialize({
-    id,
-    canvasId,
-    text: '',
-    shape: rect ? { type: 'rect', geometry: rect } : { type: 'none' },
-    temporal,
-  });
-  if (typeof annotation.target === 'string') return '';
-  const selectors = Array.isArray(annotation.target.selector)
-    ? annotation.target.selector
-    : annotation.target.selector
-      ? [annotation.target.selector]
-      : [];
+/**
+ * The media fragment for a framing, written by the parser's selector codecs.
+ *
+ * Built from the selectors directly rather than from a whole annotation: a
+ * story framing is not an annotation, and constructing one to read a string
+ * back off it was how this ended up depending on the serializer's target shape.
+ */
+const serializeFragment = (rect?: RectGeometry, temporal?: TemporalFragment): string => {
+  const shape: NeutralShape = rect ? { type: 'rect', geometry: rect } : { type: 'none' };
+  const selectors = createSelectors(shape, temporal, '$.target.selector');
   return normaliseStoryFragment(
     selectors
       .map((selector) => selector.value)
@@ -138,7 +131,7 @@ const normaliseStoryTarget = (target: unknown): StoryTarget | string => {
 
 const drawingAnnotationShape = (
   annotation: ChapterDrawingAnnotation,
-): NormalizedShape | null => {
+): NeutralShape | null => {
   if (annotation.rect) return { type: 'rect', geometry: annotation.rect };
   if (annotation.point) return { type: 'point', geometry: annotation.point };
   if (!annotation.points?.length) return null;
@@ -158,6 +151,40 @@ const drawingAnnotationShape = (
     return { type: 'polygon', geometry: { points: annotation.points } };
   }
   return null;
+};
+
+/**
+ * Standards-shaped body and target for one story overlay.
+ *
+ * Story overlays go through the same builders as ordinary annotations so that a
+ * drawing exported from a story and the same drawing exported from the editor
+ * are byte-identical in their target. They were not, and a story drawing that
+ * round-tripped through another viewer came back in a different place.
+ */
+const serializeOverlay = (input: {
+  id: string;
+  canvasId: string;
+  shape: NeutralShape;
+  text?: string;
+  motivation: string;
+  bodyPurpose?: string;
+  language?: string;
+}): { body?: Record<string, unknown>; target: unknown } => {
+  const document = createMangoAnnotation({
+    id: input.id,
+    canvasId: input.canvasId,
+    shape: input.shape,
+    text: input.text,
+    motivation: input.motivation,
+    bodyPurpose: input.bodyPurpose,
+    language: input.language,
+  });
+  const { json } = serializeWebAnnotation(document, { profile: 'iiif-presentation-3' });
+  const body = Array.isArray(json.body) ? json.body[0] : json.body;
+  return {
+    body: body && typeof body === 'object' ? (body as Record<string, unknown>) : undefined,
+    target: json.target,
+  };
 };
 
 export const serializeStoryToIiif = (
@@ -204,12 +231,7 @@ export const serializeStoryToIiif = (
       const vy = Math.round(Math.max(0, chapter.viewBox.y));
       const vw = Math.round(chapter.viewBox.w);
       const vh = Math.round(chapter.viewBox.h);
-      viewBoxValue = serializeFragment(annotationId, canvasId, {
-        x: vx,
-        y: vy,
-        w: vw,
-        h: vh,
-      });
+      viewBoxValue = serializeFragment({ x: vx, y: vy, w: vw, h: vh });
     }
 
     let sourceUrl = canvasId;
@@ -294,14 +316,14 @@ export const serializeStoryToIiif = (
             Number.isFinite(resolvedPlacement.h) && resolvedPlacement.h > 0
               ? Math.max(1, Math.round(resolvedPlacement.h))
               : 1;
-          const serializedText = W3CParser.serialize({
+          const serializedText = serializeOverlay({
             id: `${annotationId}-${lang}`,
             canvasId,
             text: annotation.text,
-            shape: {
-              type: 'rect',
-              geometry: { x: px, y: py, w: pw, h: ph },
-            },
+            motivation: 'describing',
+            bodyPurpose: 'describing',
+            language: lang,
+            shape: { type: 'rect', geometry: { x: px, y: py, w: pw, h: ph } },
           });
           overlayAnnotations.push({
             id: `${annotationId}/overlay/${encodeURIComponent(lang)}`,
@@ -309,11 +331,7 @@ export const serializeStoryToIiif = (
             motivation: 'describing',
             'mango:role': 'overlay',
             'mango:chapterId': chapterId,
-            body: {
-              ...serializedText.body[0],
-              purpose: 'describing',
-              language: lang,
-            },
+            body: serializedText.body,
             target:
               relativePlacement && !chapter.viewBox
                 ? {
@@ -338,19 +356,20 @@ export const serializeStoryToIiif = (
       const shape = drawingAnnotationShape(drawing);
       if (!shape) continue;
       const drawingId = `${annotationId}/overlay/drawing/${encodeURIComponent(drawing.id)}`;
-      const serializedDrawing = W3CParser.serialize({
+      const hasText = Boolean(drawing.text?.trim());
+      const serializedDrawing = serializeOverlay({
         id: drawingId,
         canvasId,
-        text: drawing.text?.trim() ?? '',
+        text: drawing.text?.trim(),
+        motivation: hasText ? 'commenting' : 'highlighting',
+        bodyPurpose: 'commenting',
         shape,
       });
-      const textBody = drawing.text?.trim()
-        ? { ...serializedDrawing.body[0], purpose: 'commenting' }
-        : undefined;
+      const textBody = serializedDrawing.body;
       overlayAnnotations.push({
         id: drawingId,
         type: 'Annotation',
-        motivation: textBody ? 'commenting' : 'highlighting',
+        motivation: hasText ? 'commenting' : 'highlighting',
         'mango:role': 'overlay',
         'mango:chapterId': chapterId,
         ...(textBody ? { body: textBody } : {}),

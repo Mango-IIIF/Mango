@@ -1,10 +1,8 @@
-import { W3CParser } from '@mango-iiif/w3c-parser';
-import type {
-  IIIFIdentifiable,
-  IIIFSelector,
-  IIIFTarget,
-  IIIFAnnotation,
-} from '../core/types/iiif';
+import type { CanonicalAnnotation, Diagnostic } from '@mango-iiif/w3c-parser';
+import type { IIIFIdentifiable } from '../core/types/iiif';
+import { resolveAnnotationJson } from '../features/annotations/canonical';
+import type { AnnotationEditability, AnnotationProvenance } from '../features/annotations/model';
+import type { PresentationHints } from '../features/annotations/style';
 
 export type AnnotationRect = {
   x: number;
@@ -63,6 +61,15 @@ export type AnnotationBody = {
   style?: string;
 };
 
+/**
+ * Mango's rendering and search view of an annotation.
+ *
+ * A projection, not a document. `document` is the canonical annotation this was
+ * read from and every edit is applied there; the fields below are what the
+ * stage, the list, and the inspector need in order to draw and describe it. An
+ * annotation with no `document` came from somewhere that has not adopted the
+ * canonical model yet, and cannot be exported losslessly.
+ */
 export type ResolvedAnnotation = {
   id: string;
   shapeType?: 'rect' | 'point' | 'polygon' | 'freehand' | 'line';
@@ -72,13 +79,27 @@ export type ResolvedAnnotation = {
   polygon?: AnnotationPolygon;
   text?: string;
   label?: string;
+  /** Private note. Mango application data, never a body. See `profile.ts`. */
   notes?: string;
   tags?: string[];
   bodies?: AnnotationBody[];
   motivation?: string[];
+  /** External stylesheet IRIs referenced by the annotation. Never fetched. */
   stylesheets?: string[];
   targetStyleClass?: string;
+  /** Legacy Mango inline `target.style`. Read for migration; never written. */
   targetStyle?: string;
+  /** Presentation hints resolved from the stylesheet or a legacy inline style. */
+  styleHints?: PresentationHints;
+  /** The canonical document this projects. The authority for every edit. */
+  document?: CanonicalAnnotation;
+  /** Canonical path of the target that produced this projection's geometry. */
+  targetPath?: string;
+  /** Canonical path of the selector that produced the geometry, when one did. */
+  selectorPath?: string;
+  provenance?: AnnotationProvenance;
+  editability?: AnnotationEditability;
+  diagnostics?: Diagnostic[];
 };
 
 /**
@@ -92,403 +113,6 @@ const readId = (value: unknown): string => {
     if ('@id' in value && typeof value['@id'] === 'string') return value['@id'];
   }
   return '';
-};
-
-const normaliseArray = <T>(value: T | T[] | undefined | null): T[] => {
-  if (!value) return [];
-  return Array.isArray(value) ? value : [value];
-};
-
-const stripHtml = (value: string): string =>
-  value
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-const parseXYWH = (value: string): AnnotationRect | null => {
-  const match = value.match(/xywh=([^&]+)/);
-  if (!match) return null;
-  const coords = match[1].replace(/^pixel:/, '');
-  const parts = coords.split(',').map((part) => Number(part));
-  if (parts.length !== 4 || parts.some((part) => Number.isNaN(part))) {
-    return null;
-  }
-  return {
-    x: parts[0],
-    y: parts[1],
-    w: parts[2],
-    h: parts[3],
-  };
-};
-
-/**
- * Extracts the string value from an IIIF selector
- */
-const extractSelectorValue = (selector: IIIFSelector | null | undefined): string | undefined => {
-  if (!selector) return undefined;
-  if (typeof selector === 'string') return selector;
-  if (typeof selector === 'object') {
-    if (typeof selector.value === 'string') return selector.value;
-    if (typeof selector.fragment === 'string') return selector.fragment;
-  }
-  return undefined;
-};
-
-/**
- * Extracts the target canvas ID from an IIIF annotation target
- */
-const extractTargetId = (target: IIIFTarget | null | undefined): string | undefined => {
-  if (!target) return undefined;
-  if (typeof target === 'string') {
-    return target.split('#')[0]?.split('?')[0] ?? target;
-  }
-  if (Array.isArray(target)) {
-    for (const entry of target) {
-      const id = extractTargetId(entry);
-      if (id) return id;
-    }
-    return undefined;
-  }
-  if (typeof target === 'object') {
-    const targetObj = target as { source?: unknown };
-    if ('source' in targetObj) return readId(targetObj.source) || undefined;
-    return readId(target) || undefined;
-  }
-  return undefined;
-};
-
-/**
- * Extracts stylesheet URLs from an IIIF annotation
- */
-const extractStylesheets = (annotation: IIIFAnnotation | null | undefined): string[] => {
-  const entries = normaliseArray(annotation?.stylesheet);
-  const styles = entries
-    .map((entry) => {
-      if (typeof entry === 'string') return entry;
-      if (typeof entry === 'object' && entry !== null) {
-        return readId(entry as IIIFIdentifiable);
-      }
-      return '';
-    })
-    .filter(Boolean);
-  return styles;
-};
-
-const parseTime = (value: string): AnnotationTime | null => {
-  const match = value.match(/(?:\\?|#)t=([0-9.]+)(?:,([0-9.]+))?/);
-  if (!match) return null;
-  const start = Number(match[1]);
-  const end = match[2] ? Number(match[2]) : undefined;
-  if (Number.isNaN(start) || (end != null && Number.isNaN(end))) return null;
-  return { start, end };
-};
-
-const parseSvgPointsFromPath = (value: string): AnnotationPoint[] => {
-  const tokens = value.match(/[a-zA-Z]|-?\d*\.?\d+(?:e[-+]?\d+)?/g);
-  if (!tokens) return [];
-  const points: AnnotationPoint[] = [];
-  let command = '';
-  let index = 0;
-  let lastPoint: AnnotationPoint | null = null;
-
-  while (index < tokens.length) {
-    const token = tokens[index];
-    if (!token) break;
-    if (/[a-zA-Z]/.test(token)) {
-      command = token;
-      index += 1;
-      continue;
-    }
-
-    const x = Number(tokens[index]);
-    const y = Number(tokens[index + 1]);
-    if (Number.isNaN(x) || Number.isNaN(y)) {
-      index += 1;
-      continue;
-    }
-
-    const isRelative = command === 'm' || command === 'l';
-    const nextPoint: AnnotationPoint = {
-      x: (isRelative && lastPoint ? lastPoint.x : 0) + x,
-      y: (isRelative && lastPoint ? lastPoint.y : 0) + y,
-    };
-
-    if (command === 'M' || command === 'L' || command === 'm' || command === 'l') {
-      points.push(nextPoint);
-      lastPoint = nextPoint;
-    }
-
-    if (command === 'M') command = 'L';
-    if (command === 'm') command = 'l';
-    index += 2;
-  }
-
-  if (points.length > 0) return points;
-
-  const allNumbers = value.match(/-?\d*\.?\d+(?:e[-+]?\d+)?/g);
-  if (!allNumbers) return [];
-  const fallback: AnnotationPoint[] = [];
-  for (let i = 0; i < allNumbers.length - 1; i += 2) {
-    const x = Number(allNumbers[i]);
-    const y = Number(allNumbers[i + 1]);
-    if (Number.isNaN(x) || Number.isNaN(y)) continue;
-    fallback.push({ x, y });
-  }
-  return fallback;
-};
-
-const parseSvgSelector = (svg: string): AnnotationPolygon | null => {
-  const pointsMatch = svg.match(/points=['"]([^'"]+)['"]/i);
-  if (pointsMatch) {
-    const points = pointsMatch[1]
-      .trim()
-      .split(/\s+/)
-      .flatMap((pair) => pair.split(','))
-      .map((value) => Number(value))
-      .reduce<AnnotationPoint[]>((acc, value, idx, arr) => {
-        if (idx % 2 === 0 && idx + 1 < arr.length) {
-          const x = value;
-          const y = arr[idx + 1];
-          if (!Number.isNaN(x) && !Number.isNaN(y)) {
-            acc.push({ x, y });
-          }
-        }
-        return acc;
-      }, []);
-    return points.length > 0 ? { points, svg } : null;
-  }
-
-  const pathMatch = svg.match(/d=['"]([^'"]+)['"]/i);
-  if (pathMatch) {
-    const points = parseSvgPointsFromPath(pathMatch[1]);
-    return points.length > 0 ? { points, svg } : null;
-  }
-
-  return null;
-};
-
-/**
- * Normalizes IIIF annotation motivation values
- */
-const normaliseMotivation = (annotation: IIIFAnnotation | null | undefined): string[] => {
-  const motivations = normaliseArray(annotation?.motivation);
-  return motivations
-    .map((value) => (typeof value === 'string' ? value : readId(value as IIIFIdentifiable)))
-    .filter(Boolean);
-};
-
-/**
- * Normalizes IIIF annotation body data to a consistent format
- */
-const normaliseBody = (body: unknown): AnnotationBody[] => {
-  if (!body) return [];
-  if (typeof body === 'string') {
-    return [{ type: 'unknown', value: body }];
-  }
-
-  if (typeof body !== 'object') return [];
-  const bodyObj = body as Record<string, unknown>;
-
-  if (bodyObj.type === 'SpecificResource' && bodyObj.source) {
-    const sourceBodies = normaliseBody(bodyObj.source);
-    if (!bodyObj.styleClass && !bodyObj.style) return sourceBodies;
-    return sourceBodies.map((entry) => ({
-      ...entry,
-      styleClass: typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : entry.styleClass,
-      style: typeof bodyObj.style === 'string' ? bodyObj.style : entry.style,
-    }));
-  }
-
-  const format = typeof bodyObj.format === 'string' ? bodyObj.format : undefined;
-  const language = typeof bodyObj.language === 'string' ? bodyObj.language : undefined;
-  const bodyType =
-    typeof bodyObj.type === 'string'
-      ? bodyObj.type
-      : typeof bodyObj['@type'] === 'string'
-        ? bodyObj['@type']
-        : undefined;
-  const rawValue =
-    typeof bodyObj.value === 'string'
-      ? bodyObj.value
-      : typeof bodyObj.chars === 'string'
-        ? bodyObj.chars
-        : typeof bodyObj['cnt:chars'] === 'string'
-          ? bodyObj['cnt:chars']
-          : undefined;
-  if (bodyType === 'TextualBody' || bodyType === 'Text' || typeof rawValue === 'string') {
-    const isHtml = format === 'text/html' || format === 'application/html';
-    return [
-      {
-        type: isHtml ? 'html' : 'text',
-        value: rawValue ?? '',
-        format,
-        language,
-        styleClass: typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : undefined,
-        style: typeof bodyObj.style === 'string' ? bodyObj.style : undefined,
-      },
-    ];
-  }
-
-  if (bodyObj.type === 'Image' || (typeof format === 'string' && format.startsWith('image/'))) {
-    const src = readId(bodyObj as IIIFIdentifiable);
-    return src
-      ? [
-          {
-            type: 'image',
-            src,
-            format,
-            styleClass: typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : undefined,
-            style: typeof bodyObj.style === 'string' ? bodyObj.style : undefined,
-          },
-        ]
-      : [];
-  }
-
-  return [
-    {
-      type: 'unknown',
-      value:
-        typeof bodyObj.value === 'string' ? bodyObj.value : readId(bodyObj as IIIFIdentifiable),
-      format,
-      language,
-      styleClass: typeof bodyObj.styleClass === 'string' ? bodyObj.styleClass : undefined,
-      style: typeof bodyObj.style === 'string' ? bodyObj.style : undefined,
-    },
-  ];
-};
-
-/**
- * Extracts bodies from an IIIF annotation
- */
-const extractBodies = (annotation: IIIFAnnotation | null | undefined): AnnotationBody[] => {
-  const bodies = normaliseArray(
-    (annotation as Record<string, unknown>)?.body ??
-      (annotation as Record<string, unknown>)?.resource ??
-      (annotation as Record<string, unknown>)?.item,
-  );
-  return bodies.flatMap((body) => normaliseBody(body));
-};
-
-/**
- * Extracts text content from an annotation
- */
-const extractText = (
-  annotation: IIIFAnnotation | null | undefined,
-  bodies: AnnotationBody[],
-): string | undefined => {
-  const textParts = bodies
-    .filter((body) => body.type === 'text' || body.type === 'html')
-    .map((body) => {
-      const value = body.value ?? '';
-      return body.type === 'html' ? stripHtml(value) : value;
-    })
-    .filter(Boolean);
-  if (textParts.length > 0) return textParts.join(' ');
-
-  const annotationObj = annotation as Record<string, unknown>;
-  const label = annotationObj?.label ?? annotationObj?.summary;
-  if (typeof label === 'string') return label;
-  if (Array.isArray(label)) return label.filter(Boolean).join(' ');
-  if (label && typeof label === 'object') {
-    const first = Object.values(label)[0];
-    if (typeof first === 'string') return first;
-    if (Array.isArray(first)) return first.filter(Boolean).join(' ');
-  }
-
-  return undefined;
-};
-
-/**
- * Extracts geometric and temporal data from an IIIF annotation target
- */
-const extractTargetData = (
-  target: IIIFTarget | null | undefined,
-): {
-  rect: AnnotationRect | null;
-  time: AnnotationTime | null;
-  point: AnnotationPoint | null;
-  polygon: AnnotationPolygon | null;
-  targetId?: string;
-  targetStyleClass?: string;
-  targetStyle?: string;
-} => {
-  let rect: AnnotationRect | null = null;
-  let time: AnnotationTime | null = null;
-  let point: AnnotationPoint | null = null;
-  let polygon: AnnotationPolygon | null = null;
-  let targetId = extractTargetId(target);
-  let targetStyleClass: string | undefined;
-  let targetStyle: string | undefined;
-
-  const applyTarget = (entry: unknown) => {
-    if (!entry || typeof entry !== 'object') return;
-    const entryObj = entry as Record<string, unknown>;
-    if (entryObj.styleClass && typeof entryObj.styleClass === 'string') {
-      targetStyleClass = entryObj.styleClass;
-    }
-    if (entryObj.style && typeof entryObj.style === 'string') {
-      targetStyle = entryObj.style;
-    }
-    targetId = targetId || extractTargetId(entry as IIIFTarget);
-  };
-
-  const applySelectorValue = (value: string | undefined) => {
-    if (!value) return;
-    rect = rect ?? parseXYWH(value);
-    time = time ?? parseTime(value);
-  };
-
-  const inspectSelectors = (selectors: unknown[]) => {
-    for (const entry of selectors) {
-      if (!entry || typeof entry !== 'object') continue;
-      const selector = entry as Record<string, unknown>;
-      if (selector.type === 'PointSelector') {
-        const x = Number(selector.x);
-        const y = Number(selector.y);
-        if (!Number.isNaN(x) && !Number.isNaN(y)) {
-          point = point ?? { x, y };
-        }
-      }
-      if (selector.type === 'SvgSelector' && typeof selector.value === 'string') {
-        polygon = polygon ?? parseSvgSelector(selector.value);
-      }
-      applySelectorValue(extractSelectorValue(selector as IIIFSelector));
-    }
-  };
-
-  if (typeof target === 'string') {
-    applySelectorValue(target);
-    return { rect, time, point, polygon, targetId, targetStyleClass, targetStyle };
-  }
-
-  if (Array.isArray(target)) {
-    for (const entry of target) {
-      const result = extractTargetData(entry);
-      rect = rect ?? result.rect;
-      time = time ?? result.time;
-      point = point ?? result.point;
-      polygon = polygon ?? result.polygon;
-      targetId = targetId || result.targetId;
-      targetStyleClass = targetStyleClass || result.targetStyleClass;
-      targetStyle = targetStyle || result.targetStyle;
-    }
-    return { rect, time, point, polygon, targetId, targetStyleClass, targetStyle };
-  }
-
-  if (typeof target === 'object' && target !== null) {
-    applyTarget(target);
-
-    const targetObj = target as Record<string, unknown>;
-    const selector = targetObj?.selector ?? targetObj?.selectors;
-    const selectorItems = Array.isArray(selector) ? selector : selector ? [selector] : [];
-    inspectSelectors(selectorItems);
-
-    if (targetObj?.fragment) {
-      applySelectorValue(targetObj.fragment as string);
-    }
-  }
-
-  return { rect, time, point, polygon, targetId, targetStyleClass, targetStyle };
 };
 
 /**
@@ -508,108 +132,60 @@ const collectAnnotationItems = (page: unknown): unknown[] => {
 };
 
 /**
- * Resolves a single IIIF annotation to our internal format
+ * Whether an annotation paints the Canvas rather than commenting on it.
+ *
+ * Presentation 2 used `sc:painting` for transcriptions as well as for the
+ * image, so the motivation alone does not settle it — an image body does. A
+ * painting annotation with an image body is the Canvas content, already handled
+ * by the media resolver, and showing it in the annotation list would offer the
+ * user the photograph as something to annotate.
+ */
+const isCanvasContent = (
+  motivations: readonly string[],
+  bodies: readonly AnnotationBody[],
+): boolean =>
+  motivations.some(
+    (value) => value === 'painting' || value.endsWith(':painting') || value.endsWith('/painting'),
+  ) && bodies.some((body) => body.type === 'image');
+
+/**
+ * Resolves a single IIIF annotation through the canonical parser.
+ *
+ * Mango no longer reads selectors, SVG, fragments, or bodies itself. What
+ * remains here is what the parser has no view on: which Canvas the viewer is
+ * showing, and whether an annotation is Canvas content rather than commentary.
  */
 const resolveAnnotation = (
   annotation: unknown,
   canvasId: string | undefined,
   fallback: { value: number },
+  provenance: AnnotationProvenance,
 ): ResolvedAnnotation | null => {
   if (!annotation || typeof annotation !== 'object') return null;
 
-  const annotationObj = annotation as Record<string, unknown>;
-  const target = annotationObj?.target ?? annotationObj?.on;
-  const targetData = extractTargetData(target as IIIFTarget);
-  let { rect, time, point, polygon, targetId, targetStyleClass } = targetData;
-  const { targetStyle } = targetData;
-  let shapeType: ResolvedAnnotation['shapeType'];
+  const { annotation: resolved } = resolveAnnotationJson(annotation, { provenance, canvasId });
+  if (!resolved) return null;
 
-  // Presentation v3 annotations use the package parser as the canonical geometry decoder.
-  // The legacy resolver remains below for v2 resources and non-W3C target forms.
-  if (annotationObj.type === 'Annotation' && target && typeof target === 'object') {
-    try {
-      const parsed = W3CParser.parseAnnotation(annotationObj);
-      targetId = parsed.canvasId || targetId;
-      time = parsed.temporal ? { start: parsed.temporal.start, end: parsed.temporal.end } : time;
-      // Record which shape the parser decoded, not just its points. Without
-      // this the open/closed distinction is lost here and every renderer has to
-      // guess it back from the SVG string, which only legacy v2 targets carry.
-      if (parsed.shape.type === 'rect') {
-        rect = parsed.shape.geometry;
-        shapeType = 'rect';
-      }
-      if (parsed.shape.type === 'point') {
-        point = parsed.shape.geometry;
-        shapeType = 'point';
-      }
-      if (parsed.shape.type === 'polygon' || parsed.shape.type === 'freehand') {
-        polygon = { points: parsed.shape.geometry.points };
-        shapeType = parsed.shape.type;
-      }
-      if (parsed.shape.type === 'line') {
-        polygon = { points: [parsed.shape.geometry.start, parsed.shape.geometry.end] };
-        shapeType = 'line';
-      }
-      targetStyleClass = parsed.layer || targetStyleClass;
-    } catch {
-      // Older IIIF annotations are intentionally handled by the compatibility path below.
-    }
-  }
-  const motivations = normaliseMotivation(annotationObj as IIIFAnnotation);
+  if (isCanvasContent(resolved.motivation ?? [], resolved.bodies ?? [])) return null;
 
-  // Extract bodies first to check if it's an image or text annotation
-  const bodies = extractBodies(annotationObj as IIIFAnnotation);
-
-  // Filter out painting motivation ONLY if body is an image
-  // (IIIF v2 uses sc:painting for both canvas images AND text transcriptions)
-  if (
-    motivations.some((m) => m === 'painting' || m.endsWith(':painting') || m.endsWith('/painting'))
-  ) {
-    const hasImageBody = bodies.some((b) => b.type === 'image');
-    if (hasImageBody) {
-      return null;
-    }
-  }
-  const text = extractText(annotationObj as IIIFAnnotation, bodies);
-  const stylesheets = extractStylesheets(annotationObj as IIIFAnnotation);
-
+  // An annotation whose only target is another Canvas is not on this one. The
+  // projection already prefers a target matching `canvasId`, so reaching here
+  // with a different source means none of its targets matched.
   if (canvasId) {
-    if (targetId && targetId !== canvasId) {
-      return null;
-    }
-    if (!rect && !time && !point && !polygon && targetId !== canvasId) {
-      return null;
-    }
+    const targetSource = resolved.document?.targets.find(
+      (target) => target.path === resolved.targetPath,
+    );
+    const sourceId = targetSource?.source?.id ?? targetSource?.id;
+    const bare = sourceId?.split('#')[0]?.split('?')[0];
+    const hasGeometry = Boolean(
+      resolved.rect || resolved.point || resolved.polygon || resolved.time,
+    );
+    if (bare && bare !== canvasId && (hasGeometry || sourceId !== canvasId)) return null;
   }
 
-  // A v2 target that only carried an SvgSelector never reached the parser, so
-  // read the shape off the selector itself rather than leaving it unknown.
-  if (!shapeType) {
-    if (rect) shapeType = 'rect';
-    else if (point) shapeType = 'point';
-    else if (polygon) {
-      shapeType = svgDescribesOpenPath(polygon.svg)
-        ? polygon.svg?.includes('<line')
-          ? 'line'
-          : 'freehand'
-        : 'polygon';
-    }
-  }
-
-  const id = readId(annotationObj as IIIFIdentifiable) || `anno-${fallback.value++}`;
   return {
-    id,
-    shapeType,
-    rect: rect ?? undefined,
-    time: time ?? undefined,
-    point: point ?? undefined,
-    polygon: polygon ?? undefined,
-    text,
-    bodies,
-    motivation: motivations.length > 0 ? motivations : undefined,
-    stylesheets: stylesheets.length > 0 ? stylesheets : undefined,
-    targetStyleClass,
-    targetStyle,
+    ...resolved,
+    id: resolved.id || `anno-${fallback.value++}`,
   };
 };
 
@@ -684,7 +260,7 @@ export const getCanvasAnnotations = (
         typeof pageObj.getItems === 'function' ? pageObj.getItems() : pageObj.items || [];
 
       for (const annotation of items) {
-        const resolved = resolveAnnotation(annotation, resolvedCanvasId, fallback);
+        const resolved = resolveAnnotation(annotation, resolvedCanvasId, fallback, 'manifest');
         if (resolved) results.push(resolved);
       }
     }
@@ -700,7 +276,7 @@ export const getCanvasAnnotations = (
         // Each annotation list can have 'resources' (v2) or 'items'
         const annotations = collectAnnotationItems(annotationList);
         for (const annotation of annotations) {
-          const resolved = resolveAnnotation(annotation, resolvedCanvasId, fallback);
+          const resolved = resolveAnnotation(annotation, resolvedCanvasId, fallback, 'manifest');
           if (resolved) results.push(resolved);
         }
       }
@@ -720,12 +296,13 @@ export const getCanvasAnnotations = (
 export const getAnnotationPageAnnotations = (
   pageJson: unknown,
   canvasId?: string,
+  provenance: AnnotationProvenance = 'external',
 ): ResolvedAnnotation[] => {
   const results: ResolvedAnnotation[] = [];
   const fallback = { value: 0 };
   const items = collectAnnotationItems(pageJson);
   for (const annotation of items) {
-    const resolved = resolveAnnotation(annotation, canvasId, fallback);
+    const resolved = resolveAnnotation(annotation, canvasId, fallback, provenance);
     if (resolved) results.push(resolved);
   }
   return results;
