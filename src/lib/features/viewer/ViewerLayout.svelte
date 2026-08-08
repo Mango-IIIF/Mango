@@ -63,6 +63,7 @@
     type StoryWithDefaults,
   } from '../../story/viewer/storyLoader';
   import { createStoryViewerRuntime } from '../../story/viewer/storyViewerController';
+  import { createStoryPlayback } from '../../story/viewer/storyPlayback.svelte';
   import { ViewportState, VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
   import { setLocale } from '../../core/i18n';
   import GridContainer from '../workspace/GridContainer.svelte';
@@ -488,33 +489,15 @@
   let storyLoadToken = 0;
   let lastStoryInput: string | Record<string, unknown> | undefined = $state(undefined);
   let lastStoryUrl: string | undefined = $state(undefined);
-  let storyCurrentChapterIndex = $state(0);
-  let storyIsLoading = $state(false);
-  let storyPlayState: 'idle' | 'playing' | 'paused' = $state('idle');
   let viewerRoot: HTMLDivElement | null = $state(null);
   let isViewerFullscreen = $state(false);
   let isViewerFullscreenFallback = $state(false);
   let storyChapterThumbnails: Array<string | null> = $state([]);
   const storyThumbnailCache = new Map<string, string>();
-  let storyChapterDurationSec = $state(0);
-  let storyChapterElapsedSec = $state(0);
-  let storyStageOpacity = $state(1);
-  let storyStageFadeMs = $state(0);
-  let chapterTitle = $derived.by(() => {
-    const activeChapter = storyData?.chapters?.[storyCurrentChapterIndex];
-    const resolvedTitle = resolveLanguageValue(activeChapter?.title, storyLanguage);
-    return resolvedTitle || (storyChapters > 0 ? `Chapter ${storyCurrentChapterIndex + 1}` : '');
-  });
   let storyTitle = $derived.by(() => {
     const resolvedTitle = resolveLanguageValue(storyData?.title, storyLanguage);
     return resolvedTitle || 'Untitled story';
   });
-  let chapterDescription = $derived(
-    resolveLanguageValue(
-      storyData?.chapters?.[storyCurrentChapterIndex]?.description,
-      storyLanguage,
-    ),
-  );
   const storyViewBoxStore = writable<ViewBox | null>(null);
   const EMPTY_STORY: StoryWithDefaults = Object.freeze({
     chapters: Object.freeze([]),
@@ -628,65 +611,31 @@
       language: resolvePreferredStoryLanguage(),
     },
   );
-  const unsubscribeStoryIndex = storyRuntime.currentChapterIndex.subscribe((value) => {
-    storyCurrentChapterIndex = value ?? 0;
+  const storyPlayback = createStoryPlayback({
+    runtime: storyRuntime,
+    guards: {
+      canControl: () => !storyControlsDisabled,
+      canNavigate: () => !storyControlsDisabled && !storyLoading,
+      chapterCount: () => storyChapters,
+    },
+    // The story builder drives the same stage through the event bus, since its
+    // controller lives in a plugin rather than in this layout.
+    onExternalStageFade: (handler) => controller.on('stageFade', handler),
   });
-  const unsubscribeStoryLoading = storyRuntime.isLoading.subscribe((value) => {
-    storyIsLoading = value;
-    if (value) {
-      storyChapterElapsedSec = 0;
-      storyChapterDurationSec = 0;
-    }
+  let chapterTitle = $derived.by(() => {
+    const activeChapter = storyData?.chapters?.[storyPlayback.currentChapterIndex];
+    const resolvedTitle = resolveLanguageValue(activeChapter?.title, storyLanguage);
+    return (
+      resolvedTitle ||
+      (storyChapters > 0 ? `Chapter ${storyPlayback.currentChapterIndex + 1}` : '')
+    );
   });
-  const unsubscribeStoryPlayState = storyRuntime.playState.subscribe((value) => {
-    storyPlayState = value;
-  });
-  const unsubscribeStoryPlaybackState = storyRuntime.playbackState.subscribe((value) => {
-    storyChapterDurationSec = value?.duration ?? 0;
-    storyChapterElapsedSec = value?.currentTime ?? 0;
-  });
-  const unsubscribeStoryStageFade = storyRuntime.stageFade.subscribe((value) => {
-    storyStageOpacity = value?.opacity ?? 1;
-    storyStageFadeMs = value?.durationMs ?? 0;
-  });
-  // The story builder drives the same stage through the event bus, since its
-  // controller lives in a plugin rather than in this layout.
-  const offStageFade = controller.on('stageFade', ({ opacity, durationMs }) => {
-    storyStageOpacity = opacity;
-    storyStageFadeMs = durationMs;
-  });
-  const handleStoryPlay = () => {
-    if (storyControlsDisabled) return;
-    storyRuntime.play();
-  };
-  const handleStoryPause = () => {
-    if (storyControlsDisabled) return;
-    storyRuntime.pause();
-  };
-  const handleStoryStop = () => {
-    if (storyControlsDisabled) return;
-    storyRuntime.stop();
-  };
-  const handleStorySelectChapter = (index: number, autoPlay = true) => {
-    if (storyControlsDisabled || storyLoading) return;
-    const chapterTotal = storyChapters;
-    if (!chapterTotal) return;
-    const target = Math.max(0, Math.min(index, chapterTotal - 1));
-    storyCurrentChapterIndex = target;
-    void storyRuntime.loadChapter(target, { autoPlay });
-  };
-  const handleStoryPreviousChapter = () => {
-    handleStorySelectChapter(storyCurrentChapterIndex - 1, true);
-  };
-  const handleStoryNextChapter = () => {
-    handleStorySelectChapter(storyCurrentChapterIndex + 1, true);
-  };
-  const handleStoryRefresh = () => {
-    if (storyControlsDisabled || storyLoading) return;
-    void storyRuntime.loadChapter(storyCurrentChapterIndex, {
-      autoPlay: false,
-    });
-  };
+  let chapterDescription = $derived(
+    resolveLanguageValue(
+      storyData?.chapters?.[storyPlayback.currentChapterIndex]?.description,
+      storyLanguage,
+    ),
+  );
   const fullscreenController = createViewerFullscreenController({
     getRoot: () => viewerRoot,
     getShadowHost,
@@ -1797,12 +1746,7 @@
   };
 
   onDestroy(() => controller.destroy());
-  onDestroy(unsubscribeStoryIndex);
-  onDestroy(unsubscribeStoryLoading);
-  onDestroy(unsubscribeStoryPlayState);
-  onDestroy(unsubscribeStoryPlaybackState);
-  onDestroy(unsubscribeStoryStageFade);
-  onDestroy(offStageFade);
+  onDestroy(() => storyPlayback.destroy());
   $effect.pre(() => {
     normalisedConfig = normaliseConfigForMode(config);
   });
@@ -1918,8 +1862,7 @@
   });
   $effect(() => {
     if (!isStoryViewer) {
-      storyChapterDurationSec = 0;
-      storyChapterElapsedSec = 0;
+      storyPlayback.resetProgress();
     }
   });
   let leftVisibleEffective = $derived(
@@ -1965,7 +1908,7 @@
   $effect(() => {
     storyDataStore.set(storyData ?? EMPTY_STORY);
   });
-  let storyCurrentChapterId = $derived(storyData?.chapters[storyCurrentChapterIndex]?.id ?? null);
+  let storyCurrentChapterId = $derived(storyData?.chapters[storyPlayback.currentChapterIndex]?.id ?? null);
   setViewerContext({
     state: viewerState,
     derived: viewerDerived,
@@ -2183,29 +2126,29 @@
       <main class="stage stage--story" aria-label={$t('viewer.stage.label')}>
         {#if StoryControlsStageComponent && StoryAnnotationOverlayComponent}
           <StoryControlsStageComponent
-            currentChapterIndex={storyCurrentChapterIndex}
+            currentChapterIndex={storyPlayback.currentChapterIndex}
             totalChapters={storyChapters}
             chapterThumbnails={storyChapterThumbnails}
-            chapterDurationSec={storyChapterDurationSec}
-            chapterElapsedSec={storyChapterElapsedSec}
-            stageOpacity={storyStageOpacity}
-            stageFadeMs={storyStageFadeMs}
+            chapterDurationSec={storyPlayback.chapterDurationSec}
+            chapterElapsedSec={storyPlayback.chapterElapsedSec}
+            stageOpacity={storyPlayback.stageOpacity}
+            stageFadeMs={storyPlayback.stageFadeMs}
             {chapterTitle}
             {chapterDescription}
             disabled={storyControlsDisabled || storyLoading}
-            loading={storyIsLoading}
+            loading={storyPlayback.isLoading}
             error={storyError}
-            playState={storyPlayState}
-            onselectChapter={(detail) => handleStorySelectChapter(detail.index, true)}
-            onplay={handleStoryPlay}
-            onpause={handleStoryPause}
-            onstop={handleStoryStop}
+            playState={storyPlayback.playState}
+            onselectChapter={(detail) => storyPlayback.selectChapter(detail.index, true)}
+            onplay={storyPlayback.play}
+            onpause={storyPlayback.pause}
+            onstop={storyPlayback.stop}
             onzoomIn={handleZoomIn}
             onzoomOut={handleZoomOut}
             onfit={handleHome}
-            onrefresh={handleStoryRefresh}
-            onpreviousChapter={handleStoryPreviousChapter}
-            onnextChapter={handleStoryNextChapter}
+            onrefresh={storyPlayback.refresh}
+            onpreviousChapter={storyPlayback.previousChapter}
+            onnextChapter={storyPlayback.nextChapter}
           >
             {#snippet stage()}
               <div class="stage__story-slot">
@@ -2467,7 +2410,7 @@
               viewerControlsVisible}
             class="stage__primary"
             style={isStoryBuilder
-              ? `opacity: ${storyStageOpacity}; transition: opacity ${storyStageFadeMs}ms ease-in-out;`
+              ? `opacity: ${storyPlayback.stageOpacity}; transition: opacity ${storyPlayback.stageFadeMs}ms ease-in-out;`
               : undefined}
             use:trackViewerControlsActivity
           >
