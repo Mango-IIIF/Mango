@@ -195,6 +195,13 @@ export type LayerAppearance = {
   color: string;
 };
 
+export type AnnotationAppearance = {
+  className: string;
+  strokeColor: string;
+  fillColor: string;
+  strokeWidth?: number;
+};
+
 export const LAYER_FILL_OPACITY = 0.18;
 
 /**
@@ -224,9 +231,39 @@ export const rgbaFromHex = (color: string, alpha: number): string => {
   return channels ? `rgba(${channels[0]}, ${channels[1]}, ${channels[2]}, ${alpha})` : value;
 };
 
+/**
+ * Restricts application-authored colours before interpolating them into CSS.
+ * Story documents and host-provided layer definitions are input, not trusted
+ * code; accepting a semicolon here would let data escape its declaration even
+ * though imported stylesheets themselves are parsed safely.
+ */
+export const safeAnnotationColor = (color: string, fallback = '#e07a3f'): string => {
+  const value = color.trim();
+  const safeFunctional = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0(?:\.\d+)?|1(?:\.0+)?))?\s*\)$/i;
+  return /^#[0-9a-f]{3,8}$/i.test(value) || safeFunctional.test(value) ? value : fallback;
+};
+
+/** Builds one portable stylesheet rule for an authored annotation shape. */
+export const buildAnnotationStylesheet = (
+  appearance: AnnotationAppearance,
+): CanonicalStylesheet => {
+  const className = styleClassForLayer(appearance.className);
+  const strokeColor = safeAnnotationColor(appearance.strokeColor);
+  const fillColor = safeAnnotationColor(appearance.fillColor, strokeColor);
+  const strokeWidth = Number.isFinite(appearance.strokeWidth)
+    ? Math.min(20, Math.max(0.5, appearance.strokeWidth as number))
+    : undefined;
+  const declarations = [
+    `stroke: ${strokeColor}`,
+    `fill: ${fillColor}`,
+    ...(strokeWidth !== undefined ? [`stroke-width: ${strokeWidth}px`] : []),
+  ];
+  return createStylesheet(`.${className} { ${declarations.join('; ')}; }`);
+};
+
 export const cssForLayer = (layer: LayerAppearance): string =>
-  `.${styleClassForLayer(layer.id)} { stroke: ${layer.color}; fill: ${rgbaFromHex(
-    layer.color,
+  `.${styleClassForLayer(layer.id)} { stroke: ${safeAnnotationColor(layer.color)}; fill: ${rgbaFromHex(
+    safeAnnotationColor(layer.color),
     LAYER_FILL_OPACITY,
   )}; }`;
 

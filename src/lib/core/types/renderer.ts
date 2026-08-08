@@ -79,14 +79,3 @@ export type RendererCapabilities = {
   isInteractive: boolean;
 };
 
-/**
- * Default capabilities - all features disabled
- */
-export const DEFAULT_RENDERER_CAPABILITIES: RendererCapabilities = {
-  supportsZoom: false,
-  supportsFilters: false,
-  supportsPan: false,
-  supportsViewBox: false,
-  supportsRotation: false,
-  isInteractive: false,
-};

@@ -106,6 +106,3 @@ export const summariseDiagnostics = (
     (a, b) => severityRank[a.severity] - severityRank[b.severity],
   );
 };
-
-export const hasBlockingDiagnostic = (diagnostics: readonly MangoDiagnostic[]): boolean =>
-  diagnostics.some((diagnostic) => diagnostic.severity === 'error');

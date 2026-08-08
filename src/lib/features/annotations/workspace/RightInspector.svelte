@@ -13,6 +13,8 @@
   import { isForeign } from '../model';
   import type { AnnotationSaveState } from '../model';
   import { summariseDiagnostics, toMangoDiagnostics } from '../diagnostics';
+  import LanguageTabs from '../LanguageTabs.svelte';
+  import { normaliseAuthoringLanguages } from '../languages';
 
   interface Props {
     annotation?: ResolvedAnnotation | null;
@@ -25,12 +27,20 @@
     saveState?: AnnotationSaveState;
     /** Permits `painting` and the raw motivation control. */
     expertMode?: boolean;
+    /** Host-configured BCP 47 languages available for annotation authoring. */
+    languages?: string[];
     ondelete?: ((detail: { id: string }) => void) | undefined;
     onupdate?:
       | ((detail: {
           id: string;
           patch: Partial<ResolvedAnnotation>;
-          options?: { language?: string; textDirection?: string };
+          options?: {
+            language?: string;
+            bodyPurpose?: string;
+            textDirection?: string;
+            bodyPath?: string;
+            createBody?: boolean;
+          };
         }) => void)
       | undefined;
     onsave?: (() => void) | undefined;
@@ -46,24 +56,27 @@
     isDirty = false,
     saveState = { status: 'clean' },
     expertMode = false,
+    languages = ['en'],
     ondelete = undefined,
     onupdate = undefined,
     onsave = undefined,
     oncancel = undefined,
   }: Props = $props();
 
-  let currentAnnoId = $state<string | null>(null);
+  let currentAnnotationSignature = $state('');
   let localLabel = $state('');
   let localText = $state('');
   let localNotes = $state('');
   let localTags = $state<string[]>([]);
   let localTagInput = $state('');
   let localMotivation = $state(DEFAULT_MOTIVATION);
-  let localLanguage = $state('');
   let localDirection = $state('');
   let localPurpose = $state('');
   let localLayer = $state('mine');
   let showRawMotivation = $state(false);
+  let activeBodyPath = $state('');
+  let activeLanguage = $state('');
+  let lastAnnotationId = $state('');
 
   const DEFAULT_LAYER_ID = 'mine';
   const firstLayerId = () => layers[0]?.id ?? DEFAULT_LAYER_ID;
@@ -91,17 +104,41 @@
     return compact || DEFAULT_MOTIVATION;
   };
 
-  /**
-   * The display body's text direction, read from the canonical document.
-   *
-   * Not on the projection: direction only matters for the body being edited, and
-   * putting it on the projection would imply the annotation has one direction
-   * when each body has its own.
-   */
-  const bodyTextDirection = (value: ResolvedAnnotation): string | undefined =>
-    value.document?.bodies.find(
-      (body) => !body.purpose.includes('tagging') && body.textDirection,
-    )?.textDirection;
+  const editableTextBodies = $derived(
+    annotation?.bodies?.filter(
+      (body) => body.type !== 'image' && body.purpose !== 'tagging',
+    ) ?? [],
+  );
+  const configuredLanguages = $derived(normaliseAuthoringLanguages(languages));
+  const languageChoices = $derived.by(() => {
+    const values = [...configuredLanguages];
+    for (const body of editableTextBodies) {
+      const language = body.language ?? '';
+      if (!values.some((entry) => entry.toLowerCase() === language.toLowerCase())) {
+        values.push(language);
+      }
+    }
+    return values;
+  });
+  const bodyForLanguage = (language: string) =>
+    editableTextBodies.find(
+      (body) => (body.language ?? '').toLowerCase() === language.toLowerCase(),
+    );
+  const initialLanguage = () => {
+    const configuredBodyLanguage = configuredLanguages.find((language) =>
+      bodyForLanguage(language),
+    );
+    if (configuredBodyLanguage) return configuredBodyLanguage;
+    if (editableTextBodies[0]) return editableTextBodies[0].language ?? '';
+    return configuredLanguages[0] ?? '';
+  };
+  const activeBody = $derived(
+    editableTextBodies.find(
+      (body) =>
+        body.path === activeBodyPath &&
+        (body.language ?? '').toLowerCase() === activeLanguage.toLowerCase(),
+    ) ?? bodyForLanguage(activeLanguage),
+  );
 
   /** Selected preset id, or empty when the motivation has no preset. */
   const presetId = (motivation: string): string =>
@@ -142,23 +179,51 @@
   });
 
   $effect(() => {
-    if (annotation && annotation.id !== currentAnnoId) {
-      currentAnnoId = annotation.id;
+    if (annotation) {
+      if (annotation.id !== lastAnnotationId) {
+        lastAnnotationId = annotation.id;
+        activeLanguage = initialLanguage();
+        activeBodyPath = '';
+      } else if (!languageChoices.includes(activeLanguage)) {
+        activeLanguage = configuredLanguages[0] ?? languageChoices[0] ?? '';
+        activeBodyPath = '';
+      }
+      const body = activeBody;
+      if (body?.path && activeBodyPath !== body.path) {
+        activeBodyPath = body.path;
+      }
+      const signature = JSON.stringify({
+        id: annotation.id,
+        label: annotation.label ?? '',
+        bodies: editableTextBodies,
+        activeBodyPath: body?.path ?? '',
+        notes: annotation.notes ?? '',
+        tags: annotation.tags ?? [],
+        motivation: annotation.motivation?.[0] ?? '',
+        layer: annotation.targetStyleClass ?? '',
+        language: activeLanguage,
+        purpose: body?.purpose ?? '',
+        direction: body?.textDirection ?? '',
+      });
+      if (signature === currentAnnotationSignature) return;
+      currentAnnotationSignature = signature;
       localLabel = annotation.label ?? '';
-      localText = annotation.text ?? '';
+      localText = body?.value ?? '';
       localNotes = annotation.notes ?? '';
       localTags = [...(annotation.tags ?? [])];
       localTagInput = '';
       localMotivation = normalizeMotivation(annotation.motivation?.[0]);
       localLayer = normalizeLayer(annotation.targetStyleClass);
-      const body = annotation.bodies?.find(
-        (entry) => entry.purpose !== 'tagging' && entry.type !== 'image',
-      );
-      localLanguage = body?.language ?? '';
-      localPurpose = body?.purpose ?? '';
-      localDirection = bodyTextDirection(annotation) ?? '';
+      localPurpose =
+        body?.purpose ??
+        presetForMotivation(normalizeMotivation(annotation.motivation?.[0]))?.bodyPurpose ??
+        'commenting';
+      localDirection = body?.textDirection ?? '';
     } else if (!annotation) {
-      currentAnnoId = null;
+      currentAnnotationSignature = '';
+      activeBodyPath = '';
+      activeLanguage = '';
+      lastAnnotationId = '';
     }
   });
   $effect(() => {
@@ -171,21 +236,20 @@
 
   const patch = (
     value: Partial<ResolvedAnnotation>,
-    options: { language?: string; textDirection?: string } = {},
+    options: {
+      language?: string;
+      bodyPurpose?: string;
+      textDirection?: string;
+      bodyPath?: string;
+      createBody?: boolean;
+    } = {},
   ) => {
     if (annotation) onupdate?.({ id: annotation.id, patch: value, options });
   };
 
-  const handleLanguageInput = (val: string) => {
-    localLanguage = val;
-    // Empty clears the language rather than writing an empty tag, which is not
-    // a valid BCP 47 value and round-trips as one.
-    patch({}, { language: val.trim() });
-  };
-
   const handleDirectionChange = (val: string) => {
     localDirection = val;
-    patch({}, { textDirection: val });
+    patch({}, { textDirection: val, bodyPath: activeBody?.path });
   };
 
   const handleLabelInput = (val: string) => {
@@ -195,7 +259,34 @@
 
   const handleTextInput = (val: string) => {
     localText = val;
-    patch({ text: val });
+    const selectedBody = bodyForLanguage(activeLanguage);
+    if (!selectedBody) {
+      if (!val.trim() || !activeLanguage) return;
+      patch(
+        { text: val },
+        {
+          createBody: true,
+          language: activeLanguage,
+          bodyPurpose: localPurpose || 'commenting',
+          textDirection: localDirection || undefined,
+        },
+      );
+      return;
+    }
+    patch({ text: val }, { bodyPath: selectedBody.path });
+  };
+
+  const selectLanguage = (language: string) => {
+    activeLanguage = language;
+    activeBodyPath = bodyForLanguage(language)?.path ?? '';
+    currentAnnotationSignature = '';
+  };
+
+  const removeActiveTranslation = () => {
+    if (!activeBody?.path) return;
+    patch({ text: '' }, { bodyPath: activeBody.path });
+    activeBodyPath = '';
+    currentAnnotationSignature = '';
   };
 
   const handleNotesInput = (val: string) => {
@@ -237,7 +328,17 @@
     if (!preset) return;
     localMotivation = preset.motivation;
     if (preset.bodyPurpose) localPurpose = preset.bodyPurpose;
-    patch({ motivation: [preset.motivation] });
+    patch(
+      { motivation: [preset.motivation] },
+      preset.bodyPurpose
+        ? { bodyPurpose: preset.bodyPurpose, bodyPath: activeBody?.path }
+        : {},
+    );
+  };
+
+  const handlePurposeChange = (val: string) => {
+    localPurpose = val;
+    patch({}, { bodyPurpose: val, bodyPath: activeBody?.path });
   };
 
   const handleMotivationChange = (val: string) => {
@@ -273,6 +374,18 @@
         { key: 'y', label: 'y', value: annotation.point.y },
       ];
     }
+    if (annotation.polygon?.points.length) {
+      const xs = annotation.polygon.points.map((point) => point.x);
+      const ys = annotation.polygon.points.map((point) => point.y);
+      const x = Math.min(...xs);
+      const y = Math.min(...ys);
+      return [
+        { key: 'x', label: 'x', value: x },
+        { key: 'y', label: 'y', value: y },
+        { key: 'w', label: 'w', value: Math.max(...xs) - x },
+        { key: 'h', label: 'h', value: Math.max(...ys) - y },
+      ];
+    }
     return [];
   });
 
@@ -291,6 +404,35 @@
     }
     if (annotation.point) {
       patch({ shapeType: 'point', point: { ...annotation.point, [key]: value } });
+      return;
+    }
+    if (annotation.polygon?.points.length) {
+      const points = annotation.polygon.points;
+      const xs = points.map((point) => point.x);
+      const ys = points.map((point) => point.y);
+      const bounds = {
+        x: Math.min(...xs),
+        y: Math.min(...ys),
+        w: Math.max(...xs) - Math.min(...xs),
+        h: Math.max(...ys) - Math.min(...ys),
+      };
+      if ((key === 'w' || key === 'h') && value <= 0) return;
+      if ((key === 'w' && bounds.w === 0) || (key === 'h' && bounds.h === 0)) return;
+      const next = points.map((point) => {
+        if (key === 'x') return { ...point, x: point.x + value - bounds.x };
+        if (key === 'y') return { ...point, y: point.y + value - bounds.y };
+        if (key === 'w') {
+          return { ...point, x: bounds.x + (point.x - bounds.x) * (value / bounds.w) };
+        }
+        return { ...point, y: bounds.y + (point.y - bounds.y) * (value / bounds.h) };
+      });
+      patch({
+        shapeType: annotation.shapeType,
+        // The canonical geometry operation regenerates the selector. Carrying
+        // the old serialized SVG beside new points would leave two conflicting
+        // descriptions of the same shape in the editing projection.
+        polygon: { points: next },
+      });
     }
   };
 
@@ -305,14 +447,18 @@
 <aside class="right-inspector">
   <div class="right-inspector__head">
     <h3>{$t('viewer.panels.annotations.editor.detailsTitle')}</h3>
-    <span>{total > 0 ? $t('viewer.panels.annotations.editor.pagination', { current: index + 1, total }) : $t('viewer.panels.annotations.editor.pagination', { current: 0, total: 0 })}</span>
+    <span>{isDraft ? $t('viewer.panels.annotations.editor.newAnnotation') : total > 0 ? $t('viewer.panels.annotations.editor.pagination', { current: index + 1, total }) : $t('viewer.panels.annotations.editor.pagination', { current: 0, total: 0 })}</span>
   </div>
 
   {#if annotation}
     <div class="right-inspector__scroll">
       {#if annotation.provenance}
         <p class="right-inspector__provenance" data-testid="annotation-provenance">
-          <span class="right-inspector__badge" data-provenance={annotation.provenance}>
+          <span
+            class="right-inspector__badge"
+            data-provenance={annotation.provenance}
+            title={$t(`viewer.panels.annotations.editor.provenance.${annotation.provenance}`)}
+          >
             {$t(`viewer.panels.annotations.editor.provenance.${annotation.provenance}`)}
           </span>
           {#if readOnly}
@@ -408,6 +554,44 @@
           </div>
 
           <div class="right-inspector__group">
+            <span class="right-inspector__field-label">
+              {$t('viewer.panels.annotations.editor.translations')}
+            </span>
+            <LanguageTabs
+              languages={languageChoices}
+              {activeLanguage}
+              ariaLabel={$t('viewer.panels.annotations.editor.translations')}
+              noLanguageLabel={$t('viewer.panels.annotations.editor.noLanguage')}
+              onchange={selectLanguage}
+            />
+            {#if activeBody && editableTextBodies.length > 1}
+              <button
+                type="button"
+                class="right-inspector__remove-translation"
+                onclick={removeActiveTranslation}
+              >
+                {$t('viewer.panels.annotations.editor.removeTranslation', {
+                  language:
+                    activeBody.language || $t('viewer.panels.annotations.editor.noLanguage'),
+                })}
+              </button>
+            {/if}
+          </div>
+
+          <div class="right-inspector__group">
+            <label for="anno-direction">{$t('viewer.panels.annotations.editor.textDirection')}</label>
+            <select
+              id="anno-direction"
+              value={localDirection}
+              onchange={(e) => handleDirectionChange(e.currentTarget.value)}
+            >
+              <option value="">{$t('viewer.panels.annotations.editor.direction.auto')}</option>
+              <option value="ltr">{$t('viewer.panels.annotations.editor.direction.ltr')}</option>
+              <option value="rtl">{$t('viewer.panels.annotations.editor.direction.rtl')}</option>
+            </select>
+          </div>
+
+          <div class="right-inspector__group">
             <label for="anno-text">{$t('viewer.panels.annotations.editor.text')}</label>
             <textarea
               id="anno-text"
@@ -418,38 +602,13 @@
             ></textarea>
           </div>
 
-          <div class="right-inspector__row">
-            <div class="right-inspector__group">
-              <label for="anno-language">{$t('viewer.panels.annotations.editor.language')}</label>
-              <input
-                id="anno-language"
-                value={localLanguage}
-                oninput={(e) => handleLanguageInput(e.currentTarget.value)}
-                placeholder={$t('viewer.panels.annotations.editor.languagePlaceholder')}
-                spellcheck="false"
-              />
-            </div>
-            <div class="right-inspector__group">
-              <label for="anno-direction">{$t('viewer.panels.annotations.editor.textDirection')}</label>
-              <select
-                id="anno-direction"
-                value={localDirection}
-                onchange={(e) => handleDirectionChange(e.currentTarget.value)}
-              >
-                <option value="">{$t('viewer.panels.annotations.editor.direction.auto')}</option>
-                <option value="ltr">{$t('viewer.panels.annotations.editor.direction.ltr')}</option>
-                <option value="rtl">{$t('viewer.panels.annotations.editor.direction.rtl')}</option>
-              </select>
-            </div>
-          </div>
-
           {#if expertMode}
             <div class="right-inspector__group">
               <label for="anno-purpose">{$t('viewer.panels.annotations.editor.bodyPurpose')}</label>
               <select
                 id="anno-purpose"
                 value={localPurpose}
-                onchange={(e) => (localPurpose = e.currentTarget.value)}
+                onchange={(e) => handlePurposeChange(e.currentTarget.value)}
               >
                 <option value="">{$t('viewer.panels.annotations.editor.direction.auto')}</option>
                 {#each AUTHORING_PURPOSES as purpose (purpose)}
@@ -753,11 +912,6 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
   }
-  .right-inspector__row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
   .right-inspector__group {
     display: grid;
     gap: 6px;
@@ -767,6 +921,23 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--viewer-muted);
+  }
+  .right-inspector__field-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--viewer-muted);
+  }
+  .right-inspector__remove-translation {
+    justify-self: start;
+    border: 0;
+    padding: 2px 0;
+    background: transparent;
+    color: var(--viewer-danger, #ffb3b3);
+    font: inherit;
+    font-size: 11px;
+    text-decoration: underline;
+    cursor: pointer;
   }
   .right-inspector__group input,
   .right-inspector__group select,

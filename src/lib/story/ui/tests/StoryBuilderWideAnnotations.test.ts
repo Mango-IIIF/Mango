@@ -38,11 +38,16 @@ describe("StoryBuilderWideAnnotations", () => {
 
     expect(target.querySelector("input")).toBeNull();
     expect(target.textContent).toContain("A translated label");
-    (
-      target.querySelector(
-        ".story-wide-annotations__select",
-      ) as HTMLButtonElement
-    ).click();
+    const select = target.querySelector(
+      ".story-wide-annotations__select",
+    ) as HTMLButtonElement;
+    expect(select.getAttribute("aria-label")).toContain("A translated label");
+    expect(
+      target
+        .querySelector(".story-wide-annotations__delete")
+        ?.getAttribute("aria-label"),
+    ).toContain("A translated label");
+    select.click();
     expect(onEditDrawing).toHaveBeenCalledWith("rectangle-1");
 
     unmount(instance);

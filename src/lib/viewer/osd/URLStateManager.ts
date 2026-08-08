@@ -186,20 +186,6 @@ export function serializeURLState(params: URLStateParams): string {
 }
 
 /**
- * Update URL hash without triggering navigation
- */
-export function updateURLHash(params: URLStateParams, replace: boolean = true): void {
-  const hash = serializeURLState(params);
-  const newUrl = hash || window.location.pathname + window.location.search;
-  
-  if (replace) {
-    window.history.replaceState(null, '', newUrl);
-  } else {
-    window.history.pushState(null, '', newUrl);
-  }
-}
-
-/**
  * Create target string from canvas ID and xywh
  */
 export function createTarget(canvasId: string, xywh: XYWHFragment | string): string {

@@ -101,9 +101,6 @@ export const AUTHORING_PURPOSES: readonly string[] = [
   'editing',
 ];
 
-export const isAuthorablePurpose = (value: string): boolean =>
-  AUTHORING_PURPOSES.includes(value);
-
 /** Re-exported so callers validate against the parser's list, not a copy. */
 export { ALL_MOTIVATIONS, PURPOSES, isKnownMotivation, isKnownPurpose };
 

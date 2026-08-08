@@ -25,10 +25,3 @@ export const registerPlugin = (plugin: ViewerPlugin): void => {
   registry.update((current) => dedupePlugins([...current, plugin]));
 };
 
-export const unregisterPlugin = (id: string): void => {
-  registry.update((current) => current.filter((plugin) => plugin.id !== id));
-};
-
-export const clearPlugins = (): void => {
-  registry.set([]);
-};

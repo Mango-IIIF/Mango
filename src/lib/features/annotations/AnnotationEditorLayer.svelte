@@ -272,6 +272,18 @@
     if (!enabled || !viewer || canvasWidth <= 0 || canvasHeight <= 0) return;
     const instance = new OSDAnnotationEditor({
       viewer,
+      /*
+       * Keep shortcuts inside the viewer's own DOM tree.
+       *
+       * A window listener sits outside the custom element's shadow root, where
+       * composed keyboard events are retargeted from the real textarea/input
+       * to `<mango-viewer>`. The annotation package then cannot recognise an
+       * editing target and treats Backspace as "delete selected annotation".
+       * Listening on the internal viewer root preserves the original target
+       * for both the standalone inspector and the story-builder inspector.
+       */
+      keyboardTarget:
+        viewer.container.closest<HTMLElement>('.viewer') ?? viewer.container,
       canvasSize: { width: canvasWidth, height: canvasHeight },
       annotations: untrack(() =>
         annotations.map(toShape).filter((shape): shape is ShapeData => Boolean(shape)),

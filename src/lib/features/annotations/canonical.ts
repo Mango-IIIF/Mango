@@ -27,6 +27,7 @@ import {
   removeBody,
   addBody,
   setBodyLanguage,
+  setBodyPurpose,
   setBodyTextDirection,
   setLabel,
   setMotivation,
@@ -188,10 +189,12 @@ const bodyFromProjection = (
   const isImage =
     Boolean(resource?.type.includes('Image')) || Boolean(body.format?.startsWith('image/'));
   return {
+    path: body.path,
     type: isImage ? 'image' : body.isHtml ? 'html' : body.isExternal ? 'unknown' : 'text',
     ...(isImage ? { src: body.id } : { value: body.text }),
     format: body.format,
     language: body.language,
+    textDirection: body.textDirection,
     purpose: body.purposes[0],
   };
 };
@@ -390,6 +393,19 @@ export type CreateInput = {
   shape: NeutralShape;
   temporal?: TemporalFragment;
   text?: string;
+  /**
+   * Parallel publishable text bodies, for example translations of the same
+   * annotation. `text` remains the convenient single-body authoring form;
+   * callers that already have a language map should use this collection so no
+   * translation has to be collapsed into a display projection first.
+   */
+  textBodies?: readonly {
+    value: string;
+    purpose?: string;
+    format?: string;
+    language?: string;
+    textDirection?: string;
+  }[];
   label?: string;
   note?: string;
   tags?: readonly string[];
@@ -410,6 +426,18 @@ export type CreateInput = {
  */
 export const createMangoAnnotation = (input: CreateInput): CanonicalAnnotation => {
   const bodies: CanonicalResource[] = [];
+  for (const entry of input.textBodies ?? []) {
+    const value = entry.value.trim();
+    if (!value) continue;
+    bodies.push(
+      createTextualBody(value, {
+        purpose: entry.purpose ?? input.bodyPurpose ?? DEFAULT_BODY_PURPOSE,
+        ...(entry.format ? { format: entry.format } : {}),
+        ...(entry.language ? { language: entry.language } : {}),
+        ...(entry.textDirection ? { textDirection: entry.textDirection } : {}),
+      }),
+    );
+  }
   const text = input.text?.trim();
   if (text) {
     bodies.push(
@@ -482,9 +510,13 @@ const isTagBody = (body: CanonicalResource): boolean => body.purpose.includes('t
  * annotation whose first body is a tag would otherwise have its tag overwritten
  * with the comment, which is the sibling-clobbering bug in a new costume.
  */
-const displayBody = (annotation: CanonicalAnnotation): CanonicalResource | undefined =>
+const displayBody = (
+  annotation: CanonicalAnnotation,
+  bodyPath?: string,
+): CanonicalResource | undefined =>
   annotation.bodies.find(
     (body) =>
+      (!bodyPath || body.path === bodyPath) &&
       !isTagBody(body) &&
       body.kind === 'TextualBody' &&
       (body.purpose.length === 0 || body.purpose.some((purpose) => TEXT_PURPOSES.includes(purpose))),
@@ -500,12 +532,21 @@ const displayBody = (annotation: CanonicalAnnotation): CanonicalResource | undef
 export const operationsForPatch = (
   annotation: CanonicalAnnotation,
   patch: Partial<ResolvedAnnotation>,
-  options: { language?: string; bodyPurpose?: string; textDirection?: string } = {},
+  options: {
+    language?: string;
+    bodyPurpose?: string;
+    textDirection?: string;
+    bodyPath?: string;
+    createBody?: boolean;
+  } = {},
 ): PatchOperation[] => {
   const operations: PatchOperation[] = [];
+  const addressedBody = options.createBody
+    ? undefined
+    : displayBody(annotation, options.bodyPath);
 
   if (patch.text !== undefined) {
-    const body = displayBody(annotation);
+    const body = addressedBody;
     const value = patch.text.trim();
     if (body) {
       operations.push(setTextualBodyValue(refOf(body), patch.text));
@@ -519,8 +560,9 @@ export const operationsForPatch = (
           createTextualBody(patch.text, {
             purpose: options.bodyPurpose ?? DEFAULT_BODY_PURPOSE,
             ...(options.language ? { language: options.language } : {}),
+            ...(options.textDirection ? { textDirection: options.textDirection } : {}),
           }),
-          0,
+          options.createBody ? annotation.bodies.length : 0,
         ),
       );
     }
@@ -529,7 +571,7 @@ export const operationsForPatch = (
   // Language and direction address the body the text came from, so setting a
   // language cannot move a tag into another one.
   if (options.language !== undefined) {
-    const body = displayBody(annotation);
+    const body = addressedBody;
     if (body) {
       operations.push(
         setBodyLanguage(refOf(body), options.language ? [options.language] : []),
@@ -538,10 +580,19 @@ export const operationsForPatch = (
   }
 
   if (options.textDirection !== undefined) {
-    const body = displayBody(annotation);
+    const body = addressedBody;
     if (body) {
       operations.push(
         setBodyTextDirection(refOf(body), options.textDirection || undefined),
+      );
+    }
+  }
+
+  if (options.bodyPurpose !== undefined) {
+    const body = addressedBody;
+    if (body) {
+      operations.push(
+        setBodyPurpose(refOf(body), options.bodyPurpose ? [options.bodyPurpose] : []),
       );
     }
   }
@@ -620,6 +671,8 @@ export const applyPatch = (
     language?: string;
     bodyPurpose?: string;
     textDirection?: string;
+    bodyPath?: string;
+    createBody?: boolean;
     stylesheet?: CanonicalStylesheet | null;
   } = {},
 ): ApplyResult => {
@@ -668,6 +721,8 @@ export const applyResolvedPatch = (
     language?: string;
     bodyPurpose?: string;
     textDirection?: string;
+    bodyPath?: string;
+    createBody?: boolean;
     stylesheet?: CanonicalStylesheet | null;
   } = {},
 ): ResolvedAnnotation => {

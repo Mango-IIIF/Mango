@@ -11,25 +11,14 @@ import type { ModelPoseOptions } from "../core/types/model";
 
 export const IIIF_PRESENTATION_3_CONTEXT =
   "http://iiif.io/api/presentation/3/context.json" as const;
+export const W3C_WEB_ANNOTATION_CONTEXT =
+  "http://www.w3.org/ns/anno.jsonld" as const;
 export const MANGO_STORY_NAMESPACE =
   "https://mango-iiif.github.io/ns/story#" as const;
 export const MANGO_STORY_VERSION = "1.0" as const;
 export const MANGO_VIEWER_STATE_TYPE = "mango:ViewerState" as const;
 export const MANGO_VIEWER_STATE_FORMAT =
   "application/vnd.mango.story-state+json" as const;
-
-/**
- * Inline context for Mango's viewer-only story state. Keeping the extension
- * inline means exported stories remain self-describing while the namespace can
- * also be documented at a stable public URL.
- */
-export const MANGO_STORY_CONTEXT = {
-  mango: MANGO_STORY_NAMESPACE,
-  mangoState: {
-    "@id": "mango:state",
-    "@type": "@json",
-  },
-} as const;
 
 export type MangoStoryPlayback = {
   advance?: ChapterAdvance["mode"];
@@ -43,6 +32,7 @@ export type MangoStoryPlayback = {
 export type MangoViewerState = {
   chapterId: string;
   canvasIndex: number;
+  presentationAspect?: number;
   canvasId?: string;
   viewBox?: ViewBox;
   modelPose?: ChapterModel;
@@ -55,10 +45,9 @@ export type MangoViewerState = {
 };
 
 export type MangoViewerStateBody = {
-  type: typeof MANGO_VIEWER_STATE_TYPE;
+  type: "TextualBody";
   format: typeof MANGO_VIEWER_STATE_FORMAT;
-  "mango:storyVersion": typeof MANGO_STORY_VERSION;
-  mangoState: MangoViewerState;
+  value: string;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -334,6 +323,7 @@ const parseCameraTrack = (
 
 export const createMangoViewerStateBody = (
   chapter: Chapter,
+  presentationAspect?: number,
 ): MangoViewerStateBody => {
   const timing = resolveChapterTiming(chapter);
   const playback: MangoStoryPlayback = {
@@ -352,13 +342,10 @@ export const createMangoViewerStateBody = (
       : {}),
   };
 
-  return {
-    type: MANGO_VIEWER_STATE_TYPE,
-    format: MANGO_VIEWER_STATE_FORMAT,
-    "mango:storyVersion": MANGO_STORY_VERSION,
-    mangoState: {
+  const state: MangoViewerState = {
       chapterId: chapter.id,
       canvasIndex: chapter.canvasIndex,
+      ...(presentationAspect !== undefined ? { presentationAspect } : {}),
       ...(chapter.canvasId ? { canvasId: chapter.canvasId } : {}),
       ...(chapter.viewBox ? { viewBox: chapter.viewBox } : {}),
       ...(chapter.model ? { modelPose: chapter.model } : {}),
@@ -374,31 +361,62 @@ export const createMangoViewerStateBody = (
         ? { drawingAnnotations: chapter.drawingAnnotations }
         : {}),
       playback,
-    },
+  };
+  return {
+    type: "TextualBody",
+    format: MANGO_VIEWER_STATE_FORMAT,
+    value: JSON.stringify({
+      storyVersion: MANGO_STORY_VERSION,
+      state,
+    }),
   };
 };
+
+const viewerStateEnvelope = (
+  value: unknown,
+): { version?: string; state?: Record<string, unknown> } | undefined => {
+  if (!isRecord(value) || value.format !== MANGO_VIEWER_STATE_FORMAT) return undefined;
+  if (value.type === "TextualBody" && typeof value.value === "string") {
+    try {
+      const decoded = JSON.parse(value.value) as unknown;
+      if (!isRecord(decoded)) return undefined;
+      return {
+        version:
+          typeof decoded.storyVersion === "string" ? decoded.storyVersion : undefined,
+        state: isRecord(decoded.state) ? decoded.state : undefined,
+      };
+    } catch {
+      return undefined;
+    }
+  }
+  if (
+    value.type !== MANGO_VIEWER_STATE_TYPE &&
+    value.type !== `${MANGO_STORY_NAMESPACE}ViewerState`
+  ) return undefined;
+  return {
+    version:
+      typeof value["mango:storyVersion"] === "string"
+        ? value["mango:storyVersion"]
+        : undefined,
+    state: isRecord(value.mangoState ?? value["mango:state"])
+      ? (value.mangoState ?? value["mango:state"]) as Record<string, unknown>
+      : undefined,
+  };
+};
+
+export const mangoViewerStateVersion = (value: unknown): string | undefined =>
+  viewerStateEnvelope(value)?.version;
 
 export const parseMangoViewerStateBody = (
   value: unknown,
 ): MangoViewerState | undefined => {
-  if (!isRecord(value)) return undefined;
-  if (
-    (value.type !== MANGO_VIEWER_STATE_TYPE &&
-      value.type !== `${MANGO_STORY_NAMESPACE}ViewerState`) ||
-    value.format !== MANGO_VIEWER_STATE_FORMAT
-  ) {
-    return undefined;
-  }
-
-  if (value["mango:storyVersion"] !== MANGO_STORY_VERSION) {
-    return undefined;
-  }
-
-  const rawState = value.mangoState ?? value["mango:state"];
-  if (!isRecord(rawState)) return undefined;
+  const envelope = viewerStateEnvelope(value);
+  if (envelope?.version !== MANGO_STORY_VERSION || !envelope.state) return undefined;
+  const rawState = envelope.state;
   const chapterId =
     typeof rawState.chapterId === "string" ? rawState.chapterId : "";
   const canvasIndex = nonNegativeInteger(rawState.canvasIndex) ?? 0;
+  const presentationAspect = finiteNumber(rawState.presentationAspect);
   const canvasId =
     typeof rawState.canvasId === "string" && rawState.canvasId.length > 0
       ? rawState.canvasId
@@ -419,6 +437,9 @@ export const parseMangoViewerStateBody = (
   return {
     chapterId,
     canvasIndex,
+    ...(presentationAspect !== undefined && presentationAspect > 0
+      ? { presentationAspect }
+      : {}),
     ...(canvasId ? { canvasId } : {}),
     ...(viewBox ? { viewBox } : {}),
     ...(modelPose ? { modelPose } : {}),

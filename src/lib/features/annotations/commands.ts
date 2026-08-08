@@ -32,6 +32,8 @@ export type MetadataChange = {
   after: ResolvedAnnotation | null;
   /** Names the step for an announcement, e.g. "tags" or "text". */
   label: string;
+  /** Internal coalescing boundary for continuous text input. */
+  recordedAt?: number;
 };
 
 /**
@@ -66,6 +68,8 @@ export type CommandStackState = {
 };
 
 const DEFAULT_LIMIT = 100;
+const TEXT_INPUT_WINDOW_MS = 1_000;
+const COALESCED_LABELS = new Set(['text', 'label', 'notes']);
 
 export type CommandStack = {
   /** Records a metadata change. */
@@ -109,7 +113,26 @@ export const createCommandStack = (options: CommandStackOptions): CommandStack =
 
   return {
     record(change) {
-      push({ ...change, kind: 'metadata' });
+      const recordedAt = Date.now();
+      const previous = undoStack[undoStack.length - 1];
+      if (
+        !applying &&
+        previous?.kind === 'metadata' &&
+        previous.annotationId === change.annotationId &&
+        previous.label === change.label &&
+        COALESCED_LABELS.has(change.label) &&
+        previous.after === change.before &&
+        recordedAt - (previous.recordedAt ?? 0) <= TEXT_INPUT_WINDOW_MS
+      ) {
+        undoStack = [
+          ...undoStack.slice(0, -1),
+          { ...previous, after: change.after, recordedAt },
+        ];
+        redoStack = [];
+        notify();
+        return;
+      }
+      push({ ...change, kind: 'metadata', recordedAt });
     },
 
     recordGeometry(annotationId, label) {

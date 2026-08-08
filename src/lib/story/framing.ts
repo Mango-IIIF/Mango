@@ -26,8 +26,6 @@ const ASPECT_EPSILON = 1e-6;
 const isPositive = (value: number | undefined | null): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value > 0;
 
-export const isValidAspect = isPositive;
-
 export const viewBoxAspect = (box: ViewBox): number | null =>
   isPositive(box.w) && isPositive(box.h) ? box.w / box.h : null;
 

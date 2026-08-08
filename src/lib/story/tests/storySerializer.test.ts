@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { parseWebAnnotation, projectAnnotation } from "@mango-iiif/w3c-parser";
+import chapter6Fixture from "./fixtures/chapter-6-multilingual-story.json";
 
 /** The shape a serialized story overlay projects to, read back through the parser. */
 const shapeOf = (annotation: unknown) =>
@@ -8,9 +9,8 @@ import { loadStoryIntoStore, serializeStoryToIiif } from "../storySerializer";
 import { normaliseStoryInput } from "../viewer/storyLoader";
 import type { StoryState } from "../../core/types/story";
 import {
-  MANGO_STORY_VERSION,
   MANGO_VIEWER_STATE_FORMAT,
-  MANGO_VIEWER_STATE_TYPE,
+  parseMangoViewerStateBody,
 } from "../storyAnnotationProfile";
 
 describe("Story IIIF Serialization and Parsing", () => {
@@ -89,9 +89,11 @@ describe("Story IIIF Serialization and Parsing", () => {
     const serialized = serializeStoryToIiif(sampleStory);
 
     expect(serialized["@context"][0]).toBe(
+      "http://www.w3.org/ns/anno.jsonld",
+    );
+    expect(serialized["@context"][1]).toBe(
       "http://iiif.io/api/presentation/3/context.json",
     );
-    expect(serialized["mango:storyVersion"]).toBe(MANGO_STORY_VERSION);
     expect(serialized.id).toBe(sampleStory.id);
     expect(serialized.type).toBe("AnnotationPage");
     expect(serialized.label.en[0]).toBe("My Awesome Story");
@@ -130,10 +132,9 @@ describe("Story IIIF Serialization and Parsing", () => {
     expect(soundCy.id).toBe("https://example.com/audio-cy.mp3#t=0,14.2");
 
     const textOverlay = serialized.items.find(
-      (item) => item["mango:role"] === "overlay",
+      (item) => item.id.includes("/overlay/en"),
     );
     expect(textOverlay).toBeDefined();
-    expect(textOverlay?.["mango:chapterId"]).toBe("chapter_1");
     expect((textOverlay?.body as any).value).toBe("Look at this detail!");
     expect((textOverlay?.target as any).selector.value).toBe(
       "xywh=4500,6500,800,300",
@@ -162,11 +163,10 @@ describe("Story IIIF Serialization and Parsing", () => {
     });
 
     const viewerState = annotation.body.find(
-      (b: any) => b.type === MANGO_VIEWER_STATE_TYPE,
+      (b: any) => b.format === MANGO_VIEWER_STATE_FORMAT,
     );
     expect(viewerState.format).toBe(MANGO_VIEWER_STATE_FORMAT);
-    expect(viewerState["mango:storyVersion"]).toBe(MANGO_STORY_VERSION);
-    expect(viewerState.mangoState).toEqual({
+    expect(parseMangoViewerStateBody(viewerState)).toEqual({
       chapterId: "chapter_1",
       canvasIndex: 0,
       canvasId: "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
@@ -370,6 +370,34 @@ describe("Story IIIF Serialization and Parsing", () => {
     expect((drawings[1].body as { value: string }).value).toBe("A route");
   });
 
+  it("exports every story drawing translation and its portable appearance", () => {
+    const serialized = serializeStoryToIiif(chapter6Fixture as StoryState);
+
+    const drawing = serialized.items.find((item) =>
+      item.id.includes("/overlay/drawing/"),
+    )!;
+    expect(drawing.motivation).toBe("commenting");
+    expect(drawing.body).toEqual([
+      expect.objectContaining({
+        type: "TextualBody",
+        value: "Annotations appear in context.",
+        language: "en",
+        purpose: "commenting",
+      }),
+      expect.objectContaining({
+        type: "TextualBody",
+        value: "Mae anodiadau yn ymddangos yn eu cyd-destun.",
+        language: "cy",
+        purpose: "commenting",
+      }),
+    ]);
+    expect(JSON.stringify(drawing.stylesheet)).toContain("#e07a3f");
+    expect(JSON.stringify(drawing.stylesheet)).toContain("stroke-width: 4px");
+    expect((drawing.target as { styleClass?: string }).styleClass).toBe(
+      "story-chapter_6-annotation",
+    );
+  });
+
   it("exports relative text-box placement as a valid spatial selector", () => {
     const withCapturedView = serializeStoryToIiif({
       chapters: [
@@ -389,7 +417,7 @@ describe("Story IIIF Serialization and Parsing", () => {
       ],
     });
     const overlay = withCapturedView.items.find(
-      (item) => item["mango:role"] === "overlay",
+      (item) => item.id.includes("/overlay/en"),
     )!;
     expect((overlay.target as any).selector.value).toBe("xywh=300,350,400,100");
 
@@ -410,7 +438,7 @@ describe("Story IIIF Serialization and Parsing", () => {
       ],
     });
     const percentOverlay = withoutCapturedView.items.find(
-      (item) => item["mango:role"] === "overlay",
+      (item) => item.id.includes("/overlay/en"),
     )!;
     expect((percentOverlay.target as any).selector.value).toBe(
       "xywh=percent:10,20,30,40",

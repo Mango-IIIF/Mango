@@ -34,7 +34,11 @@ test("creates and saves an annotation with the package editor", async ({
   page.on("console", (message) => {
     if (
       message.type() === "error" &&
-      !message.text().includes("ERR_BLOCKED_BY_RESPONSE")
+      !message.text().includes("ERR_BLOCKED_BY_RESPONSE") &&
+      // WebKit reports remote image-service HTTP failures as an anonymous
+      // console resource error. Page exceptions are tracked separately above;
+      // a third-party tile returning 403 is not an application runtime error.
+      !message.text().startsWith("Failed to load resource:")
     ) {
       runtimeErrors.push(message.text());
     }
@@ -84,13 +88,109 @@ test("creates and saves an annotation with the package editor", async ({
   expect(runtimeErrors).toEqual([]);
 });
 
+test("downloads the same draft payload it reports to the host", async ({ page }) => {
+  await page.goto("/annotation-editor.html");
+  const host = page.locator("mango-viewer");
+  await host.evaluate((element: HTMLElement) => {
+    element.addEventListener("exportAnnotationPage", ((event: CustomEvent) => {
+      (window as typeof window & { annotationExport?: unknown }).annotationExport =
+        event.detail;
+    }) as EventListener);
+  });
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    host.getByRole("button", { name: "Download annotation draft" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("mango-annotations-draft.json");
+  const detail = await page.evaluate(
+    () => (window as typeof window & { annotationExport?: any }).annotationExport,
+  );
+  expect(detail.page.type).toBe("AnnotationPage");
+  expect(detail.draftValid).toBe(true);
+  expect(detail.publicationValid).toBe(false);
+  await expect(host.getByRole("status")).toContainText(
+    "Assign HTTP(S) page and annotation IDs",
+  );
+});
+
+test("uses setup languages and preserves text while switching", async ({ page }) => {
+  await page.goto("/annotation-editor.html");
+  const host = page.locator("mango-viewer");
+  await expect(host.locator(".annotation-workspace")).toBeVisible();
+  await expect
+    .poll(() => host.evaluate((element: any) => element.getCanvasId()))
+    .not.toBeNull();
+
+  await host.getByRole("button", { name: "Rectangle", exact: true }).click();
+  await host
+    .getByRole("button", {
+      name: /Create Rectangle at the current view centre/,
+    })
+    .click();
+
+  const english = host.locator('[data-testid="annotation-language-en"]');
+  const welsh = host.locator('[data-testid="annotation-language-cy"]');
+  await expect(english).toHaveAttribute("aria-selected", "true");
+  await expect(welsh).toBeVisible();
+
+  await welsh.click();
+  const text = host.locator("#anno-text");
+  await text.fill("Testun Cymraeg");
+  await text.press("Backspace");
+  await expect(text).toHaveValue("Testun Cymrae");
+  await expect(host.getByText("New annotation", { exact: true })).toBeVisible();
+  await english.click();
+  await expect(text).toHaveValue("");
+  await welsh.click();
+  await expect(text).toHaveValue("Testun Cymrae");
+
+  await host.getByRole("button", { name: "Save Annotation" }).click();
+});
+
+test("creates rectangles and points without pointer geometry gestures", async ({ page }) => {
+  await page.goto("/annotation-editor.html");
+  const host = page.locator("mango-viewer");
+  await expect(host.locator(".annotation-workspace")).toBeVisible();
+  await expect
+    .poll(() => host.evaluate((element: any) => element.getCanvasId()))
+    .not.toBeNull();
+
+  await host.getByRole("button", { name: "Rectangle", exact: true }).click();
+  await host
+    .getByRole("button", {
+      name: /Create Rectangle at the current view centre/,
+    })
+    .click();
+  await expect(host.getByText("New annotation", { exact: true })).toBeVisible();
+  await host.getByText("Position", { exact: true }).click();
+  const rectangleCoordinates = host.locator(
+    '[data-testid="annotation-geometry"] input',
+  );
+  await expect(rectangleCoordinates).toHaveCount(4);
+  await rectangleCoordinates.first().fill("100");
+  await rectangleCoordinates.first().blur();
+  await host.getByRole("button", { name: "Cancel" }).click();
+
+  await host.getByRole("button", { name: "Point", exact: true }).click();
+  await host
+    .getByRole("button", { name: /Create Point at the current view centre/ })
+    .click();
+  await host.getByText("Position", { exact: true }).click();
+  await expect(
+    host.locator('[data-testid="annotation-geometry"] input'),
+  ).toHaveCount(2);
+  await host.getByRole("button", { name: "Save Annotation" }).click();
+});
+
 test("moves, resizes, and persists a story annotation", async ({ page }) => {
   const runtimeErrors: string[] = [];
   page.on("pageerror", (error) => runtimeErrors.push(error.message));
   page.on("console", (message) => {
     if (
       message.type() === "error" &&
-      !message.text().includes("ERR_BLOCKED_BY_RESPONSE")
+      !message.text().includes("ERR_BLOCKED_BY_RESPONSE") &&
+      !message.text().startsWith("Failed to load resource:")
     ) {
       runtimeErrors.push(message.text());
     }
@@ -115,13 +215,21 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
   await page.mouse.up();
 
   const annotationShapes = editor.locator(
-    "[data-annotation-id]:not([data-handle])",
+    "rect[data-annotation-id]:not([data-handle])",
   );
   await expect(annotationShapes).toHaveCount(1);
 
   await page.getByRole("button", { name: "Select / pan" }).click();
   let shape = annotationShapes.first();
   await shape.click();
+
+  const storyText = page.locator(
+    ".chapter-overlay__translation-field textarea",
+  );
+  await storyText.fill("Note");
+  await storyText.press("Backspace");
+  await expect(storyText).toHaveValue("Not");
+  await expect(annotationShapes).toHaveCount(1);
 
   const geometry = async () =>
     shape.evaluate((element) => ({
@@ -132,6 +240,7 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
     }));
 
   const beforeMove = await geometry();
+  await expect(shape).toBeVisible();
   const shapeBounds = await shape.boundingBox();
   expect(shapeBounds).not.toBeNull();
   if (!shapeBounds) return;
@@ -152,6 +261,7 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
   expect(afterMove.y).toBeGreaterThan(beforeMove.y + 15);
 
   const resizeHandle = editor.locator('[data-handle="se"]');
+  await expect(resizeHandle).toBeVisible();
   const resizeBounds = await resizeHandle.boundingBox();
   expect(resizeBounds).not.toBeNull();
   if (!resizeBounds) return;
@@ -172,10 +282,14 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
   expect(afterResize.width).toBeGreaterThan(afterMove.width + 20);
   expect(afterResize.height).toBeGreaterThan(afterMove.height + 15);
 
-  await page.getByRole("button", { name: /Back to chapter tools/ }).click();
+  // The focus task is transactional: Save commits geometry; Back/Cancel must
+  // restore the chapter snapshot rather than silently committing it.
+  await page.getByRole("button", { name: "Save annotation" }).click();
   await page.getByRole("button", { name: /Annotations/ }).click();
   editor = page.locator(".mango-annotation-editor__svg");
-  shape = editor.locator("[data-annotation-id]:not([data-handle])").first();
+  shape = editor
+    .locator("rect[data-annotation-id]:not([data-handle])")
+    .first();
   const reopened = await geometry();
   expect(Math.abs(reopened.x - afterMove.x)).toBeLessThan(2);
   expect(reopened.width).toBeGreaterThan(afterMove.width + 15);
@@ -191,7 +305,8 @@ test("opens and deletes a Mango annotation from the story footer", async ({
   page.on("console", (message) => {
     if (
       message.type() === "error" &&
-      !message.text().includes("ERR_BLOCKED_BY_RESPONSE")
+      !message.text().includes("ERR_BLOCKED_BY_RESPONSE") &&
+      !message.text().startsWith("Failed to load resource:")
     ) {
       runtimeErrors.push(message.text());
     }

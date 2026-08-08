@@ -58,6 +58,16 @@
     return translated === key ? layer.name : translated;
   };
 
+  const rowName = (item: ResolvedAnnotation): string => {
+    const content = item.label?.trim() || item.text?.trim();
+    const shapeType = typeOf(item);
+    const toolType = shapeType === 'rect' ? 'rectangle' : shapeType;
+    const typeKey = `viewer.panels.annotations.editor.tools.${toolType}`;
+    const translatedType = $t(typeKey);
+    const type = translatedType === typeKey ? toolType : translatedType;
+    return content ? `${type}: ${content}` : `${type}: ${item.id}`;
+  };
+
   const matched = $derived.by(() => {
     const q = query.trim().toLowerCase();
     const wanted = layerFilter.trim();
@@ -177,13 +187,17 @@
                   type="button"
                   class="annotation-table__select"
                   aria-pressed={item.id === activeId}
+                  aria-label={$t('viewer.panels.annotations.editor.selectAnnotation', {
+                    annotation: rowName(item),
+                  })}
+                  title={item.id}
                   onclick={() => onselect?.({ id: item.id })}
                 >
                   {item.id}
                 </button>
               </td>
-              <td>{item.label || '-'}</td>
-              <td>{item.text || '-'}</td>
+              <td title={item.label || undefined}>{item.label || '-'}</td>
+              <td title={item.text || undefined}>{item.text || '-'}</td>
               <td
                 >{$t(`viewer.panels.annotations.editor.tools.${typeOf(item)}`) !==
                 `viewer.panels.annotations.editor.tools.${typeOf(item)}`

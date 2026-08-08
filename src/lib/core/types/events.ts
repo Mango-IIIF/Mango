@@ -51,11 +51,18 @@ export type ViewerEventMap = {
   /** Standards-shaped export: an AnnotationPage plus what the host must decide. */
   exportAnnotationPage: {
     page: JsonObject;
+    /** @deprecated Equivalent to `publicationValid`. */
     valid: boolean;
+    /** Structurally usable as a local document, including draft URNs. */
+    draftValid: boolean;
+    /** Meets the strict Mango/IIIF publication profile. */
+    publicationValid: boolean;
     /** Private fields withheld from this export. */
     excludedPrivateFields: Array<{ annotationId: string; keys: string[] }>;
     /** Annotations that still need a server-assigned identifier. */
     unresolvedIdentities: string[];
+    /** Page that still needs a public HTTP(S) identifier. */
+    unresolvedPageIdentity?: string;
   };
   panelToggle: {
     panel: 'thumbnails' | 'search' | 'metadata' | 'annotations' | 'tools' | string;

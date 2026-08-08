@@ -38,6 +38,20 @@ export default defineConfig({
         viewport: { width: 1440, height: 1000 },
       },
     },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: { width: 1440, height: 1000 },
+      },
+    },
+    {
+      name: 'webkit',
+      use: {
+        ...devices['Desktop Safari'],
+        viewport: { width: 1440, height: 1000 },
+      },
+    },
     ...(process.env.CI
       ? [
           {

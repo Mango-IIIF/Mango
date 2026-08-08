@@ -5,6 +5,7 @@ import { exportAnnotationPage, isPublishable } from '../export';
 import { createHostRepository, RepositoryError, adoptAssignedId } from '../repository';
 import { MANGO_NOTE_KEY, DRAFT_ID_PREFIX } from '../profile';
 import { buildLayerStylesheet, styleClassForLayer } from '../style';
+import publicationFixture from './fixtures/publication-validation.json';
 
 const CANVAS = 'https://example.org/canvas/1';
 
@@ -12,6 +13,22 @@ const resolved = (overrides: Parameters<typeof createMangoAnnotation>[0]) =>
   projectToResolved(createMangoAnnotation(overrides), { provenance: 'local' })!;
 
 describe('standards-shaped export', () => {
+  it('does not call an empty draft page publication-valid', () => {
+    const result = exportAnnotationPage([]);
+    expect(result.draftValidation.valid).toBe(true);
+    expect(result.publicationValidation.valid).toBe(false);
+    expect(result.unresolvedPageIdentity).toMatch(/^urn:mango:draft:page\//);
+    expect(result.publicationValidation.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'serialize.draft-identifier',
+          path: '$.id',
+          severity: 'error',
+        }),
+      ]),
+    );
+  });
+
   it('produces an AnnotationPage a conformant reader can parse back', () => {
     const result = exportAnnotationPage([
       resolved({
@@ -76,7 +93,53 @@ describe('standards-shaped export', () => {
 
     expect(result.unresolvedIdentities).toHaveLength(1);
     expect(result.unresolvedIdentities[0]).toContain(DRAFT_ID_PREFIX);
+    expect(result.draftValidation.valid).toBe(true);
+    expect(result.publicationValidation.valid).toBe(false);
     expect(isPublishable(result)).toBe(false);
+  });
+
+  it('separates draft validity from strict publication validity', () => {
+    const fixture = publicationFixture.invalidLanguage;
+    const result = exportAnnotationPage(
+      [
+        resolved({
+          id: fixture.annotationId,
+          canvasId: fixture.canvasId,
+          shape: { type: 'rect', geometry: { x: 0, y: 0, w: 5, h: 5 } },
+          text: 'Invalid language example',
+          language: fixture.language,
+        }),
+      ],
+      { pageId: fixture.pageId },
+    );
+
+    expect(result.draftValidation.valid).toBe(true);
+    expect(result.publicationValidation.valid).toBe(false);
+    expect(result.publicationValidation.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'language.invalid-tag' }),
+      ]),
+    );
+    expect(isPublishable(result)).toBe(false);
+  });
+
+  it('marks a fully identified, valid page as publication-ready', () => {
+    const fixture = publicationFixture.valid;
+    const result = exportAnnotationPage(
+      [
+        resolved({
+          id: fixture.annotationId,
+          canvasId: fixture.canvasId,
+          shape: { type: 'point', geometry: { x: 10, y: 20 } },
+          text: 'Published',
+          language: fixture.language,
+        }),
+      ],
+      { pageId: fixture.pageId },
+    );
+
+    expect(result.publicationValidation.valid).toBe(true);
+    expect(isPublishable(result)).toBe(true);
   });
 
   it('carries layer colour as a stylesheet and a class, not an inline style', () => {

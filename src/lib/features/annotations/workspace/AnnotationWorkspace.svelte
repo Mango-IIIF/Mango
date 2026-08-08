@@ -31,7 +31,13 @@
       | ((detail: {
           id: string;
           patch: Partial<ResolvedAnnotation>;
-          options?: { language?: string; textDirection?: string };
+          options?: {
+            language?: string;
+            bodyPurpose?: string;
+            textDirection?: string;
+            bodyPath?: string;
+            createBody?: boolean;
+          };
         }) => void)
       | undefined;
     onannotationsave?: (() => void) | undefined;
@@ -40,12 +46,17 @@
     canRedo?: boolean;
     onundo?: (() => void) | undefined;
     onredo?: (() => void) | undefined;
+    onkeyboardcreate?:
+      | ((detail: { tool: 'rectangle' | 'point' }) => void)
+      | undefined;
     onkeydown?: ((event: KeyboardEvent) => void) | undefined;
     /** Unsaved changes are pending on the selected annotation. */
     isDirty?: boolean;
     saveState?: AnnotationSaveState;
     /** Permits `painting` authoring and the raw motivation control. */
     expertMode?: boolean;
+    /** Host-configured languages available in the shared annotation switch. */
+    languages?: string[];
     /**
      * Reports whether the annotation list is showing. The list needs a box of
      * its own to be usable, and the element grows to provide it rather than
@@ -84,10 +95,12 @@
     canRedo = false,
     onundo = undefined,
     onredo = undefined,
+    onkeyboardcreate = undefined,
     onkeydown = undefined,
     isDirty = false,
     saveState = { status: 'clean' },
     expertMode = false,
+    languages = ['en'],
     onlistopenchange = undefined,
     stage,
   }: Props = $props();
@@ -127,8 +140,10 @@
   let rightOpen = $state(true);
 </script>
 
+<!-- The listener deliberately scopes viewer undo/redo to this labelled region. -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <section
+  aria-label={$t('viewer.panels.annotations.editor.workspaceLabel')}
   onkeydown={(event) => onkeydown?.(event)}
   class="annotation-workspace"
   class:annotation-workspace--left-closed={!leftOpen}
@@ -140,11 +155,11 @@
       class="annotation-workspace__collapse"
       aria-expanded={leftOpen}
       aria-label={leftOpen
-        ? $t('viewer.panels.annotations.editor.collapsePanel')
-        : $t('viewer.panels.annotations.editor.expandPanel')}
+        ? $t('viewer.panels.annotations.editor.collapseToolsPanel')
+        : $t('viewer.panels.annotations.editor.expandToolsPanel')}
       title={leftOpen
-        ? $t('viewer.panels.annotations.editor.collapsePanel')
-        : $t('viewer.panels.annotations.editor.expandPanel')}
+        ? $t('viewer.panels.annotations.editor.collapseToolsPanel')
+        : $t('viewer.panels.annotations.editor.expandToolsPanel')}
       onclick={() => (leftOpen = !leftOpen)}
     >
       {leftOpen ? '‹' : '›'}
@@ -159,6 +174,7 @@
         {canRedo}
         {onundo}
         {onredo}
+        {onkeyboardcreate}
         {ontoolchange}
         {ontogglelayer}
         {onaddlayer}
@@ -183,6 +199,7 @@
     <div class="annotation-workspace__bottom">
       <AnnotationBrowserTable
         {annotations}
+        {layers}
         activeId={activeAnnotationId}
         onselect={onannotationselect}
         open={listOpen}
@@ -197,11 +214,11 @@
       class="annotation-workspace__collapse"
       aria-expanded={rightOpen}
       aria-label={rightOpen
-        ? $t('viewer.panels.annotations.editor.collapsePanel')
-        : $t('viewer.panels.annotations.editor.expandPanel')}
+        ? $t('viewer.panels.annotations.editor.collapseDetailsPanel')
+        : $t('viewer.panels.annotations.editor.expandDetailsPanel')}
       title={rightOpen
-        ? $t('viewer.panels.annotations.editor.collapsePanel')
-        : $t('viewer.panels.annotations.editor.expandPanel')}
+        ? $t('viewer.panels.annotations.editor.collapseDetailsPanel')
+        : $t('viewer.panels.annotations.editor.expandDetailsPanel')}
       onclick={() => (rightOpen = !rightOpen)}
     >
       {rightOpen ? '›' : '‹'}
@@ -216,6 +233,7 @@
         {isDirty}
         {saveState}
         {expertMode}
+        {languages}
         oncancel={onannotationcancel}
         ondelete={onannotationdelete}
         onupdate={onannotationupdate}

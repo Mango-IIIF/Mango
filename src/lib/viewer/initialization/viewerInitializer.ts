@@ -6,8 +6,6 @@
  * recommendation 1.3: "Extract Viewer Initialization Logic"
  */
 
-import { get } from 'svelte/store';
-import { fetchManifest, manifestsStore } from '../../state/manifests';
 import type { ManifestEntry } from '../../state/manifests';
 import { resolveMedia } from '../../iiif/mediaResolver';
 import type { MediaSource } from '../../iiif/mediaResolver';
@@ -99,24 +97,6 @@ export type MediaResolution = {
   mediaSources: MediaSource[];
   mediaSource: MediaSource | null;
   mediaType: string | null;
-};
-
-/**
- * Initialize manifest loading
- * Triggers async fetch of manifest data
- */
-export const initializeManifest = async (manifestId: string): Promise<void> => {
-  if (!manifestId) return;
-  await fetchManifest(manifestId);
-};
-
-/**
- * Get manifest entry from store
- */
-export const getManifestEntry = (manifestId: string): ManifestEntry | undefined => {
-  if (!manifestId) return undefined;
-  const store = get(manifestsStore);
-  return store[manifestId];
 };
 
 /**

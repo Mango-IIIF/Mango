@@ -24,6 +24,9 @@
     canRedo?: boolean;
     onundo?: (() => void) | undefined;
     onredo?: (() => void) | undefined;
+    onkeyboardcreate?:
+      | ((detail: { tool: 'rectangle' | 'point' }) => void)
+      | undefined;
   }
 
   let {
@@ -47,6 +50,7 @@
     canRedo = false,
     onundo = undefined,
     onredo = undefined,
+    onkeyboardcreate = undefined,
   }: Props = $props();
 
   const tools = ANNOTATION_TOOLS;
@@ -105,6 +109,18 @@
       </button>
     {/each}
   </div>
+
+  {#if activeTool === 'rectangle' || activeTool === 'point'}
+    <button
+      type="button"
+      class="left-sidebar__keyboard-create"
+      onclick={() => onkeyboardcreate?.({ tool: activeTool })}
+    >
+      {$t('viewer.panels.annotations.editor.createAtViewCentre', {
+        type: $t(annotationToolLabelKey(activeTool)),
+      })}
+    </button>
+  {/if}
 
   <div class="left-sidebar__history">
     <button
@@ -176,7 +192,8 @@
           class="left-sidebar__layer-toggle"
           onclick={() => ontogglelayer?.({ id: layer.id })}
           aria-pressed={layer.visible}
-          title={layer.visible ? $t('viewer.panels.annotations.editor.hideLayer') : $t('viewer.panels.annotations.editor.showLayer')}
+          title={`${layer.visible ? $t('viewer.panels.annotations.editor.hideLayer') : $t('viewer.panels.annotations.editor.showLayer')}: ${layerName(layer)}`}
+          aria-label={`${layer.visible ? $t('viewer.panels.annotations.editor.hideLayer') : $t('viewer.panels.annotations.editor.showLayer')}: ${layerName(layer)}`}
         >
           <span class="left-sidebar__eye">
             {#if layer.visible}
@@ -334,6 +351,18 @@
   .left-sidebar__history {
     display: flex;
     gap: 6px;
+  }
+  .left-sidebar__keyboard-create {
+    min-height: 36px;
+    border: 1px dashed var(--viewer-panel-border);
+    border-radius: 8px;
+    padding: 6px 9px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--viewer-text);
+    font: inherit;
+    font-size: 11px;
+    line-height: 1.3;
+    cursor: pointer;
   }
   .left-sidebar__history-button {
     flex: 1;
@@ -588,9 +617,9 @@
   .left-sidebar__layer-name {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    line-height: 1.25;
   }
   .left-sidebar__layer-color {
     width: 28px;

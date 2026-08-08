@@ -288,7 +288,6 @@ export const createViewerController = ({
   const annotationEffects = createExternalAnnotationEffects({
     state,
     derived: derivedStores,
-    getEventTarget: () => eventTarget,
   });
 
   const setEventTarget = (target: EventTarget) => {

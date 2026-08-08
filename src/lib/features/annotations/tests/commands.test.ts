@@ -49,6 +49,26 @@ describe('command stack', () => {
     expect(apply).toHaveBeenLastCalledWith('anno-1', annotation('After'));
   });
 
+  it('coalesces a continuous typing sequence into one meaningful undo step', () => {
+    vi.useFakeTimers();
+    const apply = vi.fn();
+    const stack = createCommandStack({ apply });
+    const before = annotation('A');
+    const middle = annotation('AB');
+    const after = annotation('ABC');
+
+    stack.record({ annotationId: 'anno-1', before, after: middle, label: 'text' });
+    vi.advanceTimersByTime(100);
+    stack.record({ annotationId: 'anno-1', before: middle, after, label: 'text' });
+
+    expect(stack.undo()).toBe(true);
+    expect(apply).toHaveBeenLastCalledWith('anno-1', before);
+    expect(stack.state().canUndo).toBe(false);
+    expect(stack.redo()).toBe(true);
+    expect(apply).toHaveBeenLastCalledWith('anno-1', after);
+    vi.useRealTimers();
+  });
+
   it('does not record the changes an undo itself causes', () => {
     // Applying an undo re-enters the same handlers that record edits. Without
     // the guard the stack refills as fast as it drains and undo never finishes.

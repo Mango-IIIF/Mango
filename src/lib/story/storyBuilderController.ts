@@ -57,12 +57,13 @@ import type {
   NarrationSegment,
   StoryState,
 } from "../core/types/story";
-import { ANNOTATION_STROKE_WIDTH_PX } from "../core/types/story";
 import type { ViewBox } from "../core/types/viewer";
 import type { ViewerConfig } from "../core/types/config";
 import type { ChapterTaskId } from "./chapterTasks";
 import type { ResolvedAnnotation } from "../iiif/annotationResolver";
 import { normalizeStoryAnnotations } from "./normalizeAnnotations";
+import { storyDrawingToResolved } from "./storyDrawingAnnotations";
+import { normaliseAuthoringLanguages } from "../features/annotations/languages";
 
 export type StoryBuilderController = {
   story: Readable<StoryState>;
@@ -189,6 +190,7 @@ export type StoryBuilderController = {
   selectCanvas: (canvasIndex: number) => void;
   loadManifest: (manifest: string) => void;
   saveChapterSettings: () => void;
+  cancelChapterSettings: () => void;
   saveExport: () => { ok: boolean; errors: string[] };
   exportStory: () => { ok: boolean; errors: string[] };
   saveStory: () => Promise<SaveResult>;
@@ -267,6 +269,8 @@ export const collectLatestTransitionDelay = (story: StoryState): number => {
 export const createStoryBuilderController = (
   options: StoryBuilderOptions = {},
 ): StoryBuilderController => {
+  const language = options.language ?? "en";
+  const languages = normaliseAuthoringLanguages(options.languages, language);
   const initialStoryData: StoryState = normalizeStoryAnnotations(
     options.initialStory
       ? {
@@ -369,7 +373,7 @@ export const createStoryBuilderController = (
   const viewerCanvasIndex = writable(0);
   const viewerCanvasCount = writable(0);
   const modelPoseDebug = writable<string | null>(null);
-  const annotationLanguage = writable(options.language ?? "en");
+  const annotationLanguage = writable(languages[0]);
   const saveState = writable<SaveState>({ status: "idle" });
   const saveConfigured = writable(false);
   const canUndo = writable(false);
@@ -385,8 +389,6 @@ export const createStoryBuilderController = (
   const modelPose = createModelPose();
   const narrationPlayer = createNarrationPlayer();
 
-  const language = options.language ?? "en";
-  const languages = options.languages ?? ["en"];
   const history = createStoryHistory(initialStoryData);
   let latestNarrationSegments =
     collectLatestNarrationSegments(initialStoryData);
@@ -407,56 +409,58 @@ export const createStoryBuilderController = (
   let activeMediaEnd: number | null = null;
   let pendingMediaSyncToken = 0; // Token for media type sync (safety timeout only)
   let motionPreviewFrame: number | null = null;
-
-  const annotationFillColor = (color: string): string => {
-    const hex = color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-    if (!hex) return `color-mix(in srgb, ${color} 16%, transparent)`;
-    return `rgba(${parseInt(hex[1], 16)}, ${parseInt(hex[2], 16)}, ${parseInt(hex[3], 16)}, 0.16)`;
-  };
-
-  const drawingLabel = (drawing: ChapterDrawingAnnotation): string => {
-    const labels = drawing.label ?? {};
-    return (
-      labels[get(annotationLanguage)] ??
-      labels[language] ??
-      labels.en ??
-      Object.values(labels)[0] ??
-      drawing.text ??
-      ""
-    );
-  };
+  let annotationTransactionSnapshot: StoryState | null = null;
+  let annotationTransactionWasDirty = false;
+  let annotationTransactionChanged = false;
 
   const syncEditableStoryAnnotations = () => {
     const chapterId = get(selectedChapterId);
     const chapter = get(storyStore).chapters.find(
       (entry) => entry.id === chapterId,
     );
-    const annotations: ResolvedAnnotation[] = (
-      chapter?.drawingAnnotations ?? []
-    ).map((drawing) => {
-      const color = drawing.color?.trim() || "#e07a3f";
-      const strokeWidth =
-        ANNOTATION_STROKE_WIDTH_PX[drawing.strokeWidth ?? "medium"];
-      const label = drawingLabel(drawing);
-      return {
-        id: drawing.id,
-        shapeType: drawing.type === "rectangle" ? "rect" : drawing.type,
-        ...(label ? { label } : {}),
-        ...(drawing.text ? { text: drawing.text } : {}),
-        targetStyle: `stroke: ${color}; stroke-width: ${strokeWidth}; fill: ${drawing.fillMode === "solid" ? color : annotationFillColor(color)};`,
-        ...(drawing.rect ? { rect: drawing.rect } : {}),
-        ...(drawing.point ? { point: drawing.point } : {}),
-        ...(drawing.points ? { polygon: { points: drawing.points } } : {}),
-      };
-    });
+    const canvasId = chapter
+      ? chapter.canvasId || `${chapter.manifest}/canvas/${chapter.canvasIndex}`
+      : '';
+    const preferredLanguages = [get(annotationLanguage), language, ...languages];
+    const annotations: ResolvedAnnotation[] = (chapter?.drawingAnnotations ?? []).flatMap(
+      (drawing) => {
+        const annotation = storyDrawingToResolved(
+          drawing,
+          canvasId,
+          preferredLanguages,
+        );
+        return annotation ? [annotation] : [];
+      },
+    );
     viewer?.setStoryAnnotations?.(annotations);
   };
 
   activeChapterTask.subscribe((task) => {
     if (task === "focus") {
+      if (!annotationTransactionSnapshot) {
+        annotationTransactionSnapshot = cloneStoryValue(
+          storyStoreWrapper.exportStory(),
+        );
+        annotationTransactionWasDirty = get(dirty);
+        annotationTransactionChanged = false;
+        // The open annotation transaction becomes one undo step when saved.
+        // Older story history must not be applied through the middle of it.
+        canUndo.set(false);
+        canRedo.set(false);
+      }
       viewer?.setStoryAnnotationEditing?.(true);
       syncEditableStoryAnnotations();
       return;
+    }
+    // Closing the task through a host control is an implicit commit. The
+    // in-panel Cancel path clears the snapshot before changing the task, so it
+    // never reaches this branch.
+    if (annotationTransactionSnapshot) {
+      if (annotationTransactionChanged) history.push(annotationTransactionSnapshot);
+      annotationTransactionSnapshot = null;
+      annotationTransactionChanged = false;
+      canUndo.set(history.canUndo());
+      canRedo.set(history.canRedo());
     }
     chapterAnnotationTool.set("select");
     selectedDrawingAnnotationId.set(null);
@@ -560,7 +564,11 @@ export const createStoryBuilderController = (
       (entry) => entry.id === chapterId,
     );
     if (chapterIndex < 0) return;
-    pushHistorySnapshot();
+    if (get(activeChapterTask) === "focus" && annotationTransactionSnapshot) {
+      annotationTransactionChanged = true;
+    } else {
+      pushHistorySnapshot();
+    }
     const next = cloneStoryValue(current);
     const chapter = next.chapters[chapterIndex];
     chapter.drawingAnnotations = transform(chapter.drawingAnnotations ?? []);
@@ -2498,9 +2506,17 @@ export const createStoryBuilderController = (
   const saveChapterSettings = () => {
     setError(null);
     if (get(activeChapterTask) === "focus") {
+      if (annotationTransactionSnapshot && annotationTransactionChanged) {
+        history.push(annotationTransactionSnapshot);
+      }
+      annotationTransactionSnapshot = null;
+      annotationTransactionChanged = false;
       selectedDrawingAnnotationId.set(null);
       viewer?.setStoryAnnotationSelection?.(null);
+      activeChapterTask.set(null);
       uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
+      canUndo.set(history.canUndo());
+      canRedo.set(history.canRedo());
       return;
     }
     if (get(activeChapterTask) === "source") {
@@ -2508,6 +2524,27 @@ export const createStoryBuilderController = (
     }
     activeChapterTask.set(null);
     uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
+  };
+
+  const cancelChapterSettings = () => {
+    if (get(activeChapterTask) !== "focus" || !annotationTransactionSnapshot) {
+      activeChapterTask.set(null);
+      uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
+      return;
+    }
+    const snapshot = annotationTransactionSnapshot;
+    annotationTransactionSnapshot = null;
+    annotationTransactionChanged = false;
+    runesStore.loadStory(snapshot);
+    storyStore.set(runesStore.story);
+    dirty.set(annotationTransactionWasDirty);
+    selectedDrawingAnnotationId.set(null);
+    viewer?.setStoryAnnotationSelection?.(null);
+    activeChapterTask.set(null);
+    uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
+    syncEditableStoryAnnotations();
+    canUndo.set(history.canUndo());
+    canRedo.set(history.canRedo());
   };
 
   const saveExport = () => {
@@ -2646,6 +2683,7 @@ export const createStoryBuilderController = (
     selectCanvas,
     loadManifest,
     saveChapterSettings,
+    cancelChapterSettings,
     saveExport,
     exportStory,
     saveStory,

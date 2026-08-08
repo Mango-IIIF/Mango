@@ -22,6 +22,8 @@
   import type { LayerItem } from '../annotations/workspace/LeftSidebar.svelte';
   import {
     applyResolvedPatch,
+    createMangoAnnotation,
+    projectToResolved,
     resolveAnnotationJson,
     shapeFromResolved,
     shapeTool,
@@ -39,6 +41,7 @@
   } from '../annotations/layers';
   import { exportAnnotationPage } from '../annotations/export';
   import { STORY_LABEL_SIZING } from '../annotations/rectangleLabelLayout';
+  import { normaliseAuthoringLanguages } from '../annotations/languages';
   import type { AnnotationSaveState } from '../annotations/model';
   import {
     createCommandStack,
@@ -269,6 +272,12 @@
   let isStoryViewer = $derived(mode === 'story-viewer');
   let isStoryBuilder = $derived(mode === 'story-builder');
   let isAnnotationEditor = $derived(mode === 'annotation-editor');
+  let annotationLanguages = $derived(
+    normaliseAuthoringLanguages(
+      normalisedConfig.annotations?.languages,
+      normalisedConfig.language ?? 'en',
+    ),
+  );
   let isPlainViewerMode = $derived(!mode || mode === 'viewer');
   const VIEWER_CONTROLS_IDLE_MS = 2800;
   let viewerControlsVisible = $state(true);
@@ -734,6 +743,7 @@
   let draftAnno = $state.raw<ResolvedAnnotation | null>(null);
   let annotationDirty = $state(false);
   let annotationSaveState = $state<AnnotationSaveState>({ status: 'clean' });
+  let annotationExportStatus = $state('');
   /**
    * Expert content-authoring mode.
    *
@@ -893,13 +903,6 @@
     if (merged.length !== annotationLayers.length) annotationLayers = merged;
   });
 
-  const unsubscribeActiveId = activeAnnotationId.subscribe((activeId) => {
-    if (draftAnno && activeId && activeId !== draftAnno.id) {
-      draftAnno = null;
-    }
-  });
-  onDestroy(unsubscribeActiveId);
-
   const handleAnnotationCreate = async (payload: {
     annotation: unknown;
     tool?: ChapterAnnotationTool;
@@ -929,7 +932,55 @@
     }
 
     draftAnno = resolved;
+    annotationDirty = true;
     annotationSaveState = { status: 'clean' };
+    controller.handleAnnotationSelect({ id: resolved.id, preventZoom: true });
+  };
+
+  const handleKeyboardAnnotationCreate = (detail: {
+    tool: 'rectangle' | 'point';
+  }) => {
+    const canvasId = getCanvasId() ?? activeCanvasId;
+    if (!canvasId) return;
+    const content = getContentSize();
+    const viewBox = getViewBox() ?? {
+      x: 0,
+      y: 0,
+      w: content?.width ?? 1_000,
+      h: content?.height ?? 1_000,
+    };
+    const centre = {
+      x: viewBox.x + viewBox.w / 2,
+      y: viewBox.y + viewBox.h / 2,
+    };
+    const shape =
+      detail.tool === 'point'
+        ? ({ type: 'point', geometry: centre } as const)
+        : ({
+            type: 'rect',
+            geometry: {
+              x: centre.x - viewBox.w * 0.125,
+              y: centre.y - viewBox.h * 0.125,
+              w: Math.max(1, viewBox.w * 0.25),
+              h: Math.max(1, viewBox.h * 0.25),
+            },
+          } as const);
+    const layer = annotationLayers.find((entry) => entry.id === activeAnnotationLayerId);
+    const document = createMangoAnnotation({
+      canvasId,
+      shape,
+      styleClass: styleClassForLayer(activeAnnotationLayerId),
+      stylesheet: layer
+        ? buildLayerStylesheet([{ id: layer.id, color: layer.color }])
+        : undefined,
+    });
+    const resolved = projectToResolved(document, { provenance: 'draft', canvasId });
+    if (!resolved) return;
+    draftAnno = resolved;
+    annotationDirty = true;
+    annotationSaveState = { status: 'clean' };
+    annotationEditorTool = 'select';
+    controller.setAnnotationMode('edit');
     controller.handleAnnotationSelect({ id: resolved.id, preventZoom: true });
   };
 
@@ -957,6 +1008,22 @@
     annotationDirty = false;
     annotationSaveState = { status: 'clean' };
     if (snapshot) controller.updateAnnotation(snapshot.id, snapshot.annotation);
+  };
+
+  /**
+   * A draft is local state until Save. Selection and Canvas navigation used to
+   * replace that state silently, which made Cancel trustworthy but made every
+   * other route out of the inspector destructive. Keep the policy small and
+   * explicit: stay by default; discard only after confirmation.
+   */
+  const confirmAnnotationNavigation = (): boolean => {
+    if (!isAnnotationEditor || (!annotationDirty && !draftAnno)) return true;
+    if (typeof window === 'undefined') return false;
+    const discard = window.confirm(
+      $t('viewer.panels.annotations.editor.discardNavigationConfirmation'),
+    );
+    if (discard) handleAnnotationCancel();
+    return discard;
   };
 
   /**
@@ -1037,11 +1104,38 @@
     options: {
       stylesheet?: CanonicalStylesheet | null;
       language?: string;
+      bodyPurpose?: string;
       textDirection?: string;
+      bodyPath?: string;
+      createBody?: boolean;
     } = {},
   ) => {
+    let effectivePatch = patch;
+    let effectiveOptions = options;
+    if (patch.targetStyleClass !== undefined && options.stylesheet === undefined) {
+      const requested = patch.targetStyleClass.trim();
+      const layer = annotationLayers.find(
+        (entry) =>
+          entry.id === requested || styleClassForLayer(entry.id) === requested,
+      );
+      if (layer) {
+        effectivePatch = {
+          ...patch,
+          targetStyleClass: styleClassForLayer(layer.id),
+        };
+        effectiveOptions = {
+          ...options,
+          stylesheet: buildLayerStylesheet([
+            { id: layer.id, color: layer.color },
+          ]),
+        };
+      }
+    }
     if (isStoryBuilder) {
-      controller.emitEvent('annotationUpdate', { annotationId: id, patch });
+      controller.emitEvent('annotationUpdate', {
+        annotationId: id,
+        patch: effectivePatch,
+      });
       return;
     }
     /*
@@ -1052,14 +1146,14 @@
     const previous = annotationById(id);
 
     if (draftAnno && draftAnno.id === id) {
-      draftAnno = applyResolvedPatch(draftAnno, patch, options);
+      draftAnno = applyResolvedPatch(draftAnno, effectivePatch, effectiveOptions);
       annotationDirty = true;
       if (previous) {
         commandStack.record({
           annotationId: id,
           before: previous,
           after: draftAnno,
-          label: labelForPatch(patch),
+          label: labelForPatch(effectivePatch),
         });
       }
       return;
@@ -1070,7 +1164,7 @@
     }
     annotationDirty = true;
     annotationSaveState = { status: 'clean' };
-    controller.updateAnnotation(id, patch, options);
+    controller.updateAnnotation(id, effectivePatch, effectiveOptions);
 
     const next = annotationById(id);
     if (previous && next && next !== previous) {
@@ -1078,7 +1172,7 @@
         annotationId: id,
         before: previous,
         after: next,
-        label: labelForPatch(patch),
+        label: labelForPatch(effectivePatch),
       });
     }
   };
@@ -1128,9 +1222,12 @@
     });
     controller.emitEvent('exportAnnotationPage', {
       page: result.page,
-      valid: result.validation.valid,
+      valid: result.publicationValidation.valid,
+      draftValid: result.draftValidation.valid,
+      publicationValid: result.publicationValidation.valid,
       excludedPrivateFields: result.excludedPrivateFields,
       unresolvedIdentities: result.unresolvedIdentities,
+      unresolvedPageIdentity: result.unresolvedPageIdentity,
     });
 
     /*
@@ -1139,6 +1236,24 @@
      * rather than reverse-engineering `ResolvedAnnotation`.
      */
     controller.emitEvent('exportAnnotations', { annotations: allUserAnnos });
+
+    /* The visible control performs a visible action even when the host has not
+       installed an event listener. With draft identifiers this is explicitly a
+       local draft download; publication readiness is reported separately. */
+    if (typeof document !== 'undefined' && typeof URL !== 'undefined') {
+      const blob = new Blob([JSON.stringify(result.page, null, 2)], {
+        type: 'application/ld+json',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'mango-annotations-draft.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+    annotationExportStatus = result.publicationValidation.valid
+      ? $t('viewer.panels.annotations.exportPublicationReady')
+      : $t('viewer.panels.annotations.exportDraftOnly');
   };
 
   const preloadStoryManifests = async (value: StoryWithDefaults): Promise<void> => {
@@ -1275,6 +1390,11 @@
       if (isAnnotationEditor && $annotationMode === 'create') {
         return;
       }
+      if (
+        isAnnotationEditor &&
+        draftAnno?.id !== detail.id &&
+        !confirmAnnotationNavigation()
+      ) return;
       controller.handleAnnotationSelect(detail);
       if (!isAnnotationEditor) return;
       if (draftAnno?.id === detail.id) return;
@@ -1325,6 +1445,7 @@
     stageRef.zoomBy(factor);
   };
   const handlePrevCanvas = () => {
+    if (!confirmAnnotationNavigation()) return;
     const index = $selectedCanvasIndex;
     if ($layoutMode === 'two-page') {
       if (index <= 2) {
@@ -1339,6 +1460,7 @@
   };
 
   const handleNextCanvas = () => {
+    if (!confirmAnnotationNavigation()) return;
     const index = $selectedCanvasIndex;
     if ($layoutMode === 'two-page') {
       if (index === 0) {
@@ -1353,6 +1475,7 @@
   };
 
   const handleSetCanvasIndex = (detail: { index: number }) => {
+    if (!confirmAnnotationNavigation()) return;
     controller.setCanvasByIndex(detail.index);
   };
   const handleHome = () => stageRef?.goHome?.();
@@ -1398,6 +1521,7 @@
    * pick an image and are left looking at the picker instead of the picture.
    */
   const handleGalleryCanvasSelect = (index: number) => {
+    if (!confirmAnnotationNavigation()) return;
     const dismiss = galleryIsOverlay();
     controller.setCanvasByIndex(index);
     if (dismiss) {
@@ -1935,6 +2059,9 @@
         <button type="button" class="viewer__export-btn" onclick={handleExportAnnotations}>
           {$t('viewer.panels.annotations.export') || 'Export Annotations'}
         </button>
+        {#if annotationExportStatus}
+          <span class="viewer__export-status" role="status">{annotationExportStatus}</span>
+        {/if}
       {/if}
 
       <button
@@ -2159,11 +2286,13 @@
             isDirty={annotationDirty}
             saveState={annotationSaveState}
             expertMode={annotationExpertMode}
+            languages={annotationLanguages}
             onannotationcancel={handleAnnotationCancel}
             canUndo={commandState.canUndo}
             canRedo={commandState.canRedo}
             onundo={handleAnnotationUndo}
             onredo={handleAnnotationRedo}
+            onkeyboardcreate={handleKeyboardAnnotationCreate}
             onkeydown={handleAnnotationKeydown}
             activeTool={annotationEditorTool}
             layers={annotationLayers}
@@ -2203,9 +2332,7 @@
             onlayerarchive={handleLayerArchive}
             onannotationselect={(detail) => {
               const selectedDraft = draftAnno?.id === detail.id;
-              if (draftAnno && draftAnno.id !== detail.id) {
-                draftAnno = null;
-              }
+              if (!selectedDraft && !confirmAnnotationNavigation()) return;
               controller.handleAnnotationSelect(detail);
               if (!selectedDraft) {
                 annotationEditorTool = 'select';
@@ -2279,6 +2406,10 @@
                     )}
                   onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
                   onannotationselect={(payload) => {
+                    if (
+                      draftAnno?.id !== payload.id &&
+                      !confirmAnnotationNavigation()
+                    ) return;
                     controller.handleAnnotationSelect(payload);
                     annotationEditorTool = 'select';
                     controller.setAnnotationMode('edit');
@@ -2704,6 +2835,12 @@
   }
   .viewer__export-btn:active {
     transform: translateY(0);
+  }
+  .viewer__export-status {
+    max-width: 34ch;
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 11px;
+    line-height: 1.3;
   }
 
   .viewer__fullscreen-btn {
@@ -4156,7 +4293,11 @@
 
     .viewer--story-builder .viewer__grid {
       grid-template-columns: 1fr !important;
-      grid-template-rows: 360px 280px 440px;
+      /* Follow the phone authoring flow: choose a chapter, work on the canvas,
+         then refine the selected item in the inspector. Keeping the stage
+         first meant that selecting a chapter scrolled the chapter rail into
+         view and stranded the drawing canvas above the scroll port. */
+      grid-template-rows: 280px 600px 440px;
       height: 100%;
       max-height: 100%;
       overflow-x: hidden;
@@ -4166,12 +4307,12 @@
     }
 
     .viewer--story-builder .viewer__grid > .stage {
-      grid-row: 1;
+      grid-row: 2;
       grid-column: 1;
     }
 
     .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
-      grid-row: 2;
+      grid-row: 1;
       grid-column: 1;
     }
 

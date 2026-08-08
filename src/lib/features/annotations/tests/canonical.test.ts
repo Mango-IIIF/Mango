@@ -250,4 +250,50 @@ describe('body language and direction', () => {
     const cleared = applyPatch(rtl, {}, { textDirection: '' }).document;
     expect(cleared.bodies[0].textDirection).toBeUndefined();
   });
+
+  it('edits one translated body by canonical path without changing its sibling', () => {
+    const document = createMangoAnnotation({
+      canvasId: CANVAS,
+      shape: { type: 'rect', geometry: { x: 0, y: 0, w: 1, h: 1 } },
+      textBodies: [
+        { value: 'English text', language: 'en', purpose: 'commenting' },
+        { value: 'Testun Cymraeg', language: 'cy', purpose: 'commenting' },
+      ],
+    });
+    const projection = projectToResolved(document)!;
+    const welshPath = projection.bodies?.find((body) => body.language === 'cy')?.path;
+
+    const edited = applyPatch(
+      document,
+      { text: 'Testun newydd' },
+      { bodyPath: welshPath, bodyPurpose: 'transcribing' },
+    ).document;
+
+    expect(edited.bodies.map((body) => body.value)).toEqual([
+      'English text',
+      'Testun newydd',
+    ]);
+    expect(edited.bodies[0].purpose).toEqual(['commenting']);
+    expect(edited.bodies[1].purpose).toEqual(['transcribing']);
+  });
+
+  it('adds a parallel translation instead of replacing the display body', () => {
+    const document = createMangoAnnotation({
+      canvasId: CANVAS,
+      shape: { type: 'rect', geometry: { x: 0, y: 0, w: 1, h: 1 } },
+      text: 'English text',
+      language: 'en',
+    });
+
+    const edited = applyPatch(
+      document,
+      { text: 'Texte français' },
+      { createBody: true, language: 'fr', bodyPurpose: 'commenting' },
+    ).document;
+
+    expect(edited.bodies.map((body) => [body.value, body.language[0]])).toEqual([
+      ['English text', 'en'],
+      ['Texte français', 'fr'],
+    ]);
+  });
 });

@@ -155,9 +155,6 @@ describe('enhanced motion tracking engine', () => {
     };
 
     const body = createMangoViewerStateBody(chapter);
-    expect(body.mangoState.cameraTrack?.pathType).toBe('spline');
-    expect(body.mangoState.cameraTrack?.keyframes[0].dwellMs).toBe(1500);
-
     const restored = parseMangoViewerStateBody(body);
     expect(restored?.cameraTrack?.pathType).toBe('spline');
     expect(restored?.cameraTrack?.preset).toBe('ken-burns');

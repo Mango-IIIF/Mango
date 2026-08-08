@@ -7,6 +7,7 @@ import type {
 import type { ViewBox } from "../../core/types/viewer";
 import {
   MANGO_STORY_VERSION,
+  mangoViewerStateVersion,
   parseMangoViewerStateBody,
 } from "../storyAnnotationProfile";
 import { normalizeChapterAnnotations } from "../normalizeAnnotations";
@@ -79,12 +80,17 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
   const narrationTracks: Record<string, { src: string }> = {};
 
   const pageItems = input.items || [];
-  const overlayItems = pageItems.filter(
-    (item) => item["mango:role"] === "overlay",
-  );
-  const chapterItems = pageItems.filter(
-    (item) => item["mango:role"] !== "overlay",
-  );
+  const carriesViewerState = (item: IiifStoryItem): boolean => {
+    const bodies = item.body ? (Array.isArray(item.body) ? item.body : [item.body]) : [];
+    return bodies.some((body) => mangoViewerStateVersion(body) !== undefined);
+  };
+  const legacyEnvelope = input["mango:storyVersion"] !== undefined;
+  const chapterItems = legacyEnvelope
+    ? pageItems.filter((item) => item["mango:role"] !== "overlay")
+    : pageItems.filter(carriesViewerState);
+  const overlayItems = legacyEnvelope
+    ? pageItems.filter((item) => item["mango:role"] === "overlay")
+    : pageItems.filter((item) => !carriesViewerState(item));
 
   const chapters = chapterItems.map((item, index) => {
     const bodies = item.body
@@ -274,7 +280,10 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
 
     bodies.forEach((body) => processBodyItem(body));
     for (const overlay of overlayItems) {
-      if (overlay["mango:chapterId"] !== chapterId || !overlay.body) continue;
+      const belongsToChapter =
+        overlay["mango:chapterId"] === chapterId ||
+        Boolean(item.id && overlay.id?.startsWith(`${item.id}/overlay/`));
+      if (!belongsToChapter || !overlay.body) continue;
       const overlayBodies = Array.isArray(overlay.body)
         ? overlay.body
         : [overlay.body];
@@ -321,7 +330,8 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
   const firstChapter = chapters[0];
   const firstAnnotationId = chapterItems[0]?.id;
   let customAnnotationBase: string | undefined;
-  if (!input["mango:draft"] && firstChapter && firstAnnotationId) {
+  const isDraft = !input.id || input.id.startsWith("urn:mango:draft:");
+  if (!isDraft && firstChapter && firstAnnotationId) {
     const suffix = encodeURIComponent(firstChapter.id);
     if (firstAnnotationId.endsWith(suffix)) {
       const candidate = firstAnnotationId.slice(0, -suffix.length);
@@ -332,10 +342,15 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
     }
   }
 
-  const declaredAspect = input["mango:presentationAspect"];
+  const declaredAspect =
+    chapterItems
+      .flatMap((item) => item.body ? (Array.isArray(item.body) ? item.body : [item.body]) : [])
+      .map(parseMangoViewerStateBody)
+      .find((state) => state?.presentationAspect !== undefined)?.presentationAspect ??
+    input["mango:presentationAspect"];
 
   return {
-    id: input["mango:draft"] ? undefined : input.id,
+    id: isDraft ? undefined : input.id,
     ...(customAnnotationBase
       ? { publication: { annotationBase: customAnnotationBase } }
       : {}),
@@ -371,19 +386,27 @@ export const normaliseStoryInput = (
       error: translate('storyViewer.errors.shape'),
     };
   }
-  if (input["mango:storyVersion"] === undefined) {
+  const bodyChapterItems = (input.items ?? []).filter((item) => {
+    const bodies = item.body ? (Array.isArray(item.body) ? item.body : [item.body]) : [];
+    return bodies.some((body) => mangoViewerStateVersion(body) !== undefined);
+  });
+  const bodyVersion = bodyChapterItems
+    .flatMap((item) => item.body ? (Array.isArray(item.body) ? item.body : [item.body]) : [])
+    .map(mangoViewerStateVersion)
+    .find((version) => version !== undefined);
+  const storyVersion = input["mango:storyVersion"] ?? bodyVersion;
+  if (storyVersion === undefined) {
     return { ok: false, error: translate('storyViewer.errors.missingVersion') };
   }
-  if (input["mango:storyVersion"] !== MANGO_STORY_VERSION) {
+  if (storyVersion !== MANGO_STORY_VERSION) {
     return {
       ok: false,
-      error: translate('storyViewer.errors.unsupportedVersion', { version: String(input["mango:storyVersion"]) }),
+      error: translate('storyViewer.errors.unsupportedVersion', { version: String(storyVersion) }),
     };
   }
-
-  const chapterItems = (input.items ?? []).filter(
-    (item) => item["mango:role"] !== "overlay",
-  );
+  const chapterItems = input["mango:storyVersion"] !== undefined
+    ? (input.items ?? []).filter((item) => item["mango:role"] !== "overlay")
+    : bodyChapterItems;
   const hasInvalidChapterState = chapterItems.some((item) => {
     const bodies = item.body
       ? Array.isArray(item.body)

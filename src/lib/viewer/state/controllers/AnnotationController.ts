@@ -30,6 +30,10 @@ export type AnnotationPatchOptions = {
   language?: string;
   bodyPurpose?: string;
   textDirection?: string;
+  /** Canonical body to patch when an annotation has parallel translations. */
+  bodyPath?: string;
+  /** Add a parallel TextualBody instead of replacing the display projection. */
+  createBody?: boolean;
 };
 
 export type AnnotationControllerConfig = {

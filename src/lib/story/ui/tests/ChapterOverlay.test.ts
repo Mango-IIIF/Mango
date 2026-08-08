@@ -674,12 +674,15 @@ describe("ChapterOverlay", () => {
     ).click();
     await tick();
 
-    const translationInputs = target.querySelectorAll<HTMLInputElement>(
-      ".chapter-overlay__translation-field input",
-    );
-    expect(translationInputs).toHaveLength(2);
-    translationInputs[1].value = "Nodyn";
-    translationInputs[1].dispatchEvent(new Event("input"));
+    (
+      target.querySelector('[data-testid="drawing-language-cy"]') as HTMLButtonElement
+    ).click();
+    await tick();
+    const translationInput = target.querySelector<HTMLTextAreaElement>(
+      ".chapter-overlay__translation-field textarea",
+    )!;
+    translationInput.value = "Nodyn";
+    translationInput.dispatchEvent(new Event("input"));
     expect(onSetDrawingAnnotationLabel).toHaveBeenCalledWith(
       "rectangle-1",
       "cy",

@@ -1,9 +1,10 @@
 import { validateStory } from './validation';
-import type { ChapterDrawingAnnotation, StoryState } from '../core/types/story';
+import type { StoryState } from '../core/types/story';
 import type { CapturePayload } from '../core/state/story.svelte';
 import {
   createSelectors,
   serializeWebAnnotation,
+  type CanonicalStylesheet,
   type NeutralShape,
   type RectGeometry,
   type TemporalFragment,
@@ -12,12 +13,12 @@ import { createMangoAnnotation } from '../features/annotations/canonical';
 import {
   createMangoViewerStateBody,
   IIIF_PRESENTATION_3_CONTEXT,
-  MANGO_STORY_CONTEXT,
-  MANGO_STORY_VERSION,
+  W3C_WEB_ANNOTATION_CONTEXT,
   type MangoViewerStateBody,
 } from './storyAnnotationProfile';
 import { buildChapterAnnotationId, deriveChapterAnnotationBase } from './publicIdentifiers';
 import { translate } from '../i18n';
+import { storyDrawingDocument } from './storyDrawingAnnotations';
 
 export type SaveConfig = {
   endpoint?: string;
@@ -47,10 +48,9 @@ export type StoryAnnotation = {
   id: string;
   type: 'Annotation';
   motivation: 'supplementing' | 'describing' | 'highlighting' | 'commenting';
-  'mango:role'?: 'overlay';
-  'mango:chapterId'?: string;
   label?: Record<string, string[]>;
   summary?: Record<string, string[]>;
+  stylesheet?: Record<string, unknown> | string | Array<Record<string, unknown> | string>;
   body?:
     | Record<string, unknown>
     | MangoViewerStateBody
@@ -59,17 +59,12 @@ export type StoryAnnotation = {
 };
 
 export type StoryAnnotationPage = {
-  '@context': [typeof IIIF_PRESENTATION_3_CONTEXT, typeof MANGO_STORY_CONTEXT];
+  '@context': [
+    typeof W3C_WEB_ANNOTATION_CONTEXT,
+    typeof IIIF_PRESENTATION_3_CONTEXT,
+  ];
   id: string;
   type: 'AnnotationPage';
-  'mango:storyVersion': typeof MANGO_STORY_VERSION;
-  'mango:draft'?: true;
-  /**
-   * Aspect every framing in this story is stored at. Carried on the page so
-   * normalisation is reproducible: without it a reopened story re-infers the
-   * aspect from its own boxes, which drifts once chapters are added.
-   */
-  'mango:presentationAspect'?: number;
   label: Record<string, string[]>;
   items: StoryAnnotation[];
 };
@@ -129,30 +124,6 @@ const normaliseStoryTarget = (target: unknown): StoryTarget | string => {
   };
 };
 
-const drawingAnnotationShape = (
-  annotation: ChapterDrawingAnnotation,
-): NeutralShape | null => {
-  if (annotation.rect) return { type: 'rect', geometry: annotation.rect };
-  if (annotation.point) return { type: 'point', geometry: annotation.point };
-  if (!annotation.points?.length) return null;
-  if (annotation.type === 'line' && annotation.points.length >= 2) {
-    return {
-      type: 'line',
-      geometry: {
-        start: annotation.points[0],
-        end: annotation.points[annotation.points.length - 1],
-      },
-    };
-  }
-  if (annotation.type === 'freehand' && annotation.points.length >= 2) {
-    return { type: 'freehand', geometry: { points: annotation.points } };
-  }
-  if (annotation.type === 'polygon' && annotation.points.length >= 3) {
-    return { type: 'polygon', geometry: { points: annotation.points } };
-  }
-  return null;
-};
-
 /**
  * Standards-shaped body and target for one story overlay.
  *
@@ -166,24 +137,48 @@ const serializeOverlay = (input: {
   canvasId: string;
   shape: NeutralShape;
   text?: string;
+  textBodies?: readonly {
+    value: string;
+    language?: string;
+    purpose?: string;
+  }[];
   motivation: string;
   bodyPurpose?: string;
   language?: string;
-}): { body?: Record<string, unknown>; target: unknown } => {
+  styleClass?: string;
+  stylesheet?: CanonicalStylesheet;
+}): {
+  body?: Record<string, unknown> | Array<Record<string, unknown>>;
+  target: unknown;
+  stylesheet?: Record<string, unknown> | string | Array<Record<string, unknown> | string>;
+} => {
   const document = createMangoAnnotation({
     id: input.id,
     canvasId: input.canvasId,
     shape: input.shape,
     text: input.text,
+    textBodies: input.textBodies,
     motivation: input.motivation,
     bodyPurpose: input.bodyPurpose,
     language: input.language,
+    styleClass: input.styleClass,
+    stylesheet: input.stylesheet,
   });
   const { json } = serializeWebAnnotation(document, { profile: 'iiif-presentation-3' });
-  const body = Array.isArray(json.body) ? json.body[0] : json.body;
+  const body = json.body;
   return {
-    body: body && typeof body === 'object' ? (body as Record<string, unknown>) : undefined,
+    body:
+      body && typeof body === 'object'
+        ? (body as Record<string, unknown> | Array<Record<string, unknown>>)
+        : undefined,
     target: json.target,
+    ...(json.stylesheet && typeof json.stylesheet === 'object'
+      ? {
+          stylesheet: json.stylesheet as
+            | Record<string, unknown>
+            | Array<Record<string, unknown> | string>,
+        }
+      : {}),
   };
 };
 
@@ -329,8 +324,6 @@ export const serializeStoryToIiif = (
             id: `${annotationId}/overlay/${encodeURIComponent(lang)}`,
             type: 'Annotation',
             motivation: 'describing',
-            'mango:role': 'overlay',
-            'mango:chapterId': chapterId,
             body: serializedText.body,
             target:
               relativePlacement && !chapter.viewBox
@@ -353,31 +346,39 @@ export const serializeStoryToIiif = (
     // IIIF clients can consume their spatial targets without understanding the
     // Mango viewer-state extension used for exact story round-tripping.
     for (const drawing of chapter.drawingAnnotations ?? []) {
-      const shape = drawingAnnotationShape(drawing);
-      if (!shape) continue;
       const drawingId = `${annotationId}/overlay/drawing/${encodeURIComponent(drawing.id)}`;
-      const hasText = Boolean(drawing.text?.trim());
-      const serializedDrawing = serializeOverlay({
-        id: drawingId,
-        canvasId,
-        text: drawing.text?.trim(),
-        motivation: hasText ? 'commenting' : 'highlighting',
-        bodyPurpose: 'commenting',
-        shape,
+      const document = storyDrawingDocument(drawing, canvasId, drawingId);
+      if (!document) continue;
+      const { json: serializedDrawing } = serializeWebAnnotation(document, {
+        profile: 'iiif-presentation-3',
       });
-      const textBody = serializedDrawing.body;
+      const textBody = serializedDrawing.body as
+        | Record<string, unknown>
+        | Array<Record<string, unknown>>
+        | undefined;
+      const drawingStylesheet = serializedDrawing.stylesheet as
+        | Record<string, unknown>
+        | string
+        | Array<Record<string, unknown> | string>
+        | undefined;
       overlayAnnotations.push({
         id: drawingId,
         type: 'Annotation',
-        motivation: hasText ? 'commenting' : 'highlighting',
-        'mango:role': 'overlay',
-        'mango:chapterId': chapterId,
+        motivation: document.motivation.includes('commenting')
+          ? 'commenting'
+          : 'highlighting',
         ...(textBody ? { body: textBody } : {}),
+        ...(drawingStylesheet ? { stylesheet: drawingStylesheet } : {}),
         target: normaliseStoryTarget(serializedDrawing.target),
       });
     }
 
-    bodyItems.push(createMangoViewerStateBody({ ...chapter, id: chapterId }));
+    bodyItems.push(
+      createMangoViewerStateBody(
+        { ...chapter, id: chapterId },
+        raw.presentationAspect,
+      ),
+    );
 
     const chapterAnnotation: StoryAnnotation = {
       id: annotationId,
@@ -392,14 +393,11 @@ export const serializeStoryToIiif = (
   });
 
   return {
-    '@context': [IIIF_PRESENTATION_3_CONTEXT, MANGO_STORY_CONTEXT],
+    // The Web Annotation context makes nested SpecificResource and TextualBody
+    // terms expand independently. IIIF remains last as Presentation 3 requires.
+    '@context': [W3C_WEB_ANNOTATION_CONTEXT, IIIF_PRESENTATION_3_CONTEXT],
     id: pageId,
     type: 'AnnotationPage',
-    'mango:storyVersion': MANGO_STORY_VERSION,
-    ...(!raw.id && !options.id ? { 'mango:draft': true as const } : {}),
-    ...(Number.isFinite(raw.presentationAspect) && (raw.presentationAspect as number) > 0
-      ? { 'mango:presentationAspect': raw.presentationAspect as number }
-      : {}),
     label: Object.keys(label).length > 0 ? label : { en: [translate('storyBuilder.export.trackLabel')] },
     items,
   };

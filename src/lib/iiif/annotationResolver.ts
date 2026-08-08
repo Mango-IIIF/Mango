@@ -51,10 +51,13 @@ export type AnnotationTime = {
 };
 
 export type AnnotationBody = {
+  /** Canonical path used to address this body without flattening siblings. */
+  path?: string;
   type: 'text' | 'html' | 'image' | 'unknown';
   value?: string;
   format?: string;
   language?: string;
+  textDirection?: string;
   purpose?: string;
   src?: string;
   styleClass?: string;

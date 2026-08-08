@@ -21,6 +21,7 @@ import {
 import { applyPatch, createMangoAnnotation, resolveAnnotationJson } from '../canonical';
 import { exportAnnotationPage } from '../export';
 import { projectToResolved } from '../canonical';
+import { parseAnnotationCss } from '../style';
 
 const CANVAS = 'https://iiif.io/api/cookbook/recipe/0001/canvas/p1';
 
@@ -350,6 +351,20 @@ describe('IIIF annotation conformance', () => {
     // The colour is honoured; the fetch is not.
     expect(annotation?.styleHints?.strokeColor).toBe('red');
     expect(JSON.stringify(annotation?.styleHints)).not.toContain('tracker.example');
+  });
+
+  it.each([
+    ['network URL', '.x { fill: url(https://tracker.example/pixel); }'],
+    ['import', '@import "https://tracker.example/style.css"; .x { stroke: red; }'],
+    ['global selector', 'body .x { stroke: red; }'],
+    ['important override', '.x { stroke: red !important; }'],
+    ['positioning property', '.x { position: fixed; top: 0; stroke: red; }'],
+  ])('allowlists annotation CSS and rejects %s', (_name, css) => {
+    const parsed = parseAnnotationCss(css);
+    expect(parsed.rejected.length).toBeGreaterThan(0);
+    expect(JSON.stringify(parsed.rules)).not.toContain('tracker.example');
+    expect(JSON.stringify(parsed.rules)).not.toContain('!important');
+    expect(JSON.stringify(parsed.rules)).not.toContain('position');
   });
 
   it('renders in the normal theme when a class has no stylesheet', () => {

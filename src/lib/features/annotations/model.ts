@@ -38,10 +38,6 @@ const FOREIGN: readonly AnnotationProvenance[] = ['manifest', 'external'];
 export const isForeign = (provenance: AnnotationProvenance | undefined): boolean =>
   Boolean(provenance && FOREIGN.includes(provenance));
 
-export const isOwned = (provenance: AnnotationProvenance | undefined): boolean =>
-  provenance === 'local' || provenance === 'override' || provenance === 'draft' ||
-  provenance === 'persisted';
-
 /** Lifecycle of a save, kept separate from provenance so both can be shown. */
 export type AnnotationSaveState =
   | { status: 'clean' }

@@ -23,6 +23,7 @@
   } from "../annotationPlacement";
   import ChapterTimelineSection from "./ChapterTimelineSection.svelte";
   import ChapterTextForm from "./ChapterTextForm.svelte";
+  import LanguageTabs from "../../features/annotations/LanguageTabs.svelte";
   import ChapterPositionSection from "./ChapterPositionSection.svelte";
   import ChapterCameraConfig from "./ChapterCameraConfig.svelte";
   import ChapterDashboard from "./ChapterDashboard.svelte";
@@ -126,6 +127,7 @@
   export let onStopChapterPreview: (() => void) | undefined = undefined;
   export let onRevertChapterPosition: ((chapterId: string) => void) | undefined;
   export let onSave: (() => void) | undefined;
+  export let onCancel: (() => void) | undefined;
   export let onSetAnnotationPositioning: ((lang: string) => void) | undefined =
     undefined;
   export let onUpdateMotionDuration:
@@ -213,10 +215,16 @@
   };
 
   const returnToDashboard = () => {
+    const wasAnnotationTask =
+      inspectorView.mode === "task" && inspectorView.task === "focus";
     inspectorView = { mode: "dashboard" };
     saveAcknowledged = false;
     viewUpdateAcknowledged = false;
-    onChapterTaskChange?.(null);
+    if (wasAnnotationTask) {
+      onCancel?.();
+    } else {
+      onChapterTaskChange?.(null);
+    }
     requestAnimationFrame(() => dashboardHeading?.focus());
   };
 
@@ -829,6 +837,10 @@
     onSave?.();
   };
 
+  const handleCancel = () => {
+    onCancel?.();
+  };
+
   const handleRevertView = () => {
     if (chapterId) onRevertChapterPosition?.(chapterId);
   };
@@ -1310,21 +1322,26 @@
 
               <div class="chapter-overlay__field">
                 <span>{$t('storyBuilder.annotations.translations')}</span>
-                {#each languages as lang}
-                  <label class="chapter-overlay__translation-field">
-                    <small>{lang.toUpperCase()}</small>
-                    <input
-                      type="text"
-                      value={selectedDrawingAnnotation.label?.[lang] ?? ""}
-                      placeholder={$t('storyBuilder.annotations.textPlaceholder', { language: lang.toUpperCase() })}
-                      on:input={(event) => onSetDrawingAnnotationLabel?.(
-                        selectedDrawingAnnotation!.id,
-                        lang,
-                        (event.currentTarget as HTMLInputElement).value,
-                      )}
-                    />
-                  </label>
-                {/each}
+                <LanguageTabs
+                  {languages}
+                  activeLanguage={activeLanguage}
+                  ariaLabel={$t('storyBuilder.annotations.translations')}
+                  testIdPrefix="drawing-language"
+                  onchange={handleLanguageChange}
+                />
+                <label class="chapter-overlay__translation-field">
+                  <small>{activeLanguage.toUpperCase()}</small>
+                  <textarea
+                    rows="3"
+                    value={selectedDrawingAnnotation.label?.[activeLanguage] ?? ""}
+                    placeholder={$t('storyBuilder.annotations.textPlaceholder', { language: activeLanguage.toUpperCase() })}
+                    on:input={(event) => onSetDrawingAnnotationLabel?.(
+                      selectedDrawingAnnotation!.id,
+                      activeLanguage,
+                      (event.currentTarget as HTMLInputElement).value,
+                    )}
+                  ></textarea>
+                </label>
               </div>
 
               <div class="chapter-overlay__field">
@@ -1646,6 +1663,16 @@
                   ? $t(`storyBuilder.tasks.items.${inspectorView.task}.save`)
                   : $t('storyBuilder.overlay.saveChapter')}
             </button>
+            {#if inspectorView.mode === "task" && inspectorView.task === "focus"}
+              <button
+                class="chapter-overlay__button chapter-overlay__button--subtle"
+                type="button"
+                data-testid="chapter-cancel"
+                on:click={handleCancel}
+              >
+                {$t('storyBuilder.chapters.cancel')}
+              </button>
+            {/if}
             {#if docked}
               <button
                 class="chapter-overlay__button chapter-overlay__button--subtle"
@@ -1960,7 +1987,8 @@
     .chapter-overlay__field { display:grid; gap:7px; color:var(--viewer-muted, #9aa6b2); font-size:10px; font-weight:700; }
     .chapter-overlay__translation-field { display:grid; grid-template-columns:28px minmax(0,1fr); align-items:center; gap:7px; }
     .chapter-overlay__translation-field small { color:var(--viewer-muted, #9aa6b2); font-size:9px; }
-    .chapter-overlay__translation-field input { min-width:0; box-sizing:border-box; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:8px 9px; background:var(--viewer-well-bg, rgba(4, 9, 15, 0.35)); color:var(--viewer-text, #e8edf4); font:inherit; }
+    .chapter-overlay__translation-field :is(input, textarea) { min-width:0; box-sizing:border-box; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:8px 9px; background:var(--viewer-well-bg, rgba(4, 9, 15, 0.35)); color:var(--viewer-text, #e8edf4); font:inherit; }
+    .chapter-overlay__translation-field textarea { resize:vertical; line-height:1.4; }
     .chapter-overlay__annotation-palette { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
     .chapter-overlay__annotation-palette button { width:25px; height:25px; border:2px solid transparent; border-radius:999px; background:var(--annotation-color); cursor:pointer; }
     .chapter-overlay__annotation-palette .chapter-overlay__annotation-swatch--active { border-color:var(--viewer-text, #fff); box-shadow:0 0 0 2px var(--annotation-color); }
