@@ -17,6 +17,7 @@
   import LeftPanelStack from '../../viewer/ui/LeftPanelStack.svelte';
   import ViewerDock from '../../viewer/ui/ViewerDock.svelte';
   import Stage from '../../viewer/ui/Stage.svelte';
+  import StageGalleryView from '../../viewer/ui/StageGalleryView.svelte';
   import StageToolbar from '../../viewer/ui/StageToolbar.svelte';
   import Gallery from '../../viewer/ui/Gallery.svelte';
   import type { LayerItem } from '../annotations/workspace/LeftSidebar.svelte';
@@ -71,7 +72,7 @@
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
-  import { ChevronsRight, Expand, ImageOff, Shrink } from '@lucide/svelte';
+  import { ChevronsRight, Expand, Shrink } from '@lucide/svelte';
   import {
     isViewerSettingsTheme,
     setViewerContext,
@@ -2436,43 +2437,15 @@
             {/if}
 
             {#if $layoutMode === 'gallery'}
-              <div class="stage-gallery-view">
-                <div class="stage-gallery-view__grid">
-                  {#each $canvases as canvas (canvas.id)}
-                    <button
-                      class="stage-gallery-view__card"
-                      class:stage-gallery-view__card--active={canvas.index === $selectedCanvasIndex}
-                      type="button"
-                      onclick={() => {
-                        controller.setCanvasByIndex(canvas.index);
-                        controller.setLayoutMode('single');
-                      }}
-                    >
-                      <div class="stage-gallery-view__thumb-wrapper">
-                        {#if $canvasThumbnails[canvas.index]}
-                          <img
-                            class="stage-gallery-view__img"
-                            src={$canvasThumbnails[canvas.index]}
-                            alt={canvas.label || `Page ${canvas.index + 1}`}
-                            loading="lazy"
-                          />
-                        {:else}
-                          <div
-                            class="stage-gallery-view__placeholder"
-                            aria-label={$t('viewer.gallery.unavailable')}
-                          >
-                            <ImageOff aria-hidden="true" />
-                            <span class="stage-gallery-view__index">{canvas.index + 1}</span>
-                          </div>
-                        {/if}
-                      </div>
-                      <div class="stage-gallery-view__label">
-                        {canvas.label || `Page ${canvas.index + 1}`}
-                      </div>
-                    </button>
-                  {/each}
-                </div>
-              </div>
+              <StageGalleryView
+                canvases={$canvases}
+                thumbnails={$canvasThumbnails}
+                selectedCanvasIndex={$selectedCanvasIndex}
+                onselect={(detail) => {
+                  controller.setCanvasByIndex(detail.index);
+                  controller.setLayoutMode('single');
+                }}
+              />
             {:else}
               <Stage
                 bind:this={stageRef}
@@ -2623,108 +2596,6 @@
 </div>
 
 <style>
-
-  .stage-gallery-view {
-    width: 100%;
-    min-width: 0;
-    height: 100%;
-    overflow-y: auto;
-    background: var(--viewer-stage, #111720);
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    padding: 24px;
-    box-sizing: border-box;
-  }
-
-  .stage-gallery-view__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 24px;
-    width: 100%;
-  }
-
-  .stage-gallery-view__card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    padding: 12px;
-    cursor: pointer;
-    transition: border-color 0.22s ease;
-    width: 100%;
-    box-sizing: border-box;
-    outline: none;
-  }
-
-  /* Hover is the border and nothing else — no lift, no glow, no tint. */
-  .stage-gallery-view__card:hover {
-    border-color: var(--viewer-accent-2, #2ac7ff);
-  }
-
-  .stage-gallery-view__card:focus-visible {
-    outline: 2px solid var(--viewer-accent-2, #2ac7ff);
-    outline-offset: 2px;
-  }
-
-  .stage-gallery-view__card--active {
-    border-color: var(--viewer-accent-2, #2ac7ff);
-    background: rgba(42, 199, 255, 0.06);
-    box-shadow: 0 0 0 2px var(--viewer-accent-2, rgba(42, 199, 255, 0.2));
-  }
-
-  .stage-gallery-view__thumb-wrapper {
-    width: 100%;
-    aspect-ratio: 3 / 4;
-    border-radius: 10px;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.04);
-    display: grid;
-    place-items: center;
-    position: relative;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  .stage-gallery-view__img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .stage-gallery-view__placeholder {
-    display: grid;
-    place-items: center;
-    width: 100%;
-    height: 100%;
-    color: var(--viewer-muted, #9aa6b2);
-    gap: 8px;
-  }
-
-  .stage-gallery-view__placeholder :global(svg) {
-    width: 32px;
-    height: 32px;
-    opacity: 0.75;
-  }
-
-  .stage-gallery-view__index {
-    font-size: 24px;
-    font-weight: 700;
-  }
-
-  .stage-gallery-view__label {
-    margin-top: 12px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--viewer-text, #e8edf4);
-    text-align: center;
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 
   .viewer__top-row {
     display: flex;
@@ -3813,11 +3684,19 @@
     --mango-viewer-media-radius: 16px 0 0 16px;
   }
 
-  .stage--joined-sidebar-left .stage-gallery-view {
+  /*
+   * `:global` because the gallery is its own component now. Its root carries
+   * that component's scoping hash, not this one's, so an unqualified
+   * descendant selector compiles to something that can never match. The
+   * squared-off inner corner belongs to the stage rather than to the gallery,
+   * though — it exists because a sidebar is joined to that edge, which the
+   * gallery knows nothing about — so it stays here.
+   */
+  .stage--joined-sidebar-left :global(.stage-gallery-view) {
     border-radius: 0 18px 18px 0;
   }
 
-  .stage--joined-sidebar-right .stage-gallery-view {
+  .stage--joined-sidebar-right :global(.stage-gallery-view) {
     border-radius: 18px 0 0 18px;
   }
 
