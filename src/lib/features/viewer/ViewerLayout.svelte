@@ -1960,6 +1960,47 @@
       return effectiveAnnotationMode;
     },
   });
+
+  /**
+   * The `Stage` props that do not vary by mode.
+   *
+   * Every mode renders the same stage; what differs is the chrome around it
+   * and which panels it is allowed to offer. Those differences were buried in
+   * three ~60-line prop lists that agreed on most of their contents, so
+   * telling the modes apart meant diffing them by eye. Spreading the common
+   * half leaves each call site showing only what actually makes it that mode.
+   *
+   * `bind:this` and `bind:canZoom` stay written out at each call: bindings are
+   * not values and cannot be spread.
+   */
+  const commonStageProps = $derived({
+    rendererComponent: $rendererComponent,
+    avController,
+    mediaSource: $mediaSource,
+    layoutMode: $layoutMode,
+    activeLayoutImages: $activeLayoutImages,
+    highlightIds: $highlightIds,
+    hoverAnnotationId: $hoverAnnotationId,
+    overlayPlugins: $pluginSlots.overlay,
+    pluginContext,
+    rendererHandlers,
+    isFetching: $manifestEntry?.isFetching ?? false,
+    error: $manifestEntry?.error ?? '',
+    imageFilters: $imageFilters,
+    mediaType: $mediaType,
+    viewerConfig: normalisedConfig,
+    rotation: $rotation,
+    initialViewBox: initialViewState.viewBox,
+    layers: $mediaSources,
+    layerOpacities: $layerOpacities,
+    canvasId: activeCanvasId,
+    onzoomchange: handleStageZoomChange,
+    onrotationchange: (detail: { rotation: number }) =>
+      controller.handleRotationChange(detail),
+    onannotationcreate: handleAnnotationCreate,
+    onannotationupdate: (payload: { id: string; patch: unknown }) =>
+      handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>),
+  });
 </script>
 
 <div
@@ -2156,26 +2197,10 @@
                 <Stage
                   bind:this={stageRef}
                   bind:canZoom
+                  {...commonStageProps}
                   fillHeight={true}
-                  rendererComponent={$rendererComponent}
-                  {avController}
-                  mediaSource={$mediaSource}
-                  layoutMode={$layoutMode}
-                  activeLayoutImages={$activeLayoutImages}
                   annotations={$overlayAnnotations}
-                  highlightIds={$highlightIds}
                   activeAnnotationId={$activeAnnotationId}
-                  hoverAnnotationId={$hoverAnnotationId}
-                  overlayPlugins={$pluginSlots.overlay}
-                  {pluginContext}
-                  {rendererHandlers}
-                  isFetching={$manifestEntry?.isFetching ?? false}
-                  error={$manifestEntry?.error ?? ''}
-                  imageFilters={$imageFilters}
-                  mediaType={$mediaType}
-                  viewerConfig={normalisedConfig}
-                  rotation={$rotation}
-                  initialViewBox={initialViewState.viewBox}
                   allowThumbnails={allowThumbnailsStory}
                   allowSearch={allowSearchStory}
                   allowMetadata={allowMetadataStory}
@@ -2192,22 +2217,11 @@
                   showTools={showToolsEffectiveStory}
                   showContents={showContentsEffectiveStory}
                   showLayers={showLayersEffectiveStory}
-                  layers={$mediaSources}
-                  layerOpacities={$layerOpacities}
-                  canvasId={activeCanvasId}
                   onviewboxchange={(detail) => {
                     controller.handleViewBoxChange(detail);
                     storyViewBoxStore.set(detail.viewBox);
                   }}
-                  onzoomchange={handleStageZoomChange}
-                  onrotationchange={(detail) => controller.handleRotationChange(detail)}
                   onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
-                  onannotationcreate={handleAnnotationCreate}
-                  onannotationupdate={(payload) =>
-                    handleAnnotationUpdate(
-                      payload.id,
-                      payload.patch as Partial<ResolvedAnnotation>,
-                    )}
                 />
                 <StoryAnnotationOverlayComponent
                   story={storyDataStore}
@@ -2295,28 +2309,10 @@
                 <Stage
                   bind:this={stageRef}
                   bind:canZoom
+                  {...commonStageProps}
                   fillHeight={true}
-                  rendererComponent={$rendererComponent}
-                  {avController}
-                  mediaSource={$mediaSource}
-                  layoutMode={$layoutMode}
-                  activeLayoutImages={$activeLayoutImages}
                   annotations={editorStageAnnotations}
-                  highlightIds={$highlightIds}
                   activeAnnotationId={$activeAnnotationId}
-                  hoverAnnotationId={$hoverAnnotationId}
-                  overlayPlugins={$pluginSlots.overlay}
-                  {pluginContext}
-                  {rendererHandlers}
-                  isFetching={$manifestEntry?.isFetching ?? false}
-                  error={$manifestEntry?.error ?? ''}
-                  imageFilters={$imageFilters}
-                  mediaType={$mediaType}
-                  viewerConfig={normalisedConfig}
-                  rotation={$rotation}
-                  initialViewBox={initialViewState.viewBox}
-                  layers={$mediaSources}
-                  layerOpacities={$layerOpacities}
                   allowThumbnails={false}
                   allowSearch={false}
                   allowMetadata={false}
@@ -2338,16 +2334,7 @@
                   oneditorready={(instance) => (annotationEditor = instance)}
                   ongeometrycommit={(detail) =>
                     commandStack.recordGeometry(detail.id, 'geometry')}
-                  canvasId={activeCanvasId}
                   onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
-                  onzoomchange={handleStageZoomChange}
-                  onrotationchange={(detail) => controller.handleRotationChange(detail)}
-                  onannotationcreate={handleAnnotationCreate}
-                  onannotationupdate={(payload) =>
-                    handleAnnotationUpdate(
-                      payload.id,
-                      payload.patch as Partial<ResolvedAnnotation>,
-                    )}
                   onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
                   onannotationselect={(payload) => {
                     if (
@@ -2450,28 +2437,12 @@
               <Stage
                 bind:this={stageRef}
                 bind:canZoom
+                {...commonStageProps}
                 fillHeight={isStoryBuilder}
-                rendererComponent={$rendererComponent}
-                {avController}
-                mediaSource={$mediaSource}
-                layoutMode={$layoutMode}
-                activeLayoutImages={$activeLayoutImages}
                 annotations={$overlayAnnotations}
-                highlightIds={$highlightIds}
                 activeAnnotationId={isStoryBuilder && storyAnnotationEditing
                   ? storyBuilderActiveAnnotationId
                   : $activeAnnotationId}
-                hoverAnnotationId={$hoverAnnotationId}
-                overlayPlugins={$pluginSlots.overlay}
-                {pluginContext}
-                {rendererHandlers}
-                isFetching={$manifestEntry?.isFetching ?? false}
-                error={$manifestEntry?.error ?? ''}
-                imageFilters={$imageFilters}
-                mediaType={$mediaType}
-                viewerConfig={normalisedConfig}
-                rotation={$rotation}
-                initialViewBox={initialViewState.viewBox}
                 allowThumbnails={allowThumbnailsStory}
                 allowSearch={allowSearchStory}
                 allowMetadata={allowMetadataStory}
@@ -2488,16 +2459,8 @@
                 showTools={showToolsEffectiveStory}
                 showContents={showContentsEffectiveStory}
                 showLayers={showLayersEffectiveStory}
-                layers={$mediaSources}
-                layerOpacities={$layerOpacities}
-                canvasId={activeCanvasId}
                 onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
-                onzoomchange={handleStageZoomChange}
-                onrotationchange={(detail) => controller.handleRotationChange(detail)}
                 onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
-                onannotationcreate={handleAnnotationCreate}
-                onannotationupdate={(payload) =>
-                  handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
                 annotationTool={annotationEditorTool}
                 annotationEditorEnabled={isStoryBuilder && storyAnnotationEditing}
                 annotationEditorAnnotations={storyBuilderAnnotations}
