@@ -199,6 +199,13 @@
   let viewUpdateFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   let chapterHasSavedPosition = false;
 
+  /*
+   * Exact by design. This keys "has the stored framing changed at all", which
+   * decides whether to overwrite the author's in-progress form entry — a
+   * tolerance here would silently discard a small manual edit. Use
+   * `framingsWithin` when the question is whether the viewer has arrived
+   * somewhere, and `framingsDiffer` when it is whether the author reframed.
+   */
   const positionSignature = (value: ViewBox | null | undefined): string =>
     value ? `${value.x}:${value.y}:${value.w}:${value.h}` : "";
 

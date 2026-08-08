@@ -14,6 +14,7 @@ import { createModelPose } from "./modelPose";
 import { createNarrationPlayer } from "./narrationPlayer";
 import { captureAudioVideo, captureImagePdf, captureModel } from "./capture";
 import {
+  framingsWithin,
   inferPresentationAspect,
   normaliseStoryFraming,
   normaliseViewBox,
@@ -250,6 +251,17 @@ export const collectLatestNarrationSegments = (
 };
 
 export const DEFAULT_CHAPTER_TRANSITION_DELAY_MS = 2000;
+
+/**
+ * How close the viewer has to be to a chapter's stored framing for the builder
+ * to treat it as applied.
+ *
+ * Looser than playback's near-exact check because these callers are deciding
+ * whether an apply has landed and whether a move is still needed, not whether
+ * to animate: a retry loop that never accepts the framing as applied keeps
+ * the stage hidden until it runs out of attempts.
+ */
+const APPLIED_FRAMING_TOLERANCE = 0.5;
 
 export const collectLatestTransitionDelay = (story: StoryState): number => {
   let latest = DEFAULT_CHAPTER_TRANSITION_DELAY_MS;
@@ -1019,16 +1031,8 @@ export const createStoryBuilderController = (
     }
   };
 
-  const viewBoxMatches = (a: ViewBox | null, b: ViewBox | undefined) => {
-    if (!a || !b) return false;
-    const epsilon = 0.5;
-    return (
-      Math.abs(a.x - b.x) <= epsilon &&
-      Math.abs(a.y - b.y) <= epsilon &&
-      Math.abs(a.w - b.w) <= epsilon &&
-      Math.abs(a.h - b.h) <= epsilon
-    );
-  };
+  const viewBoxMatches = (a: ViewBox | null, b: ViewBox | undefined) =>
+    a && b ? framingsWithin(a, b, APPLIED_FRAMING_TOLERANCE) : false;
 
   const getCurrentModelPose = (): ChapterModel | null => {
     if (!viewer) return null;

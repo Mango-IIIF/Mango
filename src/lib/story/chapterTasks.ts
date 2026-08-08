@@ -79,6 +79,11 @@ const hasText = (value: string | undefined): boolean => Boolean(value?.trim());
 const CENTRE_DRIFT_TOLERANCE = 0.02;
 const SCALE_DRIFT_TOLERANCE = 0.05;
 
+/**
+ * Deliberately not `framingsWithin` from `framing.ts`: that one answers
+ * whether the viewer has arrived somewhere, in absolute image pixels, and
+ * cannot answer this question across canvas sizes.
+ */
 export const framingsDiffer = (saved: ViewBox, current: ViewBox): boolean => {
   if (!(saved.w > 0) || !(saved.h > 0) || !(current.w > 0) || !(current.h > 0)) {
     return false;
