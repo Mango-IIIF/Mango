@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "mango": "https://mangoviewer.dev/schema/story#",
+    "mangoState": {
+      "@id": "mango:state",
+      "@type": "@json"
+    }
+  }
+}
