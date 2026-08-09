@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mirador — interop check</title>
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; }
+      #note { padding: 8px 12px; background: #f4efe6; font-size: 13px; }
+      #m { position: absolute; top: 34px; right: 0; bottom: 0; left: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="note">
+      Mirador 3 loading <code>gottingen-manifest.json</code>, which references
+      <code>gottingen-story.json</code> from its canvas. Open the annotations panel.
+    </div>
+    <div id="m"></div>
+    <script src="https://unpkg.com/mirador@3/dist/mirador.min.js"></script>
+    <script>
+      Mirador.viewer({
+        id: 'm',
+        windows: [
+          {
+            manifestId: 'http://localhost:5173/interop/gottingen-manifest.json',
+            thumbnailNavigationPosition: 'off',
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>

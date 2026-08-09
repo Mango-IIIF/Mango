@@ -1,0 +1,1138 @@
+{
+  "@context": [
+    "http://www.w3.org/ns/anno.jsonld",
+    {
+      "mango": "https://mango-iiif.github.io/ns/story#",
+      "mangoState": {
+        "@id": "mango:state",
+        "@type": "@json"
+      },
+      "mango:index": {
+        "@type": "http://www.w3.org/2001/XMLSchema#integer"
+      }
+    },
+    "http://iiif.io/api/presentation/3/context.json"
+  ],
+  "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json",
+  "type": "AnnotationPage",
+  "label": {
+    "en": [
+      "Paris Street; Rainy Day — Gustave Caillebotte"
+    ]
+  },
+  "mango:storyVersion": "1.0",
+  "items": [
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_1",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "A painting to walk into"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Because of the near life-size scale of the figures, it's a painting one wants to just walk into. This is Paris Street; Rainy Day — Gustave Caillebotte's largest painting."
+        ]
+      },
+      "mango:index": 0,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=0,14.13",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 9987,
+              "h": 7755
+            },
+            "cameraTrack": {
+              "durationMs": 13930,
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 4993.5,
+                    "y": 3877.5
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 9987,
+                    "h": 7755
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 13930,
+                  "focus": {
+                    "x": 5000,
+                    "y": 3889
+                  },
+                  "viewBox": {
+                    "x": 700,
+                    "y": 550,
+                    "w": 8600,
+                    "h": 6678
+                  }
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,9987,7755"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_2",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "A frozen film sequence"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Gloria Groom, curator of European painting and sculpture: think of this almost as a film sequence that has somehow been stopped — the figures frozen mid-frame."
+        ]
+      },
+      "mango:index": 1,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=14.13,29.13",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 0,
+              "y": -1348.8575129533676,
+              "w": 9987,
+              "h": 10452.715025906735
+            },
+            "cameraTrack": {
+              "durationMs": 14800,
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 537.5669637736556,
+                    "y": 3659.159682172345
+                  },
+                  "viewBox": {
+                    "x": -77.87840722833175,
+                    "y": 3209.7703977813494,
+                    "w": 1230.8907420039748,
+                    "h": 898.7785687819917
+                  },
+                  "layerOpacities": {},
+                  "dwellMs": 2000
+                },
+                {
+                  "id": "b",
+                  "timeMs": 7400,
+                  "focus": {
+                    "x": 3860.7598152424935,
+                    "y": 3452.790235277136
+                  },
+                  "viewBox": {
+                    "x": 3118.7748946447336,
+                    "y": 2911.0036069148596,
+                    "w": 1483.9698411955196,
+                    "h": 1083.5732567245532
+                  },
+                  "layerOpacities": {}
+                },
+                {
+                  "id": "c",
+                  "timeMs": 14800,
+                  "focus": {
+                    "x": 6200,
+                    "y": 3695.5
+                  },
+                  "viewBox": {
+                    "x": 2600,
+                    "y": 900,
+                    "w": 7200,
+                    "h": 5591
+                  }
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,9987,10453"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_3",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Many, many figures"
+        ]
+      },
+      "summary": {
+        "en": [
+          "There are many, many figures in this painting — the camera roams the pedestrians on the left and centre of the scene."
+        ]
+      },
+      "mango:index": 2,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=29.13,33.8",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 0,
+              "y": -1348.8575129533676,
+              "w": 9987,
+              "h": 10452.715025906735
+            },
+            "cameraTrack": {
+              "durationMs": 8000,
+              "keyframes": [],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "linear"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,9987,10453"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_4",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The elegant couple"
+        ]
+      },
+      "summary": {
+        "en": [
+          "…and our eye is first focused on this amazingly elegant couple."
+        ]
+      },
+      "mango:index": 3,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=33.8,39.4",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 5678.071998701705,
+              "y": 2737.7563530418192,
+              "w": 2322.6570091020817,
+              "h": 1837.183617855335
+            },
+            "cameraTrack": {
+              "durationMs": 5400,
+              "keyframes": [
+                {
+                  "id": "d9e40b4d-543a-4c43-84ac-1f9653c12504",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 6815.9212408045005,
+                    "y": 3804.7412951320507
+                  },
+                  "viewBox": {
+                    "x": 4980.736774651305,
+                    "y": 2719.1745275851463,
+                    "w": 3670.3689323063923,
+                    "h": 2171.1335350938084
+                  },
+                  "layerOpacities": {}
+                },
+                {
+                  "id": "6d4a2776-ce04-43b3-ba68-8160683324a5",
+                  "timeMs": 5400,
+                  "focus": {
+                    "x": 6839.400503252747,
+                    "y": 3656.3481619694867
+                  },
+                  "viewBox": {
+                    "x": 5564.966846201915,
+                    "y": 2902.482351173025,
+                    "w": 2548.867314101662,
+                    "h": 1507.7316215929231
+                  },
+                  "layerOpacities": {}
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "cut",
+                "durationMs": 1
+              },
+              "transitionMs": 1
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=5678,2738,2323,1837"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_5",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The imminent collision"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Then you see the man on the right, cut off by the picture frame — certain to collide with the couple. Someone will have to move their umbrella; his elbow looks like it's going straight into her."
+        ]
+      },
+      "mango:index": 4,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=39.4,60.47",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 5678,
+              "y": 2738,
+              "w": 2323,
+              "h": 1837
+            },
+            "cameraTrack": {
+              "durationMs": 20870,
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 6700,
+                    "y": 3837.5
+                  },
+                  "viewBox": {
+                    "x": 5750,
+                    "y": 3100,
+                    "w": 1900,
+                    "h": 1475
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 10435,
+                  "focus": {
+                    "x": 8800,
+                    "y": 4054
+                  },
+                  "viewBox": {
+                    "x": 7700,
+                    "y": 3200,
+                    "w": 2200,
+                    "h": 1708
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 20870,
+                  "focus": {
+                    "x": 9200,
+                    "y": 4532.5
+                  },
+                  "viewBox": {
+                    "x": 8450,
+                    "y": 3950,
+                    "w": 1500,
+                    "h": 1165
+                  }
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=5678,2738,2323,1837"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_6",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "What only painting could do"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Caillebotte is playing with the idea of photography — yet photography could not have captured this. The camera wanders the frozen background: a figure mid-stride, a waiting carriage."
+        ]
+      },
+      "mango:index": 5,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=60.47,85.93",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 600,
+              "y": 2950,
+              "w": 9350,
+              "h": 2165
+            },
+            "cameraTrack": {
+              "durationMs": 25260,
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 9200,
+                    "y": 4532.5
+                  },
+                  "viewBox": {
+                    "x": 8450,
+                    "y": 3950,
+                    "w": 1500,
+                    "h": 1165
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 8420,
+                  "focus": {
+                    "x": 6550,
+                    "y": 3454.5
+                  },
+                  "viewBox": {
+                    "x": 5900,
+                    "y": 2950,
+                    "w": 1300,
+                    "h": 1009
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 16840,
+                  "focus": {
+                    "x": 3950,
+                    "y": 3716
+                  },
+                  "viewBox": {
+                    "x": 3350,
+                    "y": 3250,
+                    "w": 1200,
+                    "h": 932
+                  }
+                },
+                {
+                  "id": "d",
+                  "timeMs": 25260,
+                  "focus": {
+                    "x": 1300,
+                    "y": 3643.5
+                  },
+                  "viewBox": {
+                    "x": 600,
+                    "y": 3100,
+                    "w": 1400,
+                    "h": 1087
+                  }
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=600,2950,9350,2165"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_7",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "Everything new in 1877"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Here Caillebotte shows off everything new in Paris in 1877 — the camera returns to the couple, the carriers of all that novelty."
+        ]
+      },
+      "mango:index": 6,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=85.93,92.5",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 600,
+              "y": 2900,
+              "w": 7700,
+              "h": 1864
+            },
+            "cameraTrack": {
+              "durationMs": 6370,
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 1300,
+                    "y": 3643.5
+                  },
+                  "viewBox": {
+                    "x": 600,
+                    "y": 3100,
+                    "w": 1400,
+                    "h": 1087
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 6370,
+                  "focus": {
+                    "x": 7100,
+                    "y": 3832
+                  },
+                  "viewBox": {
+                    "x": 5900,
+                    "y": 2900,
+                    "w": 2400,
+                    "h": 1864
+                  }
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=600,2900,7700,1864"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_8",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The latest fashion"
+        ]
+      },
+      "summary": {
+        "en": [
+          "The clothes are the latest fashion — a deep push into the fur-trimmed coats."
+        ]
+      },
+      "mango:index": 7,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=92.5,94.75",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 5900,
+              "y": 2900,
+              "w": 2450,
+              "h": 1987
+            },
+            "cameraTrack": {
+              "durationMs": 2050,
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 7100,
+                    "y": 3832
+                  },
+                  "viewBox": {
+                    "x": 5900,
+                    "y": 2900,
+                    "w": 2400,
+                    "h": 1864
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 2050,
+                  "focus": {
+                    "x": 7650,
+                    "y": 4343.5
+                  },
+                  "viewBox": {
+                    "x": 6950,
+                    "y": 3800,
+                    "w": 1400,
+                    "h": 1087
+                  }
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=5900,2900,2450,1987"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_9",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The retractable umbrella"
+        ]
+      },
+      "summary": {
+        "en": [
+          "The retractable umbrella was just invented — the camera pans straight up to it."
+        ]
+      },
+      "mango:index": 8,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=94.75,97.75",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 6000,
+              "y": 2150,
+              "w": 2350,
+              "h": 2737
+            },
+            "cameraTrack": {
+              "durationMs": 2800,
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 7650,
+                    "y": 4343.5
+                  },
+                  "viewBox": {
+                    "x": 6950,
+                    "y": 3800,
+                    "w": 1400,
+                    "h": 1087
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 2800,
+                  "focus": {
+                    "x": 6900,
+                    "y": 2849
+                  },
+                  "viewBox": {
+                    "x": 6000,
+                    "y": 2150,
+                    "w": 1800,
+                    "h": 1398
+                  }
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=6000,2150,2350,2737"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_10",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "A brand-new cityscape"
+        ]
+      },
+      "summary": {
+        "en": [
+          "Even the cityscape is new: a decades-long renovation had transformed the winding medieval streets of Paris into grand boulevards like these."
+        ]
+      },
+      "mango:index": 9,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=97.75,108.95",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 700,
+              "y": 300,
+              "w": 7100,
+              "h": 3572
+            },
+            "cameraTrack": {
+              "durationMs": 11000,
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 6900,
+                    "y": 2849
+                  },
+                  "viewBox": {
+                    "x": 6000,
+                    "y": 2150,
+                    "w": 1800,
+                    "h": 1398
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 5500,
+                  "focus": {
+                    "x": 3000,
+                    "y": 2130.5
+                  },
+                  "viewBox": {
+                    "x": 900,
+                    "y": 500,
+                    "w": 4200,
+                    "h": 3261
+                  }
+                },
+                {
+                  "id": "c",
+                  "timeMs": 11000,
+                  "focus": {
+                    "x": 3000,
+                    "y": 2086
+                  },
+                  "viewBox": {
+                    "x": 700,
+                    "y": 300,
+                    "w": 4600,
+                    "h": 3572
+                  }
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=700,300,7100,3572"
+        }
+      }
+    },
+    {
+      "id": "https://404mike.github.io/uv4-manifest/paris-street-rainy-day.json/annotation/chapter_11",
+      "type": "Annotation",
+      "motivation": "supplementing",
+      "label": {
+        "en": [
+          "The Paris we still see"
+        ]
+      },
+      "summary": {
+        "en": [
+          "A celebration of the new Paris — and a Paris that speaks to us today. There's a familiarity, a nostalgia: this is the Paris we still see."
+        ]
+      },
+      "mango:index": 10,
+      "body": [
+        {
+          "id": "https://404mike.github.io/uv4-manifest/mango/work/media/paris-street-rainy-day.mp3#t=108.95,130",
+          "type": "Sound",
+          "format": "audio/mp3",
+          "language": "en"
+        },
+        {
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
+          "format": "application/vnd.mango.story-state+json",
+          "mango:storyVersion": "1.0",
+          "mangoState": {
+            "viewBox": {
+              "x": 0,
+              "y": 0,
+              "w": 9987,
+              "h": 7755
+            },
+            "cameraTrack": {
+              "durationMs": 20850,
+              "keyframes": [
+                {
+                  "id": "a",
+                  "timeMs": 0,
+                  "focus": {
+                    "x": 3000,
+                    "y": 2086
+                  },
+                  "viewBox": {
+                    "x": 700,
+                    "y": 300,
+                    "w": 4600,
+                    "h": 3572
+                  }
+                },
+                {
+                  "id": "b",
+                  "timeMs": 20850,
+                  "focus": {
+                    "x": 4993.5,
+                    "y": 3877.5
+                  },
+                  "viewBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 9987,
+                    "h": 7755
+                  }
+                }
+              ],
+              "preset": "custom",
+              "pathType": "linear",
+              "easing": "ease-out"
+            },
+            "playback": {
+              "entryTransition": {
+                "type": "tween",
+                "durationMs": 600,
+                "easing": "ease-out"
+              },
+              "transitionMs": 600
+            }
+          }
+        }
+      ],
+      "target": {
+        "source": "https://www.artic.edu/iiif/2/f8fd76e9-c396-5678-36ed-6a348c904d27",
+        "type": "SpecificResource",
+        "partOf": {
+          "id": "https://api.artic.edu/api/v1/artworks/20684/manifest.json",
+          "type": "Manifest"
+        },
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,9987,7755"
+        }
+      }
+    }
+  ]
+}
