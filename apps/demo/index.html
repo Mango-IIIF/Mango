@@ -27,7 +27,6 @@ There's nothing to see here!
 
         <mango-viewer
           mode="story-viewer"
-          story-url="test-story/demo.json"
           config='{"showThumbnails":false,"showSearch":false,"showMetadata":false,"showAnnotations":false,"showTools":false}'
         ></mango-viewer>
 
@@ -91,16 +90,24 @@ There's nothing to see here!
       }
 
       /*
-       * `iiif-content` is the IIIF Content State parameter, and the element
-       * already reads it: in story-viewer mode it becomes the story URL, so
-       * the picker only has to put it in the address bar. That also makes a
-       * particular story linkable, and means a link into this demo looks the
-       * same as a link into any other IIIF viewer.
+       * `iiif-content` is the only place the story is named — the element
+       * carries no `story-url` of its own. It is the IIIF Content State
+       * parameter and the element already reads it, so a link into this demo
+       * looks like a link into any other IIIF viewer, and what is on screen
+       * always matches what is in the address bar.
+       *
+       * A bare visit gets the default written into the URL before the element
+       * upgrades. This script is classic and the element's is a module, so
+       * this runs first and the element sees the parameter already there.
        */
-      const requested = new URLSearchParams(location.search).get('iiif-content');
-      if (requested && STORIES.some((s) => s.url === requested)) {
-        picker.value = requested;
+      const params = new URLSearchParams(location.search);
+      const requested = params.get('iiif-content');
+      const known = STORIES.some((s) => s.url === requested);
+      if (!known) {
+        params.set('iiif-content', STORIES[0].url);
+        history.replaceState(null, '', `${location.pathname}?${params}`);
       }
+      picker.value = known ? requested : STORIES[0].url;
 
       picker.addEventListener('change', () => {
         const url = new URL(location.href);
