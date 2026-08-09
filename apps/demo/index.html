@@ -82,7 +82,6 @@ There's nothing to see here!
       ];
 
       const picker = document.getElementById('story-picker');
-      const viewer = document.querySelector('mango-viewer');
 
       for (const { label, url } of STORIES) {
         const option = document.createElement('option');
@@ -91,22 +90,23 @@ There's nothing to see here!
         picker.append(option);
       }
 
-      // A story in the query string makes a particular one linkable, and
-      // survives the reload that switching stories performs.
-      const requested = new URLSearchParams(location.search).get('story');
+      /*
+       * `iiif-content` is the IIIF Content State parameter, and the element
+       * already reads it: in story-viewer mode it becomes the story URL, so
+       * the picker only has to put it in the address bar. That also makes a
+       * particular story linkable, and means a link into this demo looks the
+       * same as a link into any other IIIF viewer.
+       */
+      const requested = new URLSearchParams(location.search).get('iiif-content');
       if (requested && STORIES.some((s) => s.url === requested)) {
         picker.value = requested;
-        viewer.setAttribute('story-url', requested);
       }
 
       picker.addEventListener('change', () => {
         const url = new URL(location.href);
-        url.searchParams.set('story', picker.value);
-        /*
-         * Reload rather than swapping the attribute in place. The element
-         * builds a good deal of state from the story it opened with, and
-         * starting clean is what a reader switching stories expects anyway.
-         */
+        url.searchParams.set('iiif-content', picker.value);
+        // Reload rather than swapping the attribute: the element builds a
+        // fair amount of state from the story it opened with.
         location.assign(url.toString());
       });
     </script>
