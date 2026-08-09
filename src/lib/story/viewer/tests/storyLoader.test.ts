@@ -106,14 +106,20 @@ describe('storyLoader.normaliseStoryInput', () => {
     });
   });
 
-  it('rejects chapters without a versioned Mango viewer state body', () => {
-    const invalidPage = structuredClone(annotationPage) as any;
-    delete invalidPage.items[0].body['mango:storyVersion'];
+  /*
+   * The version used to be restated on every state body, so its absence was
+   * read as a malformed chapter. It now lives once in the context URL, and a
+   * body carrying state is a Mango chapter whether or not it repeats it —
+   * which is what lets a story written to the current profile load at all.
+   */
+  it('accepts a chapter whose state body does not restate the version', () => {
+    const page = structuredClone(annotationPage) as any;
+    delete page.items[0].body['mango:storyVersion'];
 
-    expect(normaliseStoryInput(invalidPage)).toEqual({
-      ok: false,
-      error: 'Invalid Mango story chapter state',
-    });
+    const result = normaliseStoryInput(page);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.story.chapters).toHaveLength(annotationPage.items.length);
   });
 
   it('rejects chapter state bodies with the wrong media type', () => {

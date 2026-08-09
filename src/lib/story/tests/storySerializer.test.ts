@@ -91,7 +91,12 @@ describe("Story IIIF Serialization and Parsing", () => {
     expect(serialized["@context"][0]).toBe(
       "http://www.w3.org/ns/anno.jsonld",
     );
+    // Mango's own context sits in the middle; IIIF stays last, as
+    // Presentation 3 requires.
     expect(serialized["@context"][1]).toBe(
+      "https://mangoviewer.dev/schema/story/1/context.json",
+    );
+    expect(serialized["@context"][2]).toBe(
       "http://iiif.io/api/presentation/3/context.json",
     );
     expect(serialized.id).toBe(sampleStory.id);
@@ -166,10 +171,15 @@ describe("Story IIIF Serialization and Parsing", () => {
       (b: any) => b.format === MANGO_VIEWER_STATE_FORMAT,
     );
     expect(viewerState.format).toBe(MANGO_VIEWER_STATE_FORMAT);
+    /*
+     * No `chapterId` or `canvasId`: the annotation's own id ends in the
+     * chapter id and the target's source is the canvas, so the state no
+     * longer restates either. `canvasIndex` does stay — a canvas URI's last
+     * segment is an index only by convention, so for many manifests this is
+     * the only copy.
+     */
     expect(parseMangoViewerStateBody(viewerState)).toEqual({
-      chapterId: "chapter_1",
       canvasIndex: 0,
-      canvasId: "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
       viewBox: { x: -500, y: 100, w: 1000, h: 500 },
       layerOpacities: {
         "https://example.com/layers/natural": 0.25,

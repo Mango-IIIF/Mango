@@ -73,7 +73,7 @@ describe('presentation aspect round trip', () => {
         },
       ],
     });
-    const body = exported.items[0].body as { value: string };
-    expect(JSON.parse(body.value).state.presentationAspect).toBeUndefined();
+    const body = exported.items[0].body as { mangoState: Record<string, unknown> };
+    expect(body.mangoState.presentationAspect).toBeUndefined();
   });
 });

@@ -224,11 +224,21 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
         : targetObj?.partOf;
       if (partOf?.id) {
         manifest = partOf.id;
-      } else if (targetCanvasId && targetCanvasId.includes("/canvas/")) {
+      }
+      /*
+       * The trailing segment of a canvas URI is a canvas index only by
+       * convention, which is why it is read even when `partOf` already named
+       * the manifest: the index is not recoverable any other way once the
+       * state stopped restating it. A non-numeric segment — `p1` in the IIIF
+       * cookbook, for instance — simply leaves it at zero.
+       */
+      if (targetCanvasId.includes("/canvas/")) {
         const parts = targetCanvasId.split("/canvas/");
-        manifest = parts[0];
-        const idxVal = parseInt(parts[1], 10);
-        canvasIndex = Number.isNaN(idxVal) ? 0 : idxVal;
+        if (!manifest) manifest = parts[0];
+        if (viewerState?.canvasIndex === undefined) {
+          const idxVal = parseInt(parts[1], 10);
+          if (!Number.isNaN(idxVal)) canvasIndex = idxVal;
+        }
       }
 
       const selectors = targetObj?.selector
@@ -261,9 +271,13 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
     }
 
     if (viewerState?.viewBox) viewBox = viewerState.viewBox;
-    const canvasId = viewerState
-      ? (viewerState.canvasId ?? "")
-      : targetCanvasId;
+    /*
+     * The target is the canvas. State written before the move restated it,
+     * and is still preferred so those stories load byte-identically, but its
+     * absence now means "read the target" rather than "there is no canvas" —
+     * which is what emptied the manifest when the duplicate was dropped.
+     */
+    const canvasId = viewerState?.canvasId ?? targetCanvasId;
 
     // Parse body for narration segment and annotations
     const narrationSegment: Record<string, { start: number; end: number }> = {};

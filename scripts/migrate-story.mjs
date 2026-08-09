@@ -12,9 +12,9 @@
  * - The state body gains `Dataset` alongside `mango:ViewerState`. `Dataset`
  *   is a W3C body class, so a viewer that knows nothing about Mango still
  *   knows this is data rather than prose to render at a reader.
- * - `canvasId`, `canvasIndex` and `chapterId` come out of the state. The
- *   target's `source`, its `partOf` and the annotation's own `id` already
- *   carry them, and a duplicate is only useful until the two copies differ.
+ * - `canvasId` and `chapterId` come out of the state. The target's `source`
+ *   and the annotation's own `id` already carry them, and a duplicate is
+ *   only useful until the two copies differ.
  *
  * Usage: node scripts/migrate-story.mjs <file.json> [...]  (--dry to preview)
  */
@@ -24,7 +24,10 @@ const CONTEXT_URL = 'https://mangoviewer.dev/schema/story/1/context.json';
 const W3C_CONTEXT = 'http://www.w3.org/ns/anno.jsonld';
 const IIIF_CONTEXT = 'http://iiif.io/api/presentation/3/context.json';
 const STATE_FORMAT = 'application/vnd.mango.story-state+json';
-const REDUNDANT_STATE_KEYS = ['canvasId', 'canvasIndex', 'chapterId'];
+// `canvasIndex` is deliberately not here. The trailing segment of a canvas
+// URI is an index only by convention and plenty are not — `…/canvas/model`,
+// the cookbook's `…/canvas/p1` — so dropping it loses the only copy.
+const REDUNDANT_STATE_KEYS = ['canvasId', 'chapterId'];
 
 const isRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const asArray = (v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]);

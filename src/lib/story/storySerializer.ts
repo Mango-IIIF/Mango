@@ -13,6 +13,7 @@ import { createMangoAnnotation } from '../features/annotations/canonical';
 import {
   createMangoViewerStateBody,
   IIIF_PRESENTATION_3_CONTEXT,
+  MANGO_STORY_CONTEXT_URL,
   W3C_WEB_ANNOTATION_CONTEXT,
   type MangoViewerStateBody,
 } from './storyAnnotationProfile';
@@ -61,6 +62,7 @@ export type StoryAnnotation = {
 export type StoryAnnotationPage = {
   '@context': [
     typeof W3C_WEB_ANNOTATION_CONTEXT,
+    typeof MANGO_STORY_CONTEXT_URL,
     typeof IIIF_PRESENTATION_3_CONTEXT,
   ];
   id: string;
@@ -393,9 +395,18 @@ export const serializeStoryToIiif = (
   });
 
   return {
-    // The Web Annotation context makes nested SpecificResource and TextualBody
-    // terms expand independently. IIIF remains last as Presentation 3 requires.
-    '@context': [W3C_WEB_ANNOTATION_CONTEXT, IIIF_PRESENTATION_3_CONTEXT],
+    /*
+     * The Web Annotation context makes nested SpecificResource and TextualBody
+     * terms expand independently. Mango's own context sits between the two so
+     * `mangoState` is defined as a JSON literal before IIIF's terms layer on,
+     * and it is where the profile version is declared. IIIF remains last, as
+     * Presentation 3 requires.
+     */
+    '@context': [
+      W3C_WEB_ANNOTATION_CONTEXT,
+      MANGO_STORY_CONTEXT_URL,
+      IIIF_PRESENTATION_3_CONTEXT,
+    ],
     id: pageId,
     type: 'AnnotationPage',
     label: Object.keys(label).length > 0 ? label : { en: [translate('storyBuilder.export.trackLabel')] },

@@ -14,7 +14,20 @@ export const IIIF_PRESENTATION_3_CONTEXT =
 export const W3C_WEB_ANNOTATION_CONTEXT =
   "http://www.w3.org/ns/anno.jsonld" as const;
 export const MANGO_STORY_NAMESPACE =
-  "https://mango-iiif.github.io/ns/story#" as const;
+  "https://mangoviewer.dev/schema/story#" as const;
+/**
+ * The context that defines Mango's terms, and the only place the profile
+ * version is stated.
+ *
+ * Major version in the path, following IIIF's own `/3/`: this URL changes on
+ * a breaking change, while additive terms go into the same document because
+ * a reader that does not know a term ignores it. Carrying the version here
+ * rather than in a property means it is declared once instead of restated on
+ * the page and again inside every chapter's state.
+ */
+export const MANGO_STORY_CONTEXT_URL =
+  "https://mangoviewer.dev/schema/story/1/context.json" as const;
+/** @deprecated Superseded by the context URL. Read for migration only. */
 export const MANGO_STORY_VERSION = "1.0" as const;
 export const MANGO_VIEWER_STATE_TYPE = "mango:ViewerState" as const;
 export const MANGO_VIEWER_STATE_FORMAT =
@@ -30,8 +43,14 @@ export type MangoStoryPlayback = {
 };
 
 export type MangoViewerState = {
-  chapterId: string;
-  canvasIndex: number;
+  /*
+   * Optional because the current profile does not write them: the
+   * annotation's own `id`, its place in an ordered `items` list, and the
+   * target's `source` and `partOf` say the same thing. They are still read,
+   * so stories written before the move keep loading.
+   */
+  chapterId?: string;
+  canvasIndex?: number;
   presentationAspect?: number;
   canvasId?: string;
   viewBox?: ViewBox;
@@ -45,9 +64,9 @@ export type MangoViewerState = {
 };
 
 export type MangoViewerStateBody = {
-  type: "TextualBody";
+  type: ["Dataset", typeof MANGO_VIEWER_STATE_TYPE];
   format: typeof MANGO_VIEWER_STATE_FORMAT;
-  value: string;
+  mangoState: MangoViewerState;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -342,11 +361,23 @@ export const createMangoViewerStateBody = (
       : {}),
   };
 
+  /*
+   * `chapterId` and `canvasId` are deliberately absent: the annotation's own
+   * `id` ends in the chapter id, and the target's `source` is the canvas. A
+   * second copy is only useful until the two disagree.
+   *
+   * `canvasIndex` stays, despite looking like the same kind of duplicate.
+   * The trailing segment of a canvas URI is an index only by convention, and
+   * plenty are not — `…/canvas/model`, or the cookbook's `…/canvas/p1` — so
+   * for those the index is nowhere else at all.
+   *
+   * `viewBox` stays despite the target fragment holding the same framing,
+   * because the fragment is whole pixels and this is not. Its job here is
+   * restoring precision, not storing the framing.
+   */
   const state: MangoViewerState = {
-      chapterId: chapter.id,
       canvasIndex: chapter.canvasIndex,
       ...(presentationAspect !== undefined ? { presentationAspect } : {}),
-      ...(chapter.canvasId ? { canvasId: chapter.canvasId } : {}),
       ...(chapter.viewBox ? { viewBox: chapter.viewBox } : {}),
       ...(chapter.model ? { modelPose: chapter.model } : {}),
       ...(chapter.modelOptions ? { modelOptions: chapter.modelOptions } : {}),
@@ -362,13 +393,17 @@ export const createMangoViewerStateBody = (
         : {}),
       playback,
   };
+  /*
+   * Two types on purpose. `Dataset` is a W3C body class, so a viewer that
+   * knows nothing about Mango still knows this is data and not prose to put
+   * in front of a reader — which is exactly what a `TextualBody` holding a
+   * JSON string invites it to do. `mango:ViewerState` then names what the
+   * data is, for anything that does know.
+   */
   return {
-    type: "TextualBody",
+    type: ["Dataset", MANGO_VIEWER_STATE_TYPE],
     format: MANGO_VIEWER_STATE_FORMAT,
-    value: JSON.stringify({
-      storyVersion: MANGO_STORY_VERSION,
-      state,
-    }),
+    mangoState: state,
   };
 };
 
@@ -389,18 +424,33 @@ const viewerStateEnvelope = (
       return undefined;
     }
   }
+  /*
+   * The type may be a single term or the pair `["Dataset", …]`, since the
+   * state body now carries a standard body class alongside Mango's own.
+   */
+  const types = Array.isArray(value.type) ? value.type : [value.type];
   if (
-    value.type !== MANGO_VIEWER_STATE_TYPE &&
-    value.type !== `${MANGO_STORY_NAMESPACE}ViewerState`
+    !types.includes(MANGO_VIEWER_STATE_TYPE) &&
+    !types.includes(`${MANGO_STORY_NAMESPACE}ViewerState`) &&
+    !types.includes("https://mango-iiif.github.io/ns/story#ViewerState")
   ) return undefined;
+  const state = isRecord(value.mangoState ?? value["mango:state"])
+    ? ((value.mangoState ?? value["mango:state"]) as Record<string, unknown>)
+    : undefined;
   return {
+    /*
+     * A body written to the current profile carries no version, because the
+     * context URL states it once for the document. Reporting the current
+     * version when state is present keeps "is this a Mango chapter" separate
+     * from "which profile is it" — the first is what callers actually ask.
+     */
     version:
       typeof value["mango:storyVersion"] === "string"
         ? value["mango:storyVersion"]
-        : undefined,
-    state: isRecord(value.mangoState ?? value["mango:state"])
-      ? (value.mangoState ?? value["mango:state"]) as Record<string, unknown>
-      : undefined,
+        : state
+          ? MANGO_STORY_VERSION
+          : undefined,
+    state,
   };
 };
 
@@ -413,8 +463,16 @@ export const parseMangoViewerStateBody = (
   const envelope = viewerStateEnvelope(value);
   if (envelope?.version !== MANGO_STORY_VERSION || !envelope.state) return undefined;
   const rawState = envelope.state;
+  /*
+   * Omitted rather than defaulted to "". The current profile does not write
+   * a chapter id — the annotation's own id ends in it — so an empty string
+   * here would be a value the document never claimed, and callers cannot
+   * tell it apart from one that was genuinely blank.
+   */
   const chapterId =
-    typeof rawState.chapterId === "string" ? rawState.chapterId : "";
+    typeof rawState.chapterId === "string" && rawState.chapterId.length > 0
+      ? rawState.chapterId
+      : undefined;
   const canvasIndex = nonNegativeInteger(rawState.canvasIndex) ?? 0;
   const presentationAspect = finiteNumber(rawState.presentationAspect);
   const canvasId =
@@ -435,7 +493,7 @@ export const parseMangoViewerStateBody = (
   );
 
   return {
-    chapterId,
+    ...(chapterId ? { chapterId } : {}),
     canvasIndex,
     ...(presentationAspect !== undefined && presentationAspect > 0
       ? { presentationAspect }
