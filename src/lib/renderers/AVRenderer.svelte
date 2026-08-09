@@ -203,16 +203,19 @@
     --mango-av-accent-contrast: #fff;
     /*
      * The audio artwork visualizer takes its own colour and strength rather
-     * than following `--mango-av-accent` alone. The default intensity damps the
-     * package's pulse to suit the viewer stage; embedders retune both through
-     * the `--mango-viewer-av-visualizer-*` variables, which nothing inside the
-     * viewer reassigns and which therefore inherit from the host element.
+     * than following `--mango-av-accent` alone. The artwork panel keeps the AV
+     * package's near-black backdrop in every theme, so the pulse runs on the
+     * brighter `--viewer-accent-2` — the primary accent is a fill colour chosen
+     * to carry white text, and it reads as muted against that backdrop.
+     * Embedders retune both through the `--mango-viewer-av-visualizer-*`
+     * variables, which nothing inside the viewer reassigns and which therefore
+     * inherit from the host element.
      */
     --mango-av-visualizer-color: var(
       --mango-viewer-av-visualizer-color,
-      var(--viewer-accent, #e07a3f)
+      var(--viewer-accent-2, #2ac7ff)
     );
-    --mango-av-visualizer-intensity: var(--mango-viewer-av-visualizer-intensity, 0.4);
+    --mango-av-visualizer-intensity: var(--mango-viewer-av-visualizer-intensity, 1);
     --mango-av-background: var(--viewer-stage, #111720);
     --mango-av-surface: var(--viewer-panel, #121922);
     --mango-av-text: var(--viewer-text, #e8edf4);
