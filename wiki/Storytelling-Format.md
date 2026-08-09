@@ -72,7 +72,10 @@ of a story:
 Model poses, layer opacity, exact viewport values, and playback behaviour are
 viewer state rather than standard IIIF semantics. Mango stores them in a
 versioned, namespaced `mango:ViewerState` body. Other IIIF clients can still use
-the standard chapter target and bodies while ignoring the Mango extension.
+the standard chapter target and bodies while ignoring the Mango extension. The
+body carries a single `type` string and an `id` derived from its annotation
+(`…/annotation/detail/state`), because IIIF allows one type per resource and
+requires an id on any body that is not a `TextualBody`.
 The machine-readable profile is in
 [`schemas/story-annotation-page.schema.json`](https://github.com/Mango-IIIF/Mango/blob/main/schemas/story-annotation-page.schema.json).
 Overlay annotations carry `mango:role: "overlay"` and a `mango:chapterId`
@@ -110,6 +113,7 @@ their standard body and target.
         }
       },
       "body": {
+        "id": "https://museum.example/stories/object-42/chapters/annotation/detail/state",
         "type": "mango:ViewerState",
         "format": "application/vnd.mango.story-state+json",
         "mango:storyVersion": "1.0",

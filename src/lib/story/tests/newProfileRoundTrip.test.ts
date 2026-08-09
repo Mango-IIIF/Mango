@@ -32,18 +32,32 @@ describe('the migrated profile survives a save', () => {
     expect(JSON.stringify(saved)).not.toContain('mango-iiif.github.io');
   });
 
-  it('writes state as a dataset body rather than prose', () => {
+  it('writes state as a typed data body rather than prose', () => {
     const saved: any = serializeStoryToIiif(load(demo()));
     const bodies = saved.items.flatMap((i: any) => (Array.isArray(i.body) ? i.body : [i.body]));
     const state = bodies.filter((b: any) => b?.format?.includes('mango'));
 
     expect(state.length).toBeGreaterThan(0);
     for (const body of state) {
-      expect(body.type).toEqual(['Dataset', 'mango:ViewerState']);
+      // A single string, not an array: IIIF allows one type per resource,
+      // and its validator rejects the W3C multi-type form.
+      expect(body.type).toBe('mango:ViewerState');
       // A viewer that renders every TextualBody it finds must not be handed
       // a wall of JSON where a caption belongs.
-      expect(body.type).not.toContain('TextualBody');
+      expect(body.type).not.toBe('TextualBody');
       expect(typeof body.mangoState).toBe('object');
+    }
+  });
+
+  it('gives every state body an id under its own annotation', () => {
+    const saved: any = serializeStoryToIiif(load(demo()), { id: demo().id });
+    const stated = saved.items.filter((i: any) => i.body?.mangoState);
+
+    expect(stated.length).toBeGreaterThan(0);
+    for (const annotation of stated) {
+      // IIIF requires an http(s) id on any body that is not a TextualBody.
+      expect(annotation.body.id).toBe(`${annotation.id}/state`);
+      expect(annotation.body.id).toMatch(/^https?:\/\//);
     }
   });
 

@@ -17,12 +17,12 @@
       "motivation": "commenting",
       "label": {
         "en": [
-          "The market square"
+          "The Gänseliesel"
         ]
       },
       "body": {
         "type": "TextualBody",
-        "value": "An August evening on the Markt in Göttingen, photographed during the 2019 IIIF Conference. The square is still warm, the café awnings are out, and the light is going.",
+        "value": "Chapter 1 description",
         "format": "text/plain",
         "language": "en",
         "purpose": "describing"
@@ -39,7 +39,7 @@
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
-          "value": "xywh=0,0,4032,3024"
+          "value": "xywh=900,1150,260,420"
         }
       }
     },
@@ -49,12 +49,12 @@
       "motivation": "commenting",
       "label": {
         "en": [
-          "The Altes Rathaus"
+          "The fountain canopy"
         ]
       },
       "body": {
         "type": "TextualBody",
-        "value": "The old town hall closes the west side of the square: a stone hall with a crenellated parapet above and a gothic arcade at street level, its pointed arches now shading café tables.",
+        "value": "Chapter 2 description",
         "format": "text/plain",
         "language": "en",
         "purpose": "describing"
@@ -69,9 +69,8 @@
           }
         ],
         "selector": {
-          "type": "FragmentSelector",
-          "conformsTo": "http://www.w3.org/TR/media-frags/",
-          "value": "xywh=0,0,1900,1600"
+          "type": "SvgSelector",
+          "value": "<svg xmlns=\"http://www.w3.org/2000/svg\"><polygon points=\"1075,880 1200,960 1215,1105 1075,1155 935,1105 950,960\"/></svg>"
         }
       }
     },
@@ -81,12 +80,12 @@
       "motivation": "commenting",
       "label": {
         "en": [
-          "The Gänseliesel fountain"
+          "A pride flag"
         ]
       },
       "body": {
         "type": "TextualBody",
-        "value": "Under the wrought-iron canopy stands the Gänseliesel, the goose girl. Doctoral graduates in Göttingen traditionally climb up to kiss her, which has earned the figure a reputation as one of the most kissed statues anywhere.",
+        "value": "Chapter 3 description",
         "format": "text/plain",
         "language": "en",
         "purpose": "describing"
@@ -103,7 +102,7 @@
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
-          "value": "xywh=700,850,600,1150"
+          "value": "xywh=1895,1005,95,300"
         }
       }
     },
@@ -113,12 +112,12 @@
       "motivation": "commenting",
       "label": {
         "en": [
-          "Flags and café tables"
+          "The café sign"
         ]
       },
       "body": {
         "type": "TextualBody",
-        "value": "Rainbow banners hang between the town hall windows, above a window box of pink and white flowers. Beneath the white parasols the tables are busy, and a small dog crosses the empty paving in front of them.",
+        "value": "Chapter 4 description",
         "format": "text/plain",
         "language": "en",
         "purpose": "describing"
@@ -135,7 +134,7 @@
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
-          "value": "xywh=1150,900,1100,800"
+          "value": "xywh=2975,1515,350,75"
         }
       }
     },
@@ -145,12 +144,12 @@
       "motivation": "commenting",
       "label": {
         "en": [
-          "Half-timbered corner"
+          "A dog on the paving"
         ]
       },
       "body": {
         "type": "TextualBody",
-        "value": "Across the square a timber-framed house turns the corner, its dark beams set against white render, dormer windows in a steep tiled roof, and a café sign at ground level.",
+        "value": "Chapter 5 description",
         "format": "text/plain",
         "language": "en",
         "purpose": "describing"
@@ -167,7 +166,7 @@
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
-          "value": "xywh=2600,550,900,1150"
+          "value": "xywh=1615,1630,110,80"
         }
       }
     },
@@ -177,12 +176,12 @@
       "motivation": "commenting",
       "label": {
         "en": [
-          "The paving"
+          "The town hall gable"
         ]
       },
       "body": {
         "type": "TextualBody",
-        "value": "Most of the photograph is given over to the paving itself — grey and buff granite setts laid in broad bands, sweeping out towards the foreground and holding the whole square together.",
+        "value": "Chapter 6 description",
         "format": "text/plain",
         "language": "en",
         "purpose": "describing"
@@ -197,9 +196,8 @@
           }
         ],
         "selector": {
-          "type": "FragmentSelector",
-          "conformsTo": "http://www.w3.org/TR/media-frags/",
-          "value": "xywh=900,2000,2600,1000"
+          "type": "SvgSelector",
+          "value": "<svg xmlns=\"http://www.w3.org/2000/svg\"><polygon points=\"600,300 820,90 1040,300 1040,395 600,395\"/></svg>"
         }
       }
     }

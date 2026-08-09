@@ -115,6 +115,39 @@ Per-annotation `--accent` and `--ink` values carried in the story document still
 win over `--story-note-*`, so author-chosen annotation colours survive a theme
 change.
 
+### Audio visualizer variables
+
+Audio Canvases render artwork behind the transport, and by default a pulse that
+swells with the audio. Two variables retune it:
+
+| Variable                              | Controls                                  |
+| ------------------------------------- | ----------------------------------------- |
+| `--mango-viewer-av-visualizer-color`  | Visualizer colour, defaulting to `--viewer-accent-2` |
+| `--mango-viewer-av-visualizer-intensity` | How strongly it renders, `1` by default   |
+
+The pulse follows `--viewer-accent-2` rather than the primary accent because the
+artwork panel keeps the AV package's near-black backdrop in every theme. The
+primary accent is chosen as a button fill carrying white text, which leaves it
+looking muted there; the secondary accent is the brighter of the two and reads
+clearly against near-black.
+
+Intensity is a unitless multiplier. `0` hides the visualizer without affecting
+playback, `1` is the AV package's own strength, and values above `1` push it
+towards saturation. Both variables apply to the `waveform` and `spectrum`
+visualizer modes as well as the default pulse — for those two, intensity scales
+the height of the trace and of the bars, not only their opacity.
+
+```css
+.museum-viewer {
+  --mango-viewer-av-visualizer-color: #2ac7ff;
+  --mango-viewer-av-visualizer-intensity: 0.7;
+}
+```
+
+Unlike `--viewer-accent`, these are read where they are used and are never
+reassigned inside the viewer, so a value set on the `<mango-viewer>` host — or
+any ancestor of it — reaches the visualizer in every theme.
+
 ### Story builder variables
 
 The story builder follows the same palette, plus:
