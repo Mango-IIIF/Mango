@@ -59,7 +59,13 @@ describe('storyLoader.normaliseStoryInput', () => {
     });
   });
 
-  it('rejects AnnotationPages without the Mango profile', () => {
+  /*
+   * Previously refused outright. A page with no Mango profile is somebody
+   * else's annotation page, and it carries everything a simple story needs:
+   * an ordered run of framed regions on a canvas. Refusing it was the whole
+   * reason Mango could only ever read its own output.
+   */
+  it('reads an AnnotationPage without the Mango profile as a plain story', () => {
     const result = normaliseStoryInput({
       '@context': 'http://iiif.io/api/presentation/3/context.json',
       id: 'https://example.org/legacy-story',
@@ -80,10 +86,11 @@ describe('storyLoader.normaliseStoryInput', () => {
       ],
     });
 
-    expect(result).toEqual({
-      ok: false,
-      error: 'Missing Mango story version',
-    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.story.chapters).toHaveLength(1);
+    expect(result.story.chapters[0].manifest).toBe('https://example.org/manifest');
+    expect(result.story.chapters[0].viewBox).toBeDefined();
   });
 
   it('rejects an unsupported version of the Mango AnnotationPage profile', () => {

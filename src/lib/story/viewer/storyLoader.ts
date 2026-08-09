@@ -85,12 +85,29 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
     return bodies.some((body) => mangoViewerStateVersion(body) !== undefined);
   };
   const legacyEnvelope = input["mango:storyVersion"] !== undefined;
-  const chapterItems = legacyEnvelope
-    ? pageItems.filter((item) => item["mango:role"] !== "overlay")
-    : pageItems.filter(carriesViewerState);
-  const overlayItems = legacyEnvelope
-    ? pageItems.filter((item) => item["mango:role"] === "overlay")
-    : pageItems.filter((item) => !carriesViewerState(item));
+  /*
+   * A page with no Mango enrichment anywhere is somebody else's annotation
+   * page, and it is still a story: an ordered run of framed regions with
+   * captions. `items` is `@container: @list` in both the IIIF and Web
+   * Annotation contexts, so document order is the sequence and needs no
+   * index property to make it so.
+   *
+   * Every item becomes a chapter in that case. Splitting into chapters and
+   * overlays is a distinction only Mango draws, and there is nothing here
+   * marking which is which.
+   */
+  const hasMangoEnrichment =
+    legacyEnvelope || pageItems.some((item) => carriesViewerState(item));
+  const chapterItems = !hasMangoEnrichment
+    ? pageItems
+    : legacyEnvelope
+      ? pageItems.filter((item) => item["mango:role"] !== "overlay")
+      : pageItems.filter(carriesViewerState);
+  const overlayItems = !hasMangoEnrichment
+    ? []
+    : legacyEnvelope
+      ? pageItems.filter((item) => item["mango:role"] === "overlay")
+      : pageItems.filter((item) => !carriesViewerState(item));
 
   const chapters = chapterItems.map((item, index) => {
     const bodies = item.body
@@ -126,6 +143,20 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
         }
       }
     }
+    /*
+     * `summary` is IIIF vocabulary, so a page written to the Web Annotation
+     * model alone puts its caption in a textual body instead. Read that when
+     * there is no summary, keyed by the body's own language.
+     */
+    if (Object.keys(description).length === 0) {
+      for (const body of bodies) {
+        if (body.type !== "TextualBody") continue;
+        const value = typeof body.value === "string" ? body.value.trim() : "";
+        if (!value) continue;
+        const lang = body.language || "en";
+        if (!description[lang]) description[lang] = value;
+      }
+    }
 
     const transitionTimeMs = viewerState?.playback?.transitionMs;
     const entryTransition = viewerState?.playback?.entryTransition;
@@ -158,6 +189,21 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
         const parts = targetCanvasId.split("#");
         targetCanvasId = parts[0];
         const fragment = parts[1];
+        /*
+         * A bare `canvas#xywh=` string is the most widely written target
+         * there is, and the framing is the whole point of it for a story.
+         * Reading it only from a FragmentSelector meant such a chapter
+         * loaded with no framing at all.
+         */
+        const xywhMatch = fragment.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
+        if (xywhMatch) {
+          viewBox = {
+            x: parseInt(xywhMatch[1], 10),
+            y: parseInt(xywhMatch[2], 10),
+            w: parseInt(xywhMatch[3], 10),
+            h: parseInt(xywhMatch[4], 10),
+          };
+        }
         const tMatch = fragment.match(/t=(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/);
         if (tMatch) {
           const start = parseFloat(tMatch[1]);
@@ -170,9 +216,14 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
 
       const targetObj = typeof targetSource === "object" ? targetSource : null;
 
-      // Resolve manifest ID and canvasIndex
-      if (targetObj && targetObj.partOf && targetObj.partOf.id) {
-        manifest = targetObj.partOf.id;
+      // Resolve manifest ID and canvasIndex. `partOf` is an array in IIIF
+      // Presentation 3; the single-object form is accepted because Mango
+      // wrote it that way and existing stories carry it.
+      const partOf = Array.isArray(targetObj?.partOf)
+        ? targetObj?.partOf[0]
+        : targetObj?.partOf;
+      if (partOf?.id) {
+        manifest = partOf.id;
       } else if (targetCanvasId && targetCanvasId.includes("/canvas/")) {
         const parts = targetCanvasId.split("/canvas/");
         manifest = parts[0];
@@ -278,7 +329,17 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
       }
     };
 
-    bodies.forEach((body) => processBodyItem(body));
+    /*
+     * Only the narration is read off the chapter's own bodies. A textual body
+     * here is the chapter's caption — it is what `description` was taken from
+     * — and treating it as an overlay invented a rectangle nobody drew, which
+     * then re-exported as a real annotation. Overlays are separate items with
+     * their own targets.
+     */
+    bodies.forEach((body) => {
+      if (body.type === "TextualBody") return;
+      processBodyItem(body);
+    });
     for (const overlay of overlayItems) {
       const belongsToChapter =
         overlay["mango:chapterId"] === chapterId ||
@@ -395,13 +456,22 @@ export const normaliseStoryInput = (
     .map(mangoViewerStateVersion)
     .find((version) => version !== undefined);
   const storyVersion = input["mango:storyVersion"] ?? bodyVersion;
-  if (storyVersion === undefined) {
-    return { ok: false, error: translate('storyViewer.errors.missingVersion') };
-  }
-  if (storyVersion !== MANGO_STORY_VERSION) {
+  /*
+   * No Mango version means somebody else's annotation page, which is read as
+   * a plain story rather than refused. The version is only consulted to
+   * reject enrichment this build cannot understand; its absence says there
+   * is no enrichment to misread.
+   */
+  if (storyVersion !== undefined && storyVersion !== MANGO_STORY_VERSION) {
     return {
       ok: false,
       error: translate('storyViewer.errors.unsupportedVersion', { version: String(storyVersion) }),
+    };
+  }
+  if (storyVersion === undefined) {
+    return {
+      ok: true,
+      story: withChapterDefaults(normaliseStoryFraming(parseIiifStory(input))),
     };
   }
   const chapterItems = input["mango:storyVersion"] !== undefined
