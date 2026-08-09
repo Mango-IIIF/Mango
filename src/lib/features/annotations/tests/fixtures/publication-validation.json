@@ -1,0 +1,20 @@
+{
+  "valid": {
+    "pageId": "https://example.org/annotations/page/1",
+    "annotationId": "https://example.org/annotations/1",
+    "canvasId": "https://example.org/canvas/1",
+    "language": "en-GB"
+  },
+  "invalidLanguage": {
+    "pageId": "https://example.org/annotations/page/invalid-language",
+    "annotationId": "https://example.org/annotations/invalid-language",
+    "canvasId": "https://example.org/canvas/1",
+    "language": "not a language"
+  },
+  "draft": {
+    "pageId": "urn:mango:draft:page/fixture",
+    "annotationId": "urn:mango:draft:annotation/fixture",
+    "canvasId": "https://example.org/canvas/1",
+    "language": "en"
+  }
+}

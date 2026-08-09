@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import type { PluginContext, PluginSlot, ViewerPlugin } from '../core/types/plugin';
-  import { translate } from '../i18n';
+  import { translate } from '../core/i18n';
 
   export let plugin: ViewerPlugin;
   export let context: Omit<PluginContext, 'mount'>;

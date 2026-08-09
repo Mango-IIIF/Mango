@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { StoryState } from '../../core/types/story';
 import {
   DEFAULT_PRESENTATION_ASPECT,
+  framingsWithin,
   inferPresentationAspect,
   isKeyframeEnvelope,
   normaliseStoryFraming,
   normaliseViewBox,
   resolvePresentationAspect,
 } from '../framing';
+import { framingsDiffer } from '../chapterTasks';
 
 const aspectOf = (box: { w: number; h: number }) => box.w / box.h;
 const centreOf = (box: { x: number; y: number; w: number; h: number }) => ({
@@ -190,5 +192,42 @@ describe('framing normalisation', () => {
     const once = normaliseStoryFraming(story);
     const twice = normaliseStoryFraming(once);
     expect(twice).toEqual(once);
+  });
+});
+
+describe('framing comparison', () => {
+  it('compares every component against the tolerance', () => {
+    const box = { x: 10, y: 20, w: 30, h: 40 };
+    expect(framingsWithin({ ...box, x: 10.4 }, box, 0.5)).toBe(true);
+    expect(framingsWithin({ ...box, h: 40.4 }, box, 0.5)).toBe(true);
+    expect(framingsWithin({ ...box, x: 11 }, box, 0.5)).toBe(false);
+    expect(framingsWithin({ ...box, w: 31 }, box, 0.5)).toBe(false);
+  });
+
+  it('is inclusive at exactly the tolerance', () => {
+    const box = { x: 0, y: 0, w: 100, h: 100 };
+    expect(framingsWithin({ ...box, x: 0.5 }, box, 0.5)).toBe(true);
+  });
+
+  /*
+   * The reason `framingsWithin` and `framingsDiffer` are separate functions
+   * rather than one with a tolerance argument. The same absolute shift is
+   * imperceptible on a large canvas and a different view entirely on a small
+   * crop, so an absolute tolerance cannot answer "did the author reframe".
+   * Collapsing the two would silently break drift detection at one end of the
+   * scale or the other, and this is what would catch it.
+   */
+  it('answers differently from drift detection at different canvas scales', () => {
+    const shift = 40;
+
+    const large = { x: 0, y: 0, w: 15000, h: 10000 };
+    const largeShifted = { ...large, x: large.x + shift };
+    expect(framingsWithin(largeShifted, large, 0.5)).toBe(false);
+    expect(framingsDiffer(large, largeShifted)).toBe(false);
+
+    const crop = { x: 0, y: 0, w: 300, h: 200 };
+    const cropShifted = { ...crop, x: crop.x + shift };
+    expect(framingsWithin(cropShifted, crop, 0.5)).toBe(false);
+    expect(framingsDiffer(crop, cropShifted)).toBe(true);
   });
 });

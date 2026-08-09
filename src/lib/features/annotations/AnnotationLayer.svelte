@@ -1,7 +1,7 @@
 <script lang="ts">
   import { isOpenPathAnnotation, type ResolvedAnnotation } from '../../iiif/annotationResolver';
   import type { ViewBox } from '../../core/types/viewer';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   interface Props {
     annotations?: ResolvedAnnotation[];
@@ -58,8 +58,28 @@
     return `stroke: ${color}; fill: rgba(${r}, ${g}, ${b}, ${DEFAULT_LAYER_FILL_OPACITY});`;
   };
 
-  const annotationStyle = (annotation: ResolvedAnnotation): string =>
-    annotation.targetStyle?.trim() || styleForLayerClass(annotation.targetStyleClass);
+  /**
+   * Presentation for one annotation.
+   *
+   * Built from the hints resolved when the annotation was projected, never from
+   * the raw CSS it arrived with. An annotation's stylesheet is a string a
+   * stranger wrote, and putting it straight into a `style` attribute is the one
+   * thing a renderer must not do with it: the projection has already reduced it
+   * to an allowlist of stroke, fill, width, and opacity.
+   */
+  const annotationStyle = (annotation: ResolvedAnnotation): string => {
+    const hints = annotation.styleHints;
+    if (!hints) return styleForLayerClass(annotation.targetStyleClass);
+    const declarations = [
+      hints.strokeColor ? `stroke: ${hints.strokeColor}` : '',
+      hints.fillColor ? `fill: ${hints.fillColor}` : '',
+      hints.strokeWidth != null ? `stroke-width: ${hints.strokeWidth}` : '',
+      hints.opacity != null ? `opacity: ${hints.opacity}` : '',
+    ].filter(Boolean);
+    return declarations.length
+      ? `${declarations.join('; ')};`
+      : styleForLayerClass(annotation.targetStyleClass);
+  };
 
   const annotationLabel = (annotation: ResolvedAnnotation): string =>
     annotation.label?.trim() || '';

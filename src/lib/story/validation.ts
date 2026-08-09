@@ -1,7 +1,7 @@
 import type { Chapter, StoryState } from '../core/types/story';
 import { isAnnotationPlacement } from './annotationPlacement';
 import { validatePublicationIdentifiers } from './publicIdentifiers';
-import { translate } from '../i18n';
+import { translate } from '../core/i18n';
 
 const hasSingleCapture = (chapter: Chapter): boolean => {
   const captureCount = [chapter.viewBox, chapter.media, chapter.model].filter(Boolean)

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { getViewerContext } from '../context';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   import 'ol/ol.css';
   import OlMap from 'ol/Map.js';

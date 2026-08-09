@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Grid2x2, Image, Images, Scroll } from '@lucide/svelte';
   import { getViewerContext, viewerSettingsThemes } from '../context';
-  import { supportedLocales, t } from '../../i18n';
+  import { supportedLocales, t } from '../../core/i18n';
   import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {

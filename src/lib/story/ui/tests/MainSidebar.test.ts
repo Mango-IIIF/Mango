@@ -3,7 +3,7 @@ import { mount, unmount } from 'svelte';
 import { tick } from 'svelte';
 import { createStoryStoreForTest } from './testHelpers';
 import MainSidebar from '../MainSidebar.svelte';
-import { manifestsStore } from '../../../state/manifests';
+import { manifestsStore } from '../../../core/state/manifests';
 
 const createTarget = (): HTMLDivElement => {
   const target = document.createElement('div');

@@ -169,3 +169,81 @@ describe('chapter task evaluation', () => {
     ]);
   });
 });
+
+describe('viewer position drift', () => {
+  /*
+   * A chapter captures a view the instant it is created, so "Configured" was
+   * true from birth and could never become false. The author's real question is
+   * whether that captured framing is still the one on screen — they create the
+   * chapter, then explore to find what it is about.
+   */
+  const saved = { x: 0, y: 0, w: 100, h: 100 };
+  const at = (currentViewBox: { x: number; y: number; w: number; h: number } | null) =>
+    evaluateTaskStatus('position', { ...context(), currentViewBox });
+
+  it('stays configured while the viewer is on the saved frame', () => {
+    expect(at(saved).completion).toBe('complete');
+    expect(at(saved).labelKey).toBeUndefined();
+  });
+
+  it('flags the framing once the author has moved somewhere else', () => {
+    const status = at({ x: 40, y: 25, w: 20, h: 20 });
+    expect(status.completion).toBe('attention');
+    expect(status.labelKey).toBe('storyBuilder.tasks.status.positionDrift');
+  });
+
+  it('ignores drift below the tolerance so settling does not raise a warning', () => {
+    // 1% of the frame, under the 2% threshold.
+    expect(at({ x: 1, y: 1, w: 101, h: 101 }).completion).toBe('complete');
+  });
+
+  it('scales the tolerance to the frame rather than to absolute pixels', () => {
+    // Ten pixels is nothing across a whole canvas and everything inside a crop.
+    const wide = evaluateTaskStatus('position', {
+      ...context(),
+      chapter: { ...story.chapters[0], viewBox: { x: 0, y: 0, w: 15000, h: 15000 } },
+      currentViewBox: { x: 10, y: 10, w: 15000, h: 15000 },
+    });
+    const tight = evaluateTaskStatus('position', {
+      ...context(),
+      chapter: { ...story.chapters[0], viewBox: { x: 0, y: 0, w: 200, h: 200 } },
+      currentViewBox: { x: 10, y: 10, w: 200, h: 200 },
+    });
+    expect(wide.completion).toBe('complete');
+    expect(tight.completion).toBe('attention');
+  });
+
+  it('treats a reshaped but equivalent frame as unchanged', () => {
+    /*
+     * Real numbers from the story editor: a chapter is stored at the story's
+     * presentation aspect while the viewer reports the editor stage's shape, so
+     * a freshly created chapter has two different-looking boxes for one view.
+     * Comparing edges flagged this the moment the chapter was created.
+     */
+    const status = evaluateTaskStatus('position', {
+      ...context(),
+      chapter: {
+        ...story.chapters[0],
+        viewBox: { x: -167, y: -113, w: 14819, h: 9966 },
+      },
+      currentViewBox: { x: 0, y: -227.8, w: 14484, h: 10196.6 },
+    });
+    expect(status.completion).toBe('complete');
+  });
+
+  it('says nothing when there is no live view to compare against', () => {
+    // Chapters the author is not standing in, and previews driving the viewer.
+    expect(at(null).completion).toBe('complete');
+    expect(evaluateTaskStatus('position', context()).completion).toBe('complete');
+  });
+
+  it('still reports a missing frame as unconfigured', () => {
+    expect(
+      evaluateTaskStatus('position', {
+        ...context(),
+        chapter: { ...story.chapters[0], viewBox: undefined },
+        currentViewBox: saved,
+      }).completion,
+    ).toBe('empty');
+  });
+});

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount, setContext } from 'svelte';
   import { get, writable } from 'svelte/store';
-  import { t } from '../../i18n';
-  import { normaliseViewerConfig } from '../../config/normalise';
+  import { t } from '../../core/i18n';
+  import { normaliseViewerConfig } from '../../core/config/normalise';
   import type { ViewerEventMap } from '../../core/types/events';
   import type { ViewerConfig } from '../../core/types/config';
   import type { ChapterAnnotationTool } from '../../core/types/story';
@@ -17,15 +17,45 @@
   import LeftPanelStack from '../../viewer/ui/LeftPanelStack.svelte';
   import ViewerDock from '../../viewer/ui/ViewerDock.svelte';
   import Stage from '../../viewer/ui/Stage.svelte';
+  import StageGalleryView from '../../viewer/ui/StageGalleryView.svelte';
   import StageToolbar from '../../viewer/ui/StageToolbar.svelte';
   import Gallery from '../../viewer/ui/Gallery.svelte';
   import type { LayerItem } from '../annotations/workspace/LeftSidebar.svelte';
-  import { w3cShapeTool, w3cToResolved } from '../annotations/w3c';
+  import {
+    applyResolvedPatch,
+    createMangoAnnotation,
+    projectToResolved,
+    resolveAnnotationJson,
+    shapeFromResolved,
+    shapeTool,
+  } from '../annotations/canonical';
+  import { buildLayerStylesheet, colorFromInlineStyle, styleClassForLayer } from '../annotations/style';
+  import {
+    archiveLayer,
+    createLayer,
+    mergeDiscoveredLayers,
+    moveLayer,
+    recolourLayer,
+    renameLayer,
+    resolveActiveLayer,
+    setLayerVisibility,
+  } from '../annotations/layers';
+  import { exportAnnotationPage } from '../annotations/export';
+  import { STORY_LABEL_SIZING } from '../annotations/rectangleLabelLayout';
+  import { normaliseAuthoringLanguages } from '../annotations/languages';
+  import type { AnnotationSaveState } from '../annotations/model';
+  import {
+    createCommandStack,
+    labelForPatch,
+    type CommandStackState,
+  } from '../annotations/commands';
+  import type { OSDAnnotationEditor } from '@mango-iiif/annotation';
+  import type { CanonicalStylesheet } from '@mango-iiif/w3c-parser';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import { createViewerState } from '../../viewer/state/viewerState';
   import { createViewerDerived } from '../../viewer/state/viewerDerived';
   import { createViewerController } from '../../viewer/state/viewerController';
-  import { manifestsStore, fetchManifest } from '../../state/manifests';
+  import { manifestsStore, fetchManifest } from '../../core/state/manifests';
   import { resolveCanvasThumbnail } from '../../viewer/iiif/thumbnails';
   import type { RendererEventHandlers } from '../../viewer/types/rendererEvents';
   import {
@@ -34,14 +64,15 @@
     type StoryWithDefaults,
   } from '../../story/viewer/storyLoader';
   import { createStoryViewerRuntime } from '../../story/viewer/storyViewerController';
+  import { createStoryPlayback } from '../../story/viewer/storyPlayback.svelte';
   import { ViewportState, VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
-  import { setLocale } from '../../i18n';
+  import { setLocale } from '../../core/i18n';
   import GridContainer from '../workspace/GridContainer.svelte';
   import ManifestManager from '../workspace/ManifestManager.svelte';
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
-  import { ChevronsRight, Expand, ImageOff, Shrink } from '@lucide/svelte';
+  import { ChevronsRight, Expand, Shrink } from '@lucide/svelte';
   import {
     isViewerSettingsTheme,
     setViewerContext,
@@ -69,9 +100,6 @@
     oncanvaschange?: ((detail: { canvasIndex: number }) => void) | undefined;
   }
 
-  const DEFAULT_LAYER_COLOR = '#a78bfa';
-  const LAYER_FILL_OPACITY = 0.18;
-  const NEW_LAYER_COLORS = ['#fb7185', '#2ac7ff', '#22c55e', '#06b6d4', '#818cf8', '#ec4899'];
   const DEFAULT_ANNOTATION_LAYERS: LayerItem[] = [
     { id: 'research', name: 'Research Notes', color: '#fb7185', visible: true },
     {
@@ -92,30 +120,6 @@
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia(`(max-width: ${MOBILE_LAYOUT_WIDTH}px)`).matches;
-
-  const styleForLayerColor = (color: string): string => {
-    const r = parseInt(color.slice(1, 3), 16) || 0;
-    const g = parseInt(color.slice(3, 5), 16) || 0;
-    const b = parseInt(color.slice(5, 7), 16) || 0;
-    return `stroke: ${color}; fill: rgba(${r}, ${g}, ${b}, ${LAYER_FILL_OPACITY});`;
-  };
-
-  const parseLayerColorFromStyle = (style?: string): string | null => {
-    if (!style) return null;
-    const match = style.match(/stroke:\s*([^;]+)/i);
-    if (!match) return null;
-    const value = match[1]?.trim();
-    if (!value) return null;
-    const hexMatch = value.match(/^#([0-9a-f]{6})$/i);
-    return hexMatch ? `#${hexMatch[1].toLowerCase()}` : null;
-  };
-
-  const labelForLayerId = (layerId: string): string =>
-    layerId
-      .split(/[-_\s]+/)
-      .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ') || 'Layer';
 
   let {
     manifestId = $bindable(''),
@@ -270,6 +274,12 @@
   let isStoryViewer = $derived(mode === 'story-viewer');
   let isStoryBuilder = $derived(mode === 'story-builder');
   let isAnnotationEditor = $derived(mode === 'annotation-editor');
+  let annotationLanguages = $derived(
+    normaliseAuthoringLanguages(
+      normalisedConfig.annotations?.languages,
+      normalisedConfig.language ?? 'en',
+    ),
+  );
   let isPlainViewerMode = $derived(!mode || mode === 'viewer');
   const VIEWER_CONTROLS_IDLE_MS = 2800;
   let viewerControlsVisible = $state(true);
@@ -480,33 +490,15 @@
   let storyLoadToken = 0;
   let lastStoryInput: string | Record<string, unknown> | undefined = $state(undefined);
   let lastStoryUrl: string | undefined = $state(undefined);
-  let storyCurrentChapterIndex = $state(0);
-  let storyIsLoading = $state(false);
-  let storyPlayState: 'idle' | 'playing' | 'paused' = $state('idle');
   let viewerRoot: HTMLDivElement | null = $state(null);
   let isViewerFullscreen = $state(false);
   let isViewerFullscreenFallback = $state(false);
   let storyChapterThumbnails: Array<string | null> = $state([]);
   const storyThumbnailCache = new Map<string, string>();
-  let storyChapterDurationSec = $state(0);
-  let storyChapterElapsedSec = $state(0);
-  let storyStageOpacity = $state(1);
-  let storyStageFadeMs = $state(0);
-  let chapterTitle = $derived.by(() => {
-    const activeChapter = storyData?.chapters?.[storyCurrentChapterIndex];
-    const resolvedTitle = resolveLanguageValue(activeChapter?.title, storyLanguage);
-    return resolvedTitle || (storyChapters > 0 ? `Chapter ${storyCurrentChapterIndex + 1}` : '');
-  });
   let storyTitle = $derived.by(() => {
     const resolvedTitle = resolveLanguageValue(storyData?.title, storyLanguage);
     return resolvedTitle || 'Untitled story';
   });
-  let chapterDescription = $derived(
-    resolveLanguageValue(
-      storyData?.chapters?.[storyCurrentChapterIndex]?.description,
-      storyLanguage,
-    ),
-  );
   const storyViewBoxStore = writable<ViewBox | null>(null);
   const EMPTY_STORY: StoryWithDefaults = Object.freeze({
     chapters: Object.freeze([]),
@@ -620,65 +612,31 @@
       language: resolvePreferredStoryLanguage(),
     },
   );
-  const unsubscribeStoryIndex = storyRuntime.currentChapterIndex.subscribe((value) => {
-    storyCurrentChapterIndex = value ?? 0;
+  const storyPlayback = createStoryPlayback({
+    runtime: storyRuntime,
+    guards: {
+      canControl: () => !storyControlsDisabled,
+      canNavigate: () => !storyControlsDisabled && !storyLoading,
+      chapterCount: () => storyChapters,
+    },
+    // The story builder drives the same stage through the event bus, since its
+    // controller lives in a plugin rather than in this layout.
+    onExternalStageFade: (handler) => controller.on('stageFade', handler),
   });
-  const unsubscribeStoryLoading = storyRuntime.isLoading.subscribe((value) => {
-    storyIsLoading = value;
-    if (value) {
-      storyChapterElapsedSec = 0;
-      storyChapterDurationSec = 0;
-    }
+  let chapterTitle = $derived.by(() => {
+    const activeChapter = storyData?.chapters?.[storyPlayback.currentChapterIndex];
+    const resolvedTitle = resolveLanguageValue(activeChapter?.title, storyLanguage);
+    return (
+      resolvedTitle ||
+      (storyChapters > 0 ? `Chapter ${storyPlayback.currentChapterIndex + 1}` : '')
+    );
   });
-  const unsubscribeStoryPlayState = storyRuntime.playState.subscribe((value) => {
-    storyPlayState = value;
-  });
-  const unsubscribeStoryPlaybackState = storyRuntime.playbackState.subscribe((value) => {
-    storyChapterDurationSec = value?.duration ?? 0;
-    storyChapterElapsedSec = value?.currentTime ?? 0;
-  });
-  const unsubscribeStoryStageFade = storyRuntime.stageFade.subscribe((value) => {
-    storyStageOpacity = value?.opacity ?? 1;
-    storyStageFadeMs = value?.durationMs ?? 0;
-  });
-  // The story builder drives the same stage through the event bus, since its
-  // controller lives in a plugin rather than in this layout.
-  const offStageFade = controller.on('stageFade', ({ opacity, durationMs }) => {
-    storyStageOpacity = opacity;
-    storyStageFadeMs = durationMs;
-  });
-  const handleStoryPlay = () => {
-    if (storyControlsDisabled) return;
-    storyRuntime.play();
-  };
-  const handleStoryPause = () => {
-    if (storyControlsDisabled) return;
-    storyRuntime.pause();
-  };
-  const handleStoryStop = () => {
-    if (storyControlsDisabled) return;
-    storyRuntime.stop();
-  };
-  const handleStorySelectChapter = (index: number, autoPlay = true) => {
-    if (storyControlsDisabled || storyLoading) return;
-    const chapterTotal = storyChapters;
-    if (!chapterTotal) return;
-    const target = Math.max(0, Math.min(index, chapterTotal - 1));
-    storyCurrentChapterIndex = target;
-    void storyRuntime.loadChapter(target, { autoPlay });
-  };
-  const handleStoryPreviousChapter = () => {
-    handleStorySelectChapter(storyCurrentChapterIndex - 1, true);
-  };
-  const handleStoryNextChapter = () => {
-    handleStorySelectChapter(storyCurrentChapterIndex + 1, true);
-  };
-  const handleStoryRefresh = () => {
-    if (storyControlsDisabled || storyLoading) return;
-    void storyRuntime.loadChapter(storyCurrentChapterIndex, {
-      autoPlay: false,
-    });
-  };
+  let chapterDescription = $derived(
+    resolveLanguageValue(
+      storyData?.chapters?.[storyPlayback.currentChapterIndex]?.description,
+      storyLanguage,
+    ),
+  );
   const fullscreenController = createViewerFullscreenController({
     getRoot: () => viewerRoot,
     getShadowHost,
@@ -733,7 +691,63 @@
   });
 
   let draftAnno = $state.raw<ResolvedAnnotation | null>(null);
+  let annotationDirty = $state(false);
+  let annotationSaveState = $state<AnnotationSaveState>({ status: 'clean' });
+  let annotationExportStatus = $state('');
+  /**
+   * Expert content-authoring mode.
+   *
+   * Off by default, and the only route to `painting`. An ordinary comment
+   * exported as `painting` tells every Presentation 3 consumer that the note is
+   * the Canvas image, so the term is behind a deliberate choice rather than
+   * sitting in a list next to `commenting`.
+   */
+  let annotationExpertMode = $state(false);
+  /**
+   * The annotation as it was when editing began, for Cancel to restore.
+   *
+   * Taken on the first change rather than on selection: selecting an annotation
+   * to read it should not arm a transaction, and taking the snapshot on the
+   * first edit is what makes Cancel restore the state the user last saw.
+   */
+  let editSnapshot = $state.raw<{ id: string; annotation: ResolvedAnnotation } | null>(null);
   let annotationLayers = $state<LayerItem[]>([...DEFAULT_ANNOTATION_LAYERS]);
+  /** Layer new annotations are created in. */
+  let activeAnnotationLayerId = $state('mine');
+
+  /*
+   * The live canvas editor, handed out by the editor layer.
+   *
+   * Held so undo/redo and exact coordinate editing can reach the package's own
+   * geometry history and `setGeometry` rather than Mango synthesising pointer
+   * events or keeping a second copy of the geometry.
+   */
+  let annotationEditor = $state.raw<OSDAnnotationEditor | null>(null);
+  let commandState = $state<CommandStackState>({ canUndo: false, canRedo: false });
+
+  const commandStack = createCommandStack({
+    apply: (annotationId, annotation) => {
+      if (!annotation) {
+        void controller.removeAnnotation(annotationId);
+        return;
+      }
+      if (draftAnno && draftAnno.id === annotationId) {
+        draftAnno = annotation;
+        return;
+      }
+      // Replace, not patch. A snapshot restores a whole earlier state, and a
+      // field that was empty before the edit is absent from it — which a patch
+      // reads as "leave alone", so the edit would never be undone.
+      void controller.replaceAnnotation(annotationId, annotation);
+    },
+    geometry: () => annotationEditor,
+    onChange: (state) => (commandState = state),
+  });
+
+  const annotationById = (id: string): ResolvedAnnotation | null =>
+    (draftAnno && draftAnno.id === id ? draftAnno : null) ??
+    editorAnnotations.find((annotation) => annotation.id === id) ??
+    null;
   let visibleLayerIds = $derived(
     new Set(annotationLayers.filter((layer) => layer.visible).map((layer) => layer.id)),
   );
@@ -743,6 +757,13 @@
     return visibleLayerIds.has(layerId);
   };
   let editorAnnotations = $derived(isAnnotationEditor ? $annotations : $overlayAnnotations);
+  /*
+   * Hiding a layer takes its annotations off the stage. It does not take them
+   * out of the browser list: the list is how an annotation is found, selected,
+   * edited, and moved to another layer, so filtering it too made a hidden
+   * annotation unmanageable — including unhideable, because the control for
+   * changing its layer is in the inspector the list opens.
+   */
   let filteredOverlayAnnotations = $derived(
     editorAnnotations.filter((annotation) => isAnnotationVisibleByLayer(annotation)),
   );
@@ -754,91 +775,83 @@
       ? [...filteredOverlayAnnotations, visibleDraftAnno]
       : filteredOverlayAnnotations,
   );
-  const findLayerById = (layerId: string): LayerItem | undefined =>
-    annotationLayers.find((layer) => layer.id === layerId);
-
   const handleToggleLayer = (detail: { id: string }) => {
-    annotationLayers = annotationLayers.map((layer) =>
-      layer.id === detail.id ? { ...layer, visible: !layer.visible } : layer,
-    );
+    const current = annotationLayers.find((layer) => layer.id === detail.id);
+    annotationLayers = setLayerVisibility(annotationLayers, detail.id, !current?.visible);
   };
 
   const handleAddLayer = () => {
-    let nextIndex = annotationLayers.length + 1;
-    let nextId = `layer-${nextIndex}`;
-    while (annotationLayers.some((layer) => layer.id === nextId)) {
-      nextIndex += 1;
-      nextId = `layer-${nextIndex}`;
-    }
-    const color =
-      NEW_LAYER_COLORS[(nextIndex - 1) % NEW_LAYER_COLORS.length] ?? DEFAULT_LAYER_COLOR;
-    annotationLayers = [
-      ...annotationLayers,
-      {
-        id: nextId,
-        name: `Layer ${nextIndex}`,
-        color,
-        visible: true,
-      },
-    ];
+    annotationLayers = [...annotationLayers, createLayer(annotationLayers)];
+  };
+
+  const handleLayerRename = (detail: { id: string; name: string }) => {
+    annotationLayers = renameLayer(annotationLayers, detail.id, detail.name);
+  };
+
+  const handleLayerMove = (detail: { id: string; direction: -1 | 1 }) => {
+    annotationLayers = moveLayer(annotationLayers, detail.id, detail.direction);
+  };
+
+  const handleLayerArchive = (detail: { id: string; archived: boolean }) => {
+    annotationLayers = archiveLayer(annotationLayers, detail.id, detail.archived);
+    // Archiving the layer being drawn into would leave new annotations landing
+    // somewhere the user can no longer see.
+    activeAnnotationLayerId = resolveActiveLayer(annotationLayers, activeAnnotationLayerId);
   };
 
   const handleLayerColorChange = (detail: { id: string; color: string }) => {
-    annotationLayers = annotationLayers.map((layer) =>
-      layer.id === detail.id ? { ...layer, color: detail.color } : layer,
-    );
+    annotationLayers = recolourLayer(annotationLayers, detail.id, detail.color);
 
+    /*
+     * Recolouring writes a new stylesheet, not an inline `target.style`. The
+     * inline form has no portable Web Annotation representation, so it was
+     * dropped the moment anything exported in a standards profile; a class plus
+     * an Annotation-level stylesheet survives the round trip.
+     *
+     * The class does not change, because the class is the layer's identity.
+     * Changing the colour must not change membership.
+     */
     const patch: Partial<ResolvedAnnotation> = {
-      targetStyleClass: detail.id,
-      targetStyle: styleForLayerColor(detail.color),
+      targetStyleClass: styleClassForLayer(detail.id),
     };
+    const stylesheet = buildLayerStylesheet([{ id: detail.id, color: detail.color }]);
     /*
      * Only annotations that name this layer, not the manifest ones that merely
      * fall back to it for rendering. Recolouring is a real edit, so matching on
      * the fallback would copy every external annotation on the page into the
      * user's own set — and into their export — over a swatch change.
      */
+    const styleClass = styleClassForLayer(detail.id);
+    const inLayer = (annotation: ResolvedAnnotation): boolean => {
+      const current = annotation.targetStyleClass?.trim();
+      return current === detail.id || current === styleClass;
+    };
     const affectedAnnotationIds = new Set(
-      editorAnnotations
-        .filter((annotation) => annotation.targetStyleClass?.trim() === detail.id)
-        .map((annotation) => annotation.id),
+      editorAnnotations.filter(inLayer).map((annotation) => annotation.id),
     );
-    if (draftAnno && draftAnno.targetStyleClass?.trim() === detail.id) {
+    if (draftAnno && inLayer(draftAnno)) {
       affectedAnnotationIds.add(draftAnno.id);
     }
     for (const annotationId of affectedAnnotationIds) {
-      handleAnnotationUpdate(annotationId, patch);
+      handleAnnotationUpdate(annotationId, patch, { stylesheet });
     }
   };
 
   $effect(() => {
-    const knownLayerIds = new Set(annotationLayers.map((layer) => layer.id));
-    const additions: LayerItem[] = [];
     const source = draftAnno ? [...editorAnnotations, draftAnno] : editorAnnotations;
+    const discovered = source
+      .map((annotation) => ({
+        id: annotation.targetStyleClass?.trim() ?? '',
+        color:
+          annotation.styleHints?.strokeColor ??
+          colorFromInlineStyle(annotation.targetStyle) ??
+          undefined,
+      }))
+      .filter((entry) => entry.id);
 
-    for (const annotation of source) {
-      const layerId = annotation.targetStyleClass?.trim();
-      if (!layerId || knownLayerIds.has(layerId)) continue;
-      knownLayerIds.add(layerId);
-      additions.push({
-        id: layerId,
-        name: labelForLayerId(layerId),
-        color: parseLayerColorFromStyle(annotation.targetStyle) ?? DEFAULT_LAYER_COLOR,
-        visible: true,
-      });
-    }
-
-    if (additions.length > 0) {
-      annotationLayers = [...annotationLayers, ...additions];
-    }
+    const merged = mergeDiscoveredLayers(annotationLayers, discovered);
+    if (merged.length !== annotationLayers.length) annotationLayers = merged;
   });
-
-  const unsubscribeActiveId = activeAnnotationId.subscribe((activeId) => {
-    if (draftAnno && activeId && activeId !== draftAnno.id) {
-      draftAnno = null;
-    }
-  });
-  onDestroy(unsubscribeActiveId);
 
   const handleAnnotationCreate = async (payload: {
     annotation: unknown;
@@ -847,21 +860,21 @@
     const annotation = payload?.annotation;
     if (!annotation || typeof annotation !== 'object') return;
 
-    const resolved = w3cToResolved(annotation);
+    const { annotation: resolved } = resolveAnnotationJson(annotation, {
+      provenance: 'draft',
+    });
     if (!resolved) return;
 
-    // Set default properties
-    resolved.targetStyleClass = 'mine';
-    resolved.targetStyle = styleForLayerColor(findLayerById('mine')?.color ?? DEFAULT_LAYER_COLOR);
-    resolved.motivation =
-      resolved.motivation && resolved.motivation.length > 0
-        ? resolved.motivation
-        : ['oa:commenting'];
-
+    /*
+     * No defaults are applied here any more. The editor layer builds the
+     * annotation through the profile's builders, which set `commenting` as the
+     * motivation and put the layer in `styleClass` — the two things this used
+     * to overwrite afterwards, one of them with a legacy `oa:` term.
+     */
     if (isStoryBuilder) {
       controller.emitEvent('annotationCreate', {
         annotation: resolved,
-        tool: payload.tool ?? w3cShapeTool(annotation) ?? undefined,
+        tool: payload.tool ?? shapeTool(shapeFromResolved(resolved)) ?? undefined,
       });
       annotationEditorTool = 'select';
       controller.setAnnotationMode('edit');
@@ -869,9 +882,107 @@
     }
 
     draftAnno = resolved;
+    annotationDirty = true;
+    annotationSaveState = { status: 'clean' };
     controller.handleAnnotationSelect({ id: resolved.id, preventZoom: true });
   };
 
+  const handleKeyboardAnnotationCreate = (detail: {
+    tool: 'rectangle' | 'point';
+  }) => {
+    const canvasId = getCanvasId() ?? activeCanvasId;
+    if (!canvasId) return;
+    const content = getContentSize();
+    const viewBox = getViewBox() ?? {
+      x: 0,
+      y: 0,
+      w: content?.width ?? 1_000,
+      h: content?.height ?? 1_000,
+    };
+    const centre = {
+      x: viewBox.x + viewBox.w / 2,
+      y: viewBox.y + viewBox.h / 2,
+    };
+    const shape =
+      detail.tool === 'point'
+        ? ({ type: 'point', geometry: centre } as const)
+        : ({
+            type: 'rect',
+            geometry: {
+              x: centre.x - viewBox.w * 0.125,
+              y: centre.y - viewBox.h * 0.125,
+              w: Math.max(1, viewBox.w * 0.25),
+              h: Math.max(1, viewBox.h * 0.25),
+            },
+          } as const);
+    const layer = annotationLayers.find((entry) => entry.id === activeAnnotationLayerId);
+    const document = createMangoAnnotation({
+      canvasId,
+      shape,
+      styleClass: styleClassForLayer(activeAnnotationLayerId),
+      stylesheet: layer
+        ? buildLayerStylesheet([{ id: layer.id, color: layer.color }])
+        : undefined,
+    });
+    const resolved = projectToResolved(document, { provenance: 'draft', canvasId });
+    if (!resolved) return;
+    draftAnno = resolved;
+    annotationDirty = true;
+    annotationSaveState = { status: 'clean' };
+    annotationEditorTool = 'select';
+    controller.setAnnotationMode('edit');
+    controller.handleAnnotationSelect({ id: resolved.id, preventZoom: true });
+  };
+
+  /**
+   * Discards the pending edit.
+   *
+   * A draft has nothing behind it, so cancelling removes it. An edit to a saved
+   * annotation is undone by restoring the snapshot taken when editing began —
+   * geometry and metadata together, because they are one transaction from the
+   * user's point of view even though they arrive through different callbacks.
+   */
+  const handleAnnotationCancel = () => {
+    if (draftAnno) {
+      draftAnno = null;
+      annotationDirty = false;
+      annotationSaveState = { status: 'clean' };
+      annotationEditorTool = 'select';
+      controller.setAnnotationMode('edit');
+      controller.handleAnnotationClear();
+      return;
+    }
+
+    const snapshot = editSnapshot;
+    editSnapshot = null;
+    annotationDirty = false;
+    annotationSaveState = { status: 'clean' };
+    if (snapshot) controller.updateAnnotation(snapshot.id, snapshot.annotation);
+  };
+
+  /**
+   * A draft is local state until Save. Selection and Canvas navigation used to
+   * replace that state silently, which made Cancel trustworthy but made every
+   * other route out of the inspector destructive. Keep the policy small and
+   * explicit: stay by default; discard only after confirmation.
+   */
+  const confirmAnnotationNavigation = (): boolean => {
+    if (!isAnnotationEditor || (!annotationDirty && !draftAnno)) return true;
+    if (typeof window === 'undefined') return false;
+    const discard = window.confirm(
+      $t('viewer.panels.annotations.editor.discardNavigationConfirmation'),
+    );
+    if (discard) handleAnnotationCancel();
+    return discard;
+  };
+
+  /**
+   * Deletes an annotation, after confirming.
+   *
+   * A draft has nothing behind it, so removing it is not a loss and needs no
+   * confirmation. Anything else is confirmed, and is undoable afterwards —
+   * a confirmation the user can also reverse is cheaper to get wrong.
+   */
   const handleAnnotationDelete = async (id: string) => {
     if (isStoryBuilder) {
       controller.emitEvent('annotationDelete', { annotationId: id });
@@ -882,45 +993,217 @@
       controller.handleAnnotationClear();
       return;
     }
+
+    const existing = annotationById(id);
+    if (existing && !confirmDeletion(existing)) return;
+    if (existing) {
+      commandStack.record({
+        annotationId: id,
+        before: existing,
+        after: null,
+        label: 'delete',
+      });
+    }
     await controller.removeAnnotation(id);
   };
 
-  const handleAnnotationUpdate = (id: string, patch: Partial<ResolvedAnnotation>) => {
+  /**
+   * Asks before destroying something the user cannot redraw.
+   *
+   * `confirm` is a blunt instrument, but it is the one that is guaranteed to be
+   * reachable by keyboard and announced by a screen reader without Mango
+   * building a dialog and getting focus management wrong.
+   */
+  const confirmDeletion = (annotation: ResolvedAnnotation): boolean => {
+    if (typeof window === 'undefined' || typeof window.confirm !== 'function') return true;
+    const name = annotation.label?.trim() || annotation.text?.trim() || annotation.id;
+    return window.confirm($t('viewer.panels.annotations.editor.confirmDelete', { name }));
+  };
+
+  const handleAnnotationUndo = () => {
+    if (commandStack.undo()) annotationDirty = true;
+  };
+
+  const handleAnnotationRedo = () => {
+    if (commandStack.redo()) annotationDirty = true;
+  };
+
+  /**
+   * Undo and redo from the keyboard.
+   *
+   * Bound on the annotation editor rather than globally: the viewer is embedded
+   * in host pages, and swallowing the platform undo shortcut everywhere would
+   * break the host's own editing surfaces.
+   */
+  const handleAnnotationKeydown = (event: KeyboardEvent) => {
+    if (!isAnnotationEditor) return;
+    const modifier = event.metaKey || event.ctrlKey;
+    if (!modifier || event.key.toLowerCase() !== 'z') return;
+    const target = event.target as HTMLElement | null;
+    // Text fields have their own undo, and taking it would be worse than not
+    // offering ours.
+    if (target?.closest('input, textarea, [contenteditable="true"]')) return;
+    event.preventDefault();
+    if (event.shiftKey) handleAnnotationRedo();
+    else handleAnnotationUndo();
+  };
+
+  const handleAnnotationUpdate = (
+    id: string,
+    patch: Partial<ResolvedAnnotation>,
+    options: {
+      stylesheet?: CanonicalStylesheet | null;
+      language?: string;
+      bodyPurpose?: string;
+      textDirection?: string;
+      bodyPath?: string;
+      createBody?: boolean;
+    } = {},
+  ) => {
+    let effectivePatch = patch;
+    let effectiveOptions = options;
+    if (patch.targetStyleClass !== undefined && options.stylesheet === undefined) {
+      const requested = patch.targetStyleClass.trim();
+      const layer = annotationLayers.find(
+        (entry) =>
+          entry.id === requested || styleClassForLayer(entry.id) === requested,
+      );
+      if (layer) {
+        effectivePatch = {
+          ...patch,
+          targetStyleClass: styleClassForLayer(layer.id),
+        };
+        effectiveOptions = {
+          ...options,
+          stylesheet: buildLayerStylesheet([
+            { id: layer.id, color: layer.color },
+          ]),
+        };
+      }
+    }
     if (isStoryBuilder) {
-      controller.emitEvent('annotationUpdate', { annotationId: id, patch });
+      controller.emitEvent('annotationUpdate', {
+        annotationId: id,
+        patch: effectivePatch,
+      });
       return;
     }
+    /*
+     * Recorded after the edit lands, not before, so the entry holds both ends
+     * of it. Recording `after: null` meant redo restored "no annotation" — it
+     * deleted the very thing it was meant to bring back.
+     */
+    const previous = annotationById(id);
+
     if (draftAnno && draftAnno.id === id) {
-      draftAnno = { ...draftAnno, ...patch };
+      draftAnno = applyResolvedPatch(draftAnno, effectivePatch, effectiveOptions);
+      annotationDirty = true;
+      if (previous) {
+        commandStack.record({
+          annotationId: id,
+          before: previous,
+          after: draftAnno,
+          label: labelForPatch(effectivePatch),
+        });
+      }
       return;
     }
-    controller.updateAnnotation(id, patch);
+    if (!editSnapshot || editSnapshot.id !== id) {
+      const current = editorAnnotations.find((annotation) => annotation.id === id);
+      if (current) editSnapshot = { id, annotation: current };
+    }
+    annotationDirty = true;
+    annotationSaveState = { status: 'clean' };
+    controller.updateAnnotation(id, effectivePatch, effectiveOptions);
+
+    const next = annotationById(id);
+    if (previous && next && next !== previous) {
+      commandStack.record({
+        annotationId: id,
+        before: previous,
+        after: next,
+        label: labelForPatch(effectivePatch),
+      });
+    }
   };
 
   const handleAnnotationSave = async () => {
-    if (draftAnno) {
-      await controller.addAnnotation(draftAnno);
-      draftAnno = null;
+    annotationSaveState = { status: 'saving' };
+    try {
+      if (draftAnno) {
+        await controller.addAnnotation(draftAnno);
+        draftAnno = null;
+      } else {
+        const activeId = get(activeAnnotationId);
+        if (!activeId) {
+          annotationSaveState = { status: 'clean' };
+          return;
+        }
+        /*
+         * Edits are already applied to the store as they are made, so this
+         * commits the transaction rather than sending a patch. It used to send
+         * an empty one, which the controller then had to recognise and ignore
+         * so that merely saving did not copy a manifest annotation into the
+         * user's own set.
+         */
+        await controller.commitAnnotation(activeId);
+      }
+      editSnapshot = null;
+      annotationDirty = false;
+      annotationSaveState = { status: 'saved' };
       annotationEditorTool = 'select';
       controller.setAnnotationMode('edit');
       controller.handleAnnotationClear();
-      return;
+    } catch (error) {
+      annotationSaveState = {
+        status: 'failed',
+        message: error instanceof Error ? error.message : $t('viewer.panels.annotations.editor.saveState.failed'),
+      };
     }
-
-    const activeId = get(activeAnnotationId);
-    if (!activeId) return;
-
-    // Existing annotations are updated live while editing; this commits an explicit save action.
-    await controller.updateAnnotation(activeId, {});
-    annotationEditorTool = 'select';
-    controller.setAnnotationMode('edit');
-    controller.handleAnnotationClear();
   };
 
   const handleExportAnnotations = () => {
     const userAnnosMap = get(userAnnotations) ?? {};
     const allUserAnnos = Object.values(userAnnosMap).flat();
+
+    const result = exportAnnotationPage(allUserAnnos, {
+      canvasId: getCanvasId() ?? undefined,
+      expert: annotationExpertMode,
+    });
+    controller.emitEvent('exportAnnotationPage', {
+      page: result.page,
+      valid: result.publicationValidation.valid,
+      draftValid: result.draftValidation.valid,
+      publicationValid: result.publicationValidation.valid,
+      excludedPrivateFields: result.excludedPrivateFields,
+      unresolvedIdentities: result.unresolvedIdentities,
+      unresolvedPageIdentity: result.unresolvedPageIdentity,
+    });
+
+    /*
+     * The old payload still fires for one deprecation cycle. Hosts wired to it
+     * keep working; hosts that want portable JSON-LD move to the event above
+     * rather than reverse-engineering `ResolvedAnnotation`.
+     */
     controller.emitEvent('exportAnnotations', { annotations: allUserAnnos });
+
+    /* The visible control performs a visible action even when the host has not
+       installed an event listener. With draft identifiers this is explicitly a
+       local draft download; publication readiness is reported separately. */
+    if (typeof document !== 'undefined' && typeof URL !== 'undefined') {
+      const blob = new Blob([JSON.stringify(result.page, null, 2)], {
+        type: 'application/ld+json',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'mango-annotations-draft.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+    annotationExportStatus = result.publicationValidation.valid
+      ? $t('viewer.panels.annotations.exportPublicationReady')
+      : $t('viewer.panels.annotations.exportDraftOnly');
   };
 
   const preloadStoryManifests = async (value: StoryWithDefaults): Promise<void> => {
@@ -1057,13 +1340,27 @@
       if (isAnnotationEditor && $annotationMode === 'create') {
         return;
       }
+      if (
+        isAnnotationEditor &&
+        draftAnno?.id !== detail.id &&
+        !confirmAnnotationNavigation()
+      ) return;
       controller.handleAnnotationSelect(detail);
       if (!isAnnotationEditor) return;
       if (draftAnno?.id === detail.id) return;
       annotationEditorTool = 'select';
       controller.setAnnotationMode('edit');
     },
-    onAnnotationClear: () => controller.handleAnnotationClear(),
+    /*
+     * The pointer-up that finishes a drawn shape reaches the stage background
+     * as an ordinary click, so an unconditional clear deselected the annotation
+     * the user had just drawn — the draft stayed on the canvas with no way to
+     * reach it. A pending draft is dismissed through Cancel, deliberately, not
+     * by clicking away.
+     */
+    onAnnotationClear: () => {
+      if (!draftAnno) controller.handleAnnotationClear();
+    },
   };
 
   const getRoundedZoomTarget = (direction: 'in' | 'out', current: number): number => {
@@ -1098,6 +1395,7 @@
     stageRef.zoomBy(factor);
   };
   const handlePrevCanvas = () => {
+    if (!confirmAnnotationNavigation()) return;
     const index = $selectedCanvasIndex;
     if ($layoutMode === 'two-page') {
       if (index <= 2) {
@@ -1112,6 +1410,7 @@
   };
 
   const handleNextCanvas = () => {
+    if (!confirmAnnotationNavigation()) return;
     const index = $selectedCanvasIndex;
     if ($layoutMode === 'two-page') {
       if (index === 0) {
@@ -1126,6 +1425,7 @@
   };
 
   const handleSetCanvasIndex = (detail: { index: number }) => {
+    if (!confirmAnnotationNavigation()) return;
     controller.setCanvasByIndex(detail.index);
   };
   const handleHome = () => stageRef?.goHome?.();
@@ -1171,6 +1471,7 @@
    * pick an image and are left looking at the picker instead of the picture.
    */
   const handleGalleryCanvasSelect = (index: number) => {
+    if (!confirmAnnotationNavigation()) return;
     const dismiss = galleryIsOverlay();
     controller.setCanvasByIndex(index);
     if (dismiss) {
@@ -1446,12 +1747,7 @@
   };
 
   onDestroy(() => controller.destroy());
-  onDestroy(unsubscribeStoryIndex);
-  onDestroy(unsubscribeStoryLoading);
-  onDestroy(unsubscribeStoryPlayState);
-  onDestroy(unsubscribeStoryPlaybackState);
-  onDestroy(unsubscribeStoryStageFade);
-  onDestroy(offStageFade);
+  onDestroy(() => storyPlayback.destroy());
   $effect.pre(() => {
     normalisedConfig = normaliseConfigForMode(config);
   });
@@ -1567,8 +1863,7 @@
   });
   $effect(() => {
     if (!isStoryViewer) {
-      storyChapterDurationSec = 0;
-      storyChapterElapsedSec = 0;
+      storyPlayback.resetProgress();
     }
   });
   let leftVisibleEffective = $derived(
@@ -1614,7 +1909,7 @@
   $effect(() => {
     storyDataStore.set(storyData ?? EMPTY_STORY);
   });
-  let storyCurrentChapterId = $derived(storyData?.chapters[storyCurrentChapterIndex]?.id ?? null);
+  let storyCurrentChapterId = $derived(storyData?.chapters[storyPlayback.currentChapterIndex]?.id ?? null);
   setViewerContext({
     state: viewerState,
     derived: viewerDerived,
@@ -1665,6 +1960,47 @@
       return effectiveAnnotationMode;
     },
   });
+
+  /**
+   * The `Stage` props that do not vary by mode.
+   *
+   * Every mode renders the same stage; what differs is the chrome around it
+   * and which panels it is allowed to offer. Those differences were buried in
+   * three ~60-line prop lists that agreed on most of their contents, so
+   * telling the modes apart meant diffing them by eye. Spreading the common
+   * half leaves each call site showing only what actually makes it that mode.
+   *
+   * `bind:this` and `bind:canZoom` stay written out at each call: bindings are
+   * not values and cannot be spread.
+   */
+  const commonStageProps = $derived({
+    rendererComponent: $rendererComponent,
+    avController,
+    mediaSource: $mediaSource,
+    layoutMode: $layoutMode,
+    activeLayoutImages: $activeLayoutImages,
+    highlightIds: $highlightIds,
+    hoverAnnotationId: $hoverAnnotationId,
+    overlayPlugins: $pluginSlots.overlay,
+    pluginContext,
+    rendererHandlers,
+    isFetching: $manifestEntry?.isFetching ?? false,
+    error: $manifestEntry?.error ?? '',
+    imageFilters: $imageFilters,
+    mediaType: $mediaType,
+    viewerConfig: normalisedConfig,
+    rotation: $rotation,
+    initialViewBox: initialViewState.viewBox,
+    layers: $mediaSources,
+    layerOpacities: $layerOpacities,
+    canvasId: activeCanvasId,
+    onzoomchange: handleStageZoomChange,
+    onrotationchange: (detail: { rotation: number }) =>
+      controller.handleRotationChange(detail),
+    onannotationcreate: handleAnnotationCreate,
+    onannotationupdate: (payload: { id: string; patch: unknown }) =>
+      handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>),
+  });
 </script>
 
 <div
@@ -1708,6 +2044,9 @@
         <button type="button" class="viewer__export-btn" onclick={handleExportAnnotations}>
           {$t('viewer.panels.annotations.export') || 'Export Annotations'}
         </button>
+        {#if annotationExportStatus}
+          <span class="viewer__export-status" role="status">{annotationExportStatus}</span>
+        {/if}
       {/if}
 
       <button
@@ -1829,55 +2168,39 @@
       <main class="stage stage--story" aria-label={$t('viewer.stage.label')}>
         {#if StoryControlsStageComponent && StoryAnnotationOverlayComponent}
           <StoryControlsStageComponent
-            currentChapterIndex={storyCurrentChapterIndex}
+            currentChapterIndex={storyPlayback.currentChapterIndex}
             totalChapters={storyChapters}
             chapterThumbnails={storyChapterThumbnails}
-            chapterDurationSec={storyChapterDurationSec}
-            chapterElapsedSec={storyChapterElapsedSec}
-            stageOpacity={storyStageOpacity}
-            stageFadeMs={storyStageFadeMs}
+            chapterDurationSec={storyPlayback.chapterDurationSec}
+            chapterElapsedSec={storyPlayback.chapterElapsedSec}
+            stageOpacity={storyPlayback.stageOpacity}
+            stageFadeMs={storyPlayback.stageFadeMs}
             {chapterTitle}
             {chapterDescription}
             disabled={storyControlsDisabled || storyLoading}
-            loading={storyIsLoading}
+            loading={storyPlayback.isLoading}
             error={storyError}
-            playState={storyPlayState}
-            onselectChapter={(detail) => handleStorySelectChapter(detail.index, true)}
-            onplay={handleStoryPlay}
-            onpause={handleStoryPause}
-            onstop={handleStoryStop}
+            playState={storyPlayback.playState}
+            onselectChapter={(detail) => storyPlayback.selectChapter(detail.index, true)}
+            onplay={storyPlayback.play}
+            onpause={storyPlayback.pause}
+            onstop={storyPlayback.stop}
             onzoomIn={handleZoomIn}
             onzoomOut={handleZoomOut}
             onfit={handleHome}
-            onrefresh={handleStoryRefresh}
-            onpreviousChapter={handleStoryPreviousChapter}
-            onnextChapter={handleStoryNextChapter}
+            onrefresh={storyPlayback.refresh}
+            onpreviousChapter={storyPlayback.previousChapter}
+            onnextChapter={storyPlayback.nextChapter}
           >
             {#snippet stage()}
               <div class="stage__story-slot">
                 <Stage
                   bind:this={stageRef}
                   bind:canZoom
+                  {...commonStageProps}
                   fillHeight={true}
-                  rendererComponent={$rendererComponent}
-                  {avController}
-                  mediaSource={$mediaSource}
-                  layoutMode={$layoutMode}
-                  activeLayoutImages={$activeLayoutImages}
                   annotations={$overlayAnnotations}
-                  highlightIds={$highlightIds}
                   activeAnnotationId={$activeAnnotationId}
-                  hoverAnnotationId={$hoverAnnotationId}
-                  overlayPlugins={$pluginSlots.overlay}
-                  {pluginContext}
-                  {rendererHandlers}
-                  isFetching={$manifestEntry?.isFetching ?? false}
-                  error={$manifestEntry?.error ?? ''}
-                  imageFilters={$imageFilters}
-                  mediaType={$mediaType}
-                  viewerConfig={normalisedConfig}
-                  rotation={$rotation}
-                  initialViewBox={initialViewState.viewBox}
                   allowThumbnails={allowThumbnailsStory}
                   allowSearch={allowSearchStory}
                   allowMetadata={allowMetadataStory}
@@ -1894,22 +2217,11 @@
                   showTools={showToolsEffectiveStory}
                   showContents={showContentsEffectiveStory}
                   showLayers={showLayersEffectiveStory}
-                  layers={$mediaSources}
-                  layerOpacities={$layerOpacities}
-                  canvasId={activeCanvasId}
                   onviewboxchange={(detail) => {
                     controller.handleViewBoxChange(detail);
                     storyViewBoxStore.set(detail.viewBox);
                   }}
-                  onzoomchange={handleStageZoomChange}
-                  onrotationchange={(detail) => controller.handleRotationChange(detail)}
                   onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
-                  onannotationcreate={handleAnnotationCreate}
-                  onannotationupdate={(payload) =>
-                    handleAnnotationUpdate(
-                      payload.id,
-                      payload.patch as Partial<ResolvedAnnotation>,
-                    )}
                 />
                 <StoryAnnotationOverlayComponent
                   story={storyDataStore}
@@ -1926,11 +2238,24 @@
       <main class="stage stage--story" aria-label={$t('viewer.stage.label')}>
         {#if AnnotationWorkspaceComponent}
           <AnnotationWorkspaceComponent
-            annotations={filteredOverlayAnnotations}
+            annotations={editorAnnotations}
             activeAnnotationId={$activeAnnotationId}
-            draftAnnotation={visibleDraftAnno}
+            draftAnnotation={draftAnno}
+            isDirty={annotationDirty}
+            saveState={annotationSaveState}
+            expertMode={annotationExpertMode}
+            languages={annotationLanguages}
+            onannotationcancel={handleAnnotationCancel}
+            canUndo={commandState.canUndo}
+            canRedo={commandState.canRedo}
+            onundo={handleAnnotationUndo}
+            onredo={handleAnnotationRedo}
+            onkeyboardcreate={handleKeyboardAnnotationCreate}
+            onkeydown={handleAnnotationKeydown}
             activeTool={annotationEditorTool}
             layers={annotationLayers}
+            activeLayerId={activeAnnotationLayerId}
+            onactivelayerchange={(detail) => (activeAnnotationLayerId = detail.id)}
             ontoolchange={(detail) => {
               if (
                 detail.tool === 'rectangle' ||
@@ -1944,17 +2269,28 @@
               } else {
                 annotationEditorTool = detail.tool;
                 controller.setAnnotationMode('edit');
-                controller.handleAnnotationClear();
+                /*
+                 * A pending draft keeps the selection.
+                 *
+                 * The editor returns to select mode on its own the moment a
+                 * shape is finished, which arrives here as an ordinary tool
+                 * change — so clearing unconditionally deselected the very
+                 * annotation the user had just drawn, leaving the inspector
+                 * empty and the draft unreachable. Picking the select tool
+                 * deliberately still clears, because then there is no draft.
+                 */
+                if (!draftAnno) controller.handleAnnotationClear();
               }
             }}
             ontogglelayer={handleToggleLayer}
             onaddlayer={handleAddLayer}
             onlayercolorchange={handleLayerColorChange}
+            onlayerrename={handleLayerRename}
+            onlayermove={handleLayerMove}
+            onlayerarchive={handleLayerArchive}
             onannotationselect={(detail) => {
               const selectedDraft = draftAnno?.id === detail.id;
-              if (draftAnno && draftAnno.id !== detail.id) {
-                draftAnno = null;
-              }
+              if (!selectedDraft && !confirmAnnotationNavigation()) return;
               controller.handleAnnotationSelect(detail);
               if (!selectedDraft) {
                 annotationEditorTool = 'select';
@@ -1962,7 +2298,8 @@
               }
             }}
             onannotationdelete={(detail) => handleAnnotationDelete(detail.id)}
-            onannotationupdate={(detail) => handleAnnotationUpdate(detail.id, detail.patch)}
+            onannotationupdate={(detail) =>
+              handleAnnotationUpdate(detail.id, detail.patch, detail.options ?? {})}
             onannotationsave={handleAnnotationSave}
             onlistopenchange={(detail: { open: boolean }) =>
               setAnnotationListHostState(detail.open)}
@@ -1972,28 +2309,10 @@
                 <Stage
                   bind:this={stageRef}
                   bind:canZoom
+                  {...commonStageProps}
                   fillHeight={true}
-                  rendererComponent={$rendererComponent}
-                  {avController}
-                  mediaSource={$mediaSource}
-                  layoutMode={$layoutMode}
-                  activeLayoutImages={$activeLayoutImages}
                   annotations={editorStageAnnotations}
-                  highlightIds={$highlightIds}
                   activeAnnotationId={$activeAnnotationId}
-                  hoverAnnotationId={$hoverAnnotationId}
-                  overlayPlugins={$pluginSlots.overlay}
-                  {pluginContext}
-                  {rendererHandlers}
-                  isFetching={$manifestEntry?.isFetching ?? false}
-                  error={$manifestEntry?.error ?? ''}
-                  imageFilters={$imageFilters}
-                  mediaType={$mediaType}
-                  viewerConfig={normalisedConfig}
-                  rotation={$rotation}
-                  initialViewBox={initialViewState.viewBox}
-                  layers={$mediaSources}
-                  layerOpacities={$layerOpacities}
                   allowThumbnails={false}
                   allowSearch={false}
                   allowMetadata={false}
@@ -2011,18 +2330,17 @@
                   annotationTool={annotationEditorTool}
                   annotationEditorEnabled={true}
                   {annotationLayers}
-                  canvasId={activeCanvasId}
+                  activeLayerId={activeAnnotationLayerId}
+                  oneditorready={(instance) => (annotationEditor = instance)}
+                  ongeometrycommit={(detail) =>
+                    commandStack.recordGeometry(detail.id, 'geometry')}
                   onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
-                  onzoomchange={handleStageZoomChange}
-                  onrotationchange={(detail) => controller.handleRotationChange(detail)}
-                  onannotationcreate={handleAnnotationCreate}
-                  onannotationupdate={(payload) =>
-                    handleAnnotationUpdate(
-                      payload.id,
-                      payload.patch as Partial<ResolvedAnnotation>,
-                    )}
                   onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
                   onannotationselect={(payload) => {
+                    if (
+                      draftAnno?.id !== payload.id &&
+                      !confirmAnnotationNavigation()
+                    ) return;
                     controller.handleAnnotationSelect(payload);
                     annotationEditorTool = 'select';
                     controller.setAnnotationMode('edit');
@@ -2080,7 +2398,7 @@
               viewerControlsVisible}
             class="stage__primary"
             style={isStoryBuilder
-              ? `opacity: ${storyStageOpacity}; transition: opacity ${storyStageFadeMs}ms ease-in-out;`
+              ? `opacity: ${storyPlayback.stageOpacity}; transition: opacity ${storyPlayback.stageFadeMs}ms ease-in-out;`
               : undefined}
             use:trackViewerControlsActivity
           >
@@ -2106,69 +2424,25 @@
             {/if}
 
             {#if $layoutMode === 'gallery'}
-              <div class="stage-gallery-view">
-                <div class="stage-gallery-view__grid">
-                  {#each $canvases as canvas (canvas.id)}
-                    <button
-                      class="stage-gallery-view__card"
-                      class:stage-gallery-view__card--active={canvas.index === $selectedCanvasIndex}
-                      type="button"
-                      onclick={() => {
-                        controller.setCanvasByIndex(canvas.index);
-                        controller.setLayoutMode('single');
-                      }}
-                    >
-                      <div class="stage-gallery-view__thumb-wrapper">
-                        {#if $canvasThumbnails[canvas.index]}
-                          <img
-                            class="stage-gallery-view__img"
-                            src={$canvasThumbnails[canvas.index]}
-                            alt={canvas.label || `Page ${canvas.index + 1}`}
-                            loading="lazy"
-                          />
-                        {:else}
-                          <div
-                            class="stage-gallery-view__placeholder"
-                            aria-label={$t('viewer.gallery.unavailable')}
-                          >
-                            <ImageOff aria-hidden="true" />
-                            <span class="stage-gallery-view__index">{canvas.index + 1}</span>
-                          </div>
-                        {/if}
-                      </div>
-                      <div class="stage-gallery-view__label">
-                        {canvas.label || `Page ${canvas.index + 1}`}
-                      </div>
-                    </button>
-                  {/each}
-                </div>
-              </div>
+              <StageGalleryView
+                canvases={$canvases}
+                thumbnails={$canvasThumbnails}
+                selectedCanvasIndex={$selectedCanvasIndex}
+                onselect={(detail) => {
+                  controller.setCanvasByIndex(detail.index);
+                  controller.setLayoutMode('single');
+                }}
+              />
             {:else}
               <Stage
                 bind:this={stageRef}
                 bind:canZoom
+                {...commonStageProps}
                 fillHeight={isStoryBuilder}
-                rendererComponent={$rendererComponent}
-                {avController}
-                mediaSource={$mediaSource}
-                layoutMode={$layoutMode}
-                activeLayoutImages={$activeLayoutImages}
                 annotations={$overlayAnnotations}
-                highlightIds={$highlightIds}
                 activeAnnotationId={isStoryBuilder && storyAnnotationEditing
                   ? storyBuilderActiveAnnotationId
                   : $activeAnnotationId}
-                hoverAnnotationId={$hoverAnnotationId}
-                overlayPlugins={$pluginSlots.overlay}
-                {pluginContext}
-                {rendererHandlers}
-                isFetching={$manifestEntry?.isFetching ?? false}
-                error={$manifestEntry?.error ?? ''}
-                imageFilters={$imageFilters}
-                mediaType={$mediaType}
-                viewerConfig={normalisedConfig}
-                rotation={$rotation}
-                initialViewBox={initialViewState.viewBox}
                 allowThumbnails={allowThumbnailsStory}
                 allowSearch={allowSearchStory}
                 allowMetadata={allowMetadataStory}
@@ -2185,19 +2459,12 @@
                 showTools={showToolsEffectiveStory}
                 showContents={showContentsEffectiveStory}
                 showLayers={showLayersEffectiveStory}
-                layers={$mediaSources}
-                layerOpacities={$layerOpacities}
-                canvasId={activeCanvasId}
                 onviewboxchange={(detail) => controller.handleViewBoxChange(detail)}
-                onzoomchange={handleStageZoomChange}
-                onrotationchange={(detail) => controller.handleRotationChange(detail)}
                 onpaneltoggle={(detail) => controller.setPanelOpen(detail.panel, detail.open)}
-                onannotationcreate={handleAnnotationCreate}
-                onannotationupdate={(payload) =>
-                  handleAnnotationUpdate(payload.id, payload.patch as Partial<ResolvedAnnotation>)}
                 annotationTool={annotationEditorTool}
                 annotationEditorEnabled={isStoryBuilder && storyAnnotationEditing}
                 annotationEditorAnnotations={storyBuilderAnnotations}
+                labelSizing={STORY_LABEL_SIZING}
                 {annotationLayers}
                 onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
                 onannotationselect={(payload) => {
@@ -2293,108 +2560,6 @@
 
 <style>
 
-  .stage-gallery-view {
-    width: 100%;
-    min-width: 0;
-    height: 100%;
-    overflow-y: auto;
-    background: var(--viewer-stage, #111720);
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    padding: 24px;
-    box-sizing: border-box;
-  }
-
-  .stage-gallery-view__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 24px;
-    width: 100%;
-  }
-
-  .stage-gallery-view__card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    padding: 12px;
-    cursor: pointer;
-    transition: border-color 0.22s ease;
-    width: 100%;
-    box-sizing: border-box;
-    outline: none;
-  }
-
-  /* Hover is the border and nothing else — no lift, no glow, no tint. */
-  .stage-gallery-view__card:hover {
-    border-color: var(--viewer-accent-2, #2ac7ff);
-  }
-
-  .stage-gallery-view__card:focus-visible {
-    outline: 2px solid var(--viewer-accent-2, #2ac7ff);
-    outline-offset: 2px;
-  }
-
-  .stage-gallery-view__card--active {
-    border-color: var(--viewer-accent-2, #2ac7ff);
-    background: rgba(42, 199, 255, 0.06);
-    box-shadow: 0 0 0 2px var(--viewer-accent-2, rgba(42, 199, 255, 0.2));
-  }
-
-  .stage-gallery-view__thumb-wrapper {
-    width: 100%;
-    aspect-ratio: 3 / 4;
-    border-radius: 10px;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.04);
-    display: grid;
-    place-items: center;
-    position: relative;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  .stage-gallery-view__img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .stage-gallery-view__placeholder {
-    display: grid;
-    place-items: center;
-    width: 100%;
-    height: 100%;
-    color: var(--viewer-muted, #9aa6b2);
-    gap: 8px;
-  }
-
-  .stage-gallery-view__placeholder :global(svg) {
-    width: 32px;
-    height: 32px;
-    opacity: 0.75;
-  }
-
-  .stage-gallery-view__index {
-    font-size: 24px;
-    font-weight: 700;
-  }
-
-  .stage-gallery-view__label {
-    margin-top: 12px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--viewer-text, #e8edf4);
-    text-align: center;
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .viewer__top-row {
     display: flex;
     align-items: flex-start;
@@ -2447,6 +2612,12 @@
   }
   .viewer__export-btn:active {
     transform: translateY(0);
+  }
+  .viewer__export-status {
+    max-width: 34ch;
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 11px;
+    line-height: 1.3;
   }
 
   .viewer__fullscreen-btn {
@@ -3476,11 +3647,19 @@
     --mango-viewer-media-radius: 16px 0 0 16px;
   }
 
-  .stage--joined-sidebar-left .stage-gallery-view {
+  /*
+   * `:global` because the gallery is its own component now. Its root carries
+   * that component's scoping hash, not this one's, so an unqualified
+   * descendant selector compiles to something that can never match. The
+   * squared-off inner corner belongs to the stage rather than to the gallery,
+   * though — it exists because a sidebar is joined to that edge, which the
+   * gallery knows nothing about — so it stays here.
+   */
+  .stage--joined-sidebar-left :global(.stage-gallery-view) {
     border-radius: 0 18px 18px 0;
   }
 
-  .stage--joined-sidebar-right .stage-gallery-view {
+  .stage--joined-sidebar-right :global(.stage-gallery-view) {
     border-radius: 18px 0 0 18px;
   }
 
@@ -3899,7 +4078,11 @@
 
     .viewer--story-builder .viewer__grid {
       grid-template-columns: 1fr !important;
-      grid-template-rows: 360px 280px 440px;
+      /* Follow the phone authoring flow: choose a chapter, work on the canvas,
+         then refine the selected item in the inspector. Keeping the stage
+         first meant that selecting a chapter scrolled the chapter rail into
+         view and stranded the drawing canvas above the scroll port. */
+      grid-template-rows: 280px 600px 440px;
       height: 100%;
       max-height: 100%;
       overflow-x: hidden;
@@ -3909,12 +4092,12 @@
     }
 
     .viewer--story-builder .viewer__grid > .stage {
-      grid-row: 1;
+      grid-row: 2;
       grid-column: 1;
     }
 
     .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
-      grid-row: 2;
+      grid-row: 1;
       grid-column: 1;
     }
 

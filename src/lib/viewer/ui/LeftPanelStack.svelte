@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getViewerContext } from '../context';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import PluginSlot from '../../plugins/PluginSlot.svelte';
   import type { PluginContext, ViewerPlugin } from '../../core/types/plugin';
   import AnnotationsPanel from './AnnotationsPanel.svelte';

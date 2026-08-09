@@ -1,22 +1,20 @@
 import type { ViewerApi } from '../../core/types/viewer-api';
 import type { ViewBox } from '../../core/types/viewer';
 import { animateViewBoxTransition } from '../viewBoxAnimation';
+import { framingsWithin } from '../framing';
 
-export const VIEWBOX_EQUALITY_TOLERANCE = 0.01;
+/**
+ * Near-exact, because playback asks this to avoid re-animating to a framing
+ * the viewer is already showing. A framing that is off by more than a rounding
+ * error is a framing worth moving to.
+ */
+const VIEWBOX_EQUALITY_TOLERANCE = 0.01;
 
 export const isViewBoxEqual = (
   a: ViewBox | null | undefined,
   b: ViewBox,
   tolerance = VIEWBOX_EQUALITY_TOLERANCE,
-): boolean => {
-  if (!a) return false;
-  return (
-    Math.abs(a.x - b.x) < tolerance &&
-    Math.abs(a.y - b.y) < tolerance &&
-    Math.abs(a.w - b.w) < tolerance &&
-    Math.abs(a.h - b.h) < tolerance
-  );
-};
+): boolean => (a ? framingsWithin(a, b, tolerance) : false);
 
 type PanDeps = {
   now: () => number;

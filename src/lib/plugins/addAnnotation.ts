@@ -1,5 +1,5 @@
 import type { AnnotationRect } from '../iiif/annotationResolver';
-import { translate } from '../i18n';
+import { translate } from '../core/i18n';
 import type { ViewerPlugin } from '../core/types/plugin';
 
 const createButton = (label: string, className: string) => {

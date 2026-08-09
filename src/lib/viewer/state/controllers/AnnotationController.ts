@@ -16,10 +16,25 @@ import type {
 import type { ViewBox } from "../../../core/types/viewer";
 import { resolveAnnotationViewBox, padViewBox } from "../../annotations/focus";
 import {
-  w3cToResolved,
-  type W3CAnnotation,
-} from "../../../features/annotations/w3c";
+  applyPatch,
+  projectToResolved,
+  resolveAnnotationJson,
+} from "../../../features/annotations/canonical";
 import type { ViewerEventEmitter } from "../../../core/types/events";
+import type { CanonicalStylesheet } from "@mango-iiif/w3c-parser";
+
+/** Extra context an edit needs that the patch itself cannot carry. */
+export type AnnotationPatchOptions = {
+  /** Replaces the annotation's stylesheet, for a layer recolour. */
+  stylesheet?: CanonicalStylesheet | null;
+  language?: string;
+  bodyPurpose?: string;
+  textDirection?: string;
+  /** Canonical body to patch when an annotation has parallel translations. */
+  bodyPath?: string;
+  /** Add a parallel TextualBody instead of replacing the display projection. */
+  createBody?: boolean;
+};
 
 export type AnnotationControllerConfig = {
   state: ViewerStateStores;
@@ -38,8 +53,16 @@ export type AnnotationController = {
   updateAnnotation: (
     annotationId: string,
     patch: Partial<ResolvedAnnotation>,
+    options?: AnnotationPatchOptions,
   ) => Promise<void>;
   removeAnnotation: (annotationId: string) => Promise<void>;
+  /** Replaces an annotation wholesale. For undo and redo. */
+  replaceAnnotation: (
+    annotationId: string,
+    annotation: ResolvedAnnotation,
+  ) => Promise<void>;
+  /** Commits the edits already applied to an annotation as one save. */
+  commitAnnotation: (annotationId: string) => Promise<void>;
   setAnnotationMode: (mode: "edit" | "create") => void;
   setSearchQuery: (value: string) => void;
   handleSearchResultClick: (annotation: ResolvedAnnotation) => void;
@@ -93,6 +116,15 @@ export const createAnnotationController = ({
       id:
         annotation.id ||
         `user-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      /*
+       * Committing a draft is what stops it being one. Carrying `draft` into
+       * the store left a saved annotation labelled "Draft" in the inspector
+       * forever, which is precisely the state the badge exists to distinguish.
+       */
+      provenance:
+        annotation.provenance === "draft"
+          ? ("local" as const)
+          : annotation.provenance,
     };
     state.userAnnotations.update((current) => {
       const items = current[key] ?? [];
@@ -137,26 +169,23 @@ export const createAnnotationController = ({
       body?: unknown;
     };
     if (value.rect || value.time || value.point || value.polygon) {
-      const resolved = {
+      /*
+       * Spread, not a field-by-field rebuild.
+       *
+       * A projection carries its canonical document, its provenance, and its
+       * resolved style hints, and listing fields by hand silently dropped all
+       * three the moment they were added. Two things broke: a saved annotation
+       * lost the document it had to be exported losslessly from, and it stopped
+       * being equal to the shape the editor already held — so every sync looked
+       * like a real change and the editor never settled.
+       */
+      return {
+        ...(annotation as ResolvedAnnotation),
         id: value.id ?? "",
-        rect: value.rect,
-        time: value.time,
-        point: value.point,
-        polygon: value.polygon,
-        // Every path shape shares the `polygon` slot, so dropping this here
-        // turned a committed freehand into a closed, filled polygon.
+        // Every path shape shares the `polygon` slot, so losing this turned a
+        // committed freehand into a closed, filled polygon.
         shapeType: value.shapeType,
-        text: value.text,
-        label: value.label,
-        notes: value.notes,
-        tags: value.tags,
-        bodies: value.bodies,
-        motivation: value.motivation,
-        stylesheets: value.stylesheets,
-        targetStyleClass: value.targetStyleClass,
-        targetStyle: value.targetStyle,
       };
-      return resolved;
     }
     if (
       typeof value.x === "number" &&
@@ -173,22 +202,10 @@ export const createAnnotationController = ({
       return resolved;
     }
     if (value.target && typeof value.target === "object") {
-      const asW3C = value as unknown as W3CAnnotation;
-      const resolved = w3cToResolved(asW3C);
-      if (!resolved) {
-        return null;
-      }
-      const bodyText =
-        Array.isArray(asW3C.body) &&
-        asW3C.body[0] &&
-        typeof asW3C.body[0] === "object"
-          ? ((asW3C.body[0] as { value?: string }).value ?? "")
-          : "";
-      const finalResolved = {
-        ...resolved,
-        text: resolved.text ?? bodyText,
-      };
-      return finalResolved;
+      const { annotation: resolved } = resolveAnnotationJson(annotation, {
+        provenance: "local",
+      });
+      return resolved;
     }
     return null;
   };
@@ -230,17 +247,37 @@ export const createAnnotationController = ({
     state.annotationMode.set(mode);
   };
 
+  /**
+   * Applies an edit through the annotation's canonical document.
+   *
+   * The projection is rebuilt from the patched document rather than merged over
+   * the old one, so the two can never disagree. The previous version replaced
+   * the whole `bodies` array with a single plain-text body whenever `text` was
+   * patched, which discarded language, format, purpose, and every sibling body
+   * the annotation had.
+   *
+   * An annotation with no canonical document — one that reached the store
+   * before the model was adopted, or a host-supplied plain object — falls back
+   * to a shallow merge. It cannot be edited losslessly because there is nothing
+   * to be lossless about.
+   */
   const patchAnnotation = (
     annotation: ResolvedAnnotation,
     patch: Partial<ResolvedAnnotation>,
-  ): ResolvedAnnotation => ({
-    ...annotation,
-    ...patch,
-    bodies:
-      patch.text !== undefined
-        ? [{ type: "text", value: patch.text }]
-        : annotation.bodies,
-  });
+    options: AnnotationPatchOptions = {},
+  ): ResolvedAnnotation => {
+    if (!annotation.document) return { ...annotation, ...patch };
+
+    const { document, changed } = applyPatch(annotation.document, patch, options);
+    if (!changed) return { ...annotation, ...patch };
+
+    const projected = projectToResolved(document, {
+      provenance: annotation.provenance,
+    });
+    return projected
+      ? { ...projected, id: annotation.id, provenance: annotation.provenance }
+      : { ...annotation, ...patch };
+  };
 
   // Shallow, so a patch carrying an equal-but-new rect or tags array still
   // counts as a change. Erring that way only costs a redundant write; erring
@@ -256,6 +293,7 @@ export const createAnnotationController = ({
   const updateAnnotation = async (
     annotationId: string,
     patch: Partial<ResolvedAnnotation>,
+    options: AnnotationPatchOptions = {},
   ): Promise<void> => {
     let owned = false;
     state.userAnnotations.update((current) => {
@@ -264,7 +302,7 @@ export const createAnnotationController = ({
         next[key] = items.map((item) => {
           if (item.id !== annotationId) return item;
           owned = true;
-          return patchAnnotation(item, patch);
+          return patchAnnotation(item, patch, options);
         });
       }
       return next;
@@ -286,13 +324,66 @@ export const createAnnotationController = ({
         state.userAnnotations.update((current) =>
           updateRecord(current, key, [
             ...(current[key] ?? []),
-            patchAnnotation(source, patch),
+            patchAnnotation(source, patch, options),
           ]),
         );
       }
     }
 
     emitEvent("annotationUpdate", { annotationId, patch });
+    emitStateChange();
+  };
+
+  /**
+   * Commits an annotation's pending edits as one save.
+   *
+   * Separate from `updateAnnotation` because a save is not a change: edits are
+   * already applied as they are made, and Save marks the transaction complete.
+   * Sending an empty patch to mean "save" conflated the two, and the controller
+   * then had to detect the empty patch and refuse to take ownership for it —
+   * otherwise pressing Save on a manifest annotation copied it into the user's
+   * own set without them having edited anything.
+   */
+  const commitAnnotation = async (annotationId: string): Promise<void> => {
+    const annotation = resolveAnnotation(derivedStores, annotationId);
+    if (!annotation) return;
+    emitEvent("annotationSave", { annotationId, annotation });
+    emitStateChange();
+  };
+
+  /**
+   * Replaces an annotation wholesale, for undo and redo.
+   *
+   * Not `updateAnnotation`: that takes a patch and applies only the fields the
+   * patch carries, so handing it a whole earlier annotation reverts nothing —
+   * a field that was empty before the edit is `undefined` in the snapshot, and
+   * `undefined` means "not mentioned" to a patch. Restoring a previous state
+   * has to put the whole document back, including the canonical one.
+   */
+  const replaceAnnotation = async (
+    annotationId: string,
+    annotation: ResolvedAnnotation,
+  ): Promise<void> => {
+    const key = currentCanvasKey();
+    let replaced = false;
+    state.userAnnotations.update((current) => {
+      const next: Record<string, ResolvedAnnotation[]> = {};
+      for (const [canvasKey, items] of Object.entries(current)) {
+        next[canvasKey] = items.map((item) => {
+          if (item.id !== annotationId) return item;
+          replaced = true;
+          return annotation;
+        });
+      }
+      // A manifest or external annotation being restored has no user copy yet,
+      // so the restore creates the override the edit would have created.
+      if (!replaced) {
+        next[key] = [...(next[key] ?? []), annotation];
+      }
+      return next;
+    });
+    forgetRemoval(key, annotationId);
+    emitEvent("annotationUpdate", { annotationId, patch: annotation });
     emitStateChange();
   };
 
@@ -364,6 +455,8 @@ export const createAnnotationController = ({
     addAnnotation,
     updateAnnotation,
     removeAnnotation,
+    replaceAnnotation,
+    commitAnnotation,
     setAnnotationMode,
     setSearchQuery,
     handleSearchResultClick,

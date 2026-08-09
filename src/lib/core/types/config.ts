@@ -34,6 +34,11 @@ export type ViewerConfig = {
   };
   /** Audio/video player, controls, transcript, request, and playback options. */
   av?: AVPlayerConfig;
+  /** Standalone annotation-authoring setup. */
+  annotations?: {
+    /** Allowed BCP 47 languages shown by the annotation language switch. */
+    languages?: string[];
+  };
   initialCanvasIndex?: number;
   initialLayoutMode?: 'single' | 'two-page' | 'continuous' | 'gallery';
   initialRotation?: number;

@@ -5,7 +5,7 @@
   import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
   import type { MediaMarksState } from "../mediaMarks";
   import AudioRegionEditor from "./AudioRegionEditor.svelte";
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;

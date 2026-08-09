@@ -1,6 +1,6 @@
 import type { ModelPose } from '../core/types/model';
 import type { ViewerApi } from '../core/types/viewer-api';
-import type { CapturePayload } from '../state/story.svelte';
+import type { CapturePayload } from '../core/state/story.svelte';
 
 export type CaptureErrorReason =
   | 'unsupported-media'

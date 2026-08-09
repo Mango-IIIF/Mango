@@ -3,8 +3,8 @@
   import { readable, type Readable } from 'svelte/store';
   import type { Chapter, StoryState } from '../../core/types/story';
   import { resolveChapterTiming } from '../timing';
-  import { t } from '../../i18n';
-  import { fetchManifest, manifestsStore } from '../../state/manifests';
+  import { t } from '../../core/i18n';
+  import { fetchManifest, manifestsStore } from '../../core/state/manifests';
   import { resolveCanvasThumbnail } from '../../viewer/iiif/thumbnails';
 
   export let story: Readable<StoryState> = readable({

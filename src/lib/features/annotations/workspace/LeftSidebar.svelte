@@ -1,21 +1,32 @@
 <script lang="ts">
-  import { t } from '../../../i18n';
+  import { t } from '../../../core/i18n';
   import type { ChapterAnnotationTool as Tool } from '../../../core/types/story';
   import { ANNOTATION_TOOLS, annotationToolLabelKey } from '../annotationTools';
-  export interface LayerItem {
-    id: string;
-    name: string;
-    color: string;
-    visible: boolean;
-  }
+  import type { AnnotationLayer } from '../layers';
+
+  /** @deprecated Use `AnnotationLayer`. Kept for one cycle of host imports. */
+  export type LayerItem = AnnotationLayer;
 
   interface Props {
     activeTool?: Tool;
     layers?: LayerItem[];
+    /** Layer new annotations are created in. */
+    activeLayerId?: string;
+    onactivelayerchange?: ((detail: { id: string }) => void) | undefined;
     ontoolchange?: ((detail: { tool: Tool }) => void) | undefined;
     ontogglelayer?: ((detail: { id: string }) => void) | undefined;
     onaddlayer?: (() => void) | undefined;
     onlayercolorchange?: ((detail: { id: string; color: string }) => void) | undefined;
+    onlayerrename?: ((detail: { id: string; name: string }) => void) | undefined;
+    onlayermove?: ((detail: { id: string; direction: -1 | 1 }) => void) | undefined;
+    onlayerarchive?: ((detail: { id: string; archived: boolean }) => void) | undefined;
+    canUndo?: boolean;
+    canRedo?: boolean;
+    onundo?: (() => void) | undefined;
+    onredo?: (() => void) | undefined;
+    onkeyboardcreate?:
+      | ((detail: { tool: 'rectangle' | 'point' }) => void)
+      | undefined;
   }
 
   let {
@@ -26,13 +37,47 @@
       { id: 'highlights', name: 'Highlights', color: '#34d399', visible: true },
       { id: 'mine', name: 'My Annotations', color: '#a78bfa', visible: true },
     ],
+    activeLayerId = 'mine',
+    onactivelayerchange = undefined,
     ontoolchange = undefined,
     ontogglelayer = undefined,
     onaddlayer = undefined,
     onlayercolorchange = undefined,
+    onlayerrename = undefined,
+    onlayermove = undefined,
+    onlayerarchive = undefined,
+    canUndo = false,
+    canRedo = false,
+    onundo = undefined,
+    onredo = undefined,
+    onkeyboardcreate = undefined,
   }: Props = $props();
 
   const tools = ANNOTATION_TOOLS;
+
+  /*
+   * Archived layers sit below the active ones rather than disappearing. Their
+   * annotations still exist and are still reachable from the list, so hiding
+   * the layer entirely would leave no way back.
+   */
+  let showArchived = $state(false);
+  const activeLayers = $derived(layers.filter((layer) => !layer.archived));
+  const archivedLayers = $derived(layers.filter((layer) => layer.archived));
+  let renamingId = $state<string | null>(null);
+  let renameDraft = $state('');
+  /** Layer whose management actions are open. One at a time. */
+  let menuId = $state<string | null>(null);
+
+  const startRename = (layer: AnnotationLayer) => {
+    renamingId = layer.id;
+    renameDraft = layerName(layer);
+    menuId = null;
+  };
+
+  const commitRename = () => {
+    if (renamingId) onlayerrename?.({ id: renamingId, name: renameDraft });
+    renamingId = null;
+  };
   const layerName = (layer: LayerItem): string => {
     const key = `viewer.panels.annotations.editor.layers.${layer.id}`;
     const translated = $t(key);
@@ -48,6 +93,7 @@
         type="button"
         class="left-sidebar__tool"
         class:left-sidebar__tool--active={tool.id === activeTool}
+        aria-pressed={tool.id === activeTool}
         onclick={() => {
           if (tool.id === activeTool) {
             if (tool.id !== 'select') {
@@ -64,6 +110,41 @@
     {/each}
   </div>
 
+  {#if activeTool === 'rectangle' || activeTool === 'point'}
+    <button
+      type="button"
+      class="left-sidebar__keyboard-create"
+      onclick={() => onkeyboardcreate?.({ tool: activeTool })}
+    >
+      {$t('viewer.panels.annotations.editor.createAtViewCentre', {
+        type: $t(annotationToolLabelKey(activeTool)),
+      })}
+    </button>
+  {/if}
+
+  <div class="left-sidebar__history">
+    <button
+      type="button"
+      class="left-sidebar__history-button"
+      disabled={!canUndo}
+      onclick={() => onundo?.()}
+      title={$t('viewer.panels.annotations.editor.undo')}
+      aria-label={$t('viewer.panels.annotations.editor.undo')}
+    >
+      ↶
+    </button>
+    <button
+      type="button"
+      class="left-sidebar__history-button"
+      disabled={!canRedo}
+      onclick={() => onredo?.()}
+      title={$t('viewer.panels.annotations.editor.redo')}
+      aria-label={$t('viewer.panels.annotations.editor.redo')}
+    >
+      ↷
+    </button>
+  </div>
+
   <div class="left-sidebar__layers">
     <div class="left-sidebar__layers-head">
       <p class="left-sidebar__label">{$t('viewer.panels.annotations.editor.layersLabel')}</p>
@@ -71,17 +152,49 @@
         >+</button
       >
     </div>
-    {#each layers as layer}
-      <div class="left-sidebar__layer" class:left-sidebar__layer--hidden={!layer.visible}>
+    {#each activeLayers as layer (layer.id)}
+      <div
+        class="left-sidebar__layer"
+        class:left-sidebar__layer--hidden={!layer.visible}
+        class:left-sidebar__layer--active={layer.id === activeLayerId}
+      >
+        <!--
+          Choosing the active layer and hiding a layer are different actions, so
+          they are different controls. Overloading one click with both meant a
+          layer could not be drawn into without also being made visible, and
+          made "which layer am I drawing in?" unanswerable from the panel.
+        -->
+        <button
+          type="button"
+          class="left-sidebar__layer-select"
+          onclick={() => onactivelayerchange?.({ id: layer.id })}
+          aria-pressed={layer.id === activeLayerId}
+          title={$t('viewer.panels.annotations.editor.drawInLayer', { layer: layerName(layer) })}
+        >
+          <span class="left-sidebar__dot" style={`background:${layer.color};`}></span>
+          <span class="left-sidebar__layer-name">{layerName(layer)}</span>
+          {#if layer.id === activeLayerId}
+            <span class="left-sidebar__active-mark" aria-hidden="true">●</span>
+          {/if}
+        </button>
+        <button
+          type="button"
+          class="left-sidebar__layer-action"
+          aria-expanded={menuId === layer.id}
+          onclick={() => (menuId = menuId === layer.id ? null : layer.id)}
+          title={$t('viewer.panels.annotations.editor.layerOptions', { layer: layerName(layer) })}
+          aria-label={$t('viewer.panels.annotations.editor.layerOptions', { layer: layerName(layer) })}
+        >
+          ⋯
+        </button>
         <button
           type="button"
           class="left-sidebar__layer-toggle"
           onclick={() => ontogglelayer?.({ id: layer.id })}
           aria-pressed={layer.visible}
-          title={layer.visible ? $t('viewer.panels.annotations.editor.hideLayer') : $t('viewer.panels.annotations.editor.showLayer')}
+          title={`${layer.visible ? $t('viewer.panels.annotations.editor.hideLayer') : $t('viewer.panels.annotations.editor.showLayer')}: ${layerName(layer)}`}
+          aria-label={`${layer.visible ? $t('viewer.panels.annotations.editor.hideLayer') : $t('viewer.panels.annotations.editor.showLayer')}: ${layerName(layer)}`}
         >
-          <span class="left-sidebar__dot" style={`background:${layer.color};`}></span>
-          <span class="left-sidebar__layer-name">{layerName(layer)}</span>
           <span class="left-sidebar__eye">
             {#if layer.visible}
               <svg
@@ -129,15 +242,104 @@
             onlayercolorchange?.({ id: layer.id, color: event.currentTarget.value })}
         />
       </div>
+      {#if menuId === layer.id}
+        <div class="left-sidebar__layer-menu">
+          <button type="button" onclick={() => startRename(layer)}>
+            {$t('viewer.panels.annotations.editor.rename')}
+          </button>
+          <button
+            type="button"
+            onclick={() => onlayermove?.({ id: layer.id, direction: -1 })}
+            aria-label={$t('viewer.panels.annotations.editor.moveLayerUp')}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            onclick={() => onlayermove?.({ id: layer.id, direction: 1 })}
+            aria-label={$t('viewer.panels.annotations.editor.moveLayerDown')}
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            onclick={() => {
+              onlayerarchive?.({ id: layer.id, archived: true });
+              menuId = null;
+            }}
+          >
+            {$t('viewer.panels.annotations.editor.archive')}
+          </button>
+        </div>
+      {/if}
+      {#if renamingId === layer.id}
+        <div class="left-sidebar__rename">
+          <!-- svelte-ignore a11y_autofocus -->
+          <input
+            value={renameDraft}
+            autofocus
+            aria-label={$t('viewer.panels.annotations.editor.renameLayer', {
+              layer: layerName(layer),
+            })}
+            oninput={(event) => (renameDraft = event.currentTarget.value)}
+            onkeydown={(event) => {
+              if (event.key === 'Enter') commitRename();
+              if (event.key === 'Escape') renamingId = null;
+            }}
+            onblur={commitRename}
+          />
+        </div>
+      {/if}
     {/each}
+
+    {#if archivedLayers.length > 0}
+      <button
+        type="button"
+        class="left-sidebar__archived-toggle"
+        aria-expanded={showArchived}
+        onclick={() => (showArchived = !showArchived)}
+      >
+        {$t('viewer.panels.annotations.editor.archivedLayers', {
+          count: archivedLayers.length,
+        })}
+      </button>
+      {#if showArchived}
+        {#each archivedLayers as layer (layer.id)}
+          <div class="left-sidebar__layer left-sidebar__layer--archived">
+            <span class="left-sidebar__dot" style={`background:${layer.color};`}></span>
+            <span class="left-sidebar__layer-name">{layerName(layer)}</span>
+            <button
+              type="button"
+              class="left-sidebar__layer-action"
+              onclick={() => onlayerarchive?.({ id: layer.id, archived: false })}
+              title={$t('viewer.panels.annotations.editor.restoreLayer', {
+                layer: layerName(layer),
+              })}
+              aria-label={$t('viewer.panels.annotations.editor.restoreLayer', {
+                layer: layerName(layer),
+              })}
+            >
+              ↩
+            </button>
+          </div>
+        {/each}
+      {/if}
+    {/if}
   </div>
 </aside>
 
 <style>
   .left-sidebar {
     display: grid;
+    /*
+     * `minmax(0, 1fr)`, not the implicit track. A grid's default column is
+     * sized to its widest item's min-content, so one row of controls that
+     * refused to shrink sized the whole sidebar and pushed it out of its rail.
+     */
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
     align-content: start;
+    min-width: 0;
   }
   .left-sidebar__label {
     margin: 0;
@@ -146,9 +348,45 @@
     text-transform: uppercase;
     color: var(--viewer-muted);
   }
+  .left-sidebar__history {
+    display: flex;
+    gap: 6px;
+  }
+  .left-sidebar__keyboard-create {
+    min-height: 36px;
+    border: 1px dashed var(--viewer-panel-border);
+    border-radius: 8px;
+    padding: 6px 9px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--viewer-text);
+    font: inherit;
+    font-size: 11px;
+    line-height: 1.3;
+    cursor: pointer;
+  }
+  .left-sidebar__history-button {
+    flex: 1;
+    /* 32px keeps the control at the WCAG 2.2 minimum target size. */
+    min-height: 32px;
+    border: 1px solid var(--viewer-panel-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--viewer-text);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .left-sidebar__history-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
   .left-sidebar__layers {
     display: grid;
+    /* Same reason as the sidebar itself: an implicit track is sized by its
+       widest row, which is how a layer row wider than the rail dragged the
+       whole column out with it. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
+    min-width: 0;
   }
   /*
    * Three across rather than six stacked rows. The palette held 292px of the
@@ -233,24 +471,126 @@
     align-items: center;
     gap: 6px;
     padding: 4px 6px;
+    /* Lets the flex row shrink to its track rather than to its content. */
+    min-width: 0;
+  }
+  /* Fixed-size controls are not what gets sacrificed when the rail narrows —
+     the layer name truncates instead. */
+  .left-sidebar__layer-color,
+  .left-sidebar__layer-action,
+  .left-sidebar__layer-toggle {
+    flex: 0 0 auto;
   }
   .left-sidebar__layer--hidden {
     opacity: 0.62;
   }
-  .left-sidebar__layer-toggle {
-    flex: 1;
+  .left-sidebar__layer-select {
+    flex: 1 1 auto;
+    /* Lets the name truncate rather than forcing the row wider than the rail. */
     min-width: 0;
+    overflow: hidden;
     border: none;
     border-radius: 8px;
     background: transparent;
     color: var(--viewer-text);
-    min-height: 30px;
+    min-height: 32px;
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 0 4px;
     cursor: pointer;
     text-align: left;
+  }
+  .left-sidebar__layer-toggle {
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--viewer-text);
+    /*
+     * 32px so the control meets the WCAG 2.2 minimum target size once its 2px
+     * of surrounding spacing is counted.
+     */
+    min-height: 32px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  /*
+   * The active layer is marked with a dot as well as a background tint. A tint
+   * alone disappears in forced-colours mode and for anyone who cannot separate
+   * it from the layer's own swatch.
+   */
+  .left-sidebar__layer--active {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+  }
+  .left-sidebar__layer-action {
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--viewer-muted);
+    /* 28px plus the row's own spacing clears the WCAG 2.2 target size. */
+    min-height: 28px;
+    min-width: 28px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .left-sidebar__layer-action:hover {
+    color: var(--viewer-text);
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .left-sidebar__layer-menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 4px 4px;
+  }
+  .left-sidebar__layer-menu button {
+    border: 1px solid var(--viewer-panel-border);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--viewer-text);
+    min-height: 28px;
+    min-width: 28px;
+    padding: 0 8px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .left-sidebar__rename {
+    padding: 4px;
+  }
+  .left-sidebar__rename input {
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 6px;
+    border: 1px solid var(--viewer-panel-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--viewer-text);
+    padding: 6px 8px;
+    font: inherit;
+    font-size: 12px;
+    min-height: 32px;
+  }
+  .left-sidebar__archived-toggle {
+    border: none;
+    background: none;
+    color: var(--viewer-muted);
+    font-size: 11px;
+    text-align: left;
+    cursor: pointer;
+    padding: 6px 4px;
+    text-decoration: underline;
+  }
+  .left-sidebar__layer--archived {
+    opacity: 0.65;
+  }
+  .left-sidebar__active-mark {
+    font-size: 9px;
+    color: var(--viewer-muted);
+    margin-left: auto;
+    padding-right: 4px;
   }
   .left-sidebar__dot {
     width: 10px;
@@ -267,12 +607,19 @@
     color: var(--viewer-muted);
     display: block;
   }
+  .left-sidebar__layer-color,
+  .left-sidebar__layer-action,
+  .left-sidebar__layer-toggle {
+    /* Fixed-size controls must not be the thing that is sacrificed when the
+       rail narrows — the name truncates instead. */
+    flex: 0 0 auto;
+  }
   .left-sidebar__layer-name {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    line-height: 1.25;
   }
   .left-sidebar__layer-color {
     width: 28px;

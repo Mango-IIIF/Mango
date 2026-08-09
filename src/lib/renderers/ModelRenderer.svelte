@@ -17,7 +17,7 @@
 
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { t } from '../i18n';
+  import { t } from '../core/i18n';
   import type { MediaSource } from '../iiif/mediaResolver';
   import type { ModelViewChange } from '../core/types/events';
   import type { ModelPose, ModelPoseOptions } from '../core/types/model';

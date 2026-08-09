@@ -88,12 +88,12 @@ const formatNumber = (value: number): string => {
   return String(rounded);
 };
 
-export const formatOrbit = (orbit: ModelCameraOrbit): string =>
+const formatOrbit = (orbit: ModelCameraOrbit): string =>
   `${formatNumber(orbit.theta)}rad ${formatNumber(orbit.phi)}rad ${formatNumber(
     orbit.radius,
   )}m`;
 
-export const formatTarget = (target: ModelCameraTarget): string =>
+const formatTarget = (target: ModelCameraTarget): string =>
   `${formatNumber(target.x)}m ${formatNumber(target.y)}m ${formatNumber(target.z)}m`;
 
 export const formatFovDeg = (fovDeg: number): string =>

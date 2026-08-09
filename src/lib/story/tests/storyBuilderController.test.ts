@@ -254,7 +254,9 @@ describe("story builder narration defaults", () => {
         expect.objectContaining({
           id: "rectangle-1",
           label: "Edited rectangle",
-          targetStyle: expect.stringContaining("stroke: #39b57e"),
+          text: "Edited rectangle",
+          styleHints: expect.objectContaining({ strokeColor: "#39b57e" }),
+          document: expect.objectContaining({ motivation: ["commenting"] }),
         }),
       ]),
     );
@@ -262,7 +264,7 @@ describe("story builder narration defaults", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: "rectangle-1",
-          targetStyle: expect.stringContaining("stroke-width: 4"),
+          styleHints: expect.objectContaining({ strokeWidth: 4 }),
         }),
       ]),
     );
@@ -277,7 +279,7 @@ describe("story builder narration defaults", () => {
     expect(get(controller.story).chapters[0].annotations).toBeUndefined();
 
     controller.saveChapterSettings();
-    expect(get(controller.activeChapterTask)).toBe("focus");
+    expect(get(controller.activeChapterTask)).toBeNull();
     expect(get(controller.selectedDrawingAnnotationId)).toBeNull();
     expect(viewer.setStoryAnnotationSelection).toHaveBeenLastCalledWith(null);
 
@@ -306,6 +308,78 @@ describe("story builder narration defaults", () => {
     expect(stored.viewBox!.x + stored.viewBox!.w / 2).toBeCloseTo(12 + 30, 6);
     expect(stored.viewBox!.y + stored.viewBox!.h / 2).toBeCloseTo(18 + 27.5, 6);
     detach();
+  });
+
+  it("cancels a story annotation transaction without leaving partial text edits", () => {
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: "chapter-1",
+            manifest: "https://example.org/manifest.json",
+            canvasIndex: 0,
+            drawingAnnotations: [
+              {
+                id: "drawing-1",
+                type: "rectangle",
+                rect: { x: 10, y: 20, w: 30, h: 40 },
+                label: { en: "Original" },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    controller.selectedChapterId.set("chapter-1");
+    controller.activeChapterTask.set("focus");
+
+    controller.setChapterDrawingAnnotationLabel("drawing-1", "en", "E");
+    controller.setChapterDrawingAnnotationLabel("drawing-1", "en", "Edited");
+    expect(
+      get(controller.story).chapters[0].drawingAnnotations?.[0].label?.en,
+    ).toBe("Edited");
+
+    controller.cancelChapterSettings();
+
+    expect(
+      get(controller.story).chapters[0].drawingAnnotations?.[0].label?.en,
+    ).toBe("Original");
+    expect(get(controller.activeChapterTask)).toBeNull();
+  });
+
+  it("commits a story annotation typing sequence as one undo step", () => {
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: "chapter-1",
+            manifest: "https://example.org/manifest.json",
+            canvasIndex: 0,
+            drawingAnnotations: [
+              {
+                id: "drawing-1",
+                type: "rectangle",
+                rect: { x: 10, y: 20, w: 30, h: 40 },
+                label: { en: "Original" },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    controller.selectedChapterId.set("chapter-1");
+    controller.activeChapterTask.set("focus");
+    controller.setChapterDrawingAnnotationLabel("drawing-1", "en", "E");
+    controller.setChapterDrawingAnnotationLabel("drawing-1", "en", "Edited");
+
+    controller.saveChapterSettings();
+    expect(get(controller.canUndo)).toBe(true);
+    controller.undo();
+
+    expect(
+      get(controller.story).chapters[0].drawingAnnotations?.[0].label?.en,
+    ).toBe("Original");
+    expect(get(controller.canUndo)).toBe(false);
   });
 
   it("takes a new story's shape from the canvas, not the stage it was captured on", () => {

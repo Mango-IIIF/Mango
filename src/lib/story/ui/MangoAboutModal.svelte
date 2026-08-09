@@ -3,7 +3,7 @@
   import { ExternalLink, X } from '@lucide/svelte';
   import MangoLogoIcon from './MangoLogoIcon.svelte';
   import pkg from '../../../../package.json';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let open = false;
   export let onClose: () => void = () => {};

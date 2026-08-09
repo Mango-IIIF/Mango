@@ -1,6 +1,6 @@
 import type { ViewerPlugin } from '../core/types/plugin';
 import { padViewBox, resolveAnnotationViewBox } from '../viewer/annotations/focus';
-import { translate } from '../i18n';
+import { translate } from '../core/i18n';
 
 export const createPlugin = (): ViewerPlugin => {
   let unsubscribe: (() => void) | null = null;

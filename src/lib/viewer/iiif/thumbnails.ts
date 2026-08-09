@@ -5,15 +5,6 @@ import {
   type ManifestoManifest,
 } from "./manifestoAdapter";
 
-export const readIiifId = (value: unknown): string | undefined => {
-  if (!value) return undefined;
-  if (typeof value === "string") return value;
-  if (typeof value !== "object") return undefined;
-  const record = value as { id?: unknown; "@id"?: unknown };
-  const id = record.id ?? record["@id"];
-  return typeof id === "string" ? id : undefined;
-};
-
 /**
  * Pick a canvas from a manifesto manifest object using the manifesto.js API
  */
@@ -39,7 +30,7 @@ export const pickCanvasFromManifest = (
   return canvases[0];
 };
 
-export const normaliseThumbnailSrc = (src: string): string => {
+const normaliseThumbnailSrc = (src: string): string => {
   if (src.endsWith("info.json")) {
     return src.replace(/info\.json$/, "full/200,/0/default.jpg");
   }

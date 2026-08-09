@@ -1,19 +1,15 @@
 {
   "@context": [
-    "http://iiif.io/api/presentation/3/context.json",
-    {
-      "mango": "https://mango-iiif.github.io/ns/story#",
-      "mangoState": {
-        "@id": "mango:state",
-        "@type": "@json"
-      }
-    }
+    "http://www.w3.org/ns/anno.jsonld",
+    "https://mangoviewer.dev/schema/story/1/context.json",
+    "http://iiif.io/api/presentation/3/context.json"
   ],
   "id": "https://404mike.github.io/uv4-manifest/annotationList.json",
   "type": "AnnotationPage",
-  "mango:storyVersion": "1.0",
   "label": {
-    "en": ["Story Annotation Track"]
+    "en": [
+      "Story Annotation Track"
+    ]
   },
   "items": [
     {
@@ -21,12 +17,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 1"],
-        "cy": ["Pennod 1"]
+        "en": [
+          "Chapter 1"
+        ],
+        "cy": [
+          "Pennod 1"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 1."],
-        "cy": ["Disgrifiad ar gyfer pennod 1."]
+        "en": [
+          "Description for chapter 1."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 1."
+        ]
       },
       "body": [
         {
@@ -36,13 +40,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_1",
-            "canvasIndex": 0,
-            "canvasId": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
             "viewBox": {
               "x": 0,
               "y": 0,
@@ -74,12 +77,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 2"],
-        "cy": ["Pennod 2"]
+        "en": [
+          "Chapter 2"
+        ],
+        "cy": [
+          "Pennod 2"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 2."],
-        "cy": ["Disgrifiad ar gyfer pennod 2."]
+        "en": [
+          "Description for chapter 2."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 2."
+        ]
       },
       "body": [
         {
@@ -89,13 +100,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_2",
-            "canvasIndex": 0,
-            "canvasId": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
             "viewBox": {
               "x": 1166,
               "y": 4508,
@@ -127,12 +137,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 3"],
-        "cy": ["Pennod 3"]
+        "en": [
+          "Chapter 3"
+        ],
+        "cy": [
+          "Pennod 3"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 3."],
-        "cy": ["Disgrifiad ar gyfer pennod 3."]
+        "en": [
+          "Description for chapter 3."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 3."
+        ]
       },
       "body": [
         {
@@ -142,13 +160,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_3",
-            "canvasIndex": 0,
-            "canvasId": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
             "viewBox": {
               "x": 1166,
               "y": 4508,
@@ -180,21 +197,28 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 4"],
-        "cy": ["Pennod 4"]
+        "en": [
+          "Chapter 4"
+        ],
+        "cy": [
+          "Pennod 4"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 4."],
-        "cy": ["Disgrifiad ar gyfer pennod 4."]
+        "en": [
+          "Description for chapter 4."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 4."
+        ]
       },
       "body": {
-        "type": "mango:ViewerState",
+        "type": [
+          "Dataset",
+          "mango:ViewerState"
+        ],
         "format": "application/vnd.mango.story-state+json",
-        "mango:storyVersion": "1.0",
         "mangoState": {
-          "chapterId": "chapter_4",
-          "canvasIndex": 0,
-          "canvasId": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
           "viewBox": {
             "x": 4100,
             "y": 6709,
@@ -225,12 +249,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 5"],
-        "cy": ["Pennod 5"]
+        "en": [
+          "Chapter 5"
+        ],
+        "cy": [
+          "Pennod 5"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 5."],
-        "cy": ["Disgrifiad ar gyfer pennod 5."]
+        "en": [
+          "Description for chapter 5."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 5."
+        ]
       },
       "body": [
         {
@@ -240,13 +272,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_5",
-            "canvasIndex": 0,
-            "canvasId": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
             "viewBox": {
               "x": 3452,
               "y": 6483,
@@ -278,12 +309,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 6"],
-        "cy": ["Pennod 6"]
+        "en": [
+          "Chapter 6"
+        ],
+        "cy": [
+          "Pennod 6"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 6."],
-        "cy": ["Disgrifiad ar gyfer pennod 6."]
+        "en": [
+          "Description for chapter 6."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 6."
+        ]
       },
       "body": [
         {
@@ -293,13 +332,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_6",
-            "canvasIndex": 0,
-            "canvasId": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
             "viewBox": {
               "x": 4333,
               "y": 6393,
@@ -310,7 +348,12 @@
               {
                 "id": "chapter_6-annotation",
                 "type": "rectangle",
-                "rect": { "x": 4500, "y": 6500, "w": 800, "h": 300 },
+                "rect": {
+                  "x": 4500,
+                  "y": 6500,
+                  "w": 800,
+                  "h": 300
+                },
                 "label": {
                   "en": "Annotations appear in context, helping explain objects, people, and moments without interrupting the story."
                 },
@@ -344,12 +387,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 7"],
-        "cy": ["Pennod 7"]
+        "en": [
+          "Chapter 7"
+        ],
+        "cy": [
+          "Pennod 7"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 7."],
-        "cy": ["Disgrifiad ar gyfer pennod 7."]
+        "en": [
+          "Description for chapter 7."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 7."
+        ]
       },
       "body": [
         {
@@ -359,13 +410,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_7",
-            "canvasIndex": 0,
-            "canvasId": "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
             "viewBox": {
               "x": 2264,
               "y": 6991,
@@ -376,7 +426,12 @@
               {
                 "id": "chapter_7-annotation",
                 "type": "rectangle",
-                "rect": { "x": 4500, "y": 6500, "w": 800, "h": 300 },
+                "rect": {
+                  "x": 4500,
+                  "y": 6500,
+                  "w": 800,
+                  "h": 300
+                },
                 "label": {
                   "en": "Place annotations exactly where they are needed."
                 },
@@ -410,12 +465,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 8"],
-        "cy": ["Pennod 8"]
+        "en": [
+          "Chapter 8"
+        ],
+        "cy": [
+          "Pennod 8"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 8."],
-        "cy": ["Disgrifiad ar gyfer pennod 8."]
+        "en": [
+          "Description for chapter 8."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 8."
+        ]
       },
       "body": [
         {
@@ -425,13 +488,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_8",
-            "canvasIndex": 0,
-            "canvasId": "https://iiif.wellcomecollection.org/presentation/v2/b18035723/canvas/0",
             "viewBox": {
               "x": 0,
               "y": 0,
@@ -463,21 +525,28 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 9"],
-        "cy": ["Pennod 9"]
+        "en": [
+          "Chapter 9"
+        ],
+        "cy": [
+          "Pennod 9"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 9."],
-        "cy": ["Disgrifiad ar gyfer pennod 9."]
+        "en": [
+          "Description for chapter 9."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 9."
+        ]
       },
       "body": {
-        "type": "mango:ViewerState",
+        "type": [
+          "Dataset",
+          "mango:ViewerState"
+        ],
         "format": "application/vnd.mango.story-state+json",
-        "mango:storyVersion": "1.0",
         "mangoState": {
-          "chapterId": "chapter_9",
-          "canvasIndex": 0,
-          "canvasId": "https://iiif.wellcomecollection.org/presentation/v2/b18035723/canvas/1",
           "viewBox": {
             "x": 0,
             "y": 0,
@@ -508,21 +577,28 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 10"],
-        "cy": ["Pennod 10"]
+        "en": [
+          "Chapter 10"
+        ],
+        "cy": [
+          "Pennod 10"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 10."],
-        "cy": ["Disgrifiad ar gyfer pennod 10."]
+        "en": [
+          "Description for chapter 10."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 10."
+        ]
       },
       "body": {
-        "type": "mango:ViewerState",
+        "type": [
+          "Dataset",
+          "mango:ViewerState"
+        ],
         "format": "application/vnd.mango.story-state+json",
-        "mango:storyVersion": "1.0",
         "mangoState": {
-          "chapterId": "chapter_10",
-          "canvasIndex": 0,
-          "canvasId": "https://iiif.wellcomecollection.org/presentation/v2/b18035723/canvas/1",
           "viewBox": {
             "x": 329,
             "y": 582,
@@ -553,12 +629,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 11"],
-        "cy": ["Pennod 11"]
+        "en": [
+          "Chapter 11"
+        ],
+        "cy": [
+          "Pennod 11"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 11."],
-        "cy": ["Disgrifiad ar gyfer pennod 11."]
+        "en": [
+          "Description for chapter 11."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 11."
+        ]
       },
       "body": [
         {
@@ -568,13 +652,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_11",
-            "canvasIndex": 0,
-            "canvasId": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json/canvas/0",
             "playback": {
               "transitionMs": 2000
             }
@@ -600,12 +683,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 12"],
-        "cy": ["Pennod 12"]
+        "en": [
+          "Chapter 12"
+        ],
+        "cy": [
+          "Pennod 12"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 12."],
-        "cy": ["Disgrifiad ar gyfer pennod 12."]
+        "en": [
+          "Description for chapter 12."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 12."
+        ]
       },
       "body": [
         {
@@ -615,13 +706,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_12",
-            "canvasIndex": 0,
-            "canvasId": "https://iiif.io/api/cookbook/recipe/0002-mvm-audio/manifest.json/canvas/0",
             "playback": {
               "transitionMs": 2000
             }
@@ -647,21 +737,28 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 13"],
-        "cy": ["Pennod 13"]
+        "en": [
+          "Chapter 13"
+        ],
+        "cy": [
+          "Pennod 13"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 13."],
-        "cy": ["Disgrifiad ar gyfer pennod 13."]
+        "en": [
+          "Description for chapter 13."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 13."
+        ]
       },
       "body": {
-        "type": "mango:ViewerState",
+        "type": [
+          "Dataset",
+          "mango:ViewerState"
+        ],
         "format": "application/vnd.mango.story-state+json",
-        "mango:storyVersion": "1.0",
         "mangoState": {
-          "chapterId": "chapter_13",
-          "canvasIndex": 0,
-          "canvasId": "https://iiif.io/api/cookbook/recipe/0219-using-caption-file/manifest.json/canvas/0",
           "playback": {
             "transitionMs": 2000
           }
@@ -686,12 +783,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 14"],
-        "cy": ["Pennod 14"]
+        "en": [
+          "Chapter 14"
+        ],
+        "cy": [
+          "Pennod 14"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 14."],
-        "cy": ["Disgrifiad ar gyfer pennod 14."]
+        "en": [
+          "Description for chapter 14."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 14."
+        ]
       },
       "body": [
         {
@@ -701,13 +806,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_14",
-            "canvasIndex": 0,
-            "canvasId": "https://api.artic.edu/api/v1/artworks/80607/manifest.json/canvas/0",
             "viewBox": {
               "x": 0,
               "y": 0,
@@ -739,12 +843,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 15"],
-        "cy": ["Pennod 15"]
+        "en": [
+          "Chapter 15"
+        ],
+        "cy": [
+          "Pennod 15"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 15."],
-        "cy": ["Disgrifiad ar gyfer pennod 15."]
+        "en": [
+          "Description for chapter 15."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 15."
+        ]
       },
       "body": [
         {
@@ -754,13 +866,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_15",
-            "canvasIndex": 0,
-            "canvasId": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json/canvas/0",
             "viewBox": {
               "x": 2565,
               "y": 1345,
@@ -792,12 +903,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 16"],
-        "cy": ["Pennod 16"]
+        "en": [
+          "Chapter 16"
+        ],
+        "cy": [
+          "Pennod 16"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 16."],
-        "cy": ["Disgrifiad ar gyfer pennod 16."]
+        "en": [
+          "Description for chapter 16."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 16."
+        ]
       },
       "body": [
         {
@@ -807,13 +926,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_16",
-            "canvasIndex": 0,
-            "canvasId": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json/canvas/0",
             "viewBox": {
               "x": 1895,
               "y": 1076,
@@ -845,12 +963,20 @@
       "type": "Annotation",
       "motivation": "supplementing",
       "label": {
-        "en": ["Chapter 17"],
-        "cy": ["Pennod 17"]
+        "en": [
+          "Chapter 17"
+        ],
+        "cy": [
+          "Pennod 17"
+        ]
       },
       "summary": {
-        "en": ["Description for chapter 17."],
-        "cy": ["Disgrifiad ar gyfer pennod 17."]
+        "en": [
+          "Description for chapter 17."
+        ],
+        "cy": [
+          "Disgrifiad ar gyfer pennod 17."
+        ]
       },
       "body": [
         {
@@ -860,13 +986,12 @@
           "language": "en"
         },
         {
-          "type": "mango:ViewerState",
+          "type": [
+            "Dataset",
+            "mango:ViewerState"
+          ],
           "format": "application/vnd.mango.story-state+json",
-          "mango:storyVersion": "1.0",
           "mangoState": {
-            "chapterId": "chapter_17",
-            "canvasIndex": 0,
-            "canvasId": "https://iiif.llyfrgell.cymru/manifests/2.0/1294106/manifest.json/canvas/0",
             "viewBox": {
               "x": 0,
               "y": 769,

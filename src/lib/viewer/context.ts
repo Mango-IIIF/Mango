@@ -38,7 +38,7 @@ export type ViewerContext = {
   readonly annotationMode: "edit" | "create";
 };
 
-export const VIEWER_CONTEXT_KEY = Symbol("mango-viewer-context");
+const VIEWER_CONTEXT_KEY = Symbol("mango-viewer-context");
 
 export const setViewerContext = (context: ViewerContext): ViewerContext =>
   setContext(VIEWER_CONTEXT_KEY, context);

@@ -1,0 +1,62 @@
+{
+  "id": "https://example.org/story/chapter-6",
+  "title": {
+    "en": "Chapter 6 annotation fixture",
+    "cy": "Gosodiad anodi Pennod 6"
+  },
+  "chapters": [
+    {
+      "id": "chapter_6",
+      "manifest": "https://example.org/manifest",
+      "canvasIndex": 0,
+      "canvasId": "https://example.org/canvas/1",
+      "viewBox": { "x": 4333, "y": 6393, "w": 2494, "h": 1245 },
+      "drawingAnnotations": [
+        {
+          "id": "chapter_6-annotation",
+          "type": "rectangle",
+          "rect": { "x": 4500, "y": 6500, "w": 800, "h": 300 },
+          "label": {
+            "en": "Annotations appear in context.",
+            "cy": "Mae anodiadau yn ymddangos yn eu cyd-destun."
+          },
+          "color": "#e07a3f",
+          "strokeWidth": "thick",
+          "fillMode": "solid"
+        },
+        {
+          "id": "chapter_6-point",
+          "type": "point",
+          "point": { "x": 5100, "y": 6800 }
+        },
+        {
+          "id": "chapter_6-polygon",
+          "type": "polygon",
+          "points": [
+            { "x": 5300, "y": 6500 },
+            { "x": 5500, "y": 6550 },
+            { "x": 5400, "y": 6750 }
+          ]
+        },
+        {
+          "id": "chapter_6-line",
+          "type": "line",
+          "points": [
+            { "x": 5600, "y": 6600 },
+            { "x": 5900, "y": 6700 }
+          ]
+        },
+        {
+          "id": "chapter_6-freehand",
+          "type": "freehand",
+          "points": [
+            { "x": 6000, "y": 6500 },
+            { "x": 6050, "y": 6600 },
+            { "x": 6150, "y": 6550 }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

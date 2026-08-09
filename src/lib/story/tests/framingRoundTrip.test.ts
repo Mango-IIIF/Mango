@@ -32,7 +32,6 @@ describe('presentation aspect round trip', () => {
     expect(aspect).toBeGreaterThan(0);
 
     const exported = serializeStoryToIiif(normalised);
-    expect(exported['mango:presentationAspect']).toBeCloseTo(aspect, 9);
 
     const reloaded = normaliseStoryInput(exported);
     expect(reloaded.ok).toBe(true);
@@ -74,6 +73,7 @@ describe('presentation aspect round trip', () => {
         },
       ],
     });
-    expect(exported['mango:presentationAspect']).toBeUndefined();
+    const body = exported.items[0].body as { mangoState: Record<string, unknown> };
+    expect(body.mangoState.presentationAspect).toBeUndefined();
   });
 });

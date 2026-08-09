@@ -1,6 +1,6 @@
 import { mount, tick, unmount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { manifestsStore } from '../../state/manifests';
+import { manifestsStore } from '../../core/state/manifests';
 import type { CollectionTreeElement } from '@mango-iiif/collection-navigator';
 import Viewer from '../Viewer.svelte';
 

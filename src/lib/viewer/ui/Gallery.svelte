@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
-  import { t } from '../../i18n';
-  import type { CanvasSummary } from '../../state/manifests';
+  import { t } from '../../core/i18n';
+  import type { CanvasSummary } from '../../core/state/manifests';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
   import { VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
   import { ArrowRight, ImageOff } from '@lucide/svelte';

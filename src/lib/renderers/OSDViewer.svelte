@@ -3,7 +3,7 @@
 
   import { onMount } from 'svelte';
   import type OpenSeadragon from 'openseadragon';
-  import { t } from '../i18n';
+  import { t } from '../core/i18n';
   import { isOpenPathAnnotation, type ResolvedAnnotation } from '../iiif/annotationResolver';
   import type { TileSource, MediaSource } from '../iiif/mediaResolver';
   import type { ImageFilters } from '../core/types/filters';

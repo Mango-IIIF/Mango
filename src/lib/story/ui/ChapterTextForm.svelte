@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
+  import LanguageTabs from '../../features/annotations/LanguageTabs.svelte';
 
   export let activeLanguage = 'en';
   export let languages: string[] = ['en'];
@@ -23,21 +24,13 @@
 {#if section === 'all' || section === 'details' || section === 'focus'}
   <section class="chapter-overlay__section chapter-overlay__section--card">
     <div class="chapter-overlay__section-title">{$t('storyBuilder.content.language')}</div>
-    <div class="chapter-overlay__language-tabs" role="tablist" aria-label={$t('storyBuilder.content.language')}>
-      {#each languages as lang}
-        <button
-          class="chapter-overlay__language-tab"
-          class:chapter-overlay__language-tab--active={lang === activeLanguage}
-          type="button"
-          role="tab"
-          aria-selected={lang === activeLanguage}
-          data-testid="chapter-language-{lang}"
-          on:click={() => onLanguageChange?.(lang)}
-        >
-          {lang.toUpperCase()}
-        </button>
-      {/each}
-    </div>
+    <LanguageTabs
+      {languages}
+      {activeLanguage}
+      ariaLabel={$t('storyBuilder.content.language')}
+      testIdPrefix="chapter-language"
+      onchange={(lang) => onLanguageChange?.(lang)}
+    />
   </section>
 {/if}
 

@@ -379,7 +379,7 @@ const toMediaSource = (body: unknown, canvas: unknown): MediaSource | null => {
 /**
  * Resolves media sources from a canvas object
  */
-export const resolveMediaFromCanvas = (canvas: unknown): ResolvedMedia => {
+const resolveMediaFromCanvas = (canvas: unknown): ResolvedMedia => {
   if (!canvas) return { primary: null, alternates: [] };
 
   let sources: MediaSource[] = [];
@@ -411,18 +411,3 @@ export const resolveMedia = (
   return resolveMediaFromCanvas(canvas);
 };
 
-/**
- * Resolves an image tile source (IIIF Image API) from a manifest
- */
-export const resolveImageTileSource = (
-  manifestoObject: unknown,
-  canvasId?: string,
-  canvasIndex?: number,
-): TileSource | null => {
-  const resolved = resolveMedia(manifestoObject, canvasId, canvasIndex);
-  if (!resolved.primary || resolved.primary.type !== 'image') return null;
-
-  const src = resolved.primary.src;
-  if (src.endsWith('info.json')) return src;
-  return { type: 'image', url: src };
-};

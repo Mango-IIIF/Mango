@@ -6,12 +6,13 @@
     annotationToolLabelKey,
   } from "../../features/annotations/annotationTools";
   import { readable, type Readable } from "svelte/store";
-  import type {
-    AnnotationPlacement,
-    ChapterAdvance,
-    ChapterAnnotationTool,
-    ChapterDrawingAnnotation,
-    StoryState,
+  import {
+    CHAPTER_ANNOTATION_MOTIVATIONS,
+    type AnnotationPlacement,
+    type ChapterAdvance,
+    type ChapterAnnotationTool,
+    type ChapterDrawingAnnotation,
+    type StoryState,
   } from "../../core/types/story";
   import type { ViewBox } from "../../core/types/viewer";
   import type { MediaType, MediaSource } from "../../iiif/mediaResolver";
@@ -23,17 +24,19 @@
   } from "../annotationPlacement";
   import ChapterTimelineSection from "./ChapterTimelineSection.svelte";
   import ChapterTextForm from "./ChapterTextForm.svelte";
+  import LanguageTabs from "../../features/annotations/LanguageTabs.svelte";
   import ChapterPositionSection from "./ChapterPositionSection.svelte";
   import ChapterCameraConfig from "./ChapterCameraConfig.svelte";
   import ChapterDashboard from "./ChapterDashboard.svelte";
   import ChapterMotionPanel from "./ChapterMotionPanel.svelte";
   import {
     evaluateChapterTasks,
+    framingsDiffer,
     type ChapterInspectorView,
     type ChapterTaskEvaluation,
     type ChapterTaskId,
   } from "../chapterTasks";
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let layers: MediaSource[] = [];
@@ -89,6 +92,7 @@
         color?: string | null;
         strokeWidth?: "thin" | "medium" | "thick";
         fillMode?: ChapterDrawingAnnotation["fillMode"];
+        motivation?: ChapterDrawingAnnotation["motivation"] | null;
       },
     ) => void) | undefined;
   export let onUpdateManifest:
@@ -125,6 +129,7 @@
   export let onStopChapterPreview: (() => void) | undefined = undefined;
   export let onRevertChapterPosition: ((chapterId: string) => void) | undefined;
   export let onSave: (() => void) | undefined;
+  export let onCancel: (() => void) | undefined;
   export let onSetAnnotationPositioning: ((lang: string) => void) | undefined =
     undefined;
   export let onUpdateMotionDuration:
@@ -196,6 +201,13 @@
   let viewUpdateFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   let chapterHasSavedPosition = false;
 
+  /*
+   * Exact by design. This keys "has the stored framing changed at all", which
+   * decides whether to overwrite the author's in-progress form entry — a
+   * tolerance here would silently discard a small manual edit. Use
+   * `framingsWithin` when the question is whether the viewer has arrived
+   * somewhere, and `framingsDiffer` when it is whether the author reframed.
+   */
   const positionSignature = (value: ViewBox | null | undefined): string =>
     value ? `${value.x}:${value.y}:${value.w}:${value.h}` : "";
 
@@ -212,10 +224,16 @@
   };
 
   const returnToDashboard = () => {
+    const wasAnnotationTask =
+      inspectorView.mode === "task" && inspectorView.task === "focus";
     inspectorView = { mode: "dashboard" };
     saveAcknowledged = false;
     viewUpdateAcknowledged = false;
-    onChapterTaskChange?.(null);
+    if (wasAnnotationTask) {
+      onCancel?.();
+    } else {
+      onChapterTaskChange?.(null);
+    }
     requestAnimationFrame(() => dashboardHeading?.focus());
   };
 
@@ -828,6 +846,10 @@
     onSave?.();
   };
 
+  const handleCancel = () => {
+    onCancel?.();
+  };
+
   const handleRevertView = () => {
     if (chapterId) onRevertChapterPosition?.(chapterId);
   };
@@ -851,6 +873,66 @@
     }, 1800);
   };
 
+  /*
+   * Selecting a chapter flies the viewer to its saved frame, so the live and
+   * saved boxes genuinely disagree for the length of that animation. Comparing
+   * against a settled view stops the position card flashing a warning on every
+   * chapter click, and stops it strobing while the author is mid-drag.
+   */
+  const VIEW_SETTLE_MS = 400;
+  /*
+   * The timer handle lives on an object rather than in a `let`. A `$:` block
+   * that both reads and reassigns a component-level binding depends on itself
+   * and re-runs when it changes, so clearing the handle from the reset below
+   * immediately restarted the settle it had just cancelled — resurrecting the
+   * stale comparison the chapter switch was meant to drop.
+   */
+  const viewSettle: { timer: ReturnType<typeof setTimeout> | null } = { timer: null };
+  let settledViewBox: ViewBox | null = null;
+  let viewAtSelection: ViewBox | null = null;
+  let viewBaselineChapterId: string | null = null;
+
+  /*
+   * Selecting a chapter does not move the viewer, so straight after a switch
+   * the framing on screen belongs to the chapter the author just left. That is
+   * not a statement about this chapter, and treating it as one would leave the
+   * warning permanently lit in any story with more than one chapter — a signal
+   * as useless as the tick that could never go red. Start afresh on each
+   * selection and stay quiet until the author actually moves the view.
+   */
+  $: if (chapterId !== viewBaselineChapterId) {
+    viewBaselineChapterId = chapterId;
+    if (viewSettle.timer) {
+      clearTimeout(viewSettle.timer);
+      viewSettle.timer = null;
+    }
+    viewAtSelection = $viewBox;
+    settledViewBox = null;
+  }
+
+  /*
+   * The framing only becomes a question about *this* chapter once the author
+   * has moved since selecting it. Remembering where the view was at selection
+   * is what makes that robust: the viewer republishes its position on selection
+   * without actually moving, and comparing against the saved frame directly
+   * would read that as the author having reframed the chapter.
+   */
+  $: authorHasMovedView = Boolean(
+    settledViewBox && viewAtSelection && framingsDiffer(viewAtSelection, settledViewBox),
+  );
+
+  $: {
+    const nextViewBox = $viewBox;
+    if (viewSettle.timer) clearTimeout(viewSettle.timer);
+    viewSettle.timer = setTimeout(() => {
+      settledViewBox = nextViewBox;
+      viewSettle.timer = null;
+    }, VIEW_SETTLE_MS);
+  }
+  onDestroy(() => {
+    if (viewSettle.timer) clearTimeout(viewSettle.timer);
+  });
+
   $: mediaTypeValue = $mediaType;
   $: taskEvaluations = chapter
     ? evaluateChapterTasks({
@@ -862,6 +944,9 @@
         loadedSources: layers,
         validationErrors: chapterValidationErrors,
         languages,
+        // During a preview the viewer is following the story, not the author.
+        currentViewBox:
+          $storyPreviewing || !authorHasMovedView ? null : settledViewBox,
       })
     : [];
   $: hasAvMedia = mediaTypeValue === "audio" || mediaTypeValue === "video";
@@ -1246,21 +1331,26 @@
 
               <div class="chapter-overlay__field">
                 <span>{$t('storyBuilder.annotations.translations')}</span>
-                {#each languages as lang}
-                  <label class="chapter-overlay__translation-field">
-                    <small>{lang.toUpperCase()}</small>
-                    <input
-                      type="text"
-                      value={selectedDrawingAnnotation.label?.[lang] ?? ""}
-                      placeholder={$t('storyBuilder.annotations.textPlaceholder', { language: lang.toUpperCase() })}
-                      on:input={(event) => onSetDrawingAnnotationLabel?.(
-                        selectedDrawingAnnotation!.id,
-                        lang,
-                        (event.currentTarget as HTMLInputElement).value,
-                      )}
-                    />
-                  </label>
-                {/each}
+                <LanguageTabs
+                  {languages}
+                  activeLanguage={activeLanguage}
+                  ariaLabel={$t('storyBuilder.annotations.translations')}
+                  testIdPrefix="drawing-language"
+                  onchange={handleLanguageChange}
+                />
+                <label class="chapter-overlay__translation-field">
+                  <small>{activeLanguage.toUpperCase()}</small>
+                  <textarea
+                    rows="3"
+                    value={selectedDrawingAnnotation.label?.[activeLanguage] ?? ""}
+                    placeholder={$t('storyBuilder.annotations.textPlaceholder', { language: activeLanguage.toUpperCase() })}
+                    on:input={(event) => onSetDrawingAnnotationLabel?.(
+                      selectedDrawingAnnotation!.id,
+                      activeLanguage,
+                      (event.currentTarget as HTMLInputElement).value,
+                    )}
+                  ></textarea>
+                </label>
               </div>
 
               <div class="chapter-overlay__field">
@@ -1320,6 +1410,39 @@
                     >{$t(`storyBuilder.annotations.strokeWidth.${width}`)}</button>
                   {/each}
                 </div>
+              </div>
+
+              <!--
+                Optional on purpose. Leaving it unset keeps the behaviour every
+                existing story relies on, where the export infers a motivation
+                from whether the shape carries words. Choosing one says
+                something the geometry cannot.
+              -->
+              <div class="chapter-overlay__field">
+                <label for="drawing-motivation">
+                  {$t('storyBuilder.annotations.motivation')}
+                </label>
+                <select
+                  id="drawing-motivation"
+                  value={selectedDrawingAnnotation.motivation ?? ''}
+                  on:change={(event) => onSetDrawingAnnotationStyle?.(
+                    selectedDrawingAnnotation!.id,
+                    {
+                      motivation:
+                        (event.currentTarget.value ||
+                          null) as ChapterDrawingAnnotation["motivation"] | null,
+                    },
+                  )}
+                >
+                  <option value="">
+                    {$t('storyBuilder.annotations.motivationAuto')}
+                  </option>
+                  {#each CHAPTER_ANNOTATION_MOTIVATIONS as motivation}
+                    <option value={motivation}>
+                      {$t(`storyBuilder.annotations.motivations.${motivation}`)}
+                    </option>
+                  {/each}
+                </select>
               </div>
             </div>
           {:else}
@@ -1582,6 +1705,16 @@
                   ? $t(`storyBuilder.tasks.items.${inspectorView.task}.save`)
                   : $t('storyBuilder.overlay.saveChapter')}
             </button>
+            {#if inspectorView.mode === "task" && inspectorView.task === "focus"}
+              <button
+                class="chapter-overlay__button chapter-overlay__button--subtle"
+                type="button"
+                data-testid="chapter-cancel"
+                on:click={handleCancel}
+              >
+                {$t('storyBuilder.chapters.cancel')}
+              </button>
+            {/if}
             {#if docked}
               <button
                 class="chapter-overlay__button chapter-overlay__button--subtle"
@@ -1896,7 +2029,8 @@
     .chapter-overlay__field { display:grid; gap:7px; color:var(--viewer-muted, #9aa6b2); font-size:10px; font-weight:700; }
     .chapter-overlay__translation-field { display:grid; grid-template-columns:28px minmax(0,1fr); align-items:center; gap:7px; }
     .chapter-overlay__translation-field small { color:var(--viewer-muted, #9aa6b2); font-size:9px; }
-    .chapter-overlay__translation-field input { min-width:0; box-sizing:border-box; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:8px 9px; background:var(--viewer-well-bg, rgba(4, 9, 15, 0.35)); color:var(--viewer-text, #e8edf4); font:inherit; }
+    .chapter-overlay__translation-field :is(input, textarea) { min-width:0; box-sizing:border-box; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:8px 9px; background:var(--viewer-well-bg, rgba(4, 9, 15, 0.35)); color:var(--viewer-text, #e8edf4); font:inherit; }
+    .chapter-overlay__translation-field textarea { resize:vertical; line-height:1.4; }
     .chapter-overlay__annotation-palette { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
     .chapter-overlay__annotation-palette button { width:25px; height:25px; border:2px solid transparent; border-radius:999px; background:var(--annotation-color); cursor:pointer; }
     .chapter-overlay__annotation-palette .chapter-overlay__annotation-swatch--active { border-color:var(--viewer-text, #fff); box-shadow:0 0 0 2px var(--annotation-color); }

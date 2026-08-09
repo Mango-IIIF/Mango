@@ -1,5 +1,5 @@
 import type { StoryState } from '../core/types/story';
-import { translate } from '../i18n';
+import { translate } from '../core/i18n';
 
 export type IdentifierValidation = { ok: boolean; errors: string[] };
 

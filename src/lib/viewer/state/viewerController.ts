@@ -6,13 +6,13 @@
  */
 
 import { get } from "svelte/store";
-import { createEventBus } from "../../events/eventBus";
+import { createEventBus } from "../../core/events/eventBus";
 import type {
   ViewerEventBus,
   ViewerEventEmitter,
   ViewerEventMap,
 } from "../../core/types/events";
-import { fetchManifest } from "../../state/manifests";
+import { fetchManifest } from "../../core/state/manifests";
 import {
   DEFAULT_IMAGE_FILTERS,
   type ImageFilters,
@@ -20,7 +20,7 @@ import {
 import type { ResolvedAnnotation } from "../../iiif/annotationResolver";
 import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
 import type { ViewBox, ViewerStateSnapshot } from "../../core/types/viewer";
-import { setLocale } from "../../i18n";
+import { setLocale } from "../../core/i18n";
 import { createAnnotationInteractionHandlers } from "../annotations/interactions";
 import { createExternalAnnotationEffects } from "../annotations/externalAnnotations";
 import type { ViewerDerivedStores } from "./viewerDerived";
@@ -38,6 +38,7 @@ import {
 import {
   createAnnotationController,
   type AnnotationController,
+  type AnnotationPatchOptions,
 } from "./controllers/AnnotationController";
 import {
   createPanelController,
@@ -73,8 +74,16 @@ export type ViewerController = {
   updateAnnotation: (
     annotationId: string,
     patch: Partial<ResolvedAnnotation>,
+    options?: AnnotationPatchOptions,
   ) => Promise<void>;
   removeAnnotation: (annotationId: string) => Promise<void>;
+  /** Replaces an annotation wholesale. For undo and redo. */
+  replaceAnnotation: (
+    annotationId: string,
+    annotation: ResolvedAnnotation,
+  ) => Promise<void>;
+  /** Commits the edits already applied to an annotation as one save. */
+  commitAnnotation: (annotationId: string) => Promise<void>;
   updateImageFilter: <K extends keyof ImageFilters>(
     key: K,
     value: ImageFilters[K],
@@ -279,7 +288,6 @@ export const createViewerController = ({
   const annotationEffects = createExternalAnnotationEffects({
     state,
     derived: derivedStores,
-    getEventTarget: () => eventTarget,
   });
 
   const setEventTarget = (target: EventTarget) => {
@@ -475,6 +483,8 @@ export const createViewerController = ({
     addAnnotation: annotationController.addAnnotation,
     updateAnnotation: annotationController.updateAnnotation,
     removeAnnotation: annotationController.removeAnnotation,
+    replaceAnnotation: annotationController.replaceAnnotation,
+    commitAnnotation: annotationController.commitAnnotation,
     setAnnotationMode: annotationController.setAnnotationMode,
     setSearchQuery: annotationController.setSearchQuery,
     handleSearchResultClick: annotationController.handleSearchResultClick,

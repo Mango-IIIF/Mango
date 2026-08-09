@@ -7,7 +7,7 @@
     TaskAvailability,
     TaskStatus,
   } from '../chapterTasks';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let id: ChapterTaskId;
   export let title: string;
@@ -26,7 +26,7 @@
   };
 
   $: disabled = availability.state !== 'available';
-  $: statusLabel = $t(`storyBuilder.tasks.status.${status.completion}`);
+  $: statusLabel = $t(status.labelKey ?? `storyBuilder.tasks.status.${status.completion}`);
   $: StatusIcon = statusIcons[status.completion];
   $: translationLabel =
     status.languageTotal !== undefined

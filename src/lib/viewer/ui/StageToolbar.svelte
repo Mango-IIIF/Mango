@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import { House, RotateCwSquare } from '@lucide/svelte';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import type { MediaType } from '../../iiif/mediaResolver';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
   import { VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';

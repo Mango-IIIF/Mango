@@ -47,7 +47,6 @@ describe('public story identifiers', () => {
   it('marks a local export as draft instead of using an example domain', () => {
     const exported = serializeStoryToIiif({ ...story, id: undefined });
     expect(exported.id).toBe('urn:mango:draft:story');
-    expect(exported['mango:draft']).toBe(true);
     expect(exported.items[0].id).toBe('urn:mango:draft:annotation/stable%20id');
     const reloaded = normaliseStoryInput(exported);
     expect(reloaded.story?.id).toBeUndefined();

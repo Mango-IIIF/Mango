@@ -563,6 +563,9 @@ test.describe("iPhone SE touch rails", () => {
 
     const canvas = host.locator(".openseadragon-canvas");
     await expect(canvas).toBeVisible();
+    await expect
+      .poll(() => host.evaluate((element: any) => element.getViewBox()))
+      .not.toBeNull();
     const before = await host.evaluate((element: any) => element.getViewBox());
     const canvasBox = await box(canvas);
     await page.mouse.move(
@@ -747,13 +750,61 @@ test.describe("priority mobile interactions", () => {
       await expect(region).toBeAttached();
       await region.scrollIntoViewIfNeeded();
       await expect(region).toBeVisible();
-      await expectContained(region, grid, 2);
+      const [regionBox, gridBox] = await Promise.all([box(region), box(grid)]);
+      expect(regionBox.x).toBeGreaterThanOrEqual(gridBox.x - 2);
+      expect(regionBox.x + regionBox.width).toBeLessThanOrEqual(
+        gridBox.x + gridBox.width + 2,
+      );
+      // A work area may be taller than the viewport, but its start must be
+      // reachable and the grid—not the host page—must own the vertical scroll.
+      expect(regionBox.y).toBeGreaterThanOrEqual(gridBox.y - 12);
+      expect(regionBox.y).toBeLessThan(gridBox.y + gridBox.height);
     }
     const sizes = await grid.evaluate((element) => ({
       clientHeight: element.clientHeight,
       scrollHeight: element.scrollHeight,
     }));
     expect(sizes.scrollHeight).toBeGreaterThan(sizes.clientHeight);
+  });
+
+  test("keeps the Chapter 6 annotation canvas between navigation and inspector", async ({
+    page,
+  }) => {
+    await page.goto("/story-edit.html?iiif-content=test-story/demo.json");
+    const host = page.locator("mango-viewer");
+    const grid = host.locator(".viewer__grid");
+    const chapterRail = host.locator(".panel-stack--left");
+    const stage = host.locator(".stage");
+    const inspector = host.locator(".panel-stack--right");
+
+    const [railBox, stageBox, inspectorBox] = await Promise.all([
+      box(chapterRail),
+      box(stage),
+      box(inspector),
+    ]);
+    expect(railBox.y).toBeLessThan(stageBox.y);
+    expect(stageBox.y).toBeLessThan(inspectorBox.y);
+    expect(stageBox.height).toBeGreaterThanOrEqual(599.5);
+
+    const chapterSix = chapterRail
+      .getByRole("button")
+      .filter({ hasText: "Chapter 6" })
+      .first();
+    await chapterSix.click();
+    await inspector.getByRole("button", { name: "Annotations" }).click();
+    await stage.scrollIntoViewIfNeeded();
+
+    const drawingSurface = stage.locator(".mango-annotation-editor__svg");
+    await expect(drawingSurface).toBeVisible();
+    await expectContained(drawingSurface, stage, 2);
+    const stageSizing = await stage.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+    }));
+    expect(stageSizing.scrollHeight).toBeLessThanOrEqual(
+      stageSizing.clientHeight + 2,
+    );
+    expect(await grid.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
   });
 
   test("keeps annotation tools, canvas, table, and inspector reachable", async ({

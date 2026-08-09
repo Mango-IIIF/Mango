@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let chapterExists = false;
   export let chapterCanvasIndex = 0;

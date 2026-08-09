@@ -26,8 +26,6 @@ const ASPECT_EPSILON = 1e-6;
 const isPositive = (value: number | undefined | null): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value > 0;
 
-export const isValidAspect = isPositive;
-
 export const viewBoxAspect = (box: ViewBox): number | null =>
   isPositive(box.w) && isPositive(box.h) ? box.w / box.h : null;
 
@@ -104,14 +102,32 @@ const boundingBox = (boxes: ViewBox[]): ViewBox | null => {
 };
 
 /** Bounding box of a chapter's keyframe framings, if it has any. */
-export const keyframeEnvelope = (chapter: Chapter): ViewBox | null =>
+const keyframeEnvelope = (chapter: Chapter): ViewBox | null =>
   boundingBox(
     (chapter.cameraTrack?.keyframes ?? [])
       .map((keyframe) => keyframe.viewBox)
       .filter((box): box is ViewBox => Boolean(box)),
   );
 
-const boxesMatch = (a: ViewBox, b: ViewBox, tolerance: number): boolean =>
+/**
+ * Component-wise framing comparison within an absolute tolerance.
+ *
+ * There are three different questions callers ask about a pair of framings,
+ * and they are not interchangeable. Reach for the right one rather than
+ * adding a fourth:
+ *
+ * - "Is the viewer effectively already here, so a move can be skipped?"
+ *   This function. Mechanical, absolute, and always with an explicit
+ *   tolerance — the callers work in image pixels, where the meaning of a
+ *   given tolerance depends entirely on how big the image is.
+ * - "Has the author meaningfully reframed this chapter?" `framingsDiffer`
+ *   in `chapterTasks.ts`, which is relative to the saved box precisely
+ *   because an absolute pixel count cannot answer it across canvas sizes.
+ * - "Has the stored value changed at all?" An exact identity check, such as
+ *   `positionSignature` in `ChapterOverlay.svelte`. No tolerance belongs in
+ *   a change-detection key.
+ */
+export const framingsWithin = (a: ViewBox, b: ViewBox, tolerance: number): boolean =>
   Math.abs(a.x - b.x) <= tolerance &&
   Math.abs(a.y - b.y) <= tolerance &&
   Math.abs(a.w - b.w) <= tolerance &&
@@ -128,7 +144,7 @@ export const isKeyframeEnvelope = (chapter: Chapter): boolean => {
   const envelope = keyframeEnvelope(chapter);
   if (!envelope || !chapter.viewBox) return false;
   const tolerance = Math.max(1, Math.max(envelope.w, envelope.h) * 0.01);
-  return boxesMatch(chapter.viewBox, envelope, tolerance);
+  return framingsWithin(chapter.viewBox, envelope, tolerance);
 };
 
 const normaliseChapter = (chapter: Chapter, aspect: number): Chapter => {

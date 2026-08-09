@@ -19,7 +19,7 @@
   import type { MediaMarksState } from '../mediaMarks';
   import type { ExportEnvelope } from '../storySerializer';
   import type { ChapterTaskId } from '../chapterTasks';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let surface: 'overlay' | 'inspector' = 'overlay';
@@ -91,6 +91,7 @@
   export let onStopChapterPreview: () => void = () => {};
   export let onRevertChapterPosition: () => void;
   export let onSaveChapterSettings: () => void;
+  export let onCancelChapterSettings: () => void = () => {};
   export let onUpdateMotionDuration: (durationMs: number) => void;
   export let onUpdateMotionPathType: (pathType: 'linear' | 'spline') => void;
   export let onUpdateMotionInitialDwell: (dwellMs: number) => void;
@@ -502,6 +503,7 @@
         {onStopChapterPreview}
         onRevertChapterPosition={() => onRevertChapterPosition()}
         onSave={onSaveChapterSettings}
+        onCancel={onCancelChapterSettings}
         {onSetAnnotationLanguage}
         {annotationTool}
         {selectedDrawingAnnotationId}

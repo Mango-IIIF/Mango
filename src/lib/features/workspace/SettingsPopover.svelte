@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { WorkspaceLayoutPreset } from '../../core/types/workspace';
-  import { supportedLocales, t } from '../../i18n';
+  import { supportedLocales, t } from '../../core/i18n';
 
   interface Props {
     activeLayout?: WorkspaceLayoutPreset;

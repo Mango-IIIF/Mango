@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ResolvedAnnotation } from '../../../iiif/annotationResolver';
+  import type { AnnotationSaveState } from '../model';
   import LeftSidebar, { type LayerItem } from './LeftSidebar.svelte';
   import RightInspector from './RightInspector.svelte';
   import AnnotationBrowserTable from './AnnotationBrowserTable.svelte';
-  import { t } from '../../../i18n';
+  import { t } from '../../../core/i18n';
 
   import type { ChapterAnnotationTool as Tool } from '../../../core/types/story';
 
@@ -16,14 +17,46 @@
     layers?: LayerItem[];
     ontoolchange?: ((detail: { tool: Tool }) => void) | undefined;
     ontogglelayer?: ((detail: { id: string }) => void) | undefined;
+    /** Layer new annotations are created in. */
+    activeLayerId?: string;
+    onactivelayerchange?: ((detail: { id: string }) => void) | undefined;
     onaddlayer?: (() => void) | undefined;
     onlayercolorchange?: ((detail: { id: string; color: string }) => void) | undefined;
+    onlayerrename?: ((detail: { id: string; name: string }) => void) | undefined;
+    onlayermove?: ((detail: { id: string; direction: -1 | 1 }) => void) | undefined;
+    onlayerarchive?: ((detail: { id: string; archived: boolean }) => void) | undefined;
     onannotationselect?: ((detail: { id: string }) => void) | undefined;
     onannotationdelete?: ((detail: { id: string }) => void) | undefined;
     onannotationupdate?:
-      | ((detail: { id: string; patch: Partial<ResolvedAnnotation> }) => void)
+      | ((detail: {
+          id: string;
+          patch: Partial<ResolvedAnnotation>;
+          options?: {
+            language?: string;
+            bodyPurpose?: string;
+            textDirection?: string;
+            bodyPath?: string;
+            createBody?: boolean;
+          };
+        }) => void)
       | undefined;
     onannotationsave?: (() => void) | undefined;
+    onannotationcancel?: (() => void) | undefined;
+    canUndo?: boolean;
+    canRedo?: boolean;
+    onundo?: (() => void) | undefined;
+    onredo?: (() => void) | undefined;
+    onkeyboardcreate?:
+      | ((detail: { tool: 'rectangle' | 'point' }) => void)
+      | undefined;
+    onkeydown?: ((event: KeyboardEvent) => void) | undefined;
+    /** Unsaved changes are pending on the selected annotation. */
+    isDirty?: boolean;
+    saveState?: AnnotationSaveState;
+    /** Permits `painting` authoring and the raw motivation control. */
+    expertMode?: boolean;
+    /** Host-configured languages available in the shared annotation switch. */
+    languages?: string[];
     /**
      * Reports whether the annotation list is showing. The list needs a box of
      * its own to be usable, and the element grows to provide it rather than
@@ -46,12 +79,28 @@
     ],
     ontoolchange = undefined,
     ontogglelayer = undefined,
+    activeLayerId = 'mine',
+    onactivelayerchange = undefined,
     onaddlayer = undefined,
     onlayercolorchange = undefined,
+    onlayerrename = undefined,
+    onlayermove = undefined,
+    onlayerarchive = undefined,
     onannotationselect = undefined,
     onannotationdelete = undefined,
     onannotationupdate = undefined,
     onannotationsave = undefined,
+    onannotationcancel = undefined,
+    canUndo = false,
+    canRedo = false,
+    onundo = undefined,
+    onredo = undefined,
+    onkeyboardcreate = undefined,
+    onkeydown = undefined,
+    isDirty = false,
+    saveState = { status: 'clean' },
+    expertMode = false,
+    languages = ['en'],
     onlistopenchange = undefined,
     stage,
   }: Props = $props();
@@ -91,7 +140,11 @@
   let rightOpen = $state(true);
 </script>
 
+<!-- The listener deliberately scopes viewer undo/redo to this labelled region. -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <section
+  aria-label={$t('viewer.panels.annotations.editor.workspaceLabel')}
+  onkeydown={(event) => onkeydown?.(event)}
   class="annotation-workspace"
   class:annotation-workspace--left-closed={!leftOpen}
   class:annotation-workspace--right-closed={!rightOpen}
@@ -102,11 +155,11 @@
       class="annotation-workspace__collapse"
       aria-expanded={leftOpen}
       aria-label={leftOpen
-        ? $t('viewer.panels.annotations.editor.collapsePanel')
-        : $t('viewer.panels.annotations.editor.expandPanel')}
+        ? $t('viewer.panels.annotations.editor.collapseToolsPanel')
+        : $t('viewer.panels.annotations.editor.expandToolsPanel')}
       title={leftOpen
-        ? $t('viewer.panels.annotations.editor.collapsePanel')
-        : $t('viewer.panels.annotations.editor.expandPanel')}
+        ? $t('viewer.panels.annotations.editor.collapseToolsPanel')
+        : $t('viewer.panels.annotations.editor.expandToolsPanel')}
       onclick={() => (leftOpen = !leftOpen)}
     >
       {leftOpen ? '‹' : '›'}
@@ -115,10 +168,20 @@
       <LeftSidebar
         {activeTool}
         {layers}
+        {activeLayerId}
+        {onactivelayerchange}
+        {canUndo}
+        {canRedo}
+        {onundo}
+        {onredo}
+        {onkeyboardcreate}
         {ontoolchange}
         {ontogglelayer}
         {onaddlayer}
         {onlayercolorchange}
+        {onlayerrename}
+        {onlayermove}
+        {onlayerarchive}
       />
     {:else}
       <span class="annotation-workspace__rail-label">
@@ -136,6 +199,7 @@
     <div class="annotation-workspace__bottom">
       <AnnotationBrowserTable
         {annotations}
+        {layers}
         activeId={activeAnnotationId}
         onselect={onannotationselect}
         open={listOpen}
@@ -150,11 +214,11 @@
       class="annotation-workspace__collapse"
       aria-expanded={rightOpen}
       aria-label={rightOpen
-        ? $t('viewer.panels.annotations.editor.collapsePanel')
-        : $t('viewer.panels.annotations.editor.expandPanel')}
+        ? $t('viewer.panels.annotations.editor.collapseDetailsPanel')
+        : $t('viewer.panels.annotations.editor.expandDetailsPanel')}
       title={rightOpen
-        ? $t('viewer.panels.annotations.editor.collapsePanel')
-        : $t('viewer.panels.annotations.editor.expandPanel')}
+        ? $t('viewer.panels.annotations.editor.collapseDetailsPanel')
+        : $t('viewer.panels.annotations.editor.expandDetailsPanel')}
       onclick={() => (rightOpen = !rightOpen)}
     >
       {rightOpen ? '›' : '‹'}
@@ -166,6 +230,11 @@
         index={activeIndex}
         {layers}
         {isDraft}
+        {isDirty}
+        {saveState}
+        {expertMode}
+        {languages}
+        oncancel={onannotationcancel}
         ondelete={onannotationdelete}
         onupdate={onannotationupdate}
         onsave={onannotationsave}

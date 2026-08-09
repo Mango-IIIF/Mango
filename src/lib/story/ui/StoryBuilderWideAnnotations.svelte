@@ -2,7 +2,7 @@
   import { Shapes, Trash2 } from '@lucide/svelte';
   import { readable, type Readable } from 'svelte/store';
   import type { ChapterDrawingAnnotation, StoryState } from '../../core/types/story';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
@@ -36,20 +36,20 @@
           <button
             class="story-wide-annotations__select"
             type="button"
-            aria-label={$t('storyBuilder.annotations.editDrawing', { type: typeLabel(annotation), index: index + 1 })}
+            aria-label={`${$t('storyBuilder.annotations.editDrawing', { type: typeLabel(annotation), index: index + 1 })}: ${labelValue(annotation) || typeLabel(annotation)}`}
             aria-pressed={$selectedAnnotationId === annotation.id}
             on:click={() => onEditDrawing(annotation.id)}
           >
             <span class="story-wide-annotations__number" style={`--annotation-color:${annotation.color ?? '#e07a3f'}`}>{index + 1}</span>
             <span class="story-wide-annotations__copy">
-              <strong>{labelValue(annotation) || typeLabel(annotation)}</strong>
+              <strong title={labelValue(annotation) || undefined}>{labelValue(annotation) || typeLabel(annotation)}</strong>
               <small>{typeLabel(annotation)} · {annotation.fillMode === 'solid' ? $t('storyBuilder.annotations.solid') : $t('storyBuilder.annotations.transparent')}</small>
             </span>
           </button>
           <button
             class="story-wide-annotations__delete"
             type="button"
-            aria-label={$t('storyBuilder.annotations.deleteDrawing', { type: typeLabel(annotation), index: index + 1 })}
+            aria-label={`${$t('storyBuilder.annotations.deleteDrawing', { type: typeLabel(annotation), index: index + 1 })}: ${labelValue(annotation) || typeLabel(annotation)}`}
             on:click={() => onDeleteDrawing(annotation.id)}
           ><Trash2 aria-hidden="true" /></button>
         </article>

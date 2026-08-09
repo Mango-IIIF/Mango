@@ -5,7 +5,7 @@
   import type { StoryState } from '../../core/types/story';
   import type { SaveState } from '../storySerializer';
   import MangoFooterBrand from './MangoFooterBrand.svelte';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
   export let isPreviewing: Readable<boolean>;

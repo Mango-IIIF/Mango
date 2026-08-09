@@ -4,7 +4,7 @@
   import WorkspaceWindow from "./WorkspaceWindow.svelte";
   import GridContainer from "./GridContainer.svelte";
   import { getSplitNodeId } from "./workspaceStore.svelte";
-  import { t } from "../../i18n";
+  import { t } from "../../core/i18n";
 
   interface Props {
     node: WorkspaceNode;

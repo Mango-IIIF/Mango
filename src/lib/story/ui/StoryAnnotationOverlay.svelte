@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
   import { readable, type Readable } from 'svelte/store';
   import { ANNOTATION_STROKE_WIDTH_PX } from '../../core/types/story';
   import type { ChapterDrawingAnnotation, StoryState } from '../../core/types/story';
@@ -7,6 +7,7 @@
   import {
     fitRectangleLabelLayout,
     rectangleLabelOutlineWidth,
+    STORY_LABEL_SIZING,
   } from '../../features/annotations/rectangleLabelLayout';
   import { coerceAnnotationPlacement, DEFAULT_ANNOTATION_PLACEMENT } from '../annotationPlacement';
 
@@ -152,12 +153,36 @@
     if (shape.kind !== 'rect' || shape.w == null || shape.h == null) {
       return `left:${shape.cx}%; top:${shape.cy}%; border-color:${shape.color}; --annotation-scale:${annotationScale};`;
     }
+    // Percentages of the overlay element, so these are already screen pixels —
+    // which is the space the label band is defined in.
     const width = (overlayWidth * shape.w) / 100;
     const height = (overlayHeight * shape.h) / 100;
-    const { fontSize, lineHeight } = fitRectangleLabelLayout(width, height, shape.label);
+    const { fontSize, lineHeight, visibleLines } = fitRectangleLabelLayout(
+      width,
+      height,
+      shape.label,
+      { sizing: STORY_LABEL_SIZING },
+    );
     const outlineWidth = rectangleLabelOutlineWidth(fontSize);
     const padding = Math.max(2, fontSize * 0.28);
-    return `left:${shape.cx}%; top:${shape.cy}%; width:${shape.w}%; height:${shape.h}%; padding:${padding.toFixed(2)}px; font-size:${fontSize.toFixed(2)}px; line-height:${lineHeight.toFixed(2)}px; -webkit-text-stroke-width:${outlineWidth.toFixed(2)}px;`;
+    return `left:${shape.cx}%; top:${shape.cy}%; width:${shape.w}%; height:${shape.h}%; padding:${padding.toFixed(2)}px; font-size:${fontSize.toFixed(2)}px; line-height:${lineHeight.toFixed(2)}px; -webkit-text-stroke-width:${outlineWidth.toFixed(2)}px; --label-lines:${visibleLines};`;
+  };
+
+  /**
+   * Whether a rectangle's label fits inside it at a readable size.
+   *
+   * A label that does not fit is shown as a compact badge beside the shape
+   * rather than crammed in at an unreadable size or silently clipped.
+   */
+  const labelOverflows = (shape: DrawingShape): boolean => {
+    if (shape.kind !== 'rect' || shape.w == null || shape.h == null) return false;
+    if (!overlayWidth || !overlayHeight) return false;
+    return fitRectangleLabelLayout(
+      (overlayWidth * shape.w) / 100,
+      (overlayHeight * shape.h) / 100,
+      shape.label,
+      { sizing: STORY_LABEL_SIZING },
+    ).overflow;
   };
 </script>
 
@@ -229,7 +254,9 @@
         <span
           class="story-annotation-overlay__label"
           class:story-annotation-overlay__label--rectangle={shape.kind === 'rect'}
+          class:story-annotation-overlay__label--badge={labelOverflows(shape)}
           style={drawingLabelStyle(shape)}
+          title={labelOverflows(shape) ? shape.label : undefined}
         >
           {shape.label}
         </span>
@@ -362,5 +389,28 @@
     text-overflow: clip;
     -webkit-text-stroke-color: rgba(15, 23, 42, 0.9);
     paint-order: stroke fill;
+  }
+
+  /*
+   * A label too long for its region becomes a badge that sits over the shape
+   * rather than text crammed inside it. Clipping the text was the previous
+   * outcome, which reads as a rendering fault rather than as a label that has
+   * more to say — the full text is on the element's title and in the inspector.
+   */
+  .story-annotation-overlay__label--badge {
+    /*
+     * A label too long for its region is clamped, not restyled.
+     *
+     * This used to swap in a dark rounded box, which meant the same annotation
+     * changed colour purely because its text no longer fitted — the shape's own
+     * colour said one thing and the label said another. The treatment now stays
+     * put and only the number of lines gives way; the full text is on the
+     * element's title and in the inspector.
+     */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--label-lines, 2);
+    line-clamp: var(--label-lines, 2);
   }
 </style>

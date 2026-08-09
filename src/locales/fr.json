@@ -116,7 +116,8 @@
         "empty": "Non configuré",
         "partial": "Partiellement configuré",
         "complete": "Configuré",
-        "attention": "Nécessite une attention"
+        "attention": "Nécessite une attention",
+        "positionDrift": "Ne correspond pas à la vue actuelle"
       },
       "items": {
         "details": {
@@ -283,7 +284,18 @@
         "thick": "Épais"
       },
       "emptySelection": "Dessinez une annotation, ou sélectionnez-en une dans le pied de page pour modifier son texte et son apparence.",
-      "empty": "Aucune annotation dans ce chapitre."
+      "empty": "Aucune annotation dans ce chapitre.",
+      "motivation": "Motivation",
+      "motivationAuto": "Automatique (selon la forme)",
+      "motivations": {
+        "describing": "Description",
+        "commenting": "Commentaire",
+        "highlighting": "Surlignage",
+        "tagging": "Étiquetage",
+        "identifying": "Identification",
+        "classifying": "Classification",
+        "questioning": "Question"
+      }
     },
     "motion": {
       "title": "Se déplacer dans ce chapitre",
@@ -456,6 +468,8 @@
         "label": "Panneau des annotations",
         "title": "Annotations",
         "export": "Exporter les annotations",
+        "exportDraftOnly": "Brouillon téléchargé. Attribuez des identifiants HTTP(S) à la page et aux annotations avant publication.",
+        "exportPublicationReady": "IIIF prêt à publier téléchargé.",
         "close": "Fermer l'éditeur d'annotations",
         "modes": "Modes d'annotation",
         "edit": "Modifier",
@@ -473,24 +487,23 @@
         "keepVisible": "Garder les annotations visibles",
         "keepVisibleDescription": "Afficher les annotations après la fermeture de ce panneau.",
         "editor": {
+          "workspaceLabel": "Espace de travail de l’éditeur d’annotations",
+          "discardNavigationConfirmation": "Ignorer l’annotation non enregistrée et quitter ce canevas ?",
+          "publicationPageIdRequired": "Une AnnotationPage IIIF publiée nécessite un identifiant HTTP(S).",
           "createTitle": "Créer une annotation",
+          "createAtViewCentre": "Créer {type} au centre de la vue actuelle, puis saisir les coordonnées exactes",
           "collapsePanel": "Réduire le panneau",
           "expandPanel": "Développer le panneau",
+          "collapseToolsPanel": "Réduire les outils de dessin",
+          "expandToolsPanel": "Développer les outils de dessin",
+          "collapseDetailsPanel": "Réduire les détails de l’annotation",
+          "expandDetailsPanel": "Développer les détails de l’annotation",
           "toolsPanel": "Outils et calques",
           "showList": "Afficher la liste des annotations",
           "hideList": "Masquer la liste des annotations",
           "detailsTitle": "Détails de l'annotation",
           "details": "Détails",
           "motivation": "Motivation",
-          "motivations": {
-            "painting": "peinture (painting)",
-            "supplementing": "supplément (supplementing)",
-            "contextualizing": "contextualisation (contextualizing)",
-            "contentState": "état du contenu (contentState)",
-            "highlighting": "surlignage (highlighting)",
-            "commenting": "commentaire (commenting)",
-            "tagging": "étiquetage (tagging)"
-          },
           "layer": "Calque",
           "layersLabel": "Calques",
           "addLayer": "Ajouter un calque",
@@ -515,6 +528,8 @@
           "type": "Type",
           "searchPlaceholder": "Rechercher des annotations",
           "pagination": "{current} sur {total}",
+          "newAnnotation": "Nouvelle annotation",
+          "selectAnnotation": "Sélectionner {annotation}",
           "showLayer": "Afficher le calque",
           "hideLayer": "Masquer le calque",
           "layers": {
@@ -530,7 +545,112 @@
             "point": "Point",
             "freehand": "Dessin libre",
             "line": "Ligne"
-          }
+          },
+          "task": "Tâche",
+          "motivationPresets": {
+            "comment": "Commenter cette zone",
+            "describe": "Décrire cette zone",
+            "transcribe": "Transcrire le texte ici",
+            "tag": "Étiqueter cette zone",
+            "highlight": "Surligner cette zone",
+            "classify": "Classer cette zone",
+            "identify": "Identifier ce dont il s’agit",
+            "paint": "Contenu du canevas (expert)"
+          },
+          "motivations": {
+            "other": "Autre ({motivation})"
+          },
+          "rawMotivation": "Définir la motivation directement",
+          "paintingWarning": "Les autres visionneuses traitent les annotations painting comme le contenu du canevas.",
+          "language": "Langue",
+          "translations": "Langues du texte",
+          "addTranslation": "Ajouter une langue",
+          "removeTranslation": "Supprimer le texte en {language}",
+          "noLanguage": "Aucune langue",
+          "enterTranslationLanguage": "Saisissez une balise de langue BCP 47 avant d’ajouter du texte (par exemple cy ou en-GB).",
+          "translationExists": "Un corps de texte existe déjà dans cette langue. Sélectionnez-le ci-dessus pour le modifier.",
+          "invalidLanguage": "Utilisez une balise de langue BCP 47 valide, comme cy ou en-GB.",
+          "translationReady": "Saisissez le texte traduit ci-dessous pour ajouter cette langue.",
+          "textDirection": "Sens du texte",
+          "direction": {
+            "ltr": "De gauche à droite",
+            "rtl": "De droite à gauche",
+            "auto": "Automatique"
+          },
+          "bodyPurpose": "Finalité du corps",
+          "privateNotesHint": "Les notes privées restent dans Mango et ne sont pas exportées.",
+          "advanced": "Données conservées",
+          "advancedHint": "Lecture seule. Conservées telles quelles et réécrites sans modification.",
+          "provenance": {
+            "manifest": "Du manifeste",
+            "external": "D’une page d’annotations",
+            "local": "Créé ici",
+            "override": "Votre modification",
+            "draft": "Brouillon",
+            "persisted": "Enregistrée"
+          },
+          "readOnlyHint": "La modifier crée une copie qui vous appartient.",
+          "renderOnlyHint": "Cette forme ne peut pas être modifiée ici, mais elle est conservée intacte.",
+          "saveState": {
+            "clean": "Aucune modification non enregistrée",
+            "dirty": "Modifications non enregistrées",
+            "saving": "Enregistrement…",
+            "saved": "Enregistrée",
+            "failed": "Échec de l’enregistrement",
+            "conflicted": "Modifiée ailleurs"
+          },
+          "cancel": "Annuler",
+          "languagePlaceholder": "fr",
+          "drawInLayer": "Dessiner dans {layer}",
+          "undo": "Annuler",
+          "redo": "Rétablir",
+          "confirmDelete": "Supprimer « {name} » ? Vous pourrez annuler.",
+          "filterByLayer": "Filtrer par calque",
+          "allLayers": "Tous les calques",
+          "sortBy": "Trier par",
+          "listCount": "Affichage de {shown} sur {total}",
+          "sort": {
+            "document": "Ordre du document",
+            "label": "Libellé",
+            "type": "Type",
+            "layer": "Calque"
+          },
+          "renameLayer": "Renommer {layer}",
+          "moveLayerUp": "Monter le calque",
+          "moveLayerDown": "Descendre le calque",
+          "archiveLayer": "Archiver {layer}",
+          "restoreLayer": "Restaurer {layer}",
+          "archivedLayers": "Calques archivés ({count})",
+          "position": "Position",
+          "positionHint": "Pixels de l’image. Les modifications forment une étape d’annulation, comme un glisser.",
+          "layerOptions": "Options de {layer}",
+          "rename": "Renommer",
+          "archive": "Archiver"
+        },
+        "diagnostics": {
+          "layerAsMotivation": "La motivation ressemble à un nom de calque plutôt qu’à un terme standard.",
+          "legacyMotivation": "Un ancien terme de motivation a été lu ; la nouvelle sortie utilise le terme actuel.",
+          "unknownMotivation": "Mango ne reconnaît pas cette motivation.",
+          "unknownPurpose": "Mango ne reconnaît pas cette finalité de corps.",
+          "styleClassWithoutStylesheet": "La classe de style n’a pas de feuille de style ; le thème normal est utilisé.",
+          "inlineStyleNotPortable": "La couleur en ligne n’est pas portable et est omise des exports standard.",
+          "stylesheetUnreadable": "La feuille de style n’a pas pu être lue et a été ignorée.",
+          "legacyPoint": "Un point a été enregistré comme une région 1×1 ; il est exporté comme point.",
+          "unsupportedSelector": "Un type de sélecteur est conservé mais n’est pas affiché.",
+          "invalidFragment": "Un fragment de média n’a pas pu être lu.",
+          "geometryUnreadable": "La forme n’a pas pu être lue depuis son sélecteur.",
+          "curvesFlattened": "Les courbes ont été approchées par des segments droits.",
+          "pathPartiallyRead": "Une partie du tracé utilise des commandes que Mango ne dessine pas.",
+          "multipleShapes": "Le sélecteur contient plusieurs formes ; la première est affichée.",
+          "missingId": "L’annotation n’a pas d’identifiant.",
+          "missingTarget": "L’annotation n’a pas de cible.",
+          "draftIdentifier": "Un identifiant attribué par le serveur est nécessaire avant publication.",
+          "droppedExtension": "Des champs non standard ont été omis de cet export.",
+          "lossyNormalization": "Certaines données ont changé de forme pour correspondre au profil d’export.",
+          "editTargetGone": "La partie de l’annotation en cours de modification n’existe plus.",
+          "editRefused": "Ce changement a été refusé, rien n’a donc été modifié.",
+          "migrationAmbiguous": "Une décision est nécessaire avant la mise à jour ; l’élément est laissé tel quel.",
+          "limitExceeded": "L’annotation dépasse les limites de sécurité ; une partie n’a pas été lue."
         }
       },
       "contents": {

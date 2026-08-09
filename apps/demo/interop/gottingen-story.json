@@ -1,0 +1,207 @@
+{
+  "@context": [
+    "http://www.w3.org/ns/anno.jsonld",
+    "http://iiif.io/api/presentation/3/context.json"
+  ],
+  "id": "http://localhost:5173/interop/gottingen-story.json",
+  "type": "AnnotationPage",
+  "label": {
+    "en": [
+      "Five minutes on the Markt, Göttingen"
+    ]
+  },
+  "items": [
+    {
+      "id": "http://localhost:5173/interop/gottingen-story.json/annotation/1",
+      "type": "Annotation",
+      "motivation": "commenting",
+      "label": {
+        "en": [
+          "The market square"
+        ]
+      },
+      "body": {
+        "type": "TextualBody",
+        "value": "An August evening on the Markt in Göttingen, photographed during the 2019 IIIF Conference. The square is still warm, the café awnings are out, and the light is going.",
+        "format": "text/plain",
+        "language": "en",
+        "purpose": "describing"
+      },
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://iiif.io/api/cookbook/recipe/0005-image-service/canvas/p1",
+        "partOf": [
+          {
+            "id": "https://iiif.io/api/cookbook/recipe/0005-image-service/manifest.json",
+            "type": "Manifest"
+          }
+        ],
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,4032,3024"
+        }
+      }
+    },
+    {
+      "id": "http://localhost:5173/interop/gottingen-story.json/annotation/2",
+      "type": "Annotation",
+      "motivation": "commenting",
+      "label": {
+        "en": [
+          "The Altes Rathaus"
+        ]
+      },
+      "body": {
+        "type": "TextualBody",
+        "value": "The old town hall closes the west side of the square: a stone hall with a crenellated parapet above and a gothic arcade at street level, its pointed arches now shading café tables.",
+        "format": "text/plain",
+        "language": "en",
+        "purpose": "describing"
+      },
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://iiif.io/api/cookbook/recipe/0005-image-service/canvas/p1",
+        "partOf": [
+          {
+            "id": "https://iiif.io/api/cookbook/recipe/0005-image-service/manifest.json",
+            "type": "Manifest"
+          }
+        ],
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=0,0,1900,1600"
+        }
+      }
+    },
+    {
+      "id": "http://localhost:5173/interop/gottingen-story.json/annotation/3",
+      "type": "Annotation",
+      "motivation": "commenting",
+      "label": {
+        "en": [
+          "The Gänseliesel fountain"
+        ]
+      },
+      "body": {
+        "type": "TextualBody",
+        "value": "Under the wrought-iron canopy stands the Gänseliesel, the goose girl. Doctoral graduates in Göttingen traditionally climb up to kiss her, which has earned the figure a reputation as one of the most kissed statues anywhere.",
+        "format": "text/plain",
+        "language": "en",
+        "purpose": "describing"
+      },
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://iiif.io/api/cookbook/recipe/0005-image-service/canvas/p1",
+        "partOf": [
+          {
+            "id": "https://iiif.io/api/cookbook/recipe/0005-image-service/manifest.json",
+            "type": "Manifest"
+          }
+        ],
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=700,850,600,1150"
+        }
+      }
+    },
+    {
+      "id": "http://localhost:5173/interop/gottingen-story.json/annotation/4",
+      "type": "Annotation",
+      "motivation": "commenting",
+      "label": {
+        "en": [
+          "Flags and café tables"
+        ]
+      },
+      "body": {
+        "type": "TextualBody",
+        "value": "Rainbow banners hang between the town hall windows, above a window box of pink and white flowers. Beneath the white parasols the tables are busy, and a small dog crosses the empty paving in front of them.",
+        "format": "text/plain",
+        "language": "en",
+        "purpose": "describing"
+      },
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://iiif.io/api/cookbook/recipe/0005-image-service/canvas/p1",
+        "partOf": [
+          {
+            "id": "https://iiif.io/api/cookbook/recipe/0005-image-service/manifest.json",
+            "type": "Manifest"
+          }
+        ],
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=1150,900,1100,800"
+        }
+      }
+    },
+    {
+      "id": "http://localhost:5173/interop/gottingen-story.json/annotation/5",
+      "type": "Annotation",
+      "motivation": "commenting",
+      "label": {
+        "en": [
+          "Half-timbered corner"
+        ]
+      },
+      "body": {
+        "type": "TextualBody",
+        "value": "Across the square a timber-framed house turns the corner, its dark beams set against white render, dormer windows in a steep tiled roof, and a café sign at ground level.",
+        "format": "text/plain",
+        "language": "en",
+        "purpose": "describing"
+      },
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://iiif.io/api/cookbook/recipe/0005-image-service/canvas/p1",
+        "partOf": [
+          {
+            "id": "https://iiif.io/api/cookbook/recipe/0005-image-service/manifest.json",
+            "type": "Manifest"
+          }
+        ],
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=2600,550,900,1150"
+        }
+      }
+    },
+    {
+      "id": "http://localhost:5173/interop/gottingen-story.json/annotation/6",
+      "type": "Annotation",
+      "motivation": "commenting",
+      "label": {
+        "en": [
+          "The paving"
+        ]
+      },
+      "body": {
+        "type": "TextualBody",
+        "value": "Most of the photograph is given over to the paving itself — grey and buff granite setts laid in broad bands, sweeping out towards the foreground and holding the whole square together.",
+        "format": "text/plain",
+        "language": "en",
+        "purpose": "describing"
+      },
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://iiif.io/api/cookbook/recipe/0005-image-service/canvas/p1",
+        "partOf": [
+          {
+            "id": "https://iiif.io/api/cookbook/recipe/0005-image-service/manifest.json",
+            "type": "Manifest"
+          }
+        ],
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=900,2000,2600,1000"
+        }
+      }
+    }
+  ]
+}

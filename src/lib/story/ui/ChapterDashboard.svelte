@@ -13,7 +13,7 @@
   } from '@lucide/svelte';
   import type { ChapterTaskEvaluation, ChapterTaskId } from '../chapterTasks';
   import ChapterTaskCard from './ChapterTaskCard.svelte';
-  import { t } from '../../i18n';
+  import { t } from '../../core/i18n';
 
   export let tasks: ChapterTaskEvaluation[];
   export let onOpenTask: (task: ChapterTaskId) => void;

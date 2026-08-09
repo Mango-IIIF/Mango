@@ -14,18 +14,6 @@ export type IIIFIdentifiable =
   | { '@id': string };
 
 /**
- * Type guard to check if value has an id//@id property
- */
-export function isIdentifiable(value: unknown): value is IIIFIdentifiable {
-  if (!value) return false;
-  if (typeof value === 'string') return true;
-  if (typeof value === 'object') {
-    return 'id' in value || '@id' in value;
-  }
-  return false;
-}
-
-/**
  * IIIF v2 and v3 language map structures
  */
 export type LanguageMap = Record<string, string[]>;
@@ -89,11 +77,3 @@ export type MaybeWithProperty<T extends string> = {
   [K in T]?: unknown;
 };
 
-/**
- * Runtime type guard for IIIF annotation
- */
-export function isAnnotation(value: unknown): value is IIIFAnnotation {
-  if (!value || typeof value !== 'object') return false;
-  const obj = value as Record<string, unknown>;
-  return ('id' in obj || '@id' in obj) && ('target' in obj || 'on' in obj);
-}
