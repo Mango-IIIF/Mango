@@ -54,6 +54,33 @@ type IiifStoryPage = {
   items?: IiifStoryItem[];
 };
 
+/**
+ * Points out of an SvgSelector value.
+ *
+ * Handles the two shapes annotation tools actually emit — a `points` list on
+ * a polygon or polyline, and a path of straight segments. Curves are not
+ * flattened here: a region drawn with them keeps its bounding box as the
+ * framing and simply is not redrawn, which is better than drawing it wrong.
+ */
+const parseSvgPoints = (value: string): Array<{ x: number; y: number }> => {
+  if (!value.includes("<")) return [];
+  const list = value.match(/points\s*=\s*["']([^"']+)["']/i)?.[1];
+  const source =
+    list ??
+    (/[csqta]/i.test(value.match(/\sd\s*=\s*["']([^"']+)["']/i)?.[1] ?? "")
+      ? undefined
+      : value.match(/\sd\s*=\s*["']([^"']+)["']/i)?.[1]);
+  if (!source) return [];
+  const numbers = source.match(/-?\d+(?:\.\d+)?/g) ?? [];
+  const points: Array<{ x: number; y: number }> = [];
+  for (let i = 0; i + 1 < numbers.length; i += 2) {
+    const x = Number.parseFloat(numbers[i]);
+    const y = Number.parseFloat(numbers[i + 1]);
+    if (Number.isFinite(x) && Number.isFinite(y)) points.push({ x, y });
+  }
+  return points;
+};
+
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === "object" && value !== null
     ? (value as Record<string, unknown>)
@@ -168,6 +195,7 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
     let manifest = "";
     let canvasIndex = viewerState?.canvasIndex ?? 0;
     let viewBox: ViewBox | undefined;
+    let shapePoints: Array<{ x: number; y: number }> | undefined;
 
     let targetSource = item.target;
     if (!targetSource && item.body) {
@@ -249,6 +277,27 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
       for (const selector of selectors) {
         if (!selector.value) continue;
         const val = selector.value;
+        /*
+         * An SvgSelector is how an annotation says its region is not a
+         * rectangle. The points are kept so the shape can be drawn as the
+         * document meant it, and their bounding box becomes the framing,
+         * since a camera can only be given a rectangle.
+         */
+        const points = parseSvgPoints(val);
+        if (points.length >= 2) {
+          shapePoints = points;
+          const xs = points.map((p) => p.x);
+          const ys = points.map((p) => p.y);
+          const minX = Math.min(...xs);
+          const minY = Math.min(...ys);
+          viewBox = {
+            x: minX,
+            y: minY,
+            w: Math.max(...xs) - minX,
+            h: Math.max(...ys) - minY,
+          };
+          continue;
+        }
         const match = val.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
         if (match) {
           viewBox = {
@@ -393,7 +442,34 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
       layerOpacities: viewerState?.layerOpacities,
       annotationPlacement: viewerState?.annotationPlacement,
       cameraTrack: viewerState?.cameraTrack,
-      drawingAnnotations: viewerState?.drawingAnnotations,
+      /*
+       * On a page Mango did not author, the annotation's target region is
+       * both where to look and what the annotation is about, so it is drawn
+       * as well as framed. A Mango story keeps the two separate — the
+       * chapter framing is the camera and drawings are their own thing —
+       * which is why this only applies where there is no enrichment.
+       *
+       * No label: these captions run to a paragraph, and a paragraph set
+       * inside the region it describes is unreadable. The chapter panel is
+       * already showing it.
+       */
+      drawingAnnotations:
+        viewerState?.drawingAnnotations ??
+        (!hasMangoEnrichment && viewBox
+          ? [
+              shapePoints && shapePoints.length >= 2
+                ? {
+                    id: `${chapterId}-region`,
+                    type: "polygon" as const,
+                    points: shapePoints,
+                  }
+                : {
+                    id: `${chapterId}-region`,
+                    type: "rectangle" as const,
+                    rect: viewBox,
+                  },
+            ]
+          : undefined),
       advance,
       narrationSegment:
         Object.keys(narrationSegment).length > 0 ? narrationSegment : undefined,
