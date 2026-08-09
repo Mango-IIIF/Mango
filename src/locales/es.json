@@ -284,7 +284,18 @@
         "thick": "Grueso"
       },
       "emptySelection": "Dibuje una anotación o seleccione una en el pie para editar su texto y su apariencia.",
-      "empty": "No hay anotaciones en este capítulo."
+      "empty": "No hay anotaciones en este capítulo.",
+      "motivation": "Motivación",
+      "motivationAuto": "Automática (según la forma)",
+      "motivations": {
+        "describing": "Descripción",
+        "commenting": "Comentario",
+        "highlighting": "Resaltado",
+        "tagging": "Etiquetado",
+        "identifying": "Identificación",
+        "classifying": "Clasificación",
+        "questioning": "Pregunta"
+      }
     },
     "motion": {
       "title": "Moverse por este capítulo",

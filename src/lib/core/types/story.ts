@@ -31,6 +31,26 @@ export type ChapterAnnotationTool =
 export type ChapterAnnotationStrokeWidth = "thin" | "medium" | "thick";
 export type ChapterAnnotationFillMode = "transparent" | "solid";
 
+/**
+ * W3C motivations offered for a story drawing.
+ *
+ * A subset, not the full list: these are the ones that mean something for a
+ * region of an image in a story. Mango reads any motivation a document
+ * carries — this only constrains what the builder writes.
+ */
+export const CHAPTER_ANNOTATION_MOTIVATIONS = [
+  "describing",
+  "commenting",
+  "highlighting",
+  "tagging",
+  "identifying",
+  "classifying",
+  "questioning",
+] as const;
+
+export type ChapterAnnotationMotivation =
+  (typeof CHAPTER_ANNOTATION_MOTIVATIONS)[number];
+
 export type ChapterDrawingAnnotation = {
   id: string;
   type: Exclude<ChapterAnnotationTool, "select">;
@@ -47,6 +67,15 @@ export type ChapterDrawingAnnotation = {
   strokeWidth?: ChapterAnnotationStrokeWidth;
   /** Whether a closed shape uses a subtle transparent fill or its solid colour. */
   fillMode?: ChapterAnnotationFillMode;
+  /**
+   * Why this annotation exists, as a W3C motivation.
+   *
+   * Optional, and absent means "let the export decide" — which is what every
+   * story written so far relies on. Setting it says something the geometry
+   * cannot: the same rectangle can be a comment, a transcription or a
+   * question, and only the author knows which.
+   */
+  motivation?: ChapterAnnotationMotivation;
   rect?: AnnotationPlacement;
   point?: { x: number; y: number };
   points?: Array<{ x: number; y: number }>;

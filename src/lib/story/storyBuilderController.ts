@@ -125,6 +125,8 @@ export type StoryBuilderController = {
       color?: string | null;
       strokeWidth?: ChapterAnnotationStrokeWidth;
       fillMode?: ChapterDrawingAnnotation["fillMode"];
+      /** Null clears it, so the export goes back to inferring from shape. */
+      motivation?: ChapterDrawingAnnotation["motivation"] | null;
     },
   ) => void;
   addChapter: () => void;
@@ -790,6 +792,7 @@ export const createStoryBuilderController = (
   const setChapterDrawingAnnotationStyle = (
     annotationId: string,
     style: {
+      motivation?: ChapterDrawingAnnotation["motivation"] | null;
       color?: string | null;
       strokeWidth?: ChapterAnnotationStrokeWidth;
       fillMode?: ChapterDrawingAnnotation["fillMode"];
@@ -807,6 +810,12 @@ export const createStoryBuilderController = (
         if (style.strokeWidth !== undefined)
           next.strokeWidth = style.strokeWidth;
         if (style.fillMode !== undefined) next.fillMode = style.fillMode;
+        if (style.motivation !== undefined) {
+          // Null is "unset", not "empty": the annotation goes back to having
+          // its motivation inferred rather than carrying a blank one.
+          if (style.motivation) next.motivation = style.motivation;
+          else delete next.motivation;
+        }
         return next;
       }),
     );

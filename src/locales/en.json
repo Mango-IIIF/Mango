@@ -284,7 +284,18 @@
         "thick": "Thick"
       },
       "emptySelection": "Draw an annotation, or select one from the footer to edit its text and appearance.",
-      "empty": "No annotations in this chapter."
+      "empty": "No annotations in this chapter.",
+      "motivation": "Motivation",
+      "motivationAuto": "Automatic (from shape)",
+      "motivations": {
+        "describing": "Describing",
+        "commenting": "Commenting",
+        "highlighting": "Highlighting",
+        "tagging": "Tagging",
+        "identifying": "Identifying",
+        "classifying": "Classifying",
+        "questioning": "Questioning"
+      }
     },
     "motion": {
       "title": "Move through this chapter",

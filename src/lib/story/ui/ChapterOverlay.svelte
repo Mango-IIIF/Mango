@@ -6,12 +6,13 @@
     annotationToolLabelKey,
   } from "../../features/annotations/annotationTools";
   import { readable, type Readable } from "svelte/store";
-  import type {
-    AnnotationPlacement,
-    ChapterAdvance,
-    ChapterAnnotationTool,
-    ChapterDrawingAnnotation,
-    StoryState,
+  import {
+    CHAPTER_ANNOTATION_MOTIVATIONS,
+    type AnnotationPlacement,
+    type ChapterAdvance,
+    type ChapterAnnotationTool,
+    type ChapterDrawingAnnotation,
+    type StoryState,
   } from "../../core/types/story";
   import type { ViewBox } from "../../core/types/viewer";
   import type { MediaType, MediaSource } from "../../iiif/mediaResolver";
@@ -91,6 +92,7 @@
         color?: string | null;
         strokeWidth?: "thin" | "medium" | "thick";
         fillMode?: ChapterDrawingAnnotation["fillMode"];
+        motivation?: ChapterDrawingAnnotation["motivation"] | null;
       },
     ) => void) | undefined;
   export let onUpdateManifest:
@@ -1408,6 +1410,39 @@
                     >{$t(`storyBuilder.annotations.strokeWidth.${width}`)}</button>
                   {/each}
                 </div>
+              </div>
+
+              <!--
+                Optional on purpose. Leaving it unset keeps the behaviour every
+                existing story relies on, where the export infers a motivation
+                from whether the shape carries words. Choosing one says
+                something the geometry cannot.
+              -->
+              <div class="chapter-overlay__field">
+                <label for="drawing-motivation">
+                  {$t('storyBuilder.annotations.motivation')}
+                </label>
+                <select
+                  id="drawing-motivation"
+                  value={selectedDrawingAnnotation.motivation ?? ''}
+                  on:change={(event) => onSetDrawingAnnotationStyle?.(
+                    selectedDrawingAnnotation!.id,
+                    {
+                      motivation:
+                        (event.currentTarget.value ||
+                          null) as ChapterDrawingAnnotation["motivation"] | null,
+                    },
+                  )}
+                >
+                  <option value="">
+                    {$t('storyBuilder.annotations.motivationAuto')}
+                  </option>
+                  {#each CHAPTER_ANNOTATION_MOTIVATIONS as motivation}
+                    <option value={motivation}>
+                      {$t(`storyBuilder.annotations.motivations.${motivation}`)}
+                    </option>
+                  {/each}
+                </select>
               </div>
             </div>
           {:else}

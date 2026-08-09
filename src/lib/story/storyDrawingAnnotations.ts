@@ -70,7 +70,13 @@ export const storyDrawingDocument = (
     shape,
     text: legacyText,
     textBodies,
-    motivation: hasText ? 'commenting' : 'highlighting',
+    /*
+     * The author's choice wins when they made one. The fallback is not a
+     * default so much as a guess from shape: a region with words on it reads
+     * as a comment, one without as a highlight — which is all that could be
+     * inferred before the builder let anyone say.
+     */
+    motivation: drawing.motivation ?? (hasText ? 'commenting' : 'highlighting'),
     bodyPurpose: 'commenting',
     styleClass,
     stylesheet,

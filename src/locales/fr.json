@@ -284,7 +284,18 @@
         "thick": "Épais"
       },
       "emptySelection": "Dessinez une annotation, ou sélectionnez-en une dans le pied de page pour modifier son texte et son apparence.",
-      "empty": "Aucune annotation dans ce chapitre."
+      "empty": "Aucune annotation dans ce chapitre.",
+      "motivation": "Motivation",
+      "motivationAuto": "Automatique (selon la forme)",
+      "motivations": {
+        "describing": "Description",
+        "commenting": "Commentaire",
+        "highlighting": "Surlignage",
+        "tagging": "Étiquetage",
+        "identifying": "Identification",
+        "classifying": "Classification",
+        "questioning": "Question"
+      }
     },
     "motion": {
       "title": "Se déplacer dans ce chapitre",

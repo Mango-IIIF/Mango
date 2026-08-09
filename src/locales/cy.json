@@ -284,7 +284,18 @@
         "thick": "Trwchus"
       },
       "emptySelection": "Lluniwch anodiad, neu dewiswch un o'r troedyn i olygu ei destun a'i olwg.",
-      "empty": "Dim anodiadau yn y bennod hon."
+      "empty": "Dim anodiadau yn y bennod hon.",
+      "motivation": "Cymhelliad",
+      "motivationAuto": "Awtomatig (o'r siâp)",
+      "motivations": {
+        "describing": "Disgrifio",
+        "commenting": "Sylwi",
+        "highlighting": "Amlygu",
+        "tagging": "Tagio",
+        "identifying": "Adnabod",
+        "classifying": "Dosbarthu",
+        "questioning": "Cwestiynu"
+      }
     },
     "motion": {
       "title": "Symud drwy'r bennod hon",
