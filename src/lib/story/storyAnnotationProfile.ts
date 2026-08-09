@@ -64,7 +64,8 @@ export type MangoViewerState = {
 };
 
 export type MangoViewerStateBody = {
-  type: ["Dataset", typeof MANGO_VIEWER_STATE_TYPE];
+  id?: string;
+  type: typeof MANGO_VIEWER_STATE_TYPE;
   format: typeof MANGO_VIEWER_STATE_FORMAT;
   mangoState: MangoViewerState;
 };
@@ -340,9 +341,20 @@ const parseCameraTrack = (
   };
 };
 
+/**
+ * The state body's own id, derived from the annotation that carries it.
+ *
+ * IIIF requires every annotation body that is not a `TextualBody` to have an
+ * http(s) id, so the body cannot stay anonymous the way a W3C-only reading
+ * would allow.
+ */
+export const buildViewerStateBodyId = (annotationId: string): string =>
+  `${annotationId.replace(/\/$/, "")}/state`;
+
 export const createMangoViewerStateBody = (
   chapter: Chapter,
   presentationAspect?: number,
+  annotationId?: string,
 ): MangoViewerStateBody => {
   const timing = resolveChapterTiming(chapter);
   const playback: MangoStoryPlayback = {
@@ -394,14 +406,17 @@ export const createMangoViewerStateBody = (
       playback,
   };
   /*
-   * Two types on purpose. `Dataset` is a W3C body class, so a viewer that
-   * knows nothing about Mango still knows this is data and not prose to put
-   * in front of a reader — which is exactly what a `TextualBody` holding a
-   * JSON string invites it to do. `mango:ViewerState` then names what the
-   * data is, for anything that does know.
+   * One type, not the W3C pair `["Dataset", "mango:ViewerState"]` this once
+   * wrote. Multiple types are legal Web Annotation, but IIIF narrows `type`
+   * to a single string, and the IIIF validator rejects the array — so the
+   * pair cost conformance to say something a lone `mango:ViewerState`
+   * already implies. What the `Dataset` half was there to avoid is a viewer
+   * printing state at a reader as if it were a caption, and only
+   * `TextualBody` invites that; an unrecognised type is passed over.
    */
   return {
-    type: ["Dataset", MANGO_VIEWER_STATE_TYPE],
+    ...(annotationId ? { id: buildViewerStateBodyId(annotationId) } : {}),
+    type: MANGO_VIEWER_STATE_TYPE,
     format: MANGO_VIEWER_STATE_FORMAT,
     mangoState: state,
   };
@@ -425,8 +440,8 @@ const viewerStateEnvelope = (
     }
   }
   /*
-   * The type may be a single term or the pair `["Dataset", …]`, since the
-   * state body now carries a standard body class alongside Mango's own.
+   * The type may be a single term or an array: stories written while the
+   * profile paired `Dataset` with Mango's own class still carry both.
    */
   const types = Array.isArray(value.type) ? value.type : [value.type];
   if (

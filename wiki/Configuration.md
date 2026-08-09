@@ -176,7 +176,7 @@ Common `av` options include:
 | `controls`   | `navigation`, `autoAdvance`, `seek`, `volume`, `captions`, `playbackRate`, `pictureInPicture`, `fullscreen`, `sourceSelector`, `download`, `skipSeconds` |
 | `panels`     | `chapters`, `transcript`, `annotations`, `metadata`, `supplementalFiles`                                                                                 |
 | `transcript` | `autoScroll`, `search`, `download`, `showNotes`, `showMetadata`, `showSearchMarkers`                                                                     |
-| `audioArt`   | Timed `transcript` display and `visualizer` (`pulse`, `waveform`, or `spectrum`)                                                                         |
+| `audioArt`   | Timed `transcript` display and `visualizer` (`pulse`, `waveform`, or `spectrum`); colour and strength are CSS variables, see [Theming and languages](Theming-and-Languages.md) |
 | `resume`     | `enabled`, `maxItems`, `ttlDays`, and `prompt`                                                                                                           |
 
 Top-level options include `preferredLanguages`, `autoAdvance`, `repeat`,
