@@ -49,6 +49,8 @@
   import type { MediaType, MediaSource } from '../iiif/mediaResolver';
   import type { ViewerPlugin } from '../core/types/plugin';
   import type { StoryState } from '../core/types/story';
+  import type { ExportEnvelope } from '../story/storySerializer';
+  import type { StoryBuilderController } from '../story/storyBuilderController';
   import { normaliseStoryInput } from '../story/viewer/storyLoader';
   import { ViewerApiAdapter } from '../viewer/api/ViewerApiAdapter';
 
@@ -69,6 +71,7 @@
   let hostElement: HTMLDivElement | null = null;
   let eventTargetOwner: unknown = null;
   let storyBuilderPluginRequest = 0;
+  let storyBuilderController: StoryBuilderController | null = null;
 
   $: parsedConfig = parseViewerConfig(config, (error) => {
     console.warn(translate('warnings.invalidConfig'), error);
@@ -92,6 +95,7 @@
       (story !== lastStoryForBuilder || storyUrl !== lastStoryForBuilder))
   ) {
     lastMode = mode;
+    storyBuilderController = null;
     if (mode === 'story-builder') {
       lastStoryForBuilder = story || storyUrl;
       const requestId = ++storyBuilderPluginRequest;
@@ -105,6 +109,11 @@
             annotationPageId: normalisedConfig.story?.annotationPageId,
             annotationBase: normalisedConfig.story?.annotationBase,
             identifiersLocked: normalisedConfig.story?.identifiersLocked,
+            onControllerReady: (controller) => {
+              if (requestId === storyBuilderPluginRequest) {
+                storyBuilderController = controller;
+              }
+            },
           });
         });
       });
@@ -114,6 +123,7 @@
     }
   }
   $: resolvedPlugins = [...modePlugins, ...plugins];
+  $: storyBuilderController?.setSaveConfig(normalisedConfig.story?.save ?? {});
 
   async function loadStoryForBuilder(): Promise<StoryState | null> {
     let source: unknown = undefined;
@@ -297,6 +307,18 @@
 
   export function getMediaSources(): MediaSource[] {
     return api.getMediaSources();
+  }
+
+  /** Returns a detached snapshot while the element is in Story Builder mode. */
+  export function getStory(): StoryState | null {
+    return storyBuilderController?.getStory() ?? null;
+  }
+
+  /** Returns the builder's portable IIIF AnnotationPage representation. */
+  export function exportStory(): ExportEnvelope | null {
+    if (!storyBuilderController) return null;
+    const validation = storyBuilderController.saveExport();
+    return validation.ok ? storyBuilderController.getExportPayload() : null;
   }
 
   export function on<K extends keyof ViewerEventMap>(

@@ -28,6 +28,8 @@ export type SaveConfig = {
   timeoutMs?: number;
   credentials?: RequestCredentials;
   enabled?: boolean;
+  /** Host-owned persistence, for example IndexedDB or a native application store. */
+  handler?: StorySaveHandler;
 };
 
 export type StorySelector = {
@@ -80,6 +82,10 @@ export type ExportEnvelope = StoryAnnotationPage;
 
 export type SaveResult =
   { ok: true; message?: string } | { ok: false; message: string; code?: string };
+
+export type StorySaveHandler = (
+  payload: ExportEnvelope,
+) => SaveResult | void | Promise<SaveResult | void>;
 
 export type SaveState =
   | { status: 'idle'; message?: string; code?: string }

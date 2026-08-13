@@ -196,6 +196,10 @@ export type StoryBuilderController = {
   cancelChapterSettings: () => void;
   saveExport: () => { ok: boolean; errors: string[] };
   exportStory: () => { ok: boolean; errors: string[] };
+  /** A detached snapshot of the builder's editable story state. */
+  getStory: () => StoryState;
+  /** The current story serialized as a portable IIIF AnnotationPage. */
+  getExportPayload: () => ExportEnvelope;
   saveStory: () => Promise<SaveResult>;
   undo: () => void;
   redo: () => void;
@@ -230,6 +234,8 @@ export type StoryBuilderOptions = {
   annotationBase?: string;
   identifiersLocked?: boolean;
   initialStory?: StoryState;
+  /** Receives the controller used by the first-party builder plugins. */
+  onControllerReady?: (controller: StoryBuilderController) => void;
 };
 
 export const collectLatestNarrationSegments = (
@@ -510,24 +516,37 @@ export const createStoryBuilderController = (
       return { ok: false, message: validation.errors.join(" · ") };
     }
     const payload = buildExportEnvelope(storyStoreWrapper.exportStory());
+    const saveHandler = saveConfig?.handler;
+    const hasHandler =
+      typeof saveHandler === "function" && (saveConfig?.enabled ?? true);
     const hasEndpoint =
       saveConfig?.endpoint && (saveConfig.enabled ?? true) ? true : false;
-    if (hasEndpoint && !get(storyStore).id) {
+    if (hasEndpoint && !hasHandler && !get(storyStore).id) {
       const message = translate('storyBuilder.errors.missingPublicId');
       saveState.set({ status: "error", message, code: "missing_public_id" });
       return { ok: false, message, code: "missing_public_id" };
     }
-    if (!hasEndpoint) {
+    if (!hasEndpoint && !hasHandler) {
       saveModalPayload.set(payload);
       saveModalOpen.set(true);
       saveState.set({ status: "idle" });
       return { ok: true };
     }
     saveState.set({ status: "saving" });
-    const result = await performFetchWithTimeout(
-      saveConfig as SaveConfig,
-      payload,
-    );
+    let result: SaveResult;
+    if (hasHandler) {
+      try {
+        result = (await saveHandler!(payload)) ?? { ok: true };
+      } catch (error) {
+        result = {
+          ok: false,
+          message: error instanceof Error ? error.message : String(error),
+          code: "handler",
+        };
+      }
+    } else {
+      result = await performFetchWithTimeout(saveConfig as SaveConfig, payload);
+    }
     if (result.ok) {
       saveState.set({ status: "success", message: result.message });
       dirty.set(false);
@@ -543,7 +562,10 @@ export const createStoryBuilderController = (
 
   const setSaveConfig = (config: SaveConfig) => {
     saveConfig = config;
-    saveConfigured.set(Boolean(config?.endpoint && (config.enabled ?? true)));
+    saveConfigured.set(
+      (typeof config?.handler === "function" && (config.enabled ?? true)) ||
+        Boolean(config?.endpoint && (config.enabled ?? true)),
+    );
   };
 
   const closeSaveModal = () => {
@@ -2581,6 +2603,12 @@ export const createStoryBuilderController = (
     return validation;
   };
 
+  const getStory = (): StoryState =>
+    cloneStoryValue(storyStoreWrapper.exportStory());
+
+  const getExportPayload = (): ExportEnvelope =>
+    buildExportEnvelope(storyStoreWrapper.exportStory());
+
   const loadStory = (storyToLoad: StoryState) => {
     // Bring framings to the story's canonical aspect on the way in, so
     // everything captured from here on agrees and the next save writes them
@@ -2614,7 +2642,7 @@ export const createStoryBuilderController = (
     dirty.set(false);
   };
 
-  return {
+  const controller: StoryBuilderController = {
     story: storyStore,
     currentManifest,
     viewerCanvasIndex,
@@ -2699,6 +2727,8 @@ export const createStoryBuilderController = (
     cancelChapterSettings,
     saveExport,
     exportStory,
+    getStory,
+    getExportPayload,
     saveStory,
     undo,
     redo,
@@ -2724,4 +2754,6 @@ export const createStoryBuilderController = (
     confirmAnnotationPositioning,
     cancelAnnotationPositioning,
   };
+  options.onControllerReady?.(controller);
+  return controller;
 };
