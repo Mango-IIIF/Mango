@@ -8,6 +8,72 @@ import {
 } from "../storyBuilderController";
 
 describe("story builder narration defaults", () => {
+  it("saves through a host persistence handler without requiring an HTTP endpoint", async () => {
+    const handler = vi.fn().mockResolvedValue({
+      ok: true,
+      message: "Stored locally",
+    });
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: "chapter-1",
+            manifest: "https://example.org/manifest.json",
+            canvasIndex: 0,
+            viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          },
+        ],
+      },
+    });
+    controller.setSaveConfig({ handler });
+
+    expect(get(controller.saveConfigured)).toBe(true);
+    await expect(controller.saveStory()).resolves.toEqual({
+      ok: true,
+      message: "Stored locally",
+    });
+    expect(handler).toHaveBeenCalledOnce();
+    expect(handler.mock.calls[0][0]).toMatchObject({
+      type: "AnnotationPage",
+      items: expect.any(Array),
+    });
+    expect(get(controller.saveState)).toEqual({
+      status: "success",
+      message: "Stored locally",
+    });
+  });
+
+  it("reports host persistence failures through the existing save state", async () => {
+    const controller = createStoryBuilderController({
+      initialStory: {
+        chapters: [
+          {
+            id: "chapter-1",
+            manifest: "https://example.org/manifest.json",
+            canvasIndex: 0,
+            viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          },
+        ],
+      },
+    });
+    controller.setSaveConfig({
+      handler: async () => {
+        throw new Error("IndexedDB unavailable");
+      },
+    });
+
+    await expect(controller.saveStory()).resolves.toEqual({
+      ok: false,
+      message: "IndexedDB unavailable",
+      code: "handler",
+    });
+    expect(get(controller.saveState)).toEqual({
+      status: "error",
+      message: "IndexedDB unavailable",
+      code: "handler",
+    });
+  });
+
   it("preserves motion settings when duration and camera points are edited", () => {
     const controller = createStoryBuilderController({
       initialStory: {

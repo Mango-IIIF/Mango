@@ -1,4 +1,5 @@
 import type { AVPlayerConfig } from '@mango-iiif/av/core';
+import type { SaveConfig } from '../../story/storySerializer';
 
 export type ViewerConfig = {
   language?: string;
@@ -58,13 +59,6 @@ export type ViewerConfig = {
     annotationBase?: string;
     /** Prevent authors from changing host-supplied canonical identifiers. */
     identifiersLocked?: boolean;
-    save?: {
-      endpoint?: string;
-      method?: 'POST' | 'PUT';
-      headers?: Record<string, string>;
-      timeoutMs?: number;
-      credentials?: RequestCredentials;
-      enabled?: boolean;
-    };
+    save?: SaveConfig;
   };
 };

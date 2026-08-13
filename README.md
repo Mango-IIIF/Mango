@@ -182,6 +182,32 @@ The same custom element supports several collection and authoring experiences:
 ></mango-viewer>
 ```
 
+### Host-managed story storage
+
+Story Builder can save to browser-owned storage such as IndexedDB by assigning
+an asynchronous handler in JavaScript. The handler receives the portable IIIF
+AnnotationPage produced by the builder:
+
+```js
+const builder = document.querySelector("mango-viewer");
+builder.config = {
+  story: {
+    save: {
+      handler: async (story) => {
+        await storiesDatabase.put(story);
+        return { ok: true, message: "Saved locally" };
+      },
+    },
+  },
+};
+```
+
+The current editable state and IIIF export can also be read on demand with
+`builder.getStory()` and `builder.exportStory()`. Both return `null` outside
+Story Builder mode or before the builder is ready. The `storySaveRequest` and
+`storyExport` events expose the same portable document when the corresponding
+toolbar actions are selected.
+
 ## Documentation
 
 The [Mango GitHub Wiki](https://github.com/Mango-IIIF/Mango/wiki) contains the

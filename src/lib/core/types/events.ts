@@ -4,6 +4,7 @@ import type { ChapterAnnotationTool } from './story';
 import type { MediaType } from '../../iiif/mediaResolver';
 import type { ModelPose } from './model';
 import type { ViewBox, ViewerStateSnapshot } from './viewer';
+import type { ExportEnvelope } from '../../story/storySerializer';
 
 export type ModelViewChange = {
   source?: string;
@@ -76,6 +77,10 @@ export type ViewerEventMap = {
    */
   stageFade: { opacity: number; durationMs: number };
   storyViewerError: { message: string; cause?: unknown };
+  /** The Story Builder Save action was requested with portable IIIF JSON. */
+  storySaveRequest: { story: ExportEnvelope };
+  /** The Story Builder Export action produced portable IIIF JSON. */
+  storyExport: { story: ExportEnvelope };
   pluginError: {
     pluginId: string;
     pluginLabel: string;

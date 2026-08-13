@@ -82,7 +82,7 @@ export const createStoryBuilderPlugins = (
     "story-builder-topbar",
     translate('plugins.storyBuilder.actions'),
     "top",
-    (target) => {
+    (target, ctx) => {
       const instance = mount(StoryBuilderTopBar, {
         target,
         props: {
@@ -99,8 +99,24 @@ export const createStoryBuilderPlugins = (
           onNarration: controller.openNarration,
           onPreview: controller.startPreview,
           onStopPreview: controller.stopPreview,
-          onSave: () => void controller.saveStory(),
-          onExport: controller.exportStory,
+          onSave: () => {
+            const validation = controller.saveExport();
+            if (validation.ok) {
+              ctx.events.emit('storySaveRequest', {
+                story: controller.getExportPayload(),
+              });
+            }
+            void controller.saveStory();
+          },
+          onExport: () => {
+            const result = controller.exportStory();
+            if (result.ok) {
+              ctx.events.emit('storyExport', {
+                story: controller.getExportPayload(),
+              });
+            }
+            return result;
+          },
         },
       });
       return { destroy: () => unmount(instance) };
