@@ -300,24 +300,51 @@
    */
   const trackBottomInset = (node: HTMLElement) => {
     const grid = node.closest('.viewer__grid') as HTMLElement | null;
-    const apply = () =>
-      grid?.style.setProperty('--builder-bottom-inset', `${node.offsetHeight}px`);
+    const stage = node.closest('.stage') as HTMLElement | null;
+    /*
+     * The footer floats just above the stage toolbar, so the toolbar's height
+     * is what sets its bottom offset; and while the footer is showing, the
+     * panels have to clear that offset and the footer's height. An empty
+     * footer is hidden and measures 0, and then there is nothing to clear.
+     */
+    let toolbar: HTMLElement | null = null;
+    const observer = new ResizeObserver(() => apply());
+    const apply = () => {
+      /*
+       * The toolbar only exists once a source is loaded, which is later than
+       * this footer mounts, so it is looked up until it is found and watched
+       * from then on.
+       */
+      if (!toolbar) {
+        toolbar = stage?.querySelector('.stage__toolbar--below') ?? null;
+        if (toolbar) observer.observe(toolbar);
+      }
+      const toolbarHeight = toolbar?.offsetHeight ?? 0;
+      stage?.style.setProperty('--builder-toolbar-inset', `${toolbarHeight}px`);
+      const height = node.offsetHeight;
+      grid?.style.setProperty(
+        '--builder-bottom-inset',
+        `${height > 0 ? height + toolbarHeight + 14 : 0}px`,
+      );
+    };
     apply();
     /*
      * The bar is empty until a tool fills it, and a resize observer on it alone
      * did not fire when that happened — it kept reporting the initial 0. The
      * mutation observer catches the plugin rendering into it, which is the
-     * moment the height actually changes.
+     * moment the height actually changes — and, on the stage, the toolbar
+     * arriving.
      */
-    const observer = new ResizeObserver(apply);
     observer.observe(node);
     const mutations = new MutationObserver(apply);
     mutations.observe(node, { childList: true, subtree: true });
+    if (stage) mutations.observe(stage, { childList: true, subtree: true });
     return {
       destroy() {
         observer.disconnect();
         mutations.disconnect();
         grid?.style.removeProperty('--builder-bottom-inset');
+        stage?.style.removeProperty('--builder-toolbar-inset');
       },
     };
   };
@@ -3507,7 +3534,7 @@
   .viewer--story-builder .viewer__grid--builder-overlay .panel-stack--right {
     position: absolute;
     inset-block-start: 14px;
-    /* Stops above the annotation footer rather than covering it. */
+    /* Stops above the floating footer rather than covering its ends. */
     inset-block-end: calc(var(--builder-bottom-inset, 0px) + 14px);
     /*
      * The panels carry `height: 100%` for their docked layout. On an absolutely
@@ -3906,24 +3933,37 @@
     padding-top: 8px;
   }
 
+  /*
+   * The authoring stage is one row the picture owns outright. The bottom-slot
+   * panels — annotations, the motion rail, narration, media timing — float
+   * over it rather than taking a row of their own, so opening or closing any
+   * of them leaves the artwork, and therefore the viewer's idea of the
+   * current view, exactly the same size. The chapters rail and the inspector
+   * already float for the same reason.
+   */
   .stage--story-builder {
-    /* Preserve a useful viewer while allowing content-aware authoring panels
-       to grow below it. If both no longer fit, this column becomes the scroll
-       owner instead of clipping the bottom of the editor. */
-    grid-template-rows: minmax(clamp(220px, 42cqh, 420px), 1fr) auto;
+    position: relative;
+    grid-template-rows: minmax(0, 1fr);
     align-content: stretch;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
-    scrollbar-gutter: stable;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
+  }
+
+  .stage--story-builder .stage__bottom {
+    position: absolute;
+    z-index: 7;
+    inset-inline: 14px;
+    /* Just above the stage toolbar, which keeps the zoom controls in reach. */
+    inset-block-end: calc(var(--builder-toolbar-inset, 0px) + 14px);
+    width: auto;
+    /* Grows upward with its content, never past the stage. */
+    max-block-size: calc(100% - var(--builder-toolbar-inset, 0px) - 28px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
   }
 
   /*
-   * The story builder opts out: it owns its own rows and scrolling (above), and
-   * this rule sits later in the sheet at equal specificity, so without the
-   * exclusion it silently reinstated `overflow: hidden` and clipped the bottom
-   * of the narration editor.
+   * Every other stage keeps the single-row layout it always had.
    */
   .stage--with-bottom-toolbar:not(.stage--story-builder) {
     grid-template-rows: minmax(0, 1fr);
@@ -4063,6 +4103,25 @@
      */
     .builder-panel-toggle {
       display: none;
+    }
+
+    /*
+     * The footer too: stacked, it takes a row under the picture again, and
+     * the stage becomes the scroll owner when the two no longer fit.
+     */
+    .stage--story-builder {
+      grid-template-rows: minmax(clamp(220px, 42cqh, 420px), 1fr) auto;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .stage--story-builder .stage__bottom {
+      position: static;
+      inset: auto;
+      width: 100%;
+      max-block-size: none;
+      overflow: visible;
+      box-shadow: none;
     }
 
     .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
