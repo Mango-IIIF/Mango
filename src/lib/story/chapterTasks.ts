@@ -39,13 +39,17 @@ const GROUP_FOR_TASK: Record<ChapterTaskId, InspectorGroup> = {
 export const inspectorGroupForTask = (task: ChapterTaskId): InspectorGroup => GROUP_FOR_TASK[task];
 
 const STAGE_TOOLS: ReadonlySet<ChapterTaskId> = new Set<ChapterTaskId>([
+  'position',
   'focus',
   'motion',
   'audio-timing',
   'media-timing',
 ]);
 
-/** Whether a task opens a tool on the stage — a bottom panel, a drawing mode. */
+/**
+ * Whether a task opens a tool on the stage — the frame's handles, a drawing
+ * mode, a bottom panel.
+ */
 export const isStageTool = (task: ChapterTaskId): boolean => STAGE_TOOLS.has(task);
 
 export type TaskAvailability =

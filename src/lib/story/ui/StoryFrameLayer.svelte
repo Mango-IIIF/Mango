@@ -160,6 +160,14 @@
 
   /** The grab band inside the frame's edge, in screen pixels. */
   const HALO_WIDTH_PX = 7;
+  /** The tag in the frame's corner, in screen pixels. */
+  const TAG_FONT_PX = 10;
+  const TAG_INSET_PX = 8;
+
+  const frameTag = (frame: StoryFrame | undefined): string =>
+    frame?.kind === 'keyframe'
+      ? translate('storyBuilder.frame.keyframeTag', { number: frame.label ?? '' })
+      : translate('storyBuilder.frame.label');
 
   const renderShape = (context: RenderContext): SVGElement | undefined => {
     if (context.annotation.type !== 'rect') return undefined;
@@ -185,8 +193,42 @@
      * test for a rectangle is its exact geometry, so the band is drawn inside
      * the edge rather than centred on it, where half of it would miss.
      */
-    draw('story-frame__halo', HALO_WIDTH_PX / 2 / scale);
+    /*
+     * While the frame is being adjusted, everything outside it is dimmed, the
+     * way a crop tool shows its box: the region a reader is guaranteed to see
+     * is then unmistakable even when the frame meets the stage's own edges.
+     * Hollow, and deaf to the pointer, so the picture under it still pans.
+     */
+    if (frame?.kind === 'chapter' && frame.editable && canvasWidth > 0 && canvasHeight > 0) {
+      const mask = document.createElementNS(SVG_NS, 'path');
+      mask.setAttribute(
+        'd',
+        `M0 0H${canvasWidth}V${canvasHeight}H0Z M${x} ${y}h${w}v${h}h${-w}Z`,
+      );
+      mask.setAttribute('fill-rule', 'evenodd');
+      mask.setAttribute('class', 'story-frame__mask');
+      mask.style.pointerEvents = 'none';
+      group.append(mask);
+    }
+    if (frame?.editable) draw('story-frame__halo', HALO_WIDTH_PX / 2 / scale);
     draw('story-frame__line', 0);
+    /*
+     * The tag sits just inside the top edge, centred, so it is on screen
+     * whenever that edge is and clear of the floating panels at either side —
+     * the editor's own label hangs above the edge, which is off the stage for
+     * any frame that reaches it. Drawn in canvas units scaled by the
+     * projection so it keeps one size on screen.
+     */
+    const tag = document.createElementNS(SVG_NS, 'text');
+    tag.textContent = frameTag(frame);
+    tag.setAttribute('x', String(x + w / 2));
+    tag.setAttribute('y', String(y + (TAG_INSET_PX + TAG_FONT_PX) / scale));
+    tag.setAttribute('text-anchor', 'middle');
+    tag.setAttribute('font-size', String(TAG_FONT_PX / scale));
+    tag.setAttribute('stroke-width', String(3 / scale));
+    tag.setAttribute('class', 'story-frame__tag');
+    tag.style.pointerEvents = 'none';
+    group.append(tag);
     group.setAttribute(
       'class',
       [
@@ -241,7 +283,7 @@
         activeColor: 'rgba(255, 255, 255, 0.95)',
       },
       config: {
-        handleSize: 10,
+        handleSize: 8,
         handleColor: '#ffffff',
         handleStrokeColor: 'rgba(15, 23, 42, 0.9)',
         hitTolerance: 9,
@@ -253,21 +295,8 @@
           storyFrame: context.annotation.id,
           storyFrameKind: frameById(context.annotation.id)?.kind ?? 'chapter',
         }),
-        label: (context) => {
-          const frame = frameById(context.annotation.id);
-          const text =
-            frame?.kind === 'keyframe'
-              ? frame.label
-              : (frame?.label ?? translate('storyBuilder.frame.label'));
-          return {
-            text,
-            placement: 'above',
-            minFontSize: 11,
-            maxFontSize: 12,
-            fontSize: 11,
-            className: `story-frame__label story-frame__label--${frame?.kind ?? 'chapter'}`,
-          };
-        },
+        // The tag is part of the shape (see renderShape); no floating label.
+        label: () => ({ visible: false }),
       },
       accessibleLabel: (shape) => {
         const frame = frameById(shape.id);
@@ -343,44 +372,48 @@
     cursor: move;
   }
 
+  /* A quiet guide: thin, a little translucent, and not in the pointer's way. */
   :global(.story-frame--passive) {
     pointer-events: none !important;
     cursor: default;
+    opacity: 0.7;
+  }
+
+  :global(.story-frame__mask) {
+    fill: rgba(6, 9, 14, 0.42);
   }
 
   :global(.story-frame__halo) {
-    stroke: rgba(10, 14, 20, 0.45);
+    stroke: rgba(10, 14, 20, 0.35);
     stroke-width: 7;
   }
 
   :global(.story-frame__line) {
     stroke: var(--story-builder-accent, #e07a3f);
-    stroke-width: 2;
+    stroke-width: 1.5;
   }
 
-  :global(.story-frame--selected .story-frame__line) {
-    stroke-width: 2.5;
+  :global(.story-frame--editable .story-frame__line) {
+    stroke-width: 2;
   }
 
   :global(.story-frame--keyframe .story-frame__line) {
     stroke: rgba(255, 255, 255, 0.92);
-    stroke-dasharray: 6 4;
   }
 
   :global(.story-frame--keyframe.story-frame--selected .story-frame__line) {
     stroke: var(--story-builder-accent, #e07a3f);
-    stroke-dasharray: none;
   }
 
-  :global(.story-frame--passive .story-frame__line) {
-    stroke-dasharray: 4 5;
-    opacity: 0.8;
-  }
-
-  :global(.story-frame__label) {
+  :global(.story-frame__tag) {
+    fill: #fff;
+    stroke: rgba(10, 14, 20, 0.85);
+    paint-order: stroke;
+    stroke-linejoin: round;
     font-family: inherit;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    user-select: none;
   }
 </style>

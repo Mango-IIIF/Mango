@@ -107,6 +107,7 @@ test("leaves the stage the same size whatever chrome the author opens", async ({
   };
 
   const groupFor: Record<string, string> = {
+    position: "about",
     focus: "about",
     motion: "timing",
     "audio-timing": "timing",
@@ -116,20 +117,25 @@ test("leaves the stage the same size whatever chrome the author opens", async ({
     await viewer.locator(`[data-testid="inspector-activate-${task}"]`).click();
   };
   const closeTool = async (task: string) => {
-    const section = viewer.locator(`[data-testid="inspector-section-${task}"]`);
-    // Drawing is a transaction with a Cancel; the rest just finish.
-    const cancel = section.locator('[data-testid="chapter-cancel"]');
-    if (await cancel.count()) {
-      await cancel.click();
+    // Every open tool has Done on the stage; the frame tool also sends the
+    // panels aside, so that is the one to use there.
+    if (task === "position") {
+      await viewer.locator('[data-testid="story-wide-done"]').click();
       return;
     }
-    await section.locator('[data-testid="chapter-save"]').click();
+    await viewer.locator(`[data-testid="inspector-done-${task}"]`).click();
   };
 
-  for (const task of ["focus", "motion", "audio-timing"]) {
+  for (const task of ["position", "focus", "motion", "audio-timing"]) {
     await openTool(task);
-    // The tool's own panel has appeared...
-    await expect(viewer.locator(".stage__bottom")).toBeVisible();
+    if (task === "position") {
+      // The frame tool lives on the stage itself: handles, the panels aside.
+      await expect(viewer.locator(".story-frame--editable")).toHaveCount(1);
+      await expect(viewer.locator(".viewer__grid--builder-left-collapsed")).toHaveCount(1);
+    } else {
+      // The tool's own panel has appeared...
+      await expect(viewer.locator(".stage__bottom")).toBeVisible();
+    }
     // ...and the picture has not flinched.
     await expectUnchanged(`opening ${task}`);
     await closeTool(task);
@@ -221,8 +227,6 @@ test("leaves an audio chapter's stage the same size when media timing opens", as
   await expect(viewer.locator(".stage__bottom")).toBeVisible();
   await expect.poll(measure, { message: "media area after opening media timing" }).toEqual(before);
 
-  await viewer
-    .locator('[data-testid="inspector-section-media-timing"] [data-testid="chapter-save"]')
-    .click();
+  await viewer.locator('[data-testid="inspector-done-media-timing"]').click();
   await expect.poll(measure, { message: "media area after closing media timing" }).toEqual(before);
 });

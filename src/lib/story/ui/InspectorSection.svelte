@@ -30,6 +30,8 @@
   export let active: boolean | undefined = undefined;
   export let onActivate: (() => void) | undefined = undefined;
   export let activateLabel = '';
+  /** Closes the open tool, keeping its edits. Shown in place of Edit while active. */
+  export let onDone: (() => void) | undefined = undefined;
 
   const statusIcons: Record<CompletionState, Component> = {
     empty: Circle,
@@ -94,6 +96,15 @@
           on:click={() => onActivate?.()}
         >
           {activateLabel || $t('storyBuilder.inspector.edit')}
+        </button>
+      {:else if active && onDone}
+        <button
+          class="inspector-section__activate inspector-section__activate--done"
+          type="button"
+          data-testid={`inspector-done-${id}`}
+          on:click={() => onDone?.()}
+        >
+          {$t('storyBuilder.inspector.done')}
         </button>
       {:else if active}
         <span class="inspector-section__live">{$t('storyBuilder.inspector.onStage')}</span>
@@ -228,6 +239,15 @@
 
   .inspector-section__activate:hover {
     background: color-mix(in srgb, var(--story-builder-accent, #e07a3f) 24%, transparent);
+  }
+
+  .inspector-section__activate--done {
+    background: var(--story-builder-accent, #e07a3f);
+    color: #fff;
+  }
+
+  .inspector-section__activate--done:hover {
+    background: var(--story-builder-accent-hover, #ff9d5c);
   }
 
   .inspector-section__live {

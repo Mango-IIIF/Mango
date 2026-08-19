@@ -229,7 +229,7 @@
     },
     "position": {
       "title": "Cadre",
-      "hint": "Faites glisser le cadre sur la scène pour le déplacer, ou ses poignées pour le redimensionner. Saisissez ici une région en pixels du canevas si vous en avez une.",
+      "hint": "Ajustez le cadre sur la scène : faites-le glisser pour le déplacer, ses poignées pour le redimensionner. Saisissez ici une région en pixels du canevas si vous en avez une.",
       "empty": "Aucun cadre pour l’instant. Saisissez une région en pixels du canevas pour en créer un.",
       "x": "X",
       "y": "Y",
@@ -391,9 +391,10 @@
       "showTools": "Afficher les outils du chapitre"
     },
     "frame": {
-      "label": "Cadre",
+      "label": "Cadre du chapitre",
       "chapterAria": "Cadre du chapitre",
-      "keyframeAria": "Cadre du point de caméra {number}"
+      "keyframeAria": "Cadre du point de caméra {number}",
+      "keyframeTag": "Point {number}"
     },
     "inspector": {
       "groupsLabel": "Inspecteur du chapitre",
@@ -412,7 +413,8 @@
       "narrationNone": "Aucun segment de narration pour {language}.",
       "narrationSummary": "{language} : {start}–{end}",
       "mediaSummary": "Lit {start}–{end} de la source.",
-      "mediaWhole": "Lit la source entière."
+      "mediaWhole": "Lit la source entière.",
+      "adjust": "Ajuster"
     }
   },
   "viewer": {

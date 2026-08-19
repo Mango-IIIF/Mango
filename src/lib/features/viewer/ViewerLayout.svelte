@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount, setContext } from 'svelte';
+  import { onDestroy, onMount, setContext, untrack } from 'svelte';
   import { get, writable } from 'svelte/store';
   import { t } from '../../core/i18n';
   import { normaliseViewerConfig } from '../../core/config/normalise';
@@ -454,6 +454,28 @@
    */
   let storyFrames = $state<StoryFrame[]>([]);
   let storyFrameSelection = $state<string | null>(null);
+  /*
+   * Adjusting the chapter frame is direct manipulation on the stage, and the
+   * floating panels cover the two sides of it — exactly where a frame's side
+   * handles land. While the frame has the handles the panels step aside, and
+   * come back as they were when the author is done. The toggles still work
+   * meanwhile for anyone who wants the numbers alongside.
+   */
+  let builderPanelsBeforeFrameTool: { left: boolean; right: boolean } | null = null;
+  $effect(() => {
+    const frameTool = isStoryBuilder && storyFrameSelection === 'chapter';
+    untrack(() => {
+      if (frameTool && !builderPanelsBeforeFrameTool) {
+        builderPanelsBeforeFrameTool = { left: builderLeftCollapsed, right: builderRightCollapsed };
+        builderLeftCollapsed = true;
+        builderRightCollapsed = true;
+      } else if (!frameTool && builderPanelsBeforeFrameTool) {
+        builderLeftCollapsed = builderPanelsBeforeFrameTool.left;
+        builderRightCollapsed = builderPanelsBeforeFrameTool.right;
+        builderPanelsBeforeFrameTool = null;
+      }
+    });
+  });
   let storyBuilderActiveAnnotationId = $state<string | null>(null);
   let effectiveAnnotationMode = $derived(canDrawAnnotations ? $annotationMode : 'edit');
   let viewerSettingsLayout = $state<'1x1' | '1x2' | '2x1' | '1x2-panel' | '2x2'>('1x1');

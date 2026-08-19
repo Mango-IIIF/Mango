@@ -229,7 +229,7 @@
     },
     "position": {
       "title": "フレーム",
-      "hint": "ステージ上のフレームをドラッグして移動し、ハンドルでサイズを変更します。領域が決まっている場合はキャンバスのピクセル単位でここに入力してください。",
+      "hint": "ステージ上でフレームを調整します。ドラッグして移動し、ハンドルでサイズを変更します。領域が決まっている場合はキャンバスのピクセル単位でここに入力してください。",
       "empty": "フレームはまだありません。キャンバスのピクセル単位で領域を入力して作成してください。",
       "x": "X",
       "y": "Y",
@@ -391,9 +391,10 @@
       "showTools": "チャプターツールを表示"
     },
     "frame": {
-      "label": "フレーム",
+      "label": "チャプターのフレーム",
       "chapterAria": "チャプターのフレーム",
-      "keyframeAria": "カメラポイント {number} のフレーム"
+      "keyframeAria": "カメラポイント {number} のフレーム",
+      "keyframeTag": "ポイント {number}"
     },
     "inspector": {
       "groupsLabel": "チャプターインスペクター",
@@ -412,7 +413,8 @@
       "narrationNone": "{language} のナレーション区間はありません。",
       "narrationSummary": "{language}: {start}–{end}",
       "mediaSummary": "ソースの {start}–{end} を再生します。",
-      "mediaWhole": "ソース全体を再生します。"
+      "mediaWhole": "ソース全体を再生します。",
+      "adjust": "調整"
     }
   },
   "viewer": {

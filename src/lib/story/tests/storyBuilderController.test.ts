@@ -1159,7 +1159,7 @@ describe("story builder chapter frame", () => {
   const lastSelection = (viewer: ReturnType<typeof createFrameViewer>) =>
     viewer.setStoryFrameSelection.mock.calls.at(-1)?.[0];
 
-  it("draws the selected chapter's frame on the stage, with the handles, at the story's aspect", () => {
+  it("draws the selected chapter's frame on the stage as a quiet guide, and hands it the handles in the Frame tool", () => {
     const controller = createStoryBuilderController({ initialStory: frameStory });
     const viewer = createFrameViewer();
     const events = createEventBus();
@@ -1172,15 +1172,22 @@ describe("story builder chapter frame", () => {
 
     controller.selectedChapterId.set("chapter-1");
 
+    // Always drawn, so a default nobody moved is visible — but quiet: no
+    // handles until the author opens the Frame tool, so it never reads as a
+    // selection nobody made and panning near its edge cannot move it.
     expect(lastFrames(viewer)).toEqual([
       {
         id: "chapter",
         kind: "chapter",
         viewBox: { x: 100, y: 100, w: 800, h: 400 },
         aspect: 2,
-        editable: true,
+        editable: false,
       },
     ]);
+    expect(lastSelection(viewer)).toBeNull();
+
+    controller.activeChapterTask.set("position");
+    expect(lastFrames(viewer)).toMatchObject([{ id: "chapter", editable: true }]);
     expect(lastSelection(viewer)).toBe("chapter");
     detach();
   });
@@ -1221,8 +1228,40 @@ describe("story builder chapter frame", () => {
     expect(lastSelection(viewer)).toBe("keyframe:kf-1");
 
     controller.activeChapterTask.set(null);
-    expect(lastFrames(viewer)).toMatchObject([{ id: "chapter", editable: true }]);
-    expect(lastSelection(viewer)).toBe("chapter");
+    expect(lastFrames(viewer)).toMatchObject([{ id: "chapter", editable: false }]);
+    expect(lastSelection(viewer)).toBeNull();
+    detach();
+  });
+
+  it("pulls the camera back around the frame when the Frame tool opens", async () => {
+    const controller = createStoryBuilderController({ initialStory: frameStory });
+    const viewer = createFrameViewer();
+    const events = createEventBus();
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+    controller.selectedChapterId.set("chapter-1");
+    viewer.setViewBox.mockClear();
+
+    controller.activeChapterTask.set("position");
+    // The move is animated over a few frames.
+    await new Promise((resolve) => setTimeout(resolve, 450));
+
+    // Selecting the chapter framed it edge to edge; adjusting wants room
+    // around it, so the view is widened about the frame's centre.
+    expect(viewer.setViewBox).toHaveBeenCalled();
+    const target = viewer.setViewBox.mock.calls.at(-1)?.[0] as {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+    };
+    expect(target.w).toBeGreaterThan(800);
+    expect(target.x + target.w / 2).toBeCloseTo(500, 6);
+    expect(target.y + target.h / 2).toBeCloseTo(300, 6);
     detach();
   });
 

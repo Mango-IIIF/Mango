@@ -1188,6 +1188,10 @@
               availability={evaluations["position"]?.availability ?? { state: "available" }}
               collapsed={Boolean(collapsedSections.position)}
               onToggle={() => toggleSection("position")}
+              active={$activeChapterTask === "position"}
+              activateLabel={$t('storyBuilder.inspector.adjust')}
+              onActivate={() => activateTool("position")}
+              onDone={finishTool}
             >
               {#if positionSectionAvailable}
                 <ChapterPositionSection
@@ -1211,6 +1215,7 @@
               active={$activeChapterTask === "focus"}
               activateLabel={$t('storyBuilder.inspector.draw')}
               onActivate={() => activateTool("focus")}
+              onDone={finishTool}
             >
               {#if $activeChapterTask === "focus"}
                 <div class="chapter-overlay__section">
@@ -1426,6 +1431,7 @@
               active={$activeChapterTask === "audio-timing"}
               activateLabel={$t('storyBuilder.inspector.edit')}
               onActivate={() => activateTool("audio-timing")}
+              onDone={finishTool}
             >
               {#if $activeChapterTask === "audio-timing"}
                 <div class="chapter-overlay__wide-tool-note">
@@ -1483,17 +1489,6 @@
                     onStopPreviewMedia={onStopPreviewMediaSegment}
                   />
                 </div>
-                <div class="chapter-inspector__tool-actions">
-                  <button
-                    class="chapter-overlay__button chapter-overlay__button--accent"
-                    type="button"
-                    data-testid="chapter-save"
-                    disabled={saveDisabled}
-                    on:click={finishTool}
-                  >
-                    {$t('storyBuilder.inspector.done')}
-                  </button>
-                </div>
               {:else}
                 <p class="chapter-overlay__hint" data-testid="inspector-summary-audio-timing">
                   {narrationSummary}
@@ -1511,6 +1506,7 @@
               active={$activeChapterTask === "motion"}
               activateLabel={$t('storyBuilder.inspector.edit')}
               onActivate={() => activateTool("motion")}
+              onDone={finishTool}
             >
               {#if $activeChapterTask === "motion"}
                 <ChapterMotionPanel
@@ -1525,17 +1521,6 @@
                   onPreview={() => onPreviewMotion?.()}
                   onStopPreview={() => onStopMotionPreview?.()}
                 />
-                <div class="chapter-inspector__tool-actions">
-                  <button
-                    class="chapter-overlay__button chapter-overlay__button--accent"
-                    type="button"
-                    data-testid="chapter-save"
-                    disabled={saveDisabled}
-                    on:click={finishTool}
-                  >
-                    {$t('storyBuilder.inspector.done')}
-                  </button>
-                </div>
               {:else}
                 <p class="chapter-overlay__hint" data-testid="inspector-summary-motion">
                   {motionSummary}
@@ -1553,6 +1538,7 @@
               active={$activeChapterTask === "media-timing"}
               activateLabel={$t('storyBuilder.inspector.edit')}
               onActivate={() => activateTool("media-timing")}
+              onDone={finishTool}
             >
               {#if $activeChapterTask === "media-timing"}
                 <div class="chapter-overlay__section-title">
@@ -1587,17 +1573,6 @@
                       {$t('storyBuilder.media.autoSaveHint')}
                     </li>
                   </ul>
-                </div>
-                <div class="chapter-inspector__tool-actions">
-                  <button
-                    class="chapter-overlay__button chapter-overlay__button--accent"
-                    type="button"
-                    data-testid="chapter-save"
-                    disabled={saveDisabled}
-                    on:click={finishTool}
-                  >
-                    {$t('storyBuilder.inspector.done')}
-                  </button>
                 </div>
               {:else}
                 <p class="chapter-overlay__hint" data-testid="inspector-summary-media-timing">

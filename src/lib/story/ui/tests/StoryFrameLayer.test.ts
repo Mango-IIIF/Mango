@@ -89,7 +89,8 @@ describe('StoryFrameLayer', () => {
     }
     expect(shape.querySelector('.story-frame__line')).toBeTruthy();
     expect(shape.querySelector('.story-frame__halo')).toBeTruthy();
-    expect(viewer.container.querySelector('.story-frame__label')?.textContent).toBe('Frame');
+    // Tagged inside its own corner, where it stays on screen.
+    expect(shape.querySelector('.story-frame__tag')?.textContent).toBe('Chapter frame');
     // Selected from the start, so the handles are there to take hold of.
     expect(handle('se')).toBeTruthy();
     expect(handle('e')).toBeTruthy();
@@ -192,10 +193,10 @@ describe('StoryFrameLayer', () => {
 
     const keyframe = viewer.container.querySelector('.story-frame--keyframe') as SVGGElement;
     expect(keyframe.classList.contains('story-frame--selected')).toBe(true);
-    const labels = [...viewer.container.querySelectorAll('.story-frame__label')].map(
-      (label) => label.textContent,
+    const tags = [...viewer.container.querySelectorAll('.story-frame__tag')].map(
+      (tag) => tag.textContent,
     );
-    expect(labels).toContain('1');
+    expect(tags).toContain('Point 1');
     expect(handle('nw')).toBeTruthy();
     cleanup();
   });

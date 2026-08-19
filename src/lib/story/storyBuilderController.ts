@@ -496,7 +496,33 @@ export const createStoryBuilderController = (
     selectedDrawingAnnotationId.set(null);
     viewer?.setAnnotationTool?.("select");
     viewer?.setStoryAnnotationEditing?.(false);
+    if (task === "position") revealFrameForAdjusting();
   });
+
+  /**
+   * Selecting a chapter flies the camera to its frame, so the frame fills the
+   * stage exactly and its handles sit on the stage's own edges — nothing to
+   * take hold of, and nothing outside it to see. Opening the Frame tool pulls
+   * back so the frame sits inside the stage with room around it, the way a
+   * crop tool shows its box. The room is wider than it is tall because the
+   * chapters rail and the inspector float over the stage's sides; the side
+   * handles have to land between them. The camera is still free afterwards,
+   * and a frame that already fills the picture cannot pull back past it.
+   */
+  const FRAME_ADJUST_MARGIN_X = 0.45;
+  const FRAME_ADJUST_MARGIN_Y = 0.12;
+  const revealFrameForAdjusting = () => {
+    const chapterId = get(selectedChapterId);
+    const chapter = get(storyStore).chapters.find((entry) => entry.id === chapterId);
+    const frame = chapter?.viewBox;
+    if (!frame || !viewer) return;
+    animateViewBox({
+      x: frame.x - frame.w * FRAME_ADJUST_MARGIN_X,
+      y: frame.y - frame.h * FRAME_ADJUST_MARGIN_Y,
+      w: frame.w * (1 + FRAME_ADJUST_MARGIN_X * 2),
+      h: frame.h * (1 + FRAME_ADJUST_MARGIN_Y * 2),
+    });
+  };
 
   const preview = createStoryPreviewOrchestrator({
     getStory: () => get(storyStore),
@@ -1520,12 +1546,13 @@ export const createStoryBuilderController = (
    * What the stage draws as frames.
    *
    * The chapter frame is always there for a spatial chapter — a default
-   * nobody moved is visible rather than silently recorded — and it is the
-   * thing with handles unless the author is working on something else on the
-   * canvas: drawing annotations, or placing camera points, when it steps back
-   * to a passive outline and the keyframes take the handles instead. Nothing
-   * is drawn while a preview is driving the viewer or a text box is being
-   * placed, because then the stage is not the author's to edit.
+   * nobody moved is visible rather than silently recorded — but as a quiet
+   * guide: it only takes the handles while the author has the Frame tool
+   * open, so the outline never reads as a selection nobody made and panning
+   * near its edge never moves it by accident. Keyframes take the handles in
+   * the Motion tool. Nothing is drawn while a preview is driving the viewer
+   * or a text box is being placed, because then the stage is not the author's
+   * to edit.
    */
   const CHAPTER_FRAME_ID = "chapter";
   const KEYFRAME_FRAME_PREFIX = "keyframe:";
@@ -1573,7 +1600,7 @@ export const createStoryBuilderController = (
           kind: "chapter",
           viewBox: chapter.viewBox,
           aspect,
-          editable: $task !== "focus" && $task !== "motion",
+          editable: $task === "position",
         },
       ];
       if ($task === "motion") {
@@ -1594,9 +1621,9 @@ export const createStoryBuilderController = (
           ? $motionPoint
             ? `${KEYFRAME_FRAME_PREFIX}${$motionPoint}`
             : null
-          : $task === "focus"
-            ? null
-            : CHAPTER_FRAME_ID;
+          : $task === "position"
+            ? CHAPTER_FRAME_ID
+            : null;
       return { frames, selection };
     },
   );

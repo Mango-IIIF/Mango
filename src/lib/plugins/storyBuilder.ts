@@ -252,6 +252,7 @@ export const createStoryBuilderPlugins = (
           onDeleteDrawingAnnotation: controller.deleteChapterDrawingAnnotation,
           onEditDrawingAnnotation: controller.editChapterDrawingAnnotation,
           selectedPointId: controller.selectedMotionPointId,
+          onDone: controller.saveChapterSettings,
           onAddPoint: controller.addMotionPoint,
           onDeletePoint: controller.deleteMotionPoint,
           onGoToPoint: controller.goToMotionPoint,

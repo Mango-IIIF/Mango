@@ -229,7 +229,7 @@
     },
     "position": {
       "title": "Frame",
-      "hint": "Drag the frame on the stage to move it, or its handles to resize it. Type a region here in canvas pixels if you have one.",
+      "hint": "Adjust the frame on the stage: drag it to move, its handles to resize. Type a region here in canvas pixels if you have one.",
       "empty": "No frame yet. Type a region in canvas pixels to create one.",
       "x": "X",
       "y": "Y",
@@ -391,9 +391,10 @@
       "showTools": "Show chapter tools"
     },
     "frame": {
-      "label": "Frame",
+      "label": "Chapter frame",
       "chapterAria": "Chapter frame",
-      "keyframeAria": "Camera point {number} frame"
+      "keyframeAria": "Camera point {number} frame",
+      "keyframeTag": "Point {number}"
     },
     "inspector": {
       "groupsLabel": "Chapter inspector",
@@ -412,7 +413,8 @@
       "narrationNone": "No narration segment for {language}.",
       "narrationSummary": "{language}: {start}–{end}",
       "mediaSummary": "Plays {start}–{end} of the source.",
-      "mediaWhole": "Plays the whole source."
+      "mediaWhole": "Plays the whole source.",
+      "adjust": "Adjust"
     }
   },
   "viewer": {

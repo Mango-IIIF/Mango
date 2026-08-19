@@ -67,9 +67,7 @@ test("previews saved chapter motion without showing authoring frames", async ({
   ).toHaveCount(1);
 
   await expect(page.locator(".story-wide-authoring__point")).toHaveCount(2);
-  await page
-    .locator('[data-testid="inspector-section-motion"] [data-testid="chapter-save"]')
-    .click();
+  await page.locator('[data-testid="inspector-done-motion"]').click();
   await expect(page.locator(".story-wide-authoring")).toHaveCount(0);
   // Out of the motion tool the keyframes leave the stage; the chapter frame stays.
   await expect(page.locator(".story-frame--keyframe")).toHaveCount(0);

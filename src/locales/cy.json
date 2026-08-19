@@ -229,7 +229,7 @@
     },
     "position": {
       "title": "Ffrâm",
-      "hint": "Llusgwch y ffrâm ar y llwyfan i'w symud, neu ei dolenni i newid ei maint. Teipiwch ranbarth yma mewn picseli'r cynfas os oes gennych un.",
+      "hint": "Addaswch y ffrâm ar y llwyfan: llusgwch hi i’w symud, a’i dolenni i newid ei maint. Teipiwch ranbarth yma mewn picseli’r cynfas os oes gennych un.",
       "empty": "Dim ffrâm eto. Teipiwch ranbarth mewn picseli'r cynfas i greu un.",
       "x": "X",
       "y": "Y",
@@ -391,9 +391,10 @@
       "showTools": "Dangos offer y bennod"
     },
     "frame": {
-      "label": "Ffrâm",
+      "label": "Ffrâm y bennod",
       "chapterAria": "Ffrâm y bennod",
-      "keyframeAria": "Ffrâm pwynt camera {number}"
+      "keyframeAria": "Ffrâm pwynt camera {number}",
+      "keyframeTag": "Pwynt {number}"
     },
     "inspector": {
       "groupsLabel": "Arolygydd y bennod",
@@ -412,7 +413,8 @@
       "narrationNone": "Dim segment adrodd ar gyfer {language}.",
       "narrationSummary": "{language}: {start}–{end}",
       "mediaSummary": "Yn chwarae {start}–{end} o'r ffynhonnell.",
-      "mediaWhole": "Yn chwarae'r ffynhonnell gyfan."
+      "mediaWhole": "Yn chwarae'r ffynhonnell gyfan.",
+      "adjust": "Addasu"
     }
   },
   "viewer": {

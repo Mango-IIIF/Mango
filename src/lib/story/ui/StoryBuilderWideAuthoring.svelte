@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MapPin, Plus, Trash2 } from "@lucide/svelte";
+  import { Check, MapPin, Plus, Trash2 } from "@lucide/svelte";
   import { readable, type Readable } from "svelte/store";
   import type { ChapterCameraTrack, StoryState } from "../../core/types/story";
   import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
@@ -36,6 +36,12 @@
   export let onGoToPoint: (keyframeId: string) => void;
   /** The point whose frame currently carries the handles on the stage. */
   export let selectedPointId: Readable<string | null> = readable(null);
+  /**
+   * Closes the open tool, keeping its edits. The panel floats over the stage,
+   * so it has to carry its own way out — the inspector's Done may be in
+   * another group, scrolled away, or collapsed with the panel.
+   */
+  export let onDone: (() => void) | undefined = undefined;
 
   $: chapter =
     $story.chapters.find((entry) => entry.id === $selectedChapterId) ?? null;
@@ -64,6 +70,21 @@
     return $t('storyBuilder.motion.zoomValue', { zoom: zoom.toFixed(2) });
   };
 </script>
+
+{#if chapter && ($activeTask === "position" || $activeTask === "motion" || $activeTask === "audio-timing" || $activeTask === "media-timing" || $activeTask === "focus")}
+  <!-- One way out, whatever the tool: finishes it and keeps its edits. -->
+  <button
+    class="story-wide-done"
+    type="button"
+    data-testid="story-wide-done"
+    aria-label={$t('storyBuilder.inspector.done')}
+    title={$t('storyBuilder.inspector.done')}
+    on:click={() => onDone?.()}
+  >
+    <Check aria-hidden="true" />
+    <span>{$t('storyBuilder.inspector.done')}</span>
+  </button>
+{/if}
 
 {#if chapter && $activeTask === "motion"}
   <section
@@ -162,6 +183,9 @@
     onDeleteDrawing={onDeleteDrawingAnnotation}
     onEditDrawing={onEditDrawingAnnotation}
   />
+{:else if chapter && $activeTask === "position"}
+  <!-- The frame tool lives on the stage; its footer is just the way out. -->
+  <div class="story-wide-authoring--bare" aria-hidden="true"></div>
 {:else}
   <div class="story-wide-authoring--empty" aria-hidden="true"></div>
 {/if}
@@ -170,6 +194,50 @@
 
   :global(.stage__bottom:has(.story-wide-authoring--empty)) {
     display: none;
+  }
+  :global(.stage__bottom:has(.story-wide-done)) {
+    position: relative;
+  }
+  :global(.stage__bottom:has(.story-wide-authoring--bare)) {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  :global(.stage__bottom:has(.story-wide-authoring--bare) .plugin-panel__panel) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  :global(.stage__bottom:has(.story-wide-authoring--bare) .plugin-panel__title) {
+    display: none;
+  }
+  .story-wide-done {
+    position: absolute;
+    z-index: 2;
+    inset-block-start: 10px;
+    inset-inline-end: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px 6px 9px;
+    border: 1px solid color-mix(in srgb, var(--story-builder-accent, #e07a3f) 60%, transparent);
+    border-radius: 9px;
+    background: var(--story-builder-accent, #e07a3f);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  }
+  .story-wide-done:hover {
+    background: var(--story-builder-accent-hover, #ff9d5c);
+  }
+  .story-wide-done :global(svg) {
+    width: 13px;
+    height: 13px;
   }
   :global(.stage__bottom:has(.story-wide-authoring)) {
     padding: 0;

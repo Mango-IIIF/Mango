@@ -229,7 +229,7 @@
     },
     "position": {
       "title": "Encuadre",
-      "hint": "Arrastre el encuadre en el escenario para moverlo, o sus tiradores para cambiar su tamaño. Escriba aquí una región en píxeles del lienzo si ya la tiene.",
+      "hint": "Ajuste el encuadre en el escenario: arrástrelo para moverlo y use sus tiradores para cambiar su tamaño. Escriba aquí una región en píxeles del lienzo si ya la tiene.",
       "empty": "Aún no hay encuadre. Escriba una región en píxeles del lienzo para crearlo.",
       "x": "X",
       "y": "Y",
@@ -391,9 +391,10 @@
       "showTools": "Mostrar herramientas del capítulo"
     },
     "frame": {
-      "label": "Encuadre",
+      "label": "Encuadre del capítulo",
       "chapterAria": "Encuadre del capítulo",
-      "keyframeAria": "Encuadre del punto de cámara {number}"
+      "keyframeAria": "Encuadre del punto de cámara {number}",
+      "keyframeTag": "Punto {number}"
     },
     "inspector": {
       "groupsLabel": "Inspector del capítulo",
@@ -412,7 +413,8 @@
       "narrationNone": "Sin segmento de narración para {language}.",
       "narrationSummary": "{language}: {start}–{end}",
       "mediaSummary": "Reproduce {start}–{end} de la fuente.",
-      "mediaWhole": "Reproduce la fuente completa."
+      "mediaWhole": "Reproduce la fuente completa.",
+      "adjust": "Ajustar"
     }
   },
   "viewer": {
