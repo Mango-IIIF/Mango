@@ -11,6 +11,17 @@
     h: '',
   };
   export let currentViewBox: ViewBox | null = null;
+  /**
+   * What the chapter actually holds, as opposed to what is in the fields.
+   *
+   * The two differ on purpose: a framing is stored at the story's presentation
+   * aspect, so typing a region straight from a IIIF recipe gets four different
+   * numbers back. That is deliberate — it is what keeps chapters comparable —
+   * but with nothing on screen saying so, the obvious reading is that the
+   * editor mangled the input, or that the author has misunderstood IIIF
+   * regions. Showing the stored value next to the typed one is the whole fix.
+   */
+  export let savedViewBox: ViewBox | null = null;
   export let captureAcknowledged = false;
 
   export let onToggle: (() => void) | undefined = undefined;
@@ -106,6 +117,17 @@
       </button>
     </div>
 
+    {#if savedViewBox}
+      <p class="chapter-position__current" data-testid="chapter-position-stored">
+        {$t('storyBuilder.position.stored', {
+          x: round(savedViewBox.x),
+          y: round(savedViewBox.y),
+          w: round(savedViewBox.w),
+          h: round(savedViewBox.h),
+        })}
+      </p>
+    {/if}
+
     {#if currentViewBox}
       <p class="chapter-position__current" data-testid="chapter-position-current">
         {$t('storyBuilder.position.current', {
@@ -116,6 +138,10 @@
         })}
       </p>
     {/if}
+
+    <p class="chapter-position__note" data-testid="chapter-position-note">
+      {$t('storyBuilder.position.normalisedNote')}
+    </p>
   </div>
 </section>
 
@@ -141,5 +167,13 @@
     margin: 10px 0 0;
     font-size: 11px;
     color: var(--viewer-muted, #9aa6b2);
+  }
+
+  .chapter-position__note {
+    margin: 10px 0 0;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--viewer-muted, #9aa6b2);
+    opacity: 0.85;
   }
 </style>

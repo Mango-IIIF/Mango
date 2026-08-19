@@ -53,6 +53,10 @@ export type MangoViewerState = {
   canvasIndex?: number;
   presentationAspect?: number;
   canvasId?: string;
+  /**
+   * @deprecated Superseded by the chapter target's `xywh` fragment. Read so
+   * stories written before the move keep their exact framing; never written.
+   */
   viewBox?: ViewBox;
   modelPose?: ChapterModel;
   modelOptions?: ModelPoseOptions;
@@ -60,6 +64,10 @@ export type MangoViewerState = {
   annotationPlacement?: AnnotationPlacement;
   playback?: MangoStoryPlayback;
   cameraTrack?: Chapter["cameraTrack"];
+  /**
+   * @deprecated Superseded by the standalone overlay annotations in `items`.
+   * Read for stories written before the move; never written.
+   */
   drawingAnnotations?: ChapterDrawingAnnotation[];
 };
 
@@ -383,14 +391,26 @@ export const createMangoViewerStateBody = (
    * plenty are not — `…/canvas/model`, or the cookbook's `…/canvas/p1` — so
    * for those the index is nowhere else at all.
    *
-   * `viewBox` stays despite the target fragment holding the same framing,
-   * because the fragment is whole pixels and this is not. Its job here is
-   * restoring precision, not storing the framing.
+   * `viewBox` and `drawingAnnotations` are gone for the opposite reason: IIIF
+   * can already say both — the chapter target's `xywh` fragment and the
+   * standalone overlay annotations — and while this body also said them, the
+   * private copy was the one Mango read. That left the published geometry
+   * unexercised, and left the same drawing arriving from two places to be
+   * reconciled, which is what let a phantom rectangle accumulate on every
+   * save. What stays here is only what IIIF has no vocabulary for.
+   *
+   * The framing loses its fractional part in the move, once. `xywh` is defined
+   * over integers, and `normaliseViewBox` preserves centre and area, so a
+   * rounded framing re-normalises onto the same integers rather than creeping.
+   *
+   * It also loses a negative origin, which a chapter framing the whole work
+   * routinely has — but only on paper. `xywh` values are non-negative, and
+   * `OSDViewer.setViewBox` already clamps a stored framing to the image the
+   * same way before showing it, so the part being dropped was never on screen.
    */
   const state: MangoViewerState = {
       canvasIndex: chapter.canvasIndex,
       ...(presentationAspect !== undefined ? { presentationAspect } : {}),
-      ...(chapter.viewBox ? { viewBox: chapter.viewBox } : {}),
       ...(chapter.model ? { modelPose: chapter.model } : {}),
       ...(chapter.modelOptions ? { modelOptions: chapter.modelOptions } : {}),
       ...(chapter.layerOpacities
@@ -400,9 +420,6 @@ export const createMangoViewerStateBody = (
         ? { annotationPlacement: chapter.annotationPlacement }
         : {}),
       ...(chapter.cameraTrack ? { cameraTrack: chapter.cameraTrack } : {}),
-      ...(chapter.drawingAnnotations
-        ? { drawingAnnotations: chapter.drawingAnnotations }
-        : {}),
       playback,
   };
   /*

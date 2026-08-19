@@ -63,6 +63,8 @@
     validateStoryViewer,
     type StoryWithDefaults,
   } from '../../story/viewer/storyLoader';
+  import { findPresentationRoot } from '../../story/presentationFrame';
+  import { requestStoryCapture } from '../../story/storyStageActions';
   import { createStoryViewerRuntime } from '../../story/viewer/storyViewerController';
   import { createStoryPlayback } from '../../story/viewer/storyPlayback.svelte';
   import { ViewportState, VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
@@ -72,7 +74,7 @@
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
-  import { ChevronsRight, Expand, Shrink } from '@lucide/svelte';
+  import { ChevronsRight, Expand, PanelLeft, PanelRight, Shrink } from '@lucide/svelte';
   import {
     isViewerSettingsTheme,
     setViewerContext,
@@ -272,6 +274,73 @@
   let showToolsEffective = $derived($showTools && $allowTools);
   const toolbarAboveMedia = false;
   let isStoryViewer = $derived(mode === 'story-viewer');
+  let viewerRootEl: HTMLElement | null = $state(null);
+  /*
+   * The authoring stage is the thing being edited, so it gets the whole width
+   * and the panels float above it. Collapsing them is how an author checks a
+   * framing against what a reader will actually see.
+   */
+  let builderLeftCollapsed = $state(false);
+  let builderRightCollapsed = $state(false);
+  /*
+   * The authoring footer lists this chapter's annotations and is how you pick
+   * one to edit. The floating panels are siblings of the stage, so left alone
+   * they run the full height of the grid and cover it at both ends — the list
+   * is still there, just unreachable. Measuring the bar keeps the panels above
+   * it whatever it is currently showing.
+   */
+  /*
+   * The authoring footer lists this chapter's annotations and is how you pick
+   * one to edit. The floating panels are siblings of the stage, so left alone
+   * they run the full height of the grid and cover it at both ends — the list
+   * is still there, just unreachable.
+   *
+   * The height is written straight to the grid as a custom property rather
+   * than through component state. `bind:offsetHeight` and an `$effect` both
+   * failed to propagate for this element inside the custom element's shadow
+   * tree, reporting 0 while the bar was plainly 109px tall; an observer that
+   * owns the write has nothing in between to lose it.
+   */
+  const trackBottomInset = (node: HTMLElement) => {
+    const grid = node.closest('.viewer__grid') as HTMLElement | null;
+    const apply = () =>
+      grid?.style.setProperty('--builder-bottom-inset', `${node.offsetHeight}px`);
+    apply();
+    /*
+     * The bar is empty until a tool fills it, and a resize observer on it alone
+     * did not fire when that happened — it kept reporting the initial 0. The
+     * mutation observer catches the plugin rendering into it, which is the
+     * moment the height actually changes.
+     */
+    const observer = new ResizeObserver(apply);
+    observer.observe(node);
+    const mutations = new MutationObserver(apply);
+    mutations.observe(node, { childList: true, subtree: true });
+    return {
+      destroy() {
+        observer.disconnect();
+        mutations.disconnect();
+        grid?.style.removeProperty('--builder-bottom-inset');
+      },
+    };
+  };
+
+  let saveViewAcknowledged = $state(false);
+  let saveViewTimer: ReturnType<typeof setTimeout> | null = null;
+  /*
+   * One click, from where the author is already zooming. The panel route still
+   * exists for typing exact numbers; this is for the common case of "frame it
+   * by eye, keep that".
+   */
+  const handleSaveView = () => {
+    requestStoryCapture(findPresentationRoot(viewerRootEl));
+    saveViewAcknowledged = true;
+    if (saveViewTimer) clearTimeout(saveViewTimer);
+    saveViewTimer = setTimeout(() => {
+      saveViewAcknowledged = false;
+      saveViewTimer = null;
+    }, 1600);
+  };
   let isStoryBuilder = $derived(mode === 'story-builder');
   let isAnnotationEditor = $derived(mode === 'annotation-editor');
   let annotationLanguages = $derived(
@@ -495,9 +564,17 @@
   let isViewerFullscreenFallback = $state(false);
   let storyChapterThumbnails: Array<string | null> = $state([]);
   const storyThumbnailCache = new Map<string, string>();
+  /*
+   * The fallback is a display string and stays one. It used to be reached only
+   * by a story whose label was missing entirely, which was rare because the
+   * export wrote a placeholder label for untitled stories — and that
+   * placeholder came back as a real title on the next load. Now an untitled
+   * story stays untitled, so this is the path an untitled story actually
+   * takes, and it has to be translated like any other piece of interface.
+   */
   let storyTitle = $derived.by(() => {
     const resolvedTitle = resolveLanguageValue(storyData?.title, storyLanguage);
-    return resolvedTitle || 'Untitled story';
+    return resolvedTitle || $t('storyBuilder.settings.untitled');
   });
   const storyViewBoxStore = writable<ViewBox | null>(null);
   const EMPTY_STORY: StoryWithDefaults = Object.freeze({
@@ -2004,6 +2081,7 @@
 </script>
 
 <div
+  bind:this={viewerRootEl}
   class="viewer"
   class:viewer--story-viewer={isStoryViewer}
   class:viewer--story-builder={isStoryBuilder}
@@ -2080,12 +2158,16 @@
 
   <div
     class="viewer__grid"
-    class:viewer__grid--controls={showControlRail}
+    class:viewer__grid--builder-overlay={isStoryBuilder}
+    class:viewer__grid--builder-left-collapsed={isStoryBuilder && builderLeftCollapsed}
+    class:viewer__grid--builder-right-collapsed={isStoryBuilder && builderRightCollapsed}
+    class:viewer__grid--controls={showControlRail && !isStoryBuilder}
     class:viewer__grid--nav-compact={showControlRail &&
+      !isStoryBuilder &&
       (leftVisibleEffective || showManifestManager) &&
       !isMobileLayout}
-    class:viewer__grid--left={leftVisibleEffective}
-    class:viewer__grid--right={rightVisibleEffective}
+    class:viewer__grid--left={leftVisibleEffective && !isStoryBuilder}
+    class:viewer__grid--right={rightVisibleEffective && !isStoryBuilder}
     class:viewer__grid--sidebar-right={sidebarPosition === 'right'}
   >
     {#if showControlRail}
@@ -2194,6 +2276,7 @@
           >
             {#snippet stage()}
               <div class="stage__story-slot">
+                <div class="stage__presentation-frame">
                 <Stage
                   bind:this={stageRef}
                   bind:canZoom
@@ -2229,6 +2312,7 @@
                   chapterId={storyCurrentChapterId}
                   language={storyLanguage}
                 />
+                </div>
               </div>
             {/snippet}
           </StoryControlsStageComponent>
@@ -2358,6 +2442,8 @@
                   totalCanvases={$canvases.length}
                   {zoomPercent}
                   rotation={$rotation}
+                  onsaveView={isStoryBuilder ? handleSaveView : undefined}
+                  {saveViewAcknowledged}
                   onhome={handleHome}
                   onzoomIn={handleZoomIn}
                   onzoomOut={handleZoomOut}
@@ -2408,6 +2494,8 @@
                 {hasSource}
                 placement="above"
                 mediaType={$mediaType}
+                onsaveView={isStoryBuilder ? handleSaveView : undefined}
+                {saveViewAcknowledged}
                 selectedCanvasIndex={$selectedCanvasIndex}
                 totalCanvases={$canvases.length}
                 {zoomPercent}
@@ -2485,6 +2573,8 @@
                 {hasSource}
                 placement="below"
                 mediaType={$mediaType}
+                onsaveView={isStoryBuilder ? handleSaveView : undefined}
+                {saveViewAcknowledged}
                 selectedCanvasIndex={$selectedCanvasIndex}
                 totalCanvases={$canvases.length}
                 {zoomPercent}
@@ -2514,7 +2604,7 @@
           {/if}
 
           {#if $pluginSlots.bottom.length > 0}
-            <div class="stage__bottom">
+            <div class="stage__bottom" use:trackBottomInset>
               <PluginSlot plugins={$pluginSlots.bottom} {pluginContext} />
             </div>
           {/if}
@@ -2545,6 +2635,40 @@
           />
         {/if}
       </main>
+    {/if}
+
+    {#if isStoryBuilder}
+      <button
+        class="builder-panel-toggle builder-panel-toggle--left"
+        type="button"
+        data-testid="builder-toggle-chapters"
+        aria-expanded={!builderLeftCollapsed}
+        aria-label={builderLeftCollapsed
+          ? $t('storyBuilder.panels.showChapters')
+          : $t('storyBuilder.panels.hideChapters')}
+        title={builderLeftCollapsed
+          ? $t('storyBuilder.panels.showChapters')
+          : $t('storyBuilder.panels.hideChapters')}
+        onclick={() => (builderLeftCollapsed = !builderLeftCollapsed)}
+      >
+        <PanelLeft class="builder-panel-toggle__icon" aria-hidden="true" strokeWidth={1.8} />
+      </button>
+
+      <button
+        class="builder-panel-toggle builder-panel-toggle--right"
+        type="button"
+        data-testid="builder-toggle-tools"
+        aria-expanded={!builderRightCollapsed}
+        aria-label={builderRightCollapsed
+          ? $t('storyBuilder.panels.showTools')
+          : $t('storyBuilder.panels.hideTools')}
+        title={builderRightCollapsed
+          ? $t('storyBuilder.panels.showTools')
+          : $t('storyBuilder.panels.hideTools')}
+        onclick={() => (builderRightCollapsed = !builderRightCollapsed)}
+      >
+        <PanelRight class="builder-panel-toggle__icon" aria-hidden="true" strokeWidth={1.8} />
+      </button>
     {/if}
 
     {#if !isStoryViewer && rightVisibleEffective}
@@ -3356,6 +3480,118 @@
     column-gap: 0;
   }
 
+  /*
+   * Story builder: one full-width stage with the panels floating above it.
+   *
+   * Docked panels took roughly 60% of the window, so the author composed in a
+   * tall narrow box and the reader saw a wide one — the framing that looked
+   * right while editing was never the framing they got. Overlaying the panels
+   * gives the stage the shape a reader's does, and collapsing them is how you
+   * check a chapter against the real thing without leaving the editor.
+   */
+  .viewer__grid--builder-overlay {
+    position: relative;
+    --builder-panel-inline: min(340px, 30vw);
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+
+  /*
+   * Scoped through `.viewer--story-builder` for specificity, not decoration:
+   * the sidebar sets `.panel-stack--left:has(.story-sidebar) { height: 100% }`,
+   * which ties this rule and wins on source order, leaving the panel full
+   * height and covering the annotation footer.
+   */
+  .viewer--story-builder .viewer__grid--builder-overlay :global(.panel-stack--left),
+  .viewer--story-builder .viewer__grid--builder-overlay .panel-stack--right {
+    position: absolute;
+    inset-block-start: 14px;
+    /* Stops above the annotation footer rather than covering it. */
+    inset-block-end: calc(var(--builder-bottom-inset, 0px) + 14px);
+    /*
+     * The panels carry `height: 100%` for their docked layout. On an absolutely
+     * positioned box that over-constrains the insets and the height wins, so
+     * the panel ran past the footer regardless of where its bottom was set.
+     */
+    height: auto;
+    inline-size: var(--builder-panel-inline);
+    z-index: 6;
+    /* Readable over the artwork without hiding it completely. */
+    background: color-mix(in srgb, var(--viewer-panel) 92%, transparent);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+    transition:
+      transform 0.22s ease,
+      opacity 0.22s ease;
+  }
+
+  .viewer__grid--builder-overlay :global(.panel-stack--left) {
+    inset-inline-start: 14px;
+  }
+
+  .viewer__grid--builder-overlay .panel-stack--right {
+    inset-inline-end: 14px;
+  }
+
+  .viewer__grid--builder-left-collapsed :global(.panel-stack--left) {
+    transform: translateX(calc(-100% - 28px));
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .viewer__grid--builder-right-collapsed .panel-stack--right {
+    transform: translateX(calc(100% + 28px));
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .builder-panel-toggle {
+    position: absolute;
+    z-index: 8;
+    inset-block-start: 18px;
+    display: grid;
+    place-items: center;
+    inline-size: 34px;
+    block-size: 34px;
+    padding: 0;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--viewer-panel, #0b121a) 88%, transparent);
+    backdrop-filter: blur(10px);
+    color: var(--viewer-text, #eef3f8);
+    cursor: pointer;
+    transition:
+      inset-inline 0.22s ease,
+      background 0.15s ease;
+  }
+
+  .builder-panel-toggle:hover {
+    background: var(--viewer-panel, #0b121a);
+  }
+
+  .builder-panel-toggle :global(.builder-panel-toggle__icon) {
+    inline-size: 17px;
+    block-size: 17px;
+  }
+
+  /* Sits just outside the panel it controls, and slides in when it collapses. */
+  .builder-panel-toggle--left {
+    inset-inline-start: calc(var(--builder-panel-inline) + 24px);
+  }
+
+  .viewer__grid--builder-left-collapsed .builder-panel-toggle--left {
+    inset-inline-start: 18px;
+  }
+
+  .builder-panel-toggle--right {
+    inset-inline-end: calc(var(--builder-panel-inline) + 24px);
+  }
+
+  .viewer__grid--builder-right-collapsed .builder-panel-toggle--right {
+    inset-inline-end: 18px;
+  }
+
   .viewer__grid--right {
     grid-template-columns: 1fr minmax(220px, 280px);
   }
@@ -3711,6 +3947,24 @@
     overflow: hidden;
   }
 
+  /*
+   * The picture and everything drawn on it share one box.
+   *
+   * Annotations are positioned as percentages of their offset parent, so the
+   * overlay has to be the same box as the media rather than the slot around
+   * it. When those diverged, every shape was stretched across the difference —
+   * a polygon drawn over a line of text ended up a third wider than the page.
+   */
+  .stage__presentation-frame {
+    position: relative;
+    display: grid;
+    min-inline-size: 0;
+    min-block-size: 0;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+
   .stage__bottom {
     display: grid;
     gap: 12px;
@@ -3800,6 +4054,15 @@
       overflow-y: auto;
       overscroll-behavior-y: contain;
       -webkit-overflow-scrolling: touch;
+    }
+
+    /*
+     * Below this width the builder stacks and the panels sit in the flow, so
+     * there is nothing floating to collapse — the toggles would hide a panel
+     * and leave its gap behind.
+     */
+    .builder-panel-toggle {
+      display: none;
     }
 
     .viewer--story-builder .viewer__grid :global(.panel-stack--left) {
@@ -4336,4 +4599,5 @@
       transform: translateX(0);
     }
   }
+
 </style>

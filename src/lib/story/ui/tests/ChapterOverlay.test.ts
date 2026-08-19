@@ -200,6 +200,20 @@ describe("ChapterOverlay", () => {
         ?.textContent,
     ).toContain("Current view: 5 · 10 · 90 · 80");
 
+    /*
+     * Manual entry is renormalised on commit, deliberately, so what a chapter
+     * ends up holding is not what was typed. With nothing on screen saying so,
+     * the obvious reading is that the editor mangled the input — and the first
+     * audience for this panel is people learning IIIF regions.
+     */
+    expect(
+      target.querySelector('[data-testid="chapter-position-stored"]')
+        ?.textContent,
+    ).toContain("Stored as: 100 · 200 · 300 · 400");
+    expect(
+      target.querySelector('[data-testid="chapter-position-note"]')?.textContent,
+    ).toContain("presentation aspect");
+
     wInput.value = "640";
     wInput.dispatchEvent(new Event("input"));
     wInput.dispatchEvent(new Event("change"));

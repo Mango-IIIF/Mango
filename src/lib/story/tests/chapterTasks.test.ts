@@ -231,6 +231,45 @@ describe('viewer position drift', () => {
     expect(status.completion).toBe('complete');
   });
 
+  it('does not flag a framing saved from the very view it is compared against', () => {
+    /*
+     * Measured in the editor: 4:3 presentation aspect inferred from a 4032×3024
+     * canvas, observed through a 0.86-aspect stage because the chapter tools
+     * panel takes the right third of the window. The stored box and the live
+     * one describe one view and share a centre; only their shapes differ, and
+     * they differ by construction at any ordinary window size. Reading that as
+     * drift put an amber warning on every chapter anybody authored.
+     */
+    const status = evaluateTaskStatus('position', {
+      ...context(),
+      story: { ...story, presentationAspect: 4 / 3 },
+      chapter: {
+        ...story.chapters[0],
+        viewBox: { x: 500.25, y: 530.8125, w: 2404.4999, h: 1803.375 },
+      },
+      currentViewBox: { x: 500, y: 37.19, w: 2405, h: 2790.63 },
+    });
+
+    expect(status.completion).toBe('complete');
+    expect(status.labelKey).toBeUndefined();
+  });
+
+  it('still notices a reframing once the aspects are accounted for', () => {
+    const status = evaluateTaskStatus('position', {
+      ...context(),
+      story: { ...story, presentationAspect: 4 / 3 },
+      chapter: {
+        ...story.chapters[0],
+        viewBox: { x: 500.25, y: 530.8125, w: 2404.4999, h: 1803.375 },
+      },
+      // Half the width, on the same 0.86-aspect stage: a real zoom in.
+      currentViewBox: { x: 1100, y: 736, w: 1202, h: 1395 },
+    });
+
+    expect(status.completion).toBe('attention');
+    expect(status.labelKey).toBe('storyBuilder.tasks.status.positionDrift');
+  });
+
   it('says nothing when there is no live view to compare against', () => {
     // Chapters the author is not standing in, and previews driving the viewer.
     expect(at(null).completion).toBe('complete');

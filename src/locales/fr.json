@@ -63,7 +63,7 @@
       "downloadIiif": "Télécharger le JSON IIIF de l'histoire",
       "jsonLabel": "JSON de l'histoire exportée",
       "empty": "// Aucune donnée d'export disponible",
-      "trackLabel": "Piste d'annotations de l'histoire"
+      "draftIdentifiers": "Cet export utilise un identifiant généré par Mango sous mangoviewer.dev. Il s'agit de IIIF valide, mais ce n'est pas votre domaine : définissez un identifiant d'AnnotationPage dans les réglages de l'histoire avant de publier."
     },
     "topBar": {
       "saved": "Enregistré",
@@ -259,7 +259,9 @@
       "goTo": "Aller à la position enregistrée",
       "current": "Vue actuelle : {x} · {y} · {w} · {h}",
       "expand": "Développer la section de position du visualiseur",
-      "collapse": "Réduire la section de position du visualiseur"
+      "collapse": "Réduire la section de position du visualiseur",
+      "stored": "Enregistré comme : {x} · {y} · {w} · {h}",
+      "normalisedNote": "Les valeurs saisies ou capturées sont une demande. Les cadrages sont enregistrés au rapport d'aspect de présentation de l'histoire afin que les chapitres restent comparables ; les nombres enregistrés peuvent donc différer de ceux que vous avez saisis."
     },
     "annotations": {
       "chapter": "Annotations du chapitre",
@@ -378,7 +380,8 @@
       "audioFileUrl": "URL du fichier audio",
       "audioPreview": "Prévisualisation audio",
       "audioPreviewHint": "Saisissez une URL pour prévisualiser la piste de narration.",
-      "saveAudio": "Enregistrer la source audio"
+      "saveAudio": "Enregistrer la source audio",
+      "draftIdentifiers": "Sans identifiant d'AnnotationPage, Mango en génère un sous mangoviewer.dev. Les exports restent du IIIF valide, mais définissez votre propre domaine avant de publier."
     },
     "overlay": {
       "closeMetadata": "Fermer les métadonnées du chapitre",
@@ -417,6 +420,12 @@
       "invalidSaveResponse": "Échec de l'enregistrement (réponse JSON invalide)",
       "saveTimeout": "Délai d'enregistrement dépassé",
       "network": "Impossible de joindre le serveur"
+    },
+    "panels": {
+      "hideChapters": "Masquer les chapitres",
+      "showChapters": "Afficher les chapitres",
+      "hideTools": "Masquer les outils du chapitre",
+      "showTools": "Afficher les outils du chapitre"
     }
   },
   "viewer": {
@@ -772,7 +781,8 @@
       "forward": "Avancer de 10 secondes",
       "rewind": "Reculer de 10 secondes",
       "media": "Média",
-      "mediaSelect": "Sélectionner la source média"
+      "mediaSelect": "Sélectionner la source média",
+      "saveView": "Enregistrer cette vue comme cadrage du chapitre"
     },
     "gallery": {
       "label": "Galerie de vignettes",
@@ -1065,7 +1075,8 @@
       "whitespace": "{label} : contient des espaces non sûrs",
       "publishedStory": "ID de l'histoire : une histoire publiée nécessite un identifiant HTTP(S) canonique",
       "unsafeChapter": "ID du chapitre : identifiant non sûr « {id} »",
-      "collision": "Collision d'ID de chapitre : {id}"
+      "collision": "Collision d'ID de chapitre : {id}",
+      "generatedDraft": "Identifiant de l'histoire : toujours un identifiant provisoire généré par Mango — définissez le vôtre avant de publier"
     }
   },
   "warnings": {

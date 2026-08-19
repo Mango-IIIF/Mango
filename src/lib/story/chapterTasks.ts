@@ -1,6 +1,7 @@
 import type { Chapter, StoryState } from '../core/types/story';
 import type { ViewBox } from '../core/types/viewer';
 import type { MediaSource, MediaType } from '../iiif/mediaResolver';
+import { inscribeViewBox, normaliseViewBox, resolvePresentationAspect } from './framing';
 import { translate } from '../core/i18n';
 
 export type ChapterTaskId =
@@ -83,10 +84,39 @@ const SCALE_DRIFT_TOLERANCE = 0.05;
  * Deliberately not `framingsWithin` from `framing.ts`: that one answers
  * whether the viewer has arrived somewhere, in absolute image pixels, and
  * cannot answer this question across canvas sizes.
+ *
+ * Pass `aspect` when `current` is a live viewport rather than another stored
+ * framing. A viewport and the framing it belongs to are related in one of two
+ * ways, and both mean "the author has not moved":
+ *
+ * - The author captured this view, and it was normalised on the way in —
+ *   `normaliseViewBox`, which keeps the centre and the area.
+ * - The viewer flew to the stored framing, and `fitBounds` padded it out to
+ *   the stage's shape — so the viewport is the framing inflated, and
+ *   `inscribeViewBox` takes it back.
+ *
+ * Only the second of those was behind the warning on every chapter: selecting
+ * a chapter flies to its framing, so a 4:3 framing on a portrait-ish editor
+ * stage came back about 1.55× larger in area, and the scale test could never
+ * return. Both readings share the centre with the viewport, so accepting
+ * either only widens the band the scale test allows.
+ *
+ * Without `aspect`, both boxes are taken to be in the same frame of reference
+ * already — which is the case when comparing two live viewports.
  */
-export const framingsDiffer = (saved: ViewBox, current: ViewBox): boolean => {
+export const framingsDiffer = (
+  saved: ViewBox,
+  current: ViewBox,
+  aspect?: number,
+): boolean => {
   if (!(saved.w > 0) || !(saved.h > 0) || !(current.w > 0) || !(current.h > 0)) {
     return false;
+  }
+  if (aspect !== undefined && Number.isFinite(aspect) && aspect > 0) {
+    return [
+      normaliseViewBox(current, aspect),
+      inscribeViewBox(current, aspect),
+    ].every((candidate) => framingsDiffer(saved, candidate));
   }
   const centreDrift = Math.max(
     Math.abs(current.x + current.w / 2 - (saved.x + saved.w / 2)) / saved.w,
@@ -239,8 +269,16 @@ export const evaluateTaskStatus = (
        * chapter, then explore to find what it is about, and the capture happens
        * before that exploring rather than after it.
        */
+      /*
+       * The live viewport carries the editor stage's aspect, while the stored
+       * framing carries the story's — the whole point of `framing.ts`. The two
+       * differ at any ordinary window size, so comparing them as they stand
+       * measured that difference rather than the author's and lit the warning
+       * on every chapter anybody authored. Handing the aspect over is what
+       * restores the question this is meant to ask.
+       */
       const current = context.currentViewBox;
-      if (current && framingsDiffer(viewBox, current)) {
+      if (current && framingsDiffer(viewBox, current, resolvePresentationAspect(story))) {
         return withAttention('attention', {
           labelKey: 'storyBuilder.tasks.status.positionDrift',
         });

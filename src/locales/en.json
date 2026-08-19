@@ -63,7 +63,7 @@
       "downloadIiif": "Download IIIF story JSON",
       "jsonLabel": "Exported story JSON",
       "empty": "// No export payload available",
-      "trackLabel": "Story Annotation Track"
+      "draftIdentifiers": "This export uses an identifier Mango generated under mangoviewer.dev. It is valid IIIF, but it is not your domain — set an AnnotationPage ID in Story settings before publishing."
     },
     "topBar": {
       "saved": "Saved",
@@ -259,7 +259,9 @@
       "goTo": "Go to saved position",
       "current": "Current view: {x} · {y} · {w} · {h}",
       "expand": "Expand viewer position section",
-      "collapse": "Collapse viewer position section"
+      "collapse": "Collapse viewer position section",
+      "stored": "Stored as: {x} · {y} · {w} · {h}",
+      "normalisedNote": "Typed and captured values are a request. Framings are stored at the story's presentation aspect so chapters stay comparable, so the stored numbers can differ from the ones you entered."
     },
     "annotations": {
       "chapter": "Chapter annotations",
@@ -378,7 +380,8 @@
       "audioFileUrl": "Audio file URL",
       "audioPreview": "Audio preview",
       "audioPreviewHint": "Enter a URL to preview the narration track.",
-      "saveAudio": "Save audio source"
+      "saveAudio": "Save audio source",
+      "draftIdentifiers": "Without an AnnotationPage ID, Mango generates one under mangoviewer.dev. Exports stay valid IIIF, but set your own domain before publishing."
     },
     "overlay": {
       "closeMetadata": "Close chapter metadata",
@@ -417,6 +420,12 @@
       "invalidSaveResponse": "Save failed (invalid JSON response)",
       "saveTimeout": "Save timed out",
       "network": "Could not reach server"
+    },
+    "panels": {
+      "hideChapters": "Hide chapters",
+      "showChapters": "Show chapters",
+      "hideTools": "Hide chapter tools",
+      "showTools": "Show chapter tools"
     }
   },
   "viewer": {
@@ -772,7 +781,8 @@
       "forward": "Fast forward 10 seconds",
       "rewind": "Rewind 10 seconds",
       "media": "Media",
-      "mediaSelect": "Select media source"
+      "mediaSelect": "Select media source",
+      "saveView": "Save this view as the chapter framing"
     },
     "gallery": {
       "label": "Thumbnail gallery",
@@ -1065,7 +1075,8 @@
       "whitespace": "{label}: contains unsafe whitespace",
       "publishedStory": "Story ID: a published story requires a canonical HTTP(S) identifier",
       "unsafeChapter": "Chapter ID: unsafe identifier \"{id}\"",
-      "collision": "Chapter ID collision: {id}"
+      "collision": "Chapter ID collision: {id}",
+      "generatedDraft": "Story ID: still a Mango-generated draft identifier — set your own AnnotationPage ID before publishing"
     }
   },
   "warnings": {

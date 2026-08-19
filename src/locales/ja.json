@@ -63,7 +63,7 @@
       "downloadIiif": "IIIFストーリーJSONをダウンロード",
       "jsonLabel": "エクスポートされたストーリーJSON",
       "empty": "// エクスポート可能なデータがありません",
-      "trackLabel": "ストーリー注釈トラック"
+      "draftIdentifiers": "このエクスポートは Mango が mangoviewer.dev 配下で生成した識別子を使用しています。IIIF としては有効ですが、あなたのドメインではありません。公開前にストーリー設定で AnnotationPage ID を設定してください。"
     },
     "topBar": {
       "saved": "保存済み",
@@ -259,7 +259,9 @@
       "goTo": "保存した位置へ移動",
       "current": "現在のビュー: {x} · {y} · {w} · {h}",
       "expand": "ビューア位置セクションを展開",
-      "collapse": "ビューア位置セクションを折りたたむ"
+      "collapse": "ビューア位置セクションを折りたたむ",
+      "stored": "保存値: {x} · {y} · {w} · {h}",
+      "normalisedNote": "入力・取得した値は要求値です。章どうしを比較できるよう、フレーミングはストーリーの表示アスペクト比に合わせて保存されるため、保存後の数値は入力した値と異なることがあります。"
     },
     "annotations": {
       "chapter": "Chapter annotations",
@@ -378,7 +380,8 @@
       "audioFileUrl": "音声ファイルのURL",
       "audioPreview": "音声をプレビュー",
       "audioPreviewHint": "ストーリー音声を再生して動作を確認します。",
-      "saveAudio": "音声設定を保存"
+      "saveAudio": "音声設定を保存",
+      "draftIdentifiers": "AnnotationPage ID を設定しない場合、Mango が mangoviewer.dev 配下の ID を生成します。エクスポートは有効な IIIF のままですが、公開前に自分のドメインを設定してください。"
     },
     "overlay": {
       "closeMetadata": "メタデータを閉じる",
@@ -417,6 +420,12 @@
       "invalidSaveResponse": "無効な保存レスポンスです。",
       "saveTimeout": "保存処理がタイムアウトしました。",
       "network": "ネットワークエラーが発生しました。"
+    },
+    "panels": {
+      "hideChapters": "チャプターを隠す",
+      "showChapters": "チャプターを表示",
+      "hideTools": "チャプターツールを隠す",
+      "showTools": "チャプターツールを表示"
     }
   },
   "viewer": {
@@ -772,7 +781,8 @@
       "forward": "10秒進む",
       "rewind": "10秒戻る",
       "media": "メディア",
-      "mediaSelect": "メディアソースを選択"
+      "mediaSelect": "メディアソースを選択",
+      "saveView": "この表示をチャプターのフレーミングとして保存"
     },
     "gallery": {
       "label": "サムネイルギャラリー",
@@ -1065,7 +1075,8 @@
       "whitespace": "{label}: 安全でない空白文字が含まれています",
       "publishedStory": "Story ID: a published story requires a canonical HTTP(S) identifier",
       "unsafeChapter": "Chapter ID: unsafe identifier \"{id}\"",
-      "collision": "チャプターIDの衝突: {id}"
+      "collision": "チャプターIDの衝突: {id}",
+      "generatedDraft": "ストーリー ID: まだ Mango が生成した暫定識別子です。公開前に独自の AnnotationPage ID を設定してください"
     }
   },
   "warnings": {

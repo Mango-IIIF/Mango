@@ -63,7 +63,7 @@
       "downloadIiif": "Lawrlwytho JSON IIIF y stori",
       "jsonLabel": "JSON y stori a allforiwyd",
       "empty": "// Dim data allforio ar gael",
-      "trackLabel": "Trac Anodiadau'r Stori"
+      "draftIdentifiers": "Mae'r allforio hwn yn defnyddio dynodwr a gynhyrchwyd gan Mango o dan mangoviewer.dev. Mae'n IIIF dilys, ond nid eich parth chi ydyw — gosodwch ID AnnotationPage yng ngosodiadau'r stori cyn cyhoeddi."
     },
     "topBar": {
       "saved": "Wedi'i gadw",
@@ -259,7 +259,9 @@
       "goTo": "Mynd i'r safle a gadwyd",
       "current": "Golwg bresennol: {x} · {y} · {w} · {h}",
       "expand": "Ehangu'r adran safle'r gwyliwr",
-      "collapse": "Crebachu'r adran safle'r gwyliwr"
+      "collapse": "Crebachu'r adran safle'r gwyliwr",
+      "stored": "Wedi'i gadw fel: {x} · {y} · {w} · {h}",
+      "normalisedNote": "Cais yw'r gwerthoedd a deipiwyd neu a gipiwyd. Caiff fframiau eu cadw yng nghymhareb agwedd cyflwyno'r stori fel bod penodau'n aros yn gymaradwy, felly gall y rhifau a gedwir fod yn wahanol i'r rhai a roddwyd gennych."
     },
     "annotations": {
       "chapter": "Anodiadau'r bennod",
@@ -378,7 +380,8 @@
       "audioFileUrl": "URL y ffeil sain",
       "audioPreview": "Rhagolwg sain",
       "audioPreviewHint": "Rhowch URL i gael rhagolwg o'r trac adrodd.",
-      "saveAudio": "Cadw'r ffynhonnell sain"
+      "saveAudio": "Cadw'r ffynhonnell sain",
+      "draftIdentifiers": "Heb ID AnnotationPage, mae Mango'n cynhyrchu un o dan mangoviewer.dev. Mae allforion yn aros yn IIIF dilys, ond gosodwch eich parth eich hun cyn cyhoeddi."
     },
     "overlay": {
       "closeMetadata": "Cau metadata'r bennod",
@@ -417,6 +420,12 @@
       "invalidSaveResponse": "Methodd y cadw (ymateb JSON annilys)",
       "saveTimeout": "Cadw wedi goramseru",
       "network": "Methu cysylltu â'r gweinydd"
+    },
+    "panels": {
+      "hideChapters": "Cuddio penodau",
+      "showChapters": "Dangos penodau",
+      "hideTools": "Cuddio offer y bennod",
+      "showTools": "Dangos offer y bennod"
     }
   },
   "viewer": {
@@ -772,7 +781,8 @@
       "forward": "Chwarae ymlaen 10 eiliad",
       "rewind": "Ailddirwyn 10 eiliad",
       "media": "Cyfryngau",
-      "mediaSelect": "Dewis ffynhonnell cyfryngau"
+      "mediaSelect": "Dewis ffynhonnell cyfryngau",
+      "saveView": "Cadw'r olygfa hon fel fframio'r bennod"
     },
     "gallery": {
       "label": "Galeri mini-ddelweddau",
@@ -1065,7 +1075,8 @@
       "whitespace": "{label}: yn cynnwys bylchau anniogel",
       "publishedStory": "ID y Stori: mae angen dynodydd HTTP(S) canonaidd ar stori a gyhoeddwyd",
       "unsafeChapter": "ID y Bennod: dynodydd anniogel “{id}”",
-      "collision": "Gwrthdrawiad ID pennod: {id}"
+      "collision": "Gwrthdrawiad ID pennod: {id}",
+      "generatedDraft": "ID y stori: dynodwr drafft a gynhyrchwyd gan Mango o hyd — gosodwch eich ID AnnotationPage eich hun cyn cyhoeddi"
     }
   },
   "warnings": {

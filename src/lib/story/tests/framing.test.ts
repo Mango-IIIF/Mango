@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { StoryState } from '../../core/types/story';
 import {
   DEFAULT_PRESENTATION_ASPECT,
+  constrainViewBoxToContent,
   framingsWithin,
   inferPresentationAspect,
+  inscribeViewBox,
   isKeyframeEnvelope,
   normaliseStoryFraming,
   normaliseViewBox,
@@ -25,6 +27,29 @@ describe('framing normalisation', () => {
     expect(aspectOf(normalised)).toBeCloseTo(4 / 3, 6);
     expect(normalised.w * normalised.h).toBeCloseTo(box.w * box.h, 4);
     expect(centreOf(normalised)).toEqual(centreOf(box));
+  });
+
+  it('recovers a framing from the viewport the renderer fitted it into', () => {
+    /*
+     * `setViewBox` fits, so a framing narrower than the stage comes back
+     * padded on one axis. Inscribing is what undoes that — and it is not
+     * normalisation, which would keep the padded area and report a zoom the
+     * author never applied.
+     */
+    const framing = { x: 500, y: 531, w: 2404, h: 1803 };
+    const stage = 0.8618;
+    const viewport = {
+      x: framing.x,
+      y: framing.y + framing.h / 2 - framing.w / stage / 2,
+      w: framing.w,
+      h: framing.w / stage,
+    };
+
+    const recovered = inscribeViewBox(viewport, 4 / 3);
+    expect(recovered.w).toBeCloseTo(framing.w, 3);
+    expect(recovered.h).toBeCloseTo(framing.w / (4 / 3), 3);
+    expect(centreOf(recovered)).toEqual(centreOf(viewport));
+    expect(recovered.w * recovered.h).toBeLessThan(viewport.w * viewport.h);
   });
 
   it('is a no-op for a box already at the canonical aspect', () => {
@@ -229,5 +254,62 @@ describe('framing comparison', () => {
     const cropShifted = { ...crop, x: crop.x + shift };
     expect(framingsWithin(cropShifted, crop, 0.5)).toBe(false);
     expect(framingsDiffer(crop, cropShifted)).toBe(true);
+  });
+});
+
+/*
+ * A chapter framed on a stage that is not the canvas's shape used to store the
+ * letterbox bars along with the picture. The author saw the image filling the
+ * frame; every later reader saw it about a sixth smaller, because the padding
+ * was re-fitted on their stage as though it were part of the image. Position
+ * looked right — the centre survives — which made it read as a zoom bug with
+ * no obvious cause.
+ */
+describe('constrainViewBoxToContent', () => {
+  const canvas = { width: 4032, height: 3024 };
+
+  it('drops letterbox padding from a whole-image capture', () => {
+    // A "fit the whole image" view on a portrait stage: 4032 wide, but the
+    // viewport runs well above and below the picture.
+    const captured = { x: 0, y: -859.97, w: 4032, h: 4743.94 };
+
+    expect(constrainViewBoxToContent(captured, canvas)).toEqual({
+      x: 0,
+      y: 0,
+      w: 4032,
+      h: 3024,
+    });
+  });
+
+  it('keeps a framing that is already a region of the image', () => {
+    const inside = { x: 500, y: 531, w: 2404, h: 1803 };
+    expect(constrainViewBoxToContent(inside, canvas)).toEqual(inside);
+  });
+
+  it('shifts an overhanging framing inside rather than shrinking it', () => {
+    // Zoom is the author's decision; only the part that was never picture goes.
+    const overhanging = { x: 3500, y: 100, w: 1200, h: 900 };
+    const constrained = constrainViewBoxToContent(overhanging, canvas);
+
+    expect(constrained.w).toBe(1200);
+    expect(constrained.h).toBe(900);
+    expect(constrained.x + constrained.w).toBeLessThanOrEqual(canvas.width);
+    expect(constrained.y).toBe(100);
+  });
+
+  it('always yields a box a Media Fragment can express', () => {
+    const cases = [
+      { x: -1000, y: 0, w: 6032, h: 3024 },
+      { x: -500, y: -400, w: 5015, h: 3761 },
+      { x: 0, y: -859.97, w: 4032, h: 4743.94 },
+    ];
+
+    for (const box of cases) {
+      const out = constrainViewBoxToContent(box, canvas);
+      expect(out.x).toBeGreaterThanOrEqual(0);
+      expect(out.y).toBeGreaterThanOrEqual(0);
+      expect(out.x + out.w).toBeLessThanOrEqual(canvas.width);
+      expect(out.y + out.h).toBeLessThanOrEqual(canvas.height);
+    }
   });
 });

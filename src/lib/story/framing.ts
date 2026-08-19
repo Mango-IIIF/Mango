@@ -56,6 +56,67 @@ export const normaliseViewBox = (box: ViewBox, aspect: number): ViewBox => {
   };
 };
 
+/**
+ * The largest box of `aspect` that fits inside `box`, on the same centre.
+ *
+ * The inverse of what the renderer does to show a framing: `setViewBox` calls
+ * `fitBounds`, so a chapter framing whose aspect differs from the stage's is
+ * displayed with padding on one axis and the viewport that comes back is
+ * *larger* than the framing. This recovers the framing from that viewport.
+ *
+ * Not interchangeable with `normaliseViewBox`, which answers a different
+ * question — "what would this view be stored as?" — and preserves area rather
+ * than fitting. Between them they cover the two ways a live viewport comes to
+ * be related to a stored framing: the author captured it, or the viewer flew
+ * to it.
+ */
+export const inscribeViewBox = (box: ViewBox, aspect: number): ViewBox => {
+  if (!isPositive(aspect) || !isPositive(box.w) || !isPositive(box.h)) return box;
+  if (Math.abs(box.w / box.h - aspect) <= aspect * ASPECT_EPSILON) return box;
+
+  const width = Math.min(box.w, box.h * aspect);
+  const height = width / aspect;
+  return {
+    x: box.x + box.w / 2 - width / 2,
+    y: box.y + box.h / 2 - height / 2,
+    w: width,
+    h: height,
+  };
+};
+
+/**
+ * Brings a framing inside the canvas.
+ *
+ * A viewport capture is not a region of the image: when the stage is a
+ * different shape from the canvas the viewer letterboxes, and the captured box
+ * covers that empty space too — a "whole image" capture on a portrait stage
+ * comes back about a quarter wider than the image itself. Storing that padding
+ * makes the chapter read as zoomed out to every later reader, because the
+ * padding is re-fitted on their stage as though it were picture.
+ *
+ * It also cannot survive serialisation. Media Fragments `xywh` takes
+ * non-negative integers, so the negative origin a letterboxed capture carries
+ * is truncated on the way out, which moves the framing as well as inflating it.
+ *
+ * A box larger than the canvas on an axis is clamped to it; one that merely
+ * hangs over an edge is shifted back in, so the author's zoom is kept and only
+ * the part that was never picture is dropped.
+ */
+export const constrainViewBoxToContent = (
+  box: ViewBox,
+  content: { width: number; height: number },
+): ViewBox => {
+  if (!isPositive(content.width) || !isPositive(content.height)) return box;
+  if (!isPositive(box.w) || !isPositive(box.h)) return box;
+
+  const w = Math.min(box.w, content.width);
+  const h = Math.min(box.h, content.height);
+  const x = Math.min(Math.max(box.x, 0), content.width - w);
+  const y = Math.min(Math.max(box.y, 0), content.height - h);
+
+  return { x, y, w, h };
+};
+
 const median = (values: number[]): number | null => {
   if (values.length === 0) return null;
   const sorted = [...values].sort((a, b) => a - b);

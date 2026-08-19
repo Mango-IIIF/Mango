@@ -423,7 +423,14 @@
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    height: 100% !important;
+    /*
+     * Deliberately not `height: 100% !important`. The sidebar is a grid item in
+     * the docked layout, where `stretch` already fills the row, but the story
+     * builder floats it over the stage with top/bottom insets — and a forced
+     * height beat those, leaving it covering the annotation footer with no
+     * specificity able to say otherwise.
+     */
+    max-height: 100% !important;
     min-height: 0 !important;
     display: flex !important;
     flex-direction: column !important;

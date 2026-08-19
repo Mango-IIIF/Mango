@@ -489,6 +489,14 @@
     gap: 16px;
     height: 100%;
     min-height: 0;
+    /*
+     * A size container so a story stage can be sized against the slot it
+     * actually sits in. The viewer-level container is the whole element,
+     * including its bars, which is the wrong reference for "how much room does
+     * the picture have".
+     */
+    container-type: size;
+    container-name: mango-stage;
     /* The OSD <canvas> has an intrinsic width; without a zero min-width it can
        force this column — and therefore the whole stage — wider than the viewer. */
     min-width: 0;

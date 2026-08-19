@@ -101,8 +101,12 @@ describe("Story IIIF Serialization and Parsing", () => {
     );
     expect(serialized.id).toBe(sampleStory.id);
     expect(serialized.type).toBe("AnnotationPage");
-    expect(serialized.label.en[0]).toBe("My Awesome Story");
-    expect(serialized.label.cy[0]).toBe("Fy Stori Wych");
+    // Optional now: a story with no title writes no label rather than a
+    // localised placeholder the next load would read back as a real title.
+    expect(serialized.label).toEqual({
+      en: ["My Awesome Story"],
+      cy: ["Fy Stori Wych"],
+    });
 
     expect(serialized.items).toHaveLength(5);
     const annotation = serialized.items[0];
@@ -177,27 +181,19 @@ describe("Story IIIF Serialization and Parsing", () => {
      * longer restates either. `canvasIndex` does stay — a canvas URI's last
      * segment is an index only by convention, so for many manifests this is
      * the only copy.
+     *
+     * No `viewBox` or `drawingAnnotations` either, and for a different reason:
+     * IIIF can express both, in the target fragment and in the standalone
+     * overlay annotations. What is left here is only what IIIF has no
+     * vocabulary for.
      */
     expect(parseMangoViewerStateBody(viewerState)).toEqual({
       canvasIndex: 0,
-      viewBox: { x: -500, y: 100, w: 1000, h: 500 },
       layerOpacities: {
         "https://example.com/layers/natural": 0.25,
         "https://example.com/layers/xray": 0.75,
       },
       annotationPlacement: { x: 10, y: 20, w: 300, h: 200 },
-      drawingAnnotations: [
-        { id: "point-1", type: "point", point: { x: 120, y: 180 } },
-        {
-          id: "polygon-1",
-          type: "polygon",
-          points: [
-            { x: 100, y: 100 },
-            { x: 200, y: 100 },
-            { x: 150, y: 220 },
-          ],
-        },
-      ],
       playback: {
         advance: "auto",
         delayMs: 4500,
@@ -243,8 +239,16 @@ describe("Story IIIF Serialization and Parsing", () => {
       "https://manifests.collections.yale.edu/ycba/obj/34/canvas/0",
     );
 
-    // The standard target is clamped, while Mango state retains the exact pose.
-    expect(chapter.viewBox).toEqual({ x: -500, y: 100, w: 1000, h: 500 });
+    /*
+     * The target fragment is now the only copy of the framing, so what it
+     * cannot say is not said: Media Fragments defines `xywh` over non-negative
+     * integers, and a framing reaching left of the canvas origin comes back
+     * clamped to it. Nothing visible is lost — `OSDViewer.setViewBox` applies
+     * exactly this clamp before showing a framing, so the negative origin the
+     * private copy preserved was never rendered. What it did do was outrank
+     * the published value, which is the arrangement this replaces.
+     */
+    expect(chapter.viewBox).toEqual({ x: 0, y: 100, w: 1000, h: 500 });
 
     // Resolved media segment
     expect(chapter.media).toEqual({ start: 170, end: 183 });

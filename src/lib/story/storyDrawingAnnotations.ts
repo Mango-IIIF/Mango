@@ -1,6 +1,9 @@
-import type { CanonicalAnnotation, NeutralShape } from '@mango-iiif/w3c-parser';
+import type { CanonicalAnnotation, NeutralShape, RectGeometry } from '@mango-iiif/w3c-parser';
 import {
   ANNOTATION_STROKE_WIDTH_PX,
+  type AnnotationPlacement,
+  type ChapterAnnotationFillMode,
+  type ChapterAnnotationStrokeWidth,
   type ChapterDrawingAnnotation,
 } from '../core/types/story';
 import type { ResolvedAnnotation } from '../iiif/annotationResolver';
@@ -12,10 +15,41 @@ import {
   styleClassForLayer,
 } from '../features/annotations/style';
 
+/**
+ * Whole pixels for the one shape that becomes a media fragment.
+ *
+ * A rectangle serialises to `xywh=`, and Media Fragments URI 1.0 defines those
+ * values as integers — so a fractional rectangle is invalid as written, and the
+ * selector cannot be the authoritative copy of a geometry it cannot express.
+ * Rounding here rather than at the selector keeps what Mango draws and what it
+ * publishes the same rectangle. The other shapes serialise to `SvgSelector` or
+ * `PointSelector`, where floats are valid, and are deliberately left alone.
+ */
+const wholePixelRect = (rect: AnnotationPlacement): RectGeometry => ({
+  x: Math.max(0, Math.round(rect.x)),
+  y: Math.max(0, Math.round(rect.y)),
+  w: Math.max(1, Math.round(rect.w)),
+  h: Math.max(1, Math.round(rect.h)),
+});
+
+/**
+ * Appearance a drawing has when it has not said otherwise.
+ *
+ * Exported because the reader needs the same three values: a stylesheet always
+ * spells out colour, width and fill, so without knowing which spellings mean
+ * "unspecified" every drawing would come back from a round trip carrying three
+ * properties its author never set.
+ */
+export const DEFAULT_DRAWING_COLOR = '#e07a3f';
+export const DEFAULT_DRAWING_STROKE_WIDTH = 'medium' satisfies ChapterAnnotationStrokeWidth;
+export const DEFAULT_DRAWING_FILL_MODE = 'transparent' satisfies ChapterAnnotationFillMode;
+/** Fill alpha that marks a shape as unfilled rather than solid. */
+export const DRAWING_TRANSPARENT_FILL_ALPHA = 0.16;
+
 const drawingAnnotationShape = (
   annotation: ChapterDrawingAnnotation,
 ): NeutralShape | null => {
-  if (annotation.rect) return { type: 'rect', geometry: annotation.rect };
+  if (annotation.rect) return { type: 'rect', geometry: wholePixelRect(annotation.rect) };
   if (annotation.point) return { type: 'point', geometry: annotation.point };
   if (!annotation.points?.length) return null;
   if (annotation.type === 'line' && annotation.points.length >= 2) {
@@ -55,13 +89,17 @@ export const storyDrawingDocument = (
   );
   const legacyText = textBodies.length === 0 ? drawing.text?.trim() : undefined;
   const hasText = textBodies.length > 0 || Boolean(legacyText);
-  const color = safeAnnotationColor(drawing.color ?? '#e07a3f');
+  const color = safeAnnotationColor(drawing.color ?? DEFAULT_DRAWING_COLOR);
   const styleClass = styleClassForLayer(`story-${drawing.id}`);
   const stylesheet = buildAnnotationStylesheet({
     className: styleClass,
     strokeColor: color,
-    fillColor: drawing.fillMode === 'solid' ? color : rgbaFromHex(color, 0.16),
-    strokeWidth: ANNOTATION_STROKE_WIDTH_PX[drawing.strokeWidth ?? 'medium'],
+    fillColor:
+      drawing.fillMode === 'solid'
+        ? color
+        : rgbaFromHex(color, DRAWING_TRANSPARENT_FILL_ALPHA),
+    strokeWidth:
+      ANNOTATION_STROKE_WIDTH_PX[drawing.strokeWidth ?? DEFAULT_DRAWING_STROKE_WIDTH],
   });
 
   return createMangoAnnotation({

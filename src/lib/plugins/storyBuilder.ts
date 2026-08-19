@@ -10,6 +10,11 @@ import StoryBuilderOverlay from "../story/ui/StoryBuilderOverlay.svelte";
 import StoryBuilderTopBar from "../story/ui/StoryBuilderTopBar.svelte";
 import StoryBuilderWideAuthoring from "../story/ui/StoryBuilderWideAuthoring.svelte";
 import { translate } from '../core/i18n';
+import { findPresentationRoot } from "../story/presentationFrame";
+import { registerStoryCapture } from "../story/storyStageActions";
+
+/** The single builder plugin that owns stage-level actions. */
+const PRESENTATION_ASPECT_OWNER = "story-builder-overlay";
 
 export const createStoryBuilderPlugins = (
   options: StoryBuilderOptions = {},
@@ -27,6 +32,8 @@ export const createStoryBuilderPlugins = (
   ): ViewerPlugin => {
     let detach: (() => void) | null = null;
     let handle: { destroy: () => void } | null = null;
+    let stopCapture: (() => void) | null = null;
+    let presentationRoot: HTMLElement | null = null;
 
     return {
       id,
@@ -35,8 +42,23 @@ export const createStoryBuilderPlugins = (
       init(ctx) {
         detach = controller.attach(ctx);
         handle = createMount(ctx.mount, ctx);
+        /*
+         * The stage toolbar's capture button lives in the viewer layout, which
+         * has no reference to this controller. One owner only: every builder
+         * plugin shares this factory, and tearing any one of them down must not
+         * unregister the action while the rest are still running.
+         */
+        if (id === PRESENTATION_ASPECT_OWNER) {
+          presentationRoot = findPresentationRoot(ctx.mount);
+          stopCapture = registerStoryCapture(
+            presentationRoot,
+            controller.updateChapterPosition,
+          );
+        }
       },
       destroy() {
+        stopCapture?.();
+        stopCapture = null;
         handle?.destroy();
         handle = null;
         detach?.();

@@ -41,6 +41,35 @@ describe('NarrationOverlay', () => {
     target.remove();
   });
 
+  /*
+   * The AnnotationPage ID is empty by default and nothing said what that costs.
+   * The export is valid IIIF either way now, but its identifiers sit under
+   * mangoviewer.dev rather than the publisher's own domain — easy to ship
+   * without noticing precisely because it looks legitimate.
+   */
+  it('says what an empty AnnotationPage ID costs, and stops once one is set', async () => {
+    const store = createStoryStoreForTest({ chapters: [] });
+    const target = createTarget();
+
+    const instance = mount(NarrationOverlay, {
+      target,
+      props: { story: store.story, open: true, language: 'en', languages: ['en'] },
+    });
+
+    const notice = () => target.querySelector('[data-testid="story-draft-identifiers"]');
+    expect(notice()?.textContent).toContain('mangoviewer.dev');
+
+    const idInput = target.querySelector('[data-testid="story-public-id"]') as HTMLInputElement;
+    idInput.value = 'https://museum.example/stories/42/chapters';
+    idInput.dispatchEvent(new Event('input'));
+    await tick();
+
+    expect(notice()).toBeNull();
+
+    unmount(instance);
+    target.remove();
+  });
+
   it('updates narration track at story level', async () => {
     const store = createStoryStoreForTest({
       narration: {

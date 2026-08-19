@@ -1223,6 +1223,7 @@
               hasSavedPosition={chapterHasSavedPosition}
               {positionDrafts}
               currentViewBox={$viewBox}
+              savedViewBox={chapter?.viewBox ?? null}
               captureAcknowledged={viewUpdateAcknowledged}
               onToggle={() => {
                 positionSectionCollapsed = !positionSectionCollapsed;

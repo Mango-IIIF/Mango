@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '../../core/i18n';
+  import { isGeneratedDraftId } from '../publicIdentifiers';
 
   interface Props {
     open?: boolean;
@@ -15,6 +16,18 @@
 
   const pretty = () =>
     payload ? JSON.stringify(payload, null, 2) : $t('storyBuilder.export.empty');
+
+  /*
+   * The file is structurally valid IIIF either way, but until an AnnotationPage
+   * ID is set its identifiers are ones Mango generated under its own domain —
+   * fine for a working draft, wrong for anything a publisher puts their name
+   * to. Saying so at the point of download is the only place it can still
+   * change what somebody does about it.
+   */
+  const draftIdentifiers = $derived(
+    typeof (payload as { id?: unknown } | null)?.id === 'string' &&
+      isGeneratedDraftId((payload as { id: string }).id),
+  );
 
   const copyJson = async () => {
     try {
@@ -73,6 +86,12 @@
         value={pretty()}
       ></textarea>
 
+      {#if draftIdentifiers}
+        <p class="save-modal__notice" data-testid="save-modal-draft-notice">
+          {$t('storyBuilder.export.draftIdentifiers')}
+        </p>
+      {/if}
+
       <div class="save-modal__actions">
         <button class="save-modal__button" type="button" onclick={copyJson}>
           {$t('storyBuilder.export.copy')}
@@ -122,7 +141,7 @@
     padding: 16px;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1fr auto auto;
     gap: 12px;
     box-sizing: border-box;
     overflow: hidden;
@@ -187,6 +206,15 @@
     font-size: 12px;
     color: var(--viewer-muted, #d5e2f5);
     box-sizing: border-box;
+  }
+
+  .save-modal__notice {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--viewer-muted, #d5e2f5);
+    border-left: 3px solid var(--story-builder-accent, #e07a3f);
+    padding-left: 10px;
   }
 
   .save-modal__actions {

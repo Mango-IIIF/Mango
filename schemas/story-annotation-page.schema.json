@@ -1,99 +1,274 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mango-iiif.github.io/schemas/story-annotation-page/1/schema.json",
-  "title": "Mango Story AnnotationPage 1.0",
+  "title": "Mango Story AnnotationPage 1",
+  "description": "A Mango story is a IIIF Presentation 3 AnnotationPage. Everything IIIF can express is expressed in IIIF and is the authoritative copy: chapter framing is the chapter target's `xywh` fragment, and drawings are standalone annotations in `items` carrying their own selector and stylesheet. The private `mango:ViewerState` body carries only what IIIF has no vocabulary for — camera tracks, playback, model poses, layer opacities and the presentation aspect. The profile version is declared once, by the Mango context URL in `@context`, and is never restated as a property.",
   "type": "object",
-  "required": ["@context", "id", "type", "mango:storyVersion", "items"],
+  "required": ["@context", "id", "type", "items"],
   "properties": {
     "@context": {
       "type": "array",
-      "contains": { "const": "http://iiif.io/api/presentation/3/context.json" }
+      "allOf": [
+        { "contains": { "const": "http://www.w3.org/ns/anno.jsonld" } },
+        {
+          "contains": { "const": "https://mangoviewer.dev/schema/story/1/context.json" }
+        },
+        { "contains": { "const": "http://iiif.io/api/presentation/3/context.json" } }
+      ]
     },
-    "id": { "type": "string", "format": "uri" },
+    "id": { "$ref": "#/$defs/httpUri" },
     "type": { "const": "AnnotationPage" },
-    "mango:storyVersion": { "const": "1.0" },
-    "label": { "$ref": "#/$defs/languageMap" },
+    "label": {
+      "$ref": "#/$defs/languageMap",
+      "description": "The story title. Absent on an untitled story: the page label is the title by contract, so a placeholder written here for display becomes a real title on the next load."
+    },
     "items": {
       "type": "array",
       "items": {
-        "oneOf": [{ "$ref": "#/$defs/chapter" }, { "$ref": "#/$defs/overlay" }]
+        "oneOf": [
+          { "$ref": "#/$defs/chapter" },
+          { "$ref": "#/$defs/textOverlay" },
+          { "$ref": "#/$defs/drawingOverlay" }
+        ]
       }
     }
   },
   "$defs": {
+    "httpUri": {
+      "type": "string",
+      "pattern": "^https?://",
+      "description": "IIIF Presentation 3 requires an HTTP(S) URI on an AnnotationPage and on an Annotation. A story with no publishing identifier still gets one, generated under `https://mangoviewer.dev/stories/draft/`, so every export validates here. Whether an identifier is the *right* one is a separate question this schema cannot answer: `validatePublicationIdentifiers` rejects a generated draft id for anything heading to publication."
+    },
     "languageMap": {
       "type": "object",
+      "minProperties": 1,
       "additionalProperties": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": { "type": "string", "minLength": 1 },
         "minItems": 1
+      }
+    },
+    "fragmentSelector": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "FragmentSelector" },
+        "conformsTo": { "const": "http://www.w3.org/TR/media-frags/" },
+        "value": {
+          "type": "string",
+          "pattern": "^(xywh=(\\d+,\\d+,\\d+,\\d+|percent:[0-9.]+,[0-9.]+,[0-9.]+,[0-9.]+)(&t=[0-9.]+,[0-9.]+)?|t=[0-9.]+,[0-9.]+)$",
+          "description": "Media Fragments URI 1.0. Pixel `xywh` values are integers, and the `pixel:` prefix is omitted because it is the default — the format picks one spelling so two writers cannot disagree about the same region."
+        }
       }
     },
     "chapter": {
       "type": "object",
+      "description": "One chapter. Document order in `items` is the sequence — `items` is `@container: @list` in both the IIIF and Web Annotation contexts, so no index property is needed to make it so.",
       "required": ["id", "type", "motivation", "target", "body"],
       "properties": {
-        "id": { "type": "string", "format": "uri" },
+        "id": { "$ref": "#/$defs/httpUri" },
         "type": { "const": "Annotation" },
         "motivation": { "const": "supplementing" },
         "label": { "$ref": "#/$defs/languageMap" },
         "summary": { "$ref": "#/$defs/languageMap" },
-        "target": { "type": ["object", "string"] },
+        "target": {
+          "type": "object",
+          "required": ["source"],
+          "properties": {
+            "source": { "type": "string", "minLength": 1 },
+            "type": { "const": "SpecificResource" },
+            "partOf": {
+              "type": "object",
+              "required": ["id", "type"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "type": { "const": "Manifest" }
+              }
+            },
+            "selector": {
+              "$ref": "#/$defs/fragmentSelector",
+              "description": "The chapter framing, and the only copy of it. Absent for a chapter with nothing spatial or temporal to frame, such as a model pose."
+            }
+          }
+        },
         "body": {
           "oneOf": [
             { "$ref": "#/$defs/viewerStateBody" },
             {
               "type": "array",
-              "contains": { "$ref": "#/$defs/viewerStateBody" }
+              "minItems": 1,
+              "contains": { "$ref": "#/$defs/viewerStateBody" },
+              "items": {
+                "oneOf": [
+                  { "$ref": "#/$defs/viewerStateBody" },
+                  { "$ref": "#/$defs/soundBody" }
+                ]
+              }
             }
           ]
         }
       }
     },
+    "soundBody": {
+      "type": "object",
+      "description": "A narration segment, as a temporal fragment of a shared track.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "const": "Sound" },
+        "format": { "type": "string" },
+        "language": { "type": "string", "minLength": 1 }
+      }
+    },
     "viewerStateBody": {
       "type": "object",
-      "required": ["type", "format", "mango:storyVersion", "mangoState"],
+      "required": ["type", "format", "mangoState"],
       "properties": {
-        "type": { "const": "mango:ViewerState" },
+        "id": {
+          "$ref": "#/$defs/httpUri",
+          "description": "Derived from the annotation that carries it. IIIF requires an id on any body that is not a `TextualBody`."
+        },
+        "type": {
+          "const": "mango:ViewerState",
+          "description": "A single term, not the W3C multi-type array: IIIF narrows `type` to one string per resource."
+        },
         "format": { "const": "application/vnd.mango.story-state+json" },
-        "mango:storyVersion": { "const": "1.0" },
         "mangoState": { "$ref": "#/$defs/viewerState" }
       }
     },
-    "overlay": {
+    "textOverlay": {
       "type": "object",
-      "required": [
-        "id",
-        "type",
-        "motivation",
-        "mango:role",
-        "mango:chapterId",
-        "body",
-        "target"
-      ],
+      "description": "A chapter caption placed on the canvas. Its own annotation because it has its own spatial target.",
+      "required": ["id", "type", "motivation", "body", "target"],
       "properties": {
-        "id": { "type": "string", "format": "uri" },
-        "type": { "const": "Annotation" },
-        "motivation": { "const": "describing" },
-        "mango:role": { "const": "overlay" },
-        "mango:chapterId": { "type": "string", "minLength": 1 },
-        "body": {
-          "oneOf": [
-            { "type": "object" },
-            { "type": "array", "items": { "type": "object" } }
+        "id": {
+          "allOf": [
+            { "$ref": "#/$defs/httpUri" },
+            { "pattern": "/overlay/(?!drawing/)" }
           ]
         },
-        "target": { "type": ["object", "string"] }
+        "type": { "const": "Annotation" },
+        "motivation": { "const": "describing" },
+        "body": {
+          "oneOf": [
+            { "$ref": "#/$defs/textualBody" },
+            { "type": "array", "items": { "$ref": "#/$defs/textualBody" }, "minItems": 1 }
+          ]
+        },
+        "target": { "$ref": "#/$defs/overlayTarget" }
+      }
+    },
+    "drawingOverlay": {
+      "type": "object",
+      "description": "One drawing an author made on a chapter, and the authoritative copy of it. Geometry lives in the target selector and appearance in the annotation stylesheet, so a third-party IIIF client sees the same marks Mango does.",
+      "required": ["id", "type", "motivation", "target"],
+      "properties": {
+        "id": {
+          "allOf": [{ "$ref": "#/$defs/httpUri" }, { "pattern": "/overlay/drawing/" }]
+        },
+        "type": { "const": "Annotation" },
+        "motivation": {
+          "enum": [
+            "describing",
+            "commenting",
+            "highlighting",
+            "tagging",
+            "identifying",
+            "classifying",
+            "questioning"
+          ]
+        },
+        "body": {
+          "oneOf": [
+            { "$ref": "#/$defs/textualBody" },
+            { "type": "array", "items": { "$ref": "#/$defs/textualBody" }, "minItems": 1 }
+          ],
+          "description": "The drawing's caption, one body per language. Absent on an unlabelled shape."
+        },
+        "stylesheet": {
+          "type": "object",
+          "required": ["type", "value"],
+          "properties": {
+            "type": { "const": "CssStylesheet" },
+            "value": { "type": "string", "minLength": 1 }
+          },
+          "description": "Stroke colour, fill and stroke width for the target's `styleClass`. The fill distinguishes the two Mango fill modes: the stroke colour repeated for a solid shape, the same colour at low alpha for a transparent one."
+        },
+        "target": { "$ref": "#/$defs/overlayTarget" }
+      }
+    },
+    "textualBody": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "TextualBody" },
+        "value": { "type": "string", "minLength": 1 },
+        "format": { "type": "string" },
+        "language": { "type": "string", "minLength": 1 },
+        "purpose": { "type": "string", "minLength": 1 }
+      }
+    },
+    "overlayTarget": {
+      "type": "object",
+      "required": ["source", "selector"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "type": { "const": "SpecificResource" },
+        "styleClass": { "type": "string", "minLength": 1 },
+        "selector": {
+          "oneOf": [
+            { "$ref": "#/$defs/fragmentSelector" },
+            { "$ref": "#/$defs/pointSelector" },
+            { "$ref": "#/$defs/svgSelector" }
+          ],
+          "description": "A rectangle is an `xywh` FragmentSelector — the most widely implemented selector there is, which is why rectangles are quantised to whole pixels to fit it rather than moved to SVG to keep their decimals. Points and open or closed paths carry floats natively."
+        }
+      }
+    },
+    "pointSelector": {
+      "type": "object",
+      "required": ["type", "x", "y"],
+      "properties": {
+        "type": { "const": "PointSelector" },
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+    "svgSelector": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "SvgSelector" },
+        "value": { "type": "string", "minLength": 1 }
       }
     },
     "viewerState": {
       "type": "object",
-      "required": ["chapterId", "canvasIndex", "playback"],
+      "description": "Only what IIIF has no vocabulary for. Anything IIIF can already say is said in IIIF and is not repeated here — a second copy is useful only until the two disagree.",
+      "required": ["canvasIndex", "playback"],
       "properties": {
-        "chapterId": { "type": "string", "minLength": 1 },
-        "canvasIndex": { "type": "integer", "minimum": 0 },
-        "canvasId": { "type": "string", "format": "uri" },
-        "viewBox": { "$ref": "#/$defs/rectangle" },
+        "canvasIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Kept despite the canvas URI often ending in it: that convention is not universal — `…/canvas/p1` in the IIIF cookbook — so for many manifests this is the only copy."
+        },
+        "presentationAspect": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "The width/height every framing in this story is normalised to, so chapters authored at different window sizes present consistently."
+        },
+        "canvasId": {
+          "type": "string",
+          "description": "Legacy. Read for stories written before the target's `source` became the only copy; not written."
+        },
+        "viewBox": {
+          "$ref": "#/$defs/rectangle",
+          "description": "Legacy. Superseded by the chapter target's `xywh` fragment; read so older stories keep their exact framing, never written."
+        },
+        "drawingAnnotations": {
+          "type": "array",
+          "description": "Legacy. Superseded by the standalone drawing annotations in `items`; read for older stories, never written. Keeping both is what let a phantom rectangle accumulate on every save."
+        },
         "modelPose": {
           "type": "object",
           "properties": {
@@ -114,20 +289,79 @@
         },
         "layerOpacities": {
           "type": "object",
-          "additionalProperties": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          }
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
         },
         "annotationPlacement": { "$ref": "#/$defs/rectangle" },
+        "cameraTrack": {
+          "type": "object",
+          "required": ["durationMs", "keyframes"],
+          "properties": {
+            "durationMs": { "type": "number", "minimum": 0 },
+            "preset": {
+              "enum": [
+                "static",
+                "zoom-in",
+                "zoom-out",
+                "pan",
+                "drift-zoom",
+                "custom",
+                "ken-burns",
+                "hero-reveal",
+                "arc-sweep"
+              ]
+            },
+            "pathType": { "enum": ["linear", "spline"] },
+            "easing": { "enum": ["linear", "ease-in", "ease-out", "ease-in-out"] },
+            "keyframes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "timeMs"],
+                "properties": {
+                  "id": { "type": "string", "minLength": 1 },
+                  "timeMs": { "type": "number", "minimum": 0 },
+                  "dwellMs": { "type": "number", "minimum": 0 },
+                  "focus": {
+                    "type": "object",
+                    "required": ["x", "y"],
+                    "properties": {
+                      "x": { "type": "number" },
+                      "y": { "type": "number" }
+                    }
+                  },
+                  "viewBox": { "$ref": "#/$defs/rectangle" },
+                  "model": { "type": "object" },
+                  "layerOpacities": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "playback": {
           "type": "object",
-          "required": ["transitionMs"],
           "properties": {
             "advance": { "enum": ["manual", "auto", "both"] },
             "delayMs": { "type": "number", "minimum": 0 },
-            "transitionMs": { "type": "number", "minimum": 0 }
+            "transitionMs": { "type": "number", "minimum": 0 },
+            "presentationDurationMs": { "type": "number", "minimum": 0 },
+            "entryTransition": {
+              "type": "object",
+              "required": ["type", "durationMs"],
+              "properties": {
+                "type": { "enum": ["cut", "tween", "crossfade"] },
+                "durationMs": { "type": "number", "minimum": 0 },
+                "easing": {
+                  "enum": ["linear", "ease-in", "ease-out", "ease-in-out"]
+                }
+              }
+            }
           }
         }
       }

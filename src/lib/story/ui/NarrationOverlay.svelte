@@ -2,7 +2,7 @@
   import { Check, Link2, Volume2 } from '@lucide/svelte';
   import type { Readable } from 'svelte/store';
   import type { StoryState } from '../../core/types/story';
-  import { deriveChapterAnnotationBase, validatePublicIdentifier } from '../publicIdentifiers';
+  import { deriveChapterAnnotationBase, isGeneratedDraftId, validatePublicIdentifier } from '../publicIdentifiers';
   import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
@@ -46,8 +46,16 @@
   }
 
   $: {
-    const nextStoryId = $story.id ?? '';
-    const nextBase = $story.publication?.annotationBase ?? deriveChapterAnnotationBase($story) ?? '';
+    /*
+     * A generated identifier is Mango's, not the author's, so the field stays
+     * empty and the draft notice below keeps showing. Displaying it would read
+     * as "already set" and is how a generated id would reach publication.
+     */
+    const generated = isGeneratedDraftId($story.id);
+    const nextStoryId = generated ? '' : ($story.id ?? '');
+    const nextBase = generated
+      ? ($story.publication?.annotationBase ?? '')
+      : ($story.publication?.annotationBase ?? deriveChapterAnnotationBase($story) ?? '');
     const key = `${open ? '1' : '0'}:${nextStoryId}:${nextBase}`;
     if (key !== lastIdentifierSyncKey) {
       lastIdentifierSyncKey = key;
@@ -226,6 +234,18 @@
         </label>
         {#if identifiersLocked}
           <p class="narration-overlay__hint">{$t('storyBuilder.settings.identifiersManaged')}</p>
+        {:else if !storyId.trim()}
+          <!--
+            Empty by default, and until it is filled in the export carries an
+            identifier Mango generated under its own domain. That keeps the
+            document valid IIIF, which a `urn:` placeholder could not — but the
+            identifier belongs to mangoviewer.dev rather than to whoever is
+            publishing, so it is a working default and not a publishable one.
+            Nothing said so, which is how it went unnoticed.
+          -->
+          <p class="narration-overlay__hint" data-testid="story-draft-identifiers">
+            {$t('storyBuilder.settings.draftIdentifiers')}
+          </p>
         {:else if changingPublishedBase}
           <p class="narration-overlay__warning" role="alert">
             {$t('storyBuilder.settings.identifiersWarning')}

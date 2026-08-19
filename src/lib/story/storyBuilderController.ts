@@ -19,7 +19,9 @@ import {
   normaliseStoryFraming,
   normaliseViewBox,
   viewBoxAspect,
+  constrainViewBoxToContent,
 } from "./framing";
+import { createDraftStoryId } from "./publicIdentifiers";
 import { resolveManifestForNewChapter } from "./manifestResolver";
 import {
   animateViewBoxTransition,
@@ -295,7 +297,10 @@ export const createStoryBuilderController = (
     options.initialStory
       ? {
           ...options.initialStory,
-          id: options.annotationPageId ?? options.initialStory.id,
+          id:
+            options.annotationPageId ??
+            options.initialStory.id ??
+            createDraftStoryId(),
           publication: {
             ...options.initialStory.publication,
             ...(options.annotationBase
@@ -305,7 +310,7 @@ export const createStoryBuilderController = (
           },
         }
       : {
-          id: options.annotationPageId,
+          id: options.annotationPageId ?? createDraftStoryId(),
           publication:
             options.annotationBase || options.identifiersLocked
               ? {
@@ -1811,7 +1816,17 @@ export const createStoryBuilderController = (
     // reader's window the same way. A capture carries the editor stage's shape
     // and manual entry carries whatever was typed; neither should decide how
     // this chapter is framed relative to the others.
-    const viewBox = normaliseViewBox(requested, presentationAspectFor(requested));
+    /*
+     * Normalise first so the chapter is comparable with its siblings, then
+     * bring it inside the canvas: a framing is a region of the image, and one
+     * that hangs outside it cannot be written as a Media Fragment without
+     * being silently truncated on the way out.
+     */
+    const contentSize = viewer?.getContentSize?.() ?? null;
+    const normalised = normaliseViewBox(requested, presentationAspectFor(requested));
+    const viewBox = contentSize
+      ? constrainViewBoxToContent(normalised, contentSize)
+      : normalised;
     pushHistorySnapshot();
     storyStoreWrapper.setChapterViewBox({ chapterId, viewBox });
     const chapter = get(storyStore).chapters.find(
