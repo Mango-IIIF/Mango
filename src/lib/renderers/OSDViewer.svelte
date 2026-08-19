@@ -879,6 +879,14 @@
             }
             keepHomeViewportCentered();
             viewer?.viewport?.applyConstraints?.();
+            /*
+             * Nothing is emitted from here on purpose. `forceResize` only flags
+             * the viewer: OSD applies the new container size on its own next
+             * frame, so the viewport read at this point still describes the old
+             * stage and publishing it would hand every consumer a box that is
+             * about to be wrong. The fresh value arrives through `after-resize`
+             * below, once OSD has actually refitted the bounds.
+             */
             scheduleRenderedUpdate();
           });
         });
@@ -917,7 +925,13 @@
       viewer.addHandler('pan', handleViewportChange);
       viewer.addHandler('animation', handleAnimation);
       viewer.addHandler('animation-finish', handleViewportChange);
-      viewer.addHandler('resize', handleViewportChange);
+      /*
+       * `after-resize`, not `resize`: OSD raises `resize` before it refits the
+       * bounds to the new container, so a handler there reads and caches the
+       * pre-resize viewport. `after-resize` is raised once the bounds are
+       * recomputed, which is the value every consumer actually wants.
+       */
+      viewer.addHandler('after-resize', handleViewportChange);
       /*
        * Backstop for the same Safari problem the settle loop covers: if OSD's
        * container size still disagrees with the element once tiles are actually
