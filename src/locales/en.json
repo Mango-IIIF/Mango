@@ -53,8 +53,7 @@
       "advance": "Advance",
       "advanceHint": "Auto-play will move to the next chapter after the delay below. Leave empty to stay on manual.",
       "advanceDelay": "Delay between chapters (seconds)",
-      "save": "Save",
-      "saveHint": "Select a chapter to save settings."
+      "save": "Save"
     },
     "export": {
       "title": "Export story JSON",
@@ -109,8 +108,7 @@
     },
     "tasks": {
       "title": "Chapter tools",
-      "description": "Select a tool to edit this chapter.",
-      "advanced": "Advanced",
+      "description": "Everything about this chapter, in three groups. Sections that work on the stage open from here.",
       "languages": "{translated}/{total} languages",
       "status": {
         "empty": "Not configured",
@@ -121,8 +119,7 @@
       "items": {
         "details": {
           "title": "Details",
-          "description": "Title, description and translations.",
-          "save": "Save details"
+          "description": "Title, description and translations."
         },
         "position": {
           "title": "Frame",
@@ -135,33 +132,27 @@
         },
         "motion": {
           "title": "Motion",
-          "description": "Timed camera points for in-chapter movement.",
-          "save": "Save motion"
+          "description": "Timed camera points for in-chapter movement."
         },
         "audio-timing": {
           "title": "Narration",
-          "description": "Voiceover tracks and chapter narration timing.",
-          "save": "Save narration"
+          "description": "Voiceover tracks and chapter narration timing."
         },
         "transition-timing": {
           "title": "Chapter transition time",
-          "description": "Set the delay before moving to the next chapter.",
-          "save": "Save chapter transition time"
+          "description": "Set the delay before moving to the next chapter."
         },
         "media-timing": {
           "title": "Media timing",
-          "description": "Start and end points for this chapter’s source audio or video.",
-          "save": "Save media timing"
+          "description": "Start and end points for this chapter’s source audio or video."
         },
         "layers": {
           "title": "Layers",
-          "description": "Visibility and opacity for image layers.",
-          "save": "Save layers"
+          "description": "Visibility and opacity for image layers."
         },
         "comparison": {
           "title": "Comparison",
-          "description": "Present compatible sources together.",
-          "save": "Save comparison"
+          "description": "Present compatible sources together."
         },
         "source": {
           "title": "Source · Advanced",
@@ -233,17 +224,8 @@
     "content": {
       "language": "Content language",
       "title": "Content ({language})",
-      "expandMetadata": "Expand metadata section",
-      "collapseMetadata": "Collapse metadata section",
       "titleLabel": "Title",
-      "descriptionLabel": "Description",
-      "textBox": "Text box annotation ({language})",
-      "expandAnnotation": "Expand annotation section",
-      "collapseAnnotation": "Collapse annotation section",
-      "textBoxHint": "This creates a positioned text box. It is separate from the drawing tools above.",
-      "textPlaceholder": "Enter text for this text box",
-      "placeText": "Place text box on artwork",
-      "captureHint": "Capture a chapter to edit annotation text and placement."
+      "descriptionLabel": "Description"
     },
     "position": {
       "title": "Frame",
@@ -254,8 +236,6 @@
       "width": "Width",
       "height": "Height",
       "goTo": "Go to frame",
-      "expand": "Expand frame section",
-      "collapse": "Collapse frame section",
       "aspectLocked": "Locked to {aspect}: width and height change together, so every reader sees exactly this region."
     },
     "annotations": {
@@ -380,9 +360,6 @@
       "stopChapterPreview": "Stop preview",
       "chapterPreviewPlaying": "Playing this chapter. Click to stop.",
       "sourceHint": "Add the source for your story, choose its starting canvas, and create the first chapter. You can adjust image placement from the chapter tools afterwards.",
-      "backToTools": "Back to chapter tools",
-      "saveChapter": "Save chapter",
-      "revertView": "Centre the view on the frame",
       "noChapter": "No chapter selected",
       "noChapterHint": "Capture a chapter or select one from the timeline to edit its content.",
       "confirmPosition": "Confirm Position"
@@ -417,6 +394,25 @@
       "label": "Frame",
       "chapterAria": "Chapter frame",
       "keyframeAria": "Camera point {number} frame"
+    },
+    "inspector": {
+      "groupsLabel": "Chapter inspector",
+      "groups": {
+        "about": "About",
+        "timing": "Timing",
+        "source": "Source"
+      },
+      "edit": "Edit",
+      "draw": "Draw",
+      "done": "Done",
+      "onStage": "On stage",
+      "annotationsSummary": "{count} drawing annotations. Draw to add or edit them on the stage.",
+      "motionNone": "No camera movement. Edit to add camera points on the stage.",
+      "motionSummary": "{count} camera points · {style} · {seconds}s",
+      "narrationNone": "No narration segment for {language}.",
+      "narrationSummary": "{language}: {start}–{end}",
+      "mediaSummary": "Plays {start}–{end} of the source.",
+      "mediaWhole": "Plays the whole source."
     }
   },
   "viewer": {

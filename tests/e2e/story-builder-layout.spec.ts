@@ -106,26 +106,40 @@ test("leaves the stage the same size whatever chrome the author opens", async ({
       .toEqual([Math.round(baseline.width), Math.round(baseline.height)]);
   };
 
-  const openTask = async (task: string) => {
-    await viewer.locator(`[data-task-id="${task}"] button`).click();
+  const groupFor: Record<string, string> = {
+    focus: "about",
+    motion: "timing",
+    "audio-timing": "timing",
   };
-  const closeTask = async () => {
-    // Every open task has the same way back to the chapter tools.
-    await viewer
-      .locator(".chapter-overlay__task:not([hidden]) .chapter-overlay__task-back")
-      .click();
+  const openTool = async (task: string) => {
+    await viewer.locator(`[data-testid="inspector-group-${groupFor[task]}"]`).click();
+    await viewer.locator(`[data-testid="inspector-activate-${task}"]`).click();
+  };
+  const closeTool = async (task: string) => {
+    const section = viewer.locator(`[data-testid="inspector-section-${task}"]`);
+    // Drawing is a transaction with a Cancel; the rest just finish.
+    const cancel = section.locator('[data-testid="chapter-cancel"]');
+    if (await cancel.count()) {
+      await cancel.click();
+      return;
+    }
+    await section.locator('[data-testid="chapter-save"]').click();
   };
 
-  for (const task of ["focus", "motion", "audio-timing", "position"]) {
-    await openTask(task);
+  for (const task of ["focus", "motion", "audio-timing"]) {
+    await openTool(task);
     // The tool's own panel has appeared...
-    if (task !== "position") {
-      await expect(viewer.locator(".stage__bottom")).toBeVisible();
-    }
+    await expect(viewer.locator(".stage__bottom")).toBeVisible();
     // ...and the picture has not flinched.
     await expectUnchanged(`opening ${task}`);
-    await closeTask();
+    await closeTool(task);
     await expectUnchanged(`closing ${task}`);
+  }
+
+  // Switching inspector groups is chrome too.
+  for (const group of ["timing", "source", "about"]) {
+    await viewer.locator(`[data-testid="inspector-group-${group}"]`).click();
+    await expectUnchanged(`showing ${group}`);
   }
 
   // Collapsing and restoring each column.
@@ -145,7 +159,8 @@ test("floats the narration editor over the stage and keeps its controls in reach
   const viewer = page.locator("mango-viewer");
   const stageBefore = await measureStage(page);
 
-  await viewer.locator('[data-task-id="audio-timing"] button').click();
+  await viewer.locator('[data-testid="inspector-group-timing"]').click();
+  await viewer.locator('[data-testid="inspector-activate-audio-timing"]').click();
   const footer = viewer.locator(".stage__bottom");
   const narration = footer.locator(".story-wide-narration");
   await expect(narration).toBeVisible();
@@ -190,7 +205,8 @@ test("leaves an audio chapter's stage the same size when media timing opens", as
   await expect(audioRow).toBeVisible({ timeout: 30_000 });
   await audioRow.locator("button").first().click();
 
-  const mediaTiming = viewer.locator('[data-task-id="media-timing"] button');
+  await viewer.locator('[data-testid="inspector-group-timing"]').click();
+  const mediaTiming = viewer.locator('[data-testid="inspector-activate-media-timing"]');
   await expect(mediaTiming).toBeVisible({ timeout: 30_000 });
   const media = viewer.locator(".stage__media");
   const measure = () =>
@@ -206,7 +222,7 @@ test("leaves an audio chapter's stage the same size when media timing opens", as
   await expect.poll(measure, { message: "media area after opening media timing" }).toEqual(before);
 
   await viewer
-    .locator(".chapter-overlay__task:not([hidden]) .chapter-overlay__task-back")
+    .locator('[data-testid="inspector-section-media-timing"] [data-testid="chapter-save"]')
     .click();
   await expect.poll(measure, { message: "media area after closing media timing" }).toEqual(before);
 });

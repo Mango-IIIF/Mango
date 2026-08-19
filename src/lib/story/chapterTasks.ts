@@ -14,7 +14,39 @@ export type ChapterTaskId =
   | 'comparison'
   | 'source';
 
-export type ChapterInspectorView = { mode: 'dashboard' } | { mode: 'task'; task: ChapterTaskId };
+/**
+ * The three groups of the chapter inspector. Every task lives in exactly one,
+ * and the stage tools — the tasks that open something on the stage — sit
+ * among the others rather than behind a drill-down.
+ */
+export type InspectorGroup = 'about' | 'timing' | 'source';
+
+export const INSPECTOR_GROUPS: InspectorGroup[] = ['about', 'timing', 'source'];
+
+const GROUP_FOR_TASK: Record<ChapterTaskId, InspectorGroup> = {
+  details: 'about',
+  position: 'about',
+  focus: 'about',
+  'transition-timing': 'timing',
+  'audio-timing': 'timing',
+  motion: 'timing',
+  'media-timing': 'timing',
+  source: 'source',
+  layers: 'source',
+  comparison: 'source',
+};
+
+export const inspectorGroupForTask = (task: ChapterTaskId): InspectorGroup => GROUP_FOR_TASK[task];
+
+const STAGE_TOOLS: ReadonlySet<ChapterTaskId> = new Set<ChapterTaskId>([
+  'focus',
+  'motion',
+  'audio-timing',
+  'media-timing',
+]);
+
+/** Whether a task opens a tool on the stage — a bottom panel, a drawing mode. */
+export const isStageTool = (task: ChapterTaskId): boolean => STAGE_TOOLS.has(task);
 
 export type TaskAvailability =
   | { state: 'available' }

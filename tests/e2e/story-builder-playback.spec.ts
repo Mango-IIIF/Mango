@@ -21,59 +21,12 @@ test("keeps viewer zoom shortcuts scoped away from story metadata fields", async
     .not.toEqual(viewBefore);
 });
 
-test("lets the narration editor resize without clipping the viewer or its controls", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 700 });
-  await page.goto("/story-builder.html?iiif-content=test-story/demo.json");
-  await page.locator('[data-task-id="audio-timing"] button').click();
-
-  const stage = page.locator(".stage--story-builder");
-  const viewerFrame = stage.locator(".stage__primary");
-  const narration = stage.locator(".story-wide-narration");
-  const apply = narration.getByRole("button", { name: "Apply to chapter" });
-  await expect(narration).toBeVisible();
-  await expect(viewerFrame).toBeVisible();
-
-  const layout = await narration.evaluate((element) => ({
-    resize: getComputedStyle(element).resize,
-    overflowY: getComputedStyle(element).overflowY,
-  }));
-  expect(layout.resize).toBe("vertical");
-  expect(layout.overflowY).toBe("auto");
-
-  await narration.evaluate((element: HTMLElement) => {
-    element.style.height = "280px";
-  });
-  const compactViewerHeight = await viewerFrame.evaluate(
-    (element) => element.getBoundingClientRect().height,
-  );
-
-  await narration.evaluate((element: HTMLElement) => {
-    element.style.height = "380px";
-  });
-  const expandedViewerHeight = await viewerFrame.evaluate(
-    (element) => element.getBoundingClientRect().height,
-  );
-  expect(compactViewerHeight).toBeGreaterThanOrEqual(220);
-  expect(expandedViewerHeight).toBeGreaterThanOrEqual(220);
-  expect(expandedViewerHeight).toBeLessThanOrEqual(compactViewerHeight);
-
-  await apply.scrollIntoViewIfNeeded();
-  await expect(apply).toBeVisible();
-  const stageCanScroll = await stage.evaluate(
-    (element) =>
-      getComputedStyle(element).overflowY === "auto" &&
-      element.scrollHeight >= element.clientHeight,
-  );
-  expect(stageCanScroll).toBe(true);
-});
-
 test("previews saved chapter motion without showing authoring frames", async ({
   page,
 }) => {
   await page.goto("/story-builder.html?iiif-content=test-story/demo.json");
-  const motionTask = page.locator('[data-task-id="motion"] button');
+  await page.locator('[data-testid="inspector-group-timing"]').click();
+  const motionTask = page.locator('[data-testid="inspector-activate-motion"]');
   await expect(motionTask).toBeVisible();
   await expect
     .poll(() =>
@@ -114,7 +67,9 @@ test("previews saved chapter motion without showing authoring frames", async ({
   ).toHaveCount(1);
 
   await expect(page.locator(".story-wide-authoring__point")).toHaveCount(2);
-  await page.getByRole("button", { name: "Save motion", exact: true }).click();
+  await page
+    .locator('[data-testid="inspector-section-motion"] [data-testid="chapter-save"]')
+    .click();
   await expect(page.locator(".story-wide-authoring")).toHaveCount(0);
   // Out of the motion tool the keyframes leave the stage; the chapter frame stays.
   await expect(page.locator(".story-frame--keyframe")).toHaveCount(0);

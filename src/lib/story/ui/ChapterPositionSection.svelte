@@ -11,7 +11,6 @@
    * story's aspect, and nothing is re-normalised afterwards.
    */
 
-  export let collapsed = false;
   export let hasSavedPosition = false;
   export let positionDrafts: { x: string; y: string; w: string; h: string } = {
     x: '',
@@ -22,7 +21,6 @@
   /** Width over height every frame in this story is held to. */
   export let aspect: number | null = null;
 
-  export let onToggle: (() => void) | undefined = undefined;
   export let onFieldInput:
     ((field: 'x' | 'y' | 'w' | 'h', value: string) => void) | undefined = undefined;
   export let onCommit: ((field: 'x' | 'y' | 'w' | 'h') => void) | undefined = undefined;
@@ -54,81 +52,68 @@
   };
 </script>
 
-<section
-  class="chapter-overlay__section chapter-overlay__section--card"
-  data-testid="chapter-position-section"
->
-  <div class="chapter-overlay__section-header">
-    <div class="chapter-overlay__section-title">{$t('storyBuilder.position.title')}</div>
+<div class="chapter-position" data-testid="chapter-position-section">
+  <p class="chapter-overlay__hint">
+    {hasSavedPosition
+      ? $t('storyBuilder.position.hint')
+      : $t('storyBuilder.position.empty')}
+  </p>
+
+  <div class="chapter-position__grid">
+    {#each fields as field (field.key)}
+      <label class="chapter-overlay__label">
+        {$t(field.labelKey)}
+        <input
+          class="chapter-overlay__input"
+          type="number"
+          inputmode="numeric"
+          step="1"
+          min={field.min}
+          data-testid={`chapter-position-${field.key}`}
+          value={positionDrafts[field.key]}
+          on:input={handleInput(field.key)}
+          on:change={() => onCommit?.(field.key)}
+        />
+      </label>
+    {/each}
+  </div>
+
+  {#if aspect}
+    <p class="chapter-position__aspect" data-testid="chapter-position-aspect">
+      {$t('storyBuilder.position.aspectLocked', { aspect: formatAspect(aspect) })}
+    </p>
+  {/if}
+
+  <div class="chapter-position__actions">
     <button
-      class="chapter-overlay__collapse-toggle"
+      class="chapter-overlay__button chapter-overlay__button--subtle"
       type="button"
-      on:click={onToggle}
-      aria-expanded={!collapsed}
-      aria-label={collapsed
-        ? $t('storyBuilder.position.expand')
-        : $t('storyBuilder.position.collapse')}
+      data-testid="chapter-position-goto"
+      disabled={!hasSavedPosition}
+      on:click={() => onGoToPosition?.()}
     >
-      <span
-        class="chapter-overlay__collapse-icon"
-        class:chapter-overlay__collapse-icon--collapsed={collapsed}
-      >
-        ▾
-      </span>
+      {$t('storyBuilder.position.goTo')}
     </button>
   </div>
-
-  <div class="chapter-overlay__section-content" hidden={collapsed}>
-    <p class="chapter-overlay__hint">
-      {hasSavedPosition
-        ? $t('storyBuilder.position.hint')
-        : $t('storyBuilder.position.empty')}
-    </p>
-
-    <div class="chapter-position__grid">
-      {#each fields as field (field.key)}
-        <label class="chapter-overlay__label">
-          {$t(field.labelKey)}
-          <input
-            class="chapter-overlay__input"
-            type="number"
-            inputmode="numeric"
-            step="1"
-            min={field.min}
-            data-testid={`chapter-position-${field.key}`}
-            value={positionDrafts[field.key]}
-            on:input={handleInput(field.key)}
-            on:change={() => onCommit?.(field.key)}
-          />
-        </label>
-      {/each}
-    </div>
-
-    {#if aspect}
-      <p class="chapter-position__aspect" data-testid="chapter-position-aspect">
-        {$t('storyBuilder.position.aspectLocked', { aspect: formatAspect(aspect) })}
-      </p>
-    {/if}
-
-    <div class="chapter-position__actions">
-      <button
-        class="chapter-overlay__button chapter-overlay__button--subtle"
-        type="button"
-        data-testid="chapter-position-goto"
-        disabled={!hasSavedPosition}
-        on:click={() => onGoToPosition?.()}
-      >
-        {$t('storyBuilder.position.goTo')}
-      </button>
-    </div>
-  </div>
-</section>
+</div>
 
 <style>
+  .chapter-position {
+    display: grid;
+    gap: 10px;
+  }
+
   .chapter-position__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px 10px;
+  }
+
+  /* A number input's intrinsic width is wider than half a narrow panel. */
+  .chapter-position__grid .chapter-overlay__input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
   }
 
   .chapter-position__aspect {

@@ -53,8 +53,7 @@
       "advance": "自動送り",
       "advanceHint": "自動再生は設定した遅延時間後に次のチャプターへ移動します。手動ナビゲーションにする場合は空欄にしてください。",
       "advanceDelay": "チャプター間の遅延時間（秒）",
-      "save": "保存",
-      "saveHint": "設定を保存するチャプターを選択してください。"
+      "save": "保存"
     },
     "export": {
       "title": "ストーリーJSONのエクスポート",
@@ -109,8 +108,7 @@
     },
     "tasks": {
       "title": "チャプターツール",
-      "description": "このチャプターを編集するツールを選択してください。",
-      "advanced": "詳細設定",
+      "description": "このチャプターに関するすべてを 3 つのグループで表示します。ステージ上で操作するセクションはここから開きます。",
       "languages": "{translated}/{total} 言語",
       "status": {
         "empty": "未設定",
@@ -121,8 +119,7 @@
       "items": {
         "details": {
           "title": "詳細情報",
-          "description": "タイトル、説明文、および翻訳。",
-          "save": "詳細を保存"
+          "description": "タイトル、説明文、および翻訳。"
         },
         "position": {
           "title": "フレーム",
@@ -135,33 +132,27 @@
         },
         "motion": {
           "title": "モーション",
-          "description": "チャプター内のカメラの移動ポイント。",
-          "save": "モーションを保存"
+          "description": "チャプター内のカメラの移動ポイント。"
         },
         "audio-timing": {
           "title": "ナレーション",
-          "description": "ボイスオーバーのトラックとタイミング。",
-          "save": "ナレーションを保存"
+          "description": "ボイスオーバーのトラックとタイミング。"
         },
         "transition-timing": {
           "title": "チャプター遷移時間",
-          "description": "次のチャプターへ進む前の遅延時間を設定。",
-          "save": "遷移時間を保存"
+          "description": "次のチャプターへ進む前の遅延時間を設定。"
         },
         "media-timing": {
           "title": "メディアタイミング",
-          "description": "このチャプターのソース音声・動画の開始／終了ポイント。",
-          "save": "メディアタイミングを保存"
+          "description": "このチャプターのソース音声・動画の開始／終了ポイント。"
         },
         "layers": {
           "title": "レイヤー",
-          "description": "画像レイヤーの表示状態と不透明度。",
-          "save": "レイヤーを保存"
+          "description": "画像レイヤーの表示状態と不透明度。"
         },
         "comparison": {
           "title": "比較",
-          "description": "互換性のある複数のソースを並べてプレゼンテーション。",
-          "save": "比較を保存"
+          "description": "互換性のある複数のソースを並べてプレゼンテーション。"
         },
         "source": {
           "title": "ソース · 詳細",
@@ -233,17 +224,8 @@
     "content": {
       "language": "Content language",
       "title": "タイトル ({language})",
-      "expandMetadata": "Expand metadata section",
-      "collapseMetadata": "Collapse metadata section",
       "titleLabel": "Title",
-      "descriptionLabel": "Description",
-      "textBox": "Text box annotation ({language})",
-      "expandAnnotation": "Expand annotation section",
-      "collapseAnnotation": "Collapse annotation section",
-      "textBoxHint": "This creates a positioned text box. It is separate from the drawing tools above.",
-      "textPlaceholder": "Enter text for this text box",
-      "placeText": "Place text box on artwork",
-      "captureHint": "Capture a chapter to edit annotation text and placement."
+      "descriptionLabel": "Description"
     },
     "position": {
       "title": "フレーム",
@@ -254,8 +236,6 @@
       "width": "幅",
       "height": "高さ",
       "goTo": "フレームへ移動",
-      "expand": "フレームセクションを展開",
-      "collapse": "フレームセクションを折りたたむ",
       "aspectLocked": "{aspect} に固定されています。幅と高さは連動して変わるため、すべての読者にこの領域がそのまま表示されます。"
     },
     "annotations": {
@@ -380,9 +360,6 @@
       "stopChapterPreview": "プレビューを停止",
       "chapterPreviewPlaying": "このチャプターを再生中です。クリックで停止します。",
       "sourceHint": "IIIFマニフェストを読み込んでコンテンツを選択します。",
-      "backToTools": "ツールに戻る",
-      "saveChapter": "チャプターを保存",
-      "revertView": "フレームを中心に表示",
       "noChapter": "チャプターが選択されていません",
       "noChapterHint": "タイムラインからチャプターを選択するか、新しいチャプターを作成してください。",
       "confirmPosition": "ビューアの位置を確定"
@@ -417,6 +394,25 @@
       "label": "フレーム",
       "chapterAria": "チャプターのフレーム",
       "keyframeAria": "カメラポイント {number} のフレーム"
+    },
+    "inspector": {
+      "groupsLabel": "チャプターインスペクター",
+      "groups": {
+        "about": "概要",
+        "timing": "タイミング",
+        "source": "ソース"
+      },
+      "edit": "編集",
+      "draw": "描画",
+      "done": "完了",
+      "onStage": "ステージ上",
+      "annotationsSummary": "描画アノテーション {count} 件。ステージ上で追加・編集するには「描画」を押してください。",
+      "motionNone": "カメラの動きはありません。編集してステージ上にカメラポイントを追加してください。",
+      "motionSummary": "カメラポイント {count} 件 · {style} · {seconds}秒",
+      "narrationNone": "{language} のナレーション区間はありません。",
+      "narrationSummary": "{language}: {start}–{end}",
+      "mediaSummary": "ソースの {start}–{end} を再生します。",
+      "mediaWhole": "ソース全体を再生します。"
     }
   },
   "viewer": {

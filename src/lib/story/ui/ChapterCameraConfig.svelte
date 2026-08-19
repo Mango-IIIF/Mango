@@ -7,19 +7,28 @@
   export let canvasCount = 0;
   export let manifestDraft = '';
   export let sourceLoaded = false;
-  export let delayMs: number | undefined = undefined;
-  export let section: 'all' | 'source' | 'transition-timing' = 'all';
+  /**
+   * Bare, as the body of an inspector section that already has a heading;
+   * otherwise a card of its own, which is how the empty story's first source
+   * is loaded before there is a chapter to inspect.
+   */
+  export let embedded = false;
 
   export let onManifestInput: ((event: Event) => void) | undefined;
   export let onReloadManifest: ((chapterCanvasIndex: number) => void) | undefined;
   export let onSelectCanvas: ((canvasIndex: number) => void) | undefined;
-  export let onDelayChange: ((event: Event) => void) | undefined;
   export let onCreateChapter: (() => void) | undefined;
 </script>
 
-{#if section === 'all' || section === 'source'}
-  <section class="chapter-overlay__section chapter-overlay__section--card">
-    <div class="chapter-overlay__section-title">{$t('storyBuilder.chapter.manifestLabel')}</div>
+<svelte:element
+  this={embedded ? 'div' : 'section'}
+  class={embedded
+    ? 'chapter-overlay__section-content'
+    : 'chapter-overlay__section chapter-overlay__section--card'}
+>
+    {#if !embedded}
+      <div class="chapter-overlay__section-title">{$t('storyBuilder.chapter.manifestLabel')}</div>
+    {/if}
     <div class="chapter-overlay__row">
       <input
         class="chapter-overlay__input"
@@ -78,28 +87,4 @@
     {:else if sourceLoaded}
       <div class="chapter-overlay__hint" role="status">{$t('storyBuilder.source.loading')}</div>
     {/if}
-  </section>
-{/if}
-
-{#if section === 'all' || section === 'transition-timing'}
-  <section class="chapter-overlay__section chapter-overlay__section--card">
-    <div class="chapter-overlay__section-title">{$t('storyBuilder.transition.title')}</div>
-    <div class="chapter-overlay__section-content">
-      <p class="chapter-overlay__hint">
-        {$t('storyBuilder.transition.description')}
-      </p>
-      <label class="chapter-overlay__label">
-        {$t('storyBuilder.transition.delay')}
-        <input
-          class="chapter-overlay__input"
-          type="number"
-          min="0"
-          step="0.5"
-          data-testid="chapter-transition-delay"
-          value={delayMs !== undefined ? (delayMs / 1000).toString() : ''}
-          on:input={onDelayChange}
-        />
-      </label>
-    </div>
-  </section>
-{/if}
+</svelte:element>

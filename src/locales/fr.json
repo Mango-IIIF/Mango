@@ -53,8 +53,7 @@
       "advance": "Avance",
       "advanceHint": "La lecture automatique passera au chapitre suivant après le délai ci-dessous. Laissez vide pour rester en manuel.",
       "advanceDelay": "Délai entre les chapitres (secondes)",
-      "save": "Enregistrer",
-      "saveHint": "Sélectionnez un chapitre pour enregistrer les paramètres."
+      "save": "Enregistrer"
     },
     "export": {
       "title": "Exporter le JSON de l'histoire",
@@ -109,8 +108,7 @@
     },
     "tasks": {
       "title": "Outils du chapitre",
-      "description": "Sélectionnez un outil pour modifier ce chapitre.",
-      "advanced": "Avancé",
+      "description": "Tout sur ce chapitre, en trois groupes. Les sections qui travaillent sur la scène s’ouvrent d’ici.",
       "languages": "{translated}/{total} langues",
       "status": {
         "empty": "Non configuré",
@@ -121,8 +119,7 @@
       "items": {
         "details": {
           "title": "Détails",
-          "description": "Titre, description et traductions.",
-          "save": "Enregistrer les détails"
+          "description": "Titre, description et traductions."
         },
         "position": {
           "title": "Cadre",
@@ -135,33 +132,27 @@
         },
         "motion": {
           "title": "Mouvement",
-          "description": "Points de caméra minutés pour le mouvement au sein du chapitre.",
-          "save": "Enregistrer le mouvement"
+          "description": "Points de caméra minutés pour le mouvement au sein du chapitre."
         },
         "audio-timing": {
           "title": "Narration",
-          "description": "Pistes de voix off et minutage de la narration du chapitre.",
-          "save": "Enregistrer la narration"
+          "description": "Pistes de voix off et minutage de la narration du chapitre."
         },
         "transition-timing": {
           "title": "Temps de transition entre chapitres",
-          "description": "Définissez le délai avant de passer au chapitre suivant.",
-          "save": "Enregistrer le temps de transition entre chapitres"
+          "description": "Définissez le délai avant de passer au chapitre suivant."
         },
         "media-timing": {
           "title": "Minutage du média",
-          "description": "Points de début et de fin de l'audio ou de la vidéo source de ce chapitre.",
-          "save": "Enregistrer le minutage du média"
+          "description": "Points de début et de fin de l'audio ou de la vidéo source de ce chapitre."
         },
         "layers": {
           "title": "Calques",
-          "description": "Visibilité et opacité des calques d'image.",
-          "save": "Enregistrer les calques"
+          "description": "Visibilité et opacité des calques d'image."
         },
         "comparison": {
           "title": "Comparaison",
-          "description": "Présenter ensemble des sources compatibles.",
-          "save": "Enregistrer la comparaison"
+          "description": "Présenter ensemble des sources compatibles."
         },
         "source": {
           "title": "Source · Avancé",
@@ -233,17 +224,8 @@
     "content": {
       "language": "Langue du contenu",
       "title": "Contenu ({language})",
-      "expandMetadata": "Développer la section des métadonnées",
-      "collapseMetadata": "Réduire la section des métadonnées",
       "titleLabel": "Titre",
-      "descriptionLabel": "Description",
-      "textBox": "Annotation en zone de texte ({language})",
-      "expandAnnotation": "Développer la section des annotations",
-      "collapseAnnotation": "Réduire la section des annotations",
-      "textBoxHint": "Ceci crée une zone de texte positionnée. Elle est distincte des outils de dessin ci-dessus.",
-      "textPlaceholder": "Saisissez le texte de cette zone",
-      "placeText": "Placer la zone de texte sur l'œuvre",
-      "captureHint": "Capturez un chapitre pour modifier le texte et le placement de l'annotation."
+      "descriptionLabel": "Description"
     },
     "position": {
       "title": "Cadre",
@@ -254,8 +236,6 @@
       "width": "Largeur",
       "height": "Hauteur",
       "goTo": "Aller au cadre",
-      "expand": "Développer la section du cadre",
-      "collapse": "Réduire la section du cadre",
       "aspectLocked": "Verrouillé à {aspect} : la largeur et la hauteur changent ensemble, si bien que chaque lecteur voit exactement cette région."
     },
     "annotations": {
@@ -380,9 +360,6 @@
       "stopChapterPreview": "Arrêter la prévisualisation",
       "chapterPreviewPlaying": "Lecture de ce chapitre. Cliquez pour arrêter.",
       "sourceHint": "Ajoutez la source de votre histoire, choisissez son canevas de départ et créez le premier chapitre. Vous pourrez ensuite ajuster le placement de l'image depuis les outils du chapitre.",
-      "backToTools": "Retour aux outils du chapitre",
-      "saveChapter": "Enregistrer le chapitre",
-      "revertView": "Centrer la vue sur le cadre",
       "noChapter": "Aucun chapitre sélectionné",
       "noChapterHint": "Capturez un chapitre ou sélectionnez-en un dans la chronologie pour modifier son contenu.",
       "confirmPosition": "Confirmer la position"
@@ -417,6 +394,25 @@
       "label": "Cadre",
       "chapterAria": "Cadre du chapitre",
       "keyframeAria": "Cadre du point de caméra {number}"
+    },
+    "inspector": {
+      "groupsLabel": "Inspecteur du chapitre",
+      "groups": {
+        "about": "À propos",
+        "timing": "Durées",
+        "source": "Source"
+      },
+      "edit": "Modifier",
+      "draw": "Dessiner",
+      "done": "Terminé",
+      "onStage": "Sur la scène",
+      "annotationsSummary": "{count} annotations dessinées. Dessinez pour les ajouter ou les modifier sur la scène.",
+      "motionNone": "Aucun mouvement de caméra. Modifiez pour ajouter des points de caméra sur la scène.",
+      "motionSummary": "{count} points de caméra · {style} · {seconds}s",
+      "narrationNone": "Aucun segment de narration pour {language}.",
+      "narrationSummary": "{language} : {start}–{end}",
+      "mediaSummary": "Lit {start}–{end} de la source.",
+      "mediaWhole": "Lit la source entière."
     }
   },
   "viewer": {

@@ -204,6 +204,12 @@ export type StoryBuilderController = {
   loadManifest: (manifest: string) => void;
   saveChapterSettings: () => void;
   cancelChapterSettings: () => void;
+  /**
+   * Re-reads the selected chapter from the viewer after the Source section
+   * moved it to another Manifest or Canvas, so the chapter stores the canvas
+   * it is now showing rather than the one it was created on.
+   */
+  applyChapterSource: () => void;
   saveExport: () => { ok: boolean; errors: string[] };
   exportStory: () => { ok: boolean; errors: string[] };
   /** A detached snapshot of the builder's editable story state. */
@@ -2878,6 +2884,7 @@ export const createStoryBuilderController = (
     loadManifest,
     saveChapterSettings,
     cancelChapterSettings,
+    applyChapterSource: captureSourceRetarget,
     saveExport,
     exportStory,
     getStory,

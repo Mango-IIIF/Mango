@@ -191,6 +191,7 @@ export const createStoryBuilderPlugins = (
         },
         onSaveChapterSettings: controller.saveChapterSettings,
         onCancelChapterSettings: controller.cancelChapterSettings,
+        onApplySource: controller.applyChapterSource,
         layers: controller.mediaSources,
         layerOpacities: controller.layerOpacities,
         onUpdateLayerOpacity: controller.updateLayerOpacity,

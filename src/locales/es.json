@@ -53,8 +53,7 @@
       "advance": "Avance",
       "advanceHint": "La reproducción automática pasa al siguiente capítulo tras la demora indicada. Dejar vacío mantiene el modo manual.",
       "advanceDelay": "Demora entre capítulos (segundos)",
-      "save": "Guardar",
-      "saveHint": "Seleccione un capítulo para guardar ajustes."
+      "save": "Guardar"
     },
     "export": {
       "title": "Exportar JSON de la historia",
@@ -109,8 +108,7 @@
     },
     "tasks": {
       "title": "Herramientas del capítulo",
-      "description": "Seleccione una herramienta para editar este capítulo.",
-      "advanced": "Avanzado",
+      "description": "Todo sobre este capítulo, en tres grupos. Las secciones que trabajan en el escenario se abren desde aquí.",
       "languages": "{translated}/{total} idiomas",
       "status": {
         "empty": "Sin configurar",
@@ -121,8 +119,7 @@
       "items": {
         "details": {
           "title": "Detalles",
-          "description": "Título, descripción y traducciones.",
-          "save": "Guardar los detalles"
+          "description": "Título, descripción y traducciones."
         },
         "position": {
           "title": "Encuadre",
@@ -135,33 +132,27 @@
         },
         "motion": {
           "title": "Movimiento",
-          "description": "Puntos de cámara temporizados para el movimiento dentro del capítulo.",
-          "save": "Guardar el movimiento"
+          "description": "Puntos de cámara temporizados para el movimiento dentro del capítulo."
         },
         "audio-timing": {
           "title": "Narración",
-          "description": "Pistas de voz en off y sincronización de la narración del capítulo.",
-          "save": "Guardar la narración"
+          "description": "Pistas de voz en off y sincronización de la narración del capítulo."
         },
         "transition-timing": {
           "title": "Tiempo de transición entre capítulos",
-          "description": "Defina la espera antes de pasar al siguiente capítulo.",
-          "save": "Guardar el tiempo de transición entre capítulos"
+          "description": "Defina la espera antes de pasar al siguiente capítulo."
         },
         "media-timing": {
           "title": "Sincronización del medio",
-          "description": "Puntos de inicio y fin del audio o vídeo de origen de este capítulo.",
-          "save": "Guardar la sincronización del medio"
+          "description": "Puntos de inicio y fin del audio o vídeo de origen de este capítulo."
         },
         "layers": {
           "title": "Capas",
-          "description": "Visibilidad y opacidad de las capas de imagen.",
-          "save": "Guardar las capas"
+          "description": "Visibilidad y opacidad de las capas de imagen."
         },
         "comparison": {
           "title": "Comparación",
-          "description": "Presentar juntas fuentes compatibles.",
-          "save": "Guardar la comparación"
+          "description": "Presentar juntas fuentes compatibles."
         },
         "source": {
           "title": "Fuente · Avanzado",
@@ -233,17 +224,8 @@
     "content": {
       "language": "Idioma del contenido",
       "title": "Contenido ({language})",
-      "expandMetadata": "Expandir la sección de metadatos",
-      "collapseMetadata": "Contraer la sección de metadatos",
       "titleLabel": "Título",
-      "descriptionLabel": "Descripción",
-      "textBox": "Anotación de cuadro de texto ({language})",
-      "expandAnnotation": "Expandir la sección de anotaciones",
-      "collapseAnnotation": "Contraer la sección de anotaciones",
-      "textBoxHint": "Esto crea un cuadro de texto posicionado. Es independiente de las herramientas de dibujo de arriba.",
-      "textPlaceholder": "Escriba el texto de este cuadro",
-      "placeText": "Colocar el cuadro de texto sobre la obra",
-      "captureHint": "Capture un capítulo para editar el texto y la colocación de la anotación."
+      "descriptionLabel": "Descripción"
     },
     "position": {
       "title": "Encuadre",
@@ -254,8 +236,6 @@
       "width": "Ancho",
       "height": "Alto",
       "goTo": "Ir al encuadre",
-      "expand": "Expandir la sección de encuadre",
-      "collapse": "Contraer la sección de encuadre",
       "aspectLocked": "Bloqueado a {aspect}: el ancho y el alto cambian juntos, así que todos los lectores ven exactamente esta región."
     },
     "annotations": {
@@ -380,9 +360,6 @@
       "stopChapterPreview": "Detener la previsualización",
       "chapterPreviewPlaying": "Reproduciendo este capítulo. Haga clic para detener.",
       "sourceHint": "Añada la fuente de su historia, elija su lienzo inicial y cree el primer capítulo. Después podrá ajustar la posición de la imagen desde las herramientas del capítulo.",
-      "backToTools": "Volver a las herramientas del capítulo",
-      "saveChapter": "Guardar el capítulo",
-      "revertView": "Centrar la vista en el encuadre",
       "noChapter": "Ningún capítulo seleccionado",
       "noChapterHint": "Capture un capítulo o seleccione uno en la línea de tiempo para editar su contenido.",
       "confirmPosition": "Confirmar la posición"
@@ -417,6 +394,25 @@
       "label": "Encuadre",
       "chapterAria": "Encuadre del capítulo",
       "keyframeAria": "Encuadre del punto de cámara {number}"
+    },
+    "inspector": {
+      "groupsLabel": "Inspector del capítulo",
+      "groups": {
+        "about": "Acerca de",
+        "timing": "Tiempos",
+        "source": "Fuente"
+      },
+      "edit": "Editar",
+      "draw": "Dibujar",
+      "done": "Hecho",
+      "onStage": "En el escenario",
+      "annotationsSummary": "{count} anotaciones dibujadas. Dibuje para añadirlas o editarlas en el escenario.",
+      "motionNone": "Sin movimiento de cámara. Edite para añadir puntos de cámara en el escenario.",
+      "motionSummary": "{count} puntos de cámara · {style} · {seconds}s",
+      "narrationNone": "Sin segmento de narración para {language}.",
+      "narrationSummary": "{language}: {start}–{end}",
+      "mediaSummary": "Reproduce {start}–{end} de la fuente.",
+      "mediaWhole": "Reproduce la fuente completa."
     }
   },
   "viewer": {

@@ -124,11 +124,9 @@ describe("ChapterOverlay", () => {
         chapterId: "chapter-image",
       },
     });
-    (
-      target.querySelector('[data-task-id="position"] button') as HTMLButtonElement
-    ).click();
     await tick();
 
+    expect(target.querySelector('[data-testid="inspector-section-position"]')).toBeTruthy();
     expect(target.querySelector('[data-testid="chapter-update-view"]')).toBeNull();
     expect(target.querySelector('[data-testid="chapter-position-capture"]')).toBeNull();
     expect(target.textContent).not.toContain("Use current view");
@@ -165,18 +163,14 @@ describe("ChapterOverlay", () => {
       },
     });
 
-    (
-      target.querySelector(
-        '[data-task-id="position"] button',
-      ) as HTMLButtonElement
-    ).click();
     await tick();
 
-    const visibleTask = target.querySelector(
-      ".chapter-overlay__task:not([hidden])",
+    // The frame sits in About alongside the details, no drill-down needed.
+    const section = target.querySelector(
+      '[data-testid="inspector-section-position"]',
     ) as HTMLElement;
-    expect(visibleTask.textContent).toContain("Frame");
-    expect(visibleTask.textContent).not.toContain("Content (EN)");
+    expect(section.textContent).toContain("Frame");
+    expect(section.textContent).not.toContain("Content (EN)");
 
     const xInput = target.querySelector(
       '[data-testid="chapter-position-x"]',
@@ -442,14 +436,14 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-audio",
         mediaType: writable("audio"),
+        activeChapterTask: writable<ChapterTaskId | null>("media-timing"),
       },
     });
-
-    const mediaTiming = Array.from(target.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Media timing"),
-    ) as HTMLButtonElement;
-    mediaTiming.click();
     await tick();
+    // The inspector follows the open tool into its group.
+    expect(
+      target.querySelector('[data-testid="inspector-group-timing"]')?.getAttribute("aria-selected"),
+    ).toBe("true");
 
     const instructions = target.textContent?.replace(/\s+/g, " ") ?? "";
     expect(instructions).toContain("Manifest audio timing");
@@ -480,13 +474,9 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-video",
         mediaType: writable("video"),
+        activeChapterTask: writable<ChapterTaskId | null>("media-timing"),
       },
     });
-
-    const mediaTiming = Array.from(target.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Media timing"),
-    ) as HTMLButtonElement;
-    mediaTiming.click();
     await tick();
 
     const instructions = target.textContent?.replace(/\s+/g, " ") ?? "";
@@ -605,6 +595,11 @@ describe("ChapterOverlay", () => {
       },
     });
 
+    (
+      target.querySelector('[data-testid="inspector-group-source"]') as HTMLButtonElement
+    ).click();
+    await tick();
+
     const input = target.querySelector(
       '[data-testid="chapter-manifest"]',
     ) as HTMLInputElement;
@@ -676,12 +671,9 @@ describe("ChapterOverlay", () => {
         selectedDrawingAnnotationId,
         onSetDrawingAnnotationLabel,
         onSetDrawingAnnotationStyle,
+        activeChapterTask: writable<ChapterTaskId | null>("focus"),
       },
     });
-
-    (
-      target.querySelector('[data-task-id="focus"] button') as HTMLButtonElement
-    ).click();
     await tick();
 
     (
@@ -742,14 +734,13 @@ describe("ChapterOverlay", () => {
       },
     });
 
-    const transitionTiming = target.querySelector(
-      '[data-task-id="transition-timing"] button',
-    ) as HTMLButtonElement;
-    transitionTiming.click();
+    (
+      target.querySelector('[data-testid="inspector-group-timing"]') as HTMLButtonElement
+    ).click();
     await tick();
 
     const visibleTask = target.querySelector(
-      ".chapter-overlay__task:not([hidden])",
+      '[data-testid="inspector-section-transition-timing"]',
     ) as HTMLElement;
     expect(visibleTask.textContent).toContain("Chapter transition time");
     expect(visibleTask.textContent).not.toContain("Advance timing");
@@ -830,7 +821,7 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("collapses and expands metadata section", async () => {
+  it("collapses and expands the details section", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -858,21 +849,20 @@ describe("ChapterOverlay", () => {
       '[data-testid="chapter-title"]',
     ) as HTMLInputElement;
     const sectionContent = titleInput.closest(
-      ".chapter-overlay__section-content",
+      ".inspector-section__body",
     ) as HTMLElement;
     expect(sectionContent.hidden).toBe(false);
 
-    const collapseButton = target.querySelector(
-      'button[aria-label="Collapse metadata section"]',
+    const toggle = target.querySelector(
+      '[data-testid="inspector-toggle-details"]',
     ) as HTMLButtonElement;
-    collapseButton.click();
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    toggle.click();
     await tick();
     expect(sectionContent.hidden).toBe(true);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
 
-    const expandButton = target.querySelector(
-      'button[aria-label="Expand metadata section"]',
-    ) as HTMLButtonElement;
-    expandButton.click();
+    toggle.click();
     await tick();
     expect(sectionContent.hidden).toBe(false);
 
@@ -906,6 +896,7 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-1",
         language: "en",
+        activeChapterTask: writable<ChapterTaskId | null>("audio-timing"),
       },
     });
     await tick();
@@ -986,6 +977,7 @@ describe("ChapterOverlay", () => {
         chapterId: "chapter-1",
         language: "en",
         onSkipNarration,
+        activeChapterTask: writable<ChapterTaskId | null>("audio-timing"),
       },
     });
     await tick();

@@ -90,6 +90,7 @@
   export let onRevertChapterPosition: () => void;
   export let onSaveChapterSettings: () => void;
   export let onCancelChapterSettings: () => void = () => {};
+  export let onApplySource: () => void = () => {};
   export let onUpdateMotionDuration: (durationMs: number) => void;
   export let onUpdateMotionPathType: (pathType: 'linear' | 'spline') => void;
   export let onUpdateMotionInitialDwell: (dwellMs: number) => void;
@@ -370,13 +371,13 @@
         onRevertChapterPosition={() => onRevertChapterPosition()}
         onSave={onSaveChapterSettings}
         onCancel={onCancelChapterSettings}
+        {onApplySource}
         {onSetAnnotationLanguage}
         {annotationTool}
         {selectedDrawingAnnotationId}
         {onSetAnnotationTool}
         {onSetDrawingAnnotationLabel}
         {onSetDrawingAnnotationStyle}
-        onSetAnnotationPositioning={(lang) => onStartAnnotationPositioning(lang)}
         layers={$layers}
         layerOpacities={$layerOpacities}
         {onUpdateLayerOpacity}

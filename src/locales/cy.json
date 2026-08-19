@@ -53,8 +53,7 @@
       "advance": "Symud ymlaen",
       "advanceHint": "Bydd chwarae awtomatig yn symud i'r bennod nesaf ar ôl yr oedi isod. Gadewch yn wag i aros ar ddull llaw.",
       "advanceDelay": "Oedi rhwng penodau (eiliadau)",
-      "save": "Cadw",
-      "saveHint": "Dewiswch bennod i gadw gosodiadau."
+      "save": "Cadw"
     },
     "export": {
       "title": "Allforio JSON y stori",
@@ -109,8 +108,7 @@
     },
     "tasks": {
       "title": "Offer y bennod",
-      "description": "Dewiswch offeryn i olygu'r bennod hon.",
-      "advanced": "Uwch",
+      "description": "Popeth am y bennod hon, mewn tri grŵp. Mae adrannau sy'n gweithio ar y llwyfan yn agor oddi yma.",
       "languages": "{translated}/{total} iaith",
       "status": {
         "empty": "Heb ei ffurfweddu",
@@ -121,8 +119,7 @@
       "items": {
         "details": {
           "title": "Manylion",
-          "description": "Teitl, disgrifiad a chyfieithiadau.",
-          "save": "Cadw'r manylion"
+          "description": "Teitl, disgrifiad a chyfieithiadau."
         },
         "position": {
           "title": "Ffrâm",
@@ -135,33 +132,27 @@
         },
         "motion": {
           "title": "Symudiad",
-          "description": "Pwyntiau camera wedi'u hamseru ar gyfer symud o fewn y bennod.",
-          "save": "Cadw'r symudiad"
+          "description": "Pwyntiau camera wedi'u hamseru ar gyfer symud o fewn y bennod."
         },
         "audio-timing": {
           "title": "Adroddiant",
-          "description": "Traciau trosleisio ac amseru adroddiant y bennod.",
-          "save": "Cadw'r adroddiant"
+          "description": "Traciau trosleisio ac amseru adroddiant y bennod."
         },
         "transition-timing": {
           "title": "Amser pontio rhwng penodau",
-          "description": "Gosodwch yr oedi cyn symud i'r bennod nesaf.",
-          "save": "Cadw'r amser pontio rhwng penodau"
+          "description": "Gosodwch yr oedi cyn symud i'r bennod nesaf."
         },
         "media-timing": {
           "title": "Amseru'r cyfrwng",
-          "description": "Pwyntiau dechrau a diwedd sain neu fideo ffynhonnell y bennod hon.",
-          "save": "Cadw amseru'r cyfrwng"
+          "description": "Pwyntiau dechrau a diwedd sain neu fideo ffynhonnell y bennod hon."
         },
         "layers": {
           "title": "Haenau",
-          "description": "Gwelededd ac afloywder haenau delwedd.",
-          "save": "Cadw'r haenau"
+          "description": "Gwelededd ac afloywder haenau delwedd."
         },
         "comparison": {
           "title": "Cymhariaeth",
-          "description": "Cyflwyno ffynonellau cydnaws gyda'i gilydd.",
-          "save": "Cadw'r gymhariaeth"
+          "description": "Cyflwyno ffynonellau cydnaws gyda'i gilydd."
         },
         "source": {
           "title": "Ffynhonnell · Uwch",
@@ -233,17 +224,8 @@
     "content": {
       "language": "Iaith y cynnwys",
       "title": "Cynnwys ({language})",
-      "expandMetadata": "Ehangu'r adran fetadata",
-      "collapseMetadata": "Cwympo'r adran fetadata",
       "titleLabel": "Teitl",
-      "descriptionLabel": "Disgrifiad",
-      "textBox": "Anodiad blwch testun ({language})",
-      "expandAnnotation": "Ehangu'r adran anodi",
-      "collapseAnnotation": "Cwympo'r adran anodi",
-      "textBoxHint": "Mae hyn yn creu blwch testun wedi'i leoli. Mae ar wahân i'r offer lluniadu uchod.",
-      "textPlaceholder": "Rhowch destun ar gyfer y blwch testun hwn",
-      "placeText": "Gosod y blwch testun ar y gwaith celf",
-      "captureHint": "Cipiwch bennod i olygu testun a lleoliad yr anodiad."
+      "descriptionLabel": "Disgrifiad"
     },
     "position": {
       "title": "Ffrâm",
@@ -254,8 +236,6 @@
       "width": "Lled",
       "height": "Uchder",
       "goTo": "Mynd i'r ffrâm",
-      "expand": "Ehangu'r adran ffrâm",
-      "collapse": "Crebachu'r adran ffrâm",
       "aspectLocked": "Wedi'i chloi i {aspect}: mae'r lled a'r uchder yn newid gyda'i gilydd, fel bod pob darllenydd yn gweld yn union y rhanbarth hwn."
     },
     "annotations": {
@@ -380,9 +360,6 @@
       "stopChapterPreview": "Atal y rhagolwg",
       "chapterPreviewPlaying": "Yn chwarae'r bennod hon. Cliciwch i atal.",
       "sourceHint": "Ychwanegwch ffynhonnell eich stori, dewiswch ei chynfas cychwynnol, a chrëwch y bennod gyntaf. Gallwch addasu lleoliad y ddelwedd o offer y bennod wedyn.",
-      "backToTools": "Yn ôl i offer y bennod",
-      "saveChapter": "Cadw'r bennod",
-      "revertView": "Canoli'r olwg ar y ffrâm",
       "noChapter": "Dim pennod wedi'i dewis",
       "noChapterHint": "Cipiwch bennod neu dewiswch un o'r llinell amser i olygu ei chynnwys.",
       "confirmPosition": "Cadarnhau'r Safle"
@@ -417,6 +394,25 @@
       "label": "Ffrâm",
       "chapterAria": "Ffrâm y bennod",
       "keyframeAria": "Ffrâm pwynt camera {number}"
+    },
+    "inspector": {
+      "groupsLabel": "Arolygydd y bennod",
+      "groups": {
+        "about": "Ynghylch",
+        "timing": "Amseru",
+        "source": "Ffynhonnell"
+      },
+      "edit": "Golygu",
+      "draw": "Tynnu",
+      "done": "Wedi gorffen",
+      "onStage": "Ar y llwyfan",
+      "annotationsSummary": "{count} anodiad wedi'u tynnu. Tynnwch i'w hychwanegu neu eu golygu ar y llwyfan.",
+      "motionNone": "Dim symudiad camera. Golygwch i ychwanegu pwyntiau camera ar y llwyfan.",
+      "motionSummary": "{count} pwynt camera · {style} · {seconds}e",
+      "narrationNone": "Dim segment adrodd ar gyfer {language}.",
+      "narrationSummary": "{language}: {start}–{end}",
+      "mediaSummary": "Yn chwarae {start}–{end} o'r ffynhonnell.",
+      "mediaWhole": "Yn chwarae'r ffynhonnell gyfan."
     }
   },
   "viewer": {
