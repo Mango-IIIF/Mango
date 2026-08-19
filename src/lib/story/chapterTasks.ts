@@ -1,7 +1,5 @@
 import type { Chapter, StoryState } from '../core/types/story';
-import type { ViewBox } from '../core/types/viewer';
 import type { MediaSource, MediaType } from '../iiif/mediaResolver';
-import { inscribeViewBox, normaliseViewBox, resolvePresentationAspect } from './framing';
 import { translate } from '../core/i18n';
 
 export type ChapterTaskId =
@@ -46,14 +44,6 @@ export type ChapterTaskContext = {
   loadedSources?: MediaSource[];
   validationErrors?: string[];
   languages: string[];
-  /**
-   * Where the viewer is actually pointing, once it has settled. Only the
-   * chapter the author currently has open has a live view to be compared
-   * against, so this is absent for any other evaluation — and while a story
-   * preview is driving the viewer, when the framing on screen is the story's
-   * doing rather than the author's.
-   */
-  currentViewBox?: ViewBox | null;
 };
 
 export type ChapterTaskEvaluation = {
@@ -63,69 +53,6 @@ export type ChapterTaskEvaluation = {
 };
 
 const hasText = (value: string | undefined): boolean => Boolean(value?.trim());
-
-/*
- * Compared by centre and zoom rather than by raw edges. A chapter's framing is
- * stored at the story's presentation aspect while the live viewer carries the
- * editor stage's shape, so the same view is described by two different boxes —
- * and `normaliseViewBox` is defined to preserve exactly the centre and the
- * area, which is why those are the parts that carry the author's intent.
- * Comparing edges instead reported drift on a chapter nobody had touched yet.
- *
- * Both tolerances are relative: half a pixel means nothing on a 15000px canvas
- * and everything inside a 300px crop. They sit below anything an author would
- * call a different view, and above the wobble of the animation that flies the
- * viewer to a chapter.
- */
-const CENTRE_DRIFT_TOLERANCE = 0.02;
-const SCALE_DRIFT_TOLERANCE = 0.05;
-
-/**
- * Deliberately not `framingsWithin` from `framing.ts`: that one answers
- * whether the viewer has arrived somewhere, in absolute image pixels, and
- * cannot answer this question across canvas sizes.
- *
- * Pass `aspect` when `current` is a live viewport rather than another stored
- * framing. A viewport and the framing it belongs to are related in one of two
- * ways, and both mean "the author has not moved":
- *
- * - The author captured this view, and it was normalised on the way in —
- *   `normaliseViewBox`, which keeps the centre and the area.
- * - The viewer flew to the stored framing, and `fitBounds` padded it out to
- *   the stage's shape — so the viewport is the framing inflated, and
- *   `inscribeViewBox` takes it back.
- *
- * Only the second of those was behind the warning on every chapter: selecting
- * a chapter flies to its framing, so a 4:3 framing on a portrait-ish editor
- * stage came back about 1.55× larger in area, and the scale test could never
- * return. Both readings share the centre with the viewport, so accepting
- * either only widens the band the scale test allows.
- *
- * Without `aspect`, both boxes are taken to be in the same frame of reference
- * already — which is the case when comparing two live viewports.
- */
-export const framingsDiffer = (
-  saved: ViewBox,
-  current: ViewBox,
-  aspect?: number,
-): boolean => {
-  if (!(saved.w > 0) || !(saved.h > 0) || !(current.w > 0) || !(current.h > 0)) {
-    return false;
-  }
-  if (aspect !== undefined && Number.isFinite(aspect) && aspect > 0) {
-    return [
-      normaliseViewBox(current, aspect),
-      inscribeViewBox(current, aspect),
-    ].every((candidate) => framingsDiffer(saved, candidate));
-  }
-  const centreDrift = Math.max(
-    Math.abs(current.x + current.w / 2 - (saved.x + saved.w / 2)) / saved.w,
-    Math.abs(current.y + current.h / 2 - (saved.y + saved.h / 2)) / saved.h,
-  );
-  if (centreDrift > CENTRE_DRIFT_TOLERANCE) return true;
-  const scale = Math.sqrt((current.w * current.h) / (saved.w * saved.h));
-  return Math.abs(scale - 1) > SCALE_DRIFT_TOLERANCE;
-};
 
 const validationForTask = (task: ChapterTaskId, messages: string[]): string[] => {
   const patterns: Record<ChapterTaskId, RegExp> = {
@@ -257,32 +184,17 @@ export const evaluateTaskStatus = (
       );
     }
     case 'position': {
+      /*
+       * The frame is an object drawn on the canvas, so there is nothing here
+       * to compare it against: what the author sees is what is stored. This
+       * used to warn when the stored box drifted from the live viewport, a
+       * question that only made sense while framings were captured from the
+       * camera — and one that, asked across two different aspects, was wrong
+       * on every chapter anybody authored.
+       */
       const viewBox = chapter.viewBox;
       if (!viewBox) return withAttention('empty');
       if (!(viewBox.w > 0 && viewBox.h > 0)) return withAttention('attention');
-      /*
-       * "Configured" used to mean only that the field was not null — which it
-       * always is, because a chapter captures a view the moment it is created.
-       * So the tick could never go red, and it read as reassurance about a
-       * framing nobody had checked. The question worth answering is whether the
-       * captured view is still the one the author is looking at: they create a
-       * chapter, then explore to find what it is about, and the capture happens
-       * before that exploring rather than after it.
-       */
-      /*
-       * The live viewport carries the editor stage's aspect, while the stored
-       * framing carries the story's — the whole point of `framing.ts`. The two
-       * differ at any ordinary window size, so comparing them as they stand
-       * measured that difference rather than the author's and lit the warning
-       * on every chapter anybody authored. Handing the aspect over is what
-       * restores the question this is meant to ask.
-       */
-      const current = context.currentViewBox;
-      if (current && framingsDiffer(viewBox, current, resolvePresentationAspect(story))) {
-        return withAttention('attention', {
-          labelKey: 'storyBuilder.tasks.status.positionDrift',
-        });
-      }
       return withAttention('complete');
     }
     case 'focus': {

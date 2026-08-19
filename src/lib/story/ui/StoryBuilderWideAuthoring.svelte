@@ -34,6 +34,8 @@
   export let onAddPoint: () => void;
   export let onDeletePoint: (keyframeId: string) => void = () => {};
   export let onGoToPoint: (keyframeId: string) => void;
+  /** The point whose frame currently carries the handles on the stage. */
+  export let selectedPointId: Readable<string | null> = readable(null);
 
   $: chapter =
     $story.chapters.find((entry) => entry.id === $selectedChapterId) ?? null;
@@ -81,12 +83,14 @@
         {#each points as point, index (point.id)}
           <div
             class="story-wide-authoring__point-item"
+            class:story-wide-authoring__point-item--selected={$selectedPointId === point.id}
             style={`--point-position:${pointPosition(point)}`}
           >
             <button
               class="story-wide-authoring__point"
               type="button"
               aria-label={$t('storyBuilder.motion.goToPoint', { number: index + 1 })}
+              aria-pressed={$selectedPointId === point.id}
               on:click={() => onGoToPoint(point.id)}
             >
               <span class="story-wide-authoring__pin"
@@ -389,6 +393,14 @@
     fill: var(--accent, var(--story-builder-accent, #e07a3f));
     stroke: white;
     stroke-width: 1.7;
+  }
+  .story-wide-authoring__point-item--selected .story-wide-authoring__pin :global(svg) {
+    fill: white;
+    stroke: var(--accent, var(--story-builder-accent, #e07a3f));
+    stroke-width: 2.2;
+  }
+  .story-wide-authoring__point-item--selected .story-wide-authoring__pin b {
+    color: var(--accent, var(--story-builder-accent, #e07a3f));
   }
   .story-wide-authoring__pin b {
     position: relative;

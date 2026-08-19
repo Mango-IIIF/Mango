@@ -116,8 +116,7 @@
         "empty": "Heb ei ffurfweddu",
         "partial": "Wedi'i ffurfweddu'n rhannol",
         "complete": "Wedi'i ffurfweddu",
-        "attention": "Angen sylw",
-        "positionDrift": "Ddim yn cyfateb i'r olwg bresennol"
+        "attention": "Angen sylw"
       },
       "items": {
         "details": {
@@ -126,9 +125,8 @@
           "save": "Cadw'r manylion"
         },
         "position": {
-          "title": "Safle'r gwyliwr",
-          "description": "Ardal y cynfas a'r chwyddiad y mae'r bennod hon yn agor arnynt.",
-          "save": "Cadw safle'r gwyliwr"
+          "title": "Ffrâm",
+          "description": "Rhanbarth y cynfas y mae'r bennod hon yn agor arno, wedi'i dynnu ar y llwyfan."
         },
         "focus": {
           "title": "Anodiadau",
@@ -248,20 +246,17 @@
       "captureHint": "Cipiwch bennod i olygu testun a lleoliad yr anodiad."
     },
     "position": {
-      "title": "Safle'r gwyliwr",
-      "hint": "Ardal y cynfas y mae'r bennod hon yn ei fframio, mewn picseli'r cynfas.",
-      "empty": "Nid oes safle wedi'i gadw eto. Fframiwch y gwaith celf yn y gwyliwr, yna cipiwch yr olwg bresennol.",
+      "title": "Ffrâm",
+      "hint": "Llusgwch y ffrâm ar y llwyfan i'w symud, neu ei dolenni i newid ei maint. Teipiwch ranbarth yma mewn picseli'r cynfas os oes gennych un.",
+      "empty": "Dim ffrâm eto. Teipiwch ranbarth mewn picseli'r cynfas i greu un.",
       "x": "X",
       "y": "Y",
       "width": "Lled",
       "height": "Uchder",
-      "capture": "Defnyddio'r olwg bresennol",
-      "goTo": "Mynd i'r safle a gadwyd",
-      "current": "Golwg bresennol: {x} · {y} · {w} · {h}",
-      "expand": "Ehangu'r adran safle'r gwyliwr",
-      "collapse": "Crebachu'r adran safle'r gwyliwr",
-      "stored": "Wedi'i gadw fel: {x} · {y} · {w} · {h}",
-      "normalisedNote": "Cais yw'r gwerthoedd a deipiwyd neu a gipiwyd. Caiff fframiau eu cadw yng nghymhareb agwedd cyflwyno'r stori fel bod penodau'n aros yn gymaradwy, felly gall y rhifau a gedwir fod yn wahanol i'r rhai a roddwyd gennych."
+      "goTo": "Mynd i'r ffrâm",
+      "expand": "Ehangu'r adran ffrâm",
+      "collapse": "Crebachu'r adran ffrâm",
+      "aspectLocked": "Wedi'i chloi i {aspect}: mae'r lled a'r uchder yn newid gyda'i gilydd, fel bod pob darllenydd yn gweld yn union y rhanbarth hwn."
     },
     "annotations": {
       "chapter": "Anodiadau'r bennod",
@@ -308,8 +303,8 @@
       "durationDwellError": "Rhaid i'r hyd adael amser i symud ar ôl y saib dechrau o {seconds} eiliad.",
       "arcError": "Mae angen o leiaf dri phwynt camera ar gyfer ysgubiad bwa. Ychwanegwch bwynt arall yn gyntaf.",
       "dwellError": "Rhaid i'r saib dechrau fod yn fyrrach na'r amser hyd at y pwynt camera nesaf.",
-      "customHint": "Mae'r modd personol yn cadw chwyddiad y cynfas a gipiwyd ar gyfer pob pwynt. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
-      "presetHint": "Mae'r pwyntiau'n gosod y ffocws; mae'r arddull symud yn rheoli'r chwyddo. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
+      "customHint": "Mae'r modd personol yn cadw ffrâm pob pwynt fel y'i tynnwyd gennych. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
+      "presetHint": "Mae'r pwyntiau'n gosod y ffocws; mae'r arddull symud yn rheoli'r chwyddo. Mae newid maint pwynt yn newid i Personol. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
       "preview": "Rhagolwg",
       "style": "Arddull symud",
       "presets": "Rhagosodiadau symud",
@@ -341,21 +336,13 @@
       "duration": "Hyd symudiad y bennod",
       "durationHint": "Caiff pob safle ei wasgaru'n awtomatig ar draws yr hyd hwn.",
       "durationSeconds": "Hyd (eiliadau)",
-      "cameraPoints": "Pwyntiau camera",
-      "movePointAt": "Symud pwynt camera {number} ar {seconds} eiliad",
-      "movePointTitle": "Symud pwynt camera {number} · {seconds} eiliad",
-      "placePointHint": "Cliciwch neu lusgwch y gwaith celf i osod y pwynt camera",
-      "setPoint": "Gosod pwynt camera",
-      "movePoint": "Symud pwynt {number}",
-      "placePoint": "Gosod pwynt {number}",
-      "usePoint": "Defnyddio'r pwynt hwn",
       "zoomValue": "Chwyddo {zoom}×",
       "timeline": "Llinell amser symudiad y bennod",
       "goToPoint": "Mynd i bwynt camera {number}",
       "point": "Pwynt {number}",
       "deletePoint": "Dileu'r pwynt camera",
       "deletePointNumber": "Dileu pwynt camera {number}",
-      "emptyPoints": "Dim pwyntiau camera eto. Ychwanegwch bwynt, yna llusgwch ei bin i'w safle yn y gwyliwr.",
+      "emptyPoints": "Dim pwyntiau camera eto. Ychwanegwch bwynt, yna llusgwch ei ffrâm i'w lle ar y llwyfan.",
       "addPoint": "Ychwanegu pwynt camera"
     },
     "settings": {
@@ -388,7 +375,6 @@
       "selectedChapter": "Y bennod a ddewiswyd",
       "newStory": "Stori newydd",
       "loadSource": "Llwytho ffynhonnell",
-      "positionUpdated": "Safle wedi'i ddiweddaru",
       "previewChapter": "Rhagolwg o'r bennod",
       "previewChapterHint": "Chwaraewch y bennod hon ar ei phen ei hun, yn union fel y mae'r stori'n ei chyflwyno.",
       "stopChapterPreview": "Atal y rhagolwg",
@@ -396,7 +382,7 @@
       "sourceHint": "Ychwanegwch ffynhonnell eich stori, dewiswch ei chynfas cychwynnol, a chrëwch y bennod gyntaf. Gallwch addasu lleoliad y ddelwedd o offer y bennod wedyn.",
       "backToTools": "Yn ôl i offer y bennod",
       "saveChapter": "Cadw'r bennod",
-      "revertView": "Dychwelyd i'r olwg a gipiwyd",
+      "revertView": "Canoli'r olwg ar y ffrâm",
       "noChapter": "Dim pennod wedi'i dewis",
       "noChapterHint": "Cipiwch bennod neu dewiswch un o'r llinell amser i olygu ei chynnwys.",
       "confirmPosition": "Cadarnhau'r Safle"
@@ -426,6 +412,11 @@
       "showChapters": "Dangos penodau",
       "hideTools": "Cuddio offer y bennod",
       "showTools": "Dangos offer y bennod"
+    },
+    "frame": {
+      "label": "Ffrâm",
+      "chapterAria": "Ffrâm y bennod",
+      "keyframeAria": "Ffrâm pwynt camera {number}"
     }
   },
   "viewer": {
@@ -781,8 +772,7 @@
       "forward": "Chwarae ymlaen 10 eiliad",
       "rewind": "Ailddirwyn 10 eiliad",
       "media": "Cyfryngau",
-      "mediaSelect": "Dewis ffynhonnell cyfryngau",
-      "saveView": "Cadw'r olygfa hon fel fframio'r bennod"
+      "mediaSelect": "Dewis ffynhonnell cyfryngau"
     },
     "gallery": {
       "label": "Galeri mini-ddelweddau",

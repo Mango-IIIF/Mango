@@ -116,8 +116,7 @@
         "empty": "Sin configurar",
         "partial": "Parcialmente configurado",
         "complete": "Configurado",
-        "attention": "Requiere atención",
-        "positionDrift": "No coincide con la vista actual"
+        "attention": "Requiere atención"
       },
       "items": {
         "details": {
@@ -126,9 +125,8 @@
           "save": "Guardar los detalles"
         },
         "position": {
-          "title": "Posición del visor",
-          "description": "El área del lienzo y el zoom con los que se abre este capítulo.",
-          "save": "Guardar la posición del visor"
+          "title": "Encuadre",
+          "description": "La región del lienzo con la que se abre este capítulo, dibujada en el escenario."
         },
         "focus": {
           "title": "Anotaciones",
@@ -248,20 +246,17 @@
       "captureHint": "Capture un capítulo para editar el texto y la colocación de la anotación."
     },
     "position": {
-      "title": "Posición del visor",
-      "hint": "El área del lienzo que encuadra este capítulo, en píxeles del lienzo.",
-      "empty": "Aún no hay ninguna posición guardada. Encuadre la obra en el visor y capture la vista actual.",
+      "title": "Encuadre",
+      "hint": "Arrastre el encuadre en el escenario para moverlo, o sus tiradores para cambiar su tamaño. Escriba aquí una región en píxeles del lienzo si ya la tiene.",
+      "empty": "Aún no hay encuadre. Escriba una región en píxeles del lienzo para crearlo.",
       "x": "X",
       "y": "Y",
       "width": "Ancho",
       "height": "Alto",
-      "capture": "Usar la vista actual",
-      "goTo": "Ir a la posición guardada",
-      "current": "Vista actual: {x} · {y} · {w} · {h}",
-      "expand": "Expandir la sección de posición del visor",
-      "collapse": "Contraer la sección de posición del visor",
-      "stored": "Guardado como: {x} · {y} · {w} · {h}",
-      "normalisedNote": "Los valores escritos o capturados son una solicitud. Los encuadres se guardan con la relación de aspecto de presentación de la historia para que los capítulos sigan siendo comparables, así que los números guardados pueden diferir de los introducidos."
+      "goTo": "Ir al encuadre",
+      "expand": "Expandir la sección de encuadre",
+      "collapse": "Contraer la sección de encuadre",
+      "aspectLocked": "Bloqueado a {aspect}: el ancho y el alto cambian juntos, así que todos los lectores ven exactamente esta región."
     },
     "annotations": {
       "chapter": "Anotaciones del capítulo",
@@ -308,8 +303,8 @@
       "durationDwellError": "La duración debe dejar tiempo para el movimiento tras la pausa inicial de {seconds} s.",
       "arcError": "El barrido en arco necesita al menos tres puntos de cámara. Añada antes otro punto.",
       "dwellError": "La pausa inicial debe ser más corta que el tiempo hasta el siguiente punto de cámara.",
-      "customHint": "El modo personalizado conserva el zoom del lienzo capturado en cada punto. La previsualización empieza en el punto 1.",
-      "presetHint": "Los puntos fijan el enfoque; el estilo de movimiento controla el zoom. La previsualización empieza en el punto 1.",
+      "customHint": "El modo personalizado conserva el encuadre de cada punto tal como lo dibujó. La previsualización empieza en el punto 1.",
+      "presetHint": "Los puntos fijan el enfoque; el estilo de movimiento controla el zoom. Cambiar el tamaño de un punto pasa a Personalizado. La previsualización empieza en el punto 1.",
       "preview": "Previsualizar",
       "style": "Estilo de movimiento",
       "presets": "Ajustes de movimiento",
@@ -341,22 +336,14 @@
       "duration": "Duración del movimiento del capítulo",
       "durationHint": "Todas las posiciones se distribuyen automáticamente a lo largo de esta duración.",
       "durationSeconds": "Duración (segundos)",
-      "cameraPoints": "Puntos de cámara",
-      "movePointAt": "Mover el punto de cámara {number} en el segundo {seconds}",
-      "movePointTitle": "Mover el punto de cámara {number} · {seconds} s",
-      "placePointHint": "Haga clic o arrastre sobre la obra para colocar el punto de cámara",
-      "setPoint": "Fijar el punto de cámara",
-      "movePoint": "Mover el punto {number}",
-      "placePoint": "Colocar el punto {number}",
-      "usePoint": "Usar este punto",
       "zoomValue": "Zoom {zoom}×",
       "timeline": "Línea de tiempo del movimiento del capítulo",
       "goToPoint": "Ir al punto de cámara {number}",
       "point": "Punto {number}",
       "deletePoint": "Eliminar el punto de cámara",
       "deletePointNumber": "Eliminar el punto de cámara {number}",
-      "emptyPoints": "Aún no hay puntos de cámara. Añada un punto y arrastre su marcador hasta su posición en el visor.",
-      "addPoint": "Añadir un punto de cámara"
+      "emptyPoints": "Aún no hay puntos de cámara. Añada un punto y arrastre su encuadre hasta su posición en el escenario.",
+      "addPoint": "Añadir punto de cámara"
     },
     "settings": {
       "title": "Ajustes de la historia",
@@ -388,7 +375,6 @@
       "selectedChapter": "Capítulo seleccionado",
       "newStory": "Nueva historia",
       "loadSource": "Cargar una fuente",
-      "positionUpdated": "Posición actualizada",
       "previewChapter": "Previsualizar el capítulo",
       "previewChapterHint": "Reproduzca este capítulo por separado, tal como lo presenta la historia.",
       "stopChapterPreview": "Detener la previsualización",
@@ -396,7 +382,7 @@
       "sourceHint": "Añada la fuente de su historia, elija su lienzo inicial y cree el primer capítulo. Después podrá ajustar la posición de la imagen desde las herramientas del capítulo.",
       "backToTools": "Volver a las herramientas del capítulo",
       "saveChapter": "Guardar el capítulo",
-      "revertView": "Volver a la vista capturada",
+      "revertView": "Centrar la vista en el encuadre",
       "noChapter": "Ningún capítulo seleccionado",
       "noChapterHint": "Capture un capítulo o seleccione uno en la línea de tiempo para editar su contenido.",
       "confirmPosition": "Confirmar la posición"
@@ -426,6 +412,11 @@
       "showChapters": "Mostrar capítulos",
       "hideTools": "Ocultar herramientas del capítulo",
       "showTools": "Mostrar herramientas del capítulo"
+    },
+    "frame": {
+      "label": "Encuadre",
+      "chapterAria": "Encuadre del capítulo",
+      "keyframeAria": "Encuadre del punto de cámara {number}"
     }
   },
   "viewer": {
@@ -781,8 +772,7 @@
       "forward": "Avanzar 10 segundos",
       "rewind": "Retroceder 10 segundos",
       "media": "Medios",
-      "mediaSelect": "Seleccionar fuente multimedia",
-      "saveView": "Guardar esta vista como el encuadre del capítulo"
+      "mediaSelect": "Seleccionar fuente multimedia"
     },
     "gallery": {
       "label": "Galería de miniaturas",

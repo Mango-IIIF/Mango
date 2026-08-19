@@ -2,18 +2,19 @@ import type { Chapter, StoryState } from '../core/types/story';
 import type { ViewBox } from '../core/types/viewer';
 
 /**
- * Camera framings are captured from the viewer's viewport, so every stored box
- * carries the aspect ratio of the stage it was captured on. Within one chapter
- * that is harmless — its keyframes agree with each other — but chapters
- * authored at different window sizes or with different editor panels open end
- * up with different aspects. The renderer fits a box inside the viewport, so a
- * box wider than the viewport binds on width while a taller one binds on
- * height: the apparent zoom then shifts from chapter to chapter for reasons
- * the author never intended.
+ * Every stored framing is held to one canonical aspect, the story's
+ * presentation aspect. The renderer fits a box inside the viewport, so a box
+ * wider than the viewport binds on width while a taller one binds on height:
+ * let chapters carry different aspects and the apparent zoom shifts from
+ * chapter to chapter for reasons the author never intended.
  *
- * Normalising every stored framing to one canonical aspect removes that.
- * A reader's window still adds padding on whichever axis is looser, but it
- * does so uniformly across the whole story, so the zoom relationships between
+ * In the builder the chapter frame is an object on the canvas locked to that
+ * aspect, so new framings arrive already canonical and normalising them is a
+ * no-op. The normalisation still matters for what arrives from elsewhere: a
+ * new chapter's default (taken from the stage at that moment, which has the
+ * editor's shape), a typed value, and stories authored before the lock. A
+ * reader's window still adds padding on whichever axis is looser, but it does
+ * so uniformly across the whole story, so the zoom relationships between
  * chapters survive exactly as authored.
  */
 
@@ -57,34 +58,6 @@ export const normaliseViewBox = (box: ViewBox, aspect: number): ViewBox => {
 };
 
 /**
- * The largest box of `aspect` that fits inside `box`, on the same centre.
- *
- * The inverse of what the renderer does to show a framing: `setViewBox` calls
- * `fitBounds`, so a chapter framing whose aspect differs from the stage's is
- * displayed with padding on one axis and the viewport that comes back is
- * *larger* than the framing. This recovers the framing from that viewport.
- *
- * Not interchangeable with `normaliseViewBox`, which answers a different
- * question — "what would this view be stored as?" — and preserves area rather
- * than fitting. Between them they cover the two ways a live viewport comes to
- * be related to a stored framing: the author captured it, or the viewer flew
- * to it.
- */
-export const inscribeViewBox = (box: ViewBox, aspect: number): ViewBox => {
-  if (!isPositive(aspect) || !isPositive(box.w) || !isPositive(box.h)) return box;
-  if (Math.abs(box.w / box.h - aspect) <= aspect * ASPECT_EPSILON) return box;
-
-  const width = Math.min(box.w, box.h * aspect);
-  const height = width / aspect;
-  return {
-    x: box.x + box.w / 2 - width / 2,
-    y: box.y + box.h / 2 - height / 2,
-    w: width,
-    h: height,
-  };
-};
-
-/**
  * Brings a framing inside the canvas.
  *
  * A viewport capture is not a region of the image: when the stage is a
@@ -113,6 +86,34 @@ export const constrainViewBoxToContent = (
   const h = Math.min(box.h, content.height);
   const x = Math.min(Math.max(box.x, 0), content.width - w);
   const y = Math.min(Math.max(box.y, 0), content.height - h);
+
+  return { x, y, w, h };
+};
+
+/**
+ * Brings a framing inside the canvas without changing its shape.
+ *
+ * The counterpart of `constrainViewBoxToContent` for a box whose aspect is
+ * deliberate. Clamping each side separately breaks the lock the moment a
+ * frame meets an edge of the image — a frame wider than the picture came back
+ * at the picture's width but its own height — so a box too large for the
+ * canvas on either axis is scaled down about its centre until it fits, and
+ * one that merely hangs over an edge is shifted back in.
+ */
+export const fitViewBoxToContent = (
+  box: ViewBox,
+  content: { width: number; height: number },
+): ViewBox => {
+  if (!isPositive(content.width) || !isPositive(content.height)) return box;
+  if (!isPositive(box.w) || !isPositive(box.h)) return box;
+
+  const scale = Math.min(1, content.width / box.w, content.height / box.h);
+  const w = box.w * scale;
+  const h = box.h * scale;
+  const centreX = box.x + box.w / 2;
+  const centreY = box.y + box.h / 2;
+  const x = Math.min(Math.max(centreX - w / 2, 0), content.width - w);
+  const y = Math.min(Math.max(centreY - h / 2, 0), content.height - h);
 
   return { x, y, w, h };
 };
@@ -173,20 +174,20 @@ const keyframeEnvelope = (chapter: Chapter): ViewBox | null =>
 /**
  * Component-wise framing comparison within an absolute tolerance.
  *
- * There are three different questions callers ask about a pair of framings,
- * and they are not interchangeable. Reach for the right one rather than
- * adding a fourth:
+ * Two different questions get asked about a pair of framings, and they are
+ * not interchangeable. Reach for the right one rather than adding a third:
  *
  * - "Is the viewer effectively already here, so a move can be skipped?"
  *   This function. Mechanical, absolute, and always with an explicit
  *   tolerance — the callers work in image pixels, where the meaning of a
  *   given tolerance depends entirely on how big the image is.
- * - "Has the author meaningfully reframed this chapter?" `framingsDiffer`
- *   in `chapterTasks.ts`, which is relative to the saved box precisely
- *   because an absolute pixel count cannot answer it across canvas sizes.
  * - "Has the stored value changed at all?" An exact identity check, such as
  *   `positionSignature` in `ChapterOverlay.svelte`. No tolerance belongs in
  *   a change-detection key.
+ *
+ * There used to be a third — "has the author reframed this chapter?", asked
+ * of the live viewport — but the frame is now an object on the canvas, so
+ * what the author sees is what is stored and there is nothing to drift.
  */
 export const framingsWithin = (a: ViewBox, b: ViewBox, tolerance: number): boolean =>
   Math.abs(a.x - b.x) <= tolerance &&

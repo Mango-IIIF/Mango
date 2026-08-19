@@ -2,7 +2,7 @@ import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
 import type { ModelPose, ModelPoseOptions } from './model';
 import type { ViewerEventMap } from './events';
 import type { ContentSize, ViewBox, ViewerStateSnapshot } from './viewer';
-import type { ChapterAnnotationTool } from './story';
+import type { ChapterAnnotationTool, StoryFrame } from './story';
 import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
 
 export type ViewerApi = {
@@ -52,6 +52,15 @@ export type ViewerApi = {
   setStoryAnnotations?: (annotations: ResolvedAnnotation[]) => void;
   setStoryAnnotationEditing?: (enabled: boolean) => void;
   setStoryAnnotationSelection?: (annotationId: string | null) => void;
+  /**
+   * Frames the story builder wants drawn on the stage — the chapter frame and,
+   * while motion is being authored, its keyframes. Each is a canvas-pixel
+   * region the author can move and resize in place; commits come back through
+   * the `storyFrameChange` event.
+   */
+  setStoryFrames?: (frames: StoryFrame[]) => void;
+  /** Which of the frames carries the handles. */
+  setStoryFrameSelection?: (frameId: string | null) => void;
   updateLayerOpacity?: (id: string, opacity: number) => void;
   getLayerOpacities?: () => Record<string, number>;
   getMediaSources?: () => MediaSource[];

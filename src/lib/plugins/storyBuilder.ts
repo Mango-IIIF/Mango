@@ -10,11 +10,6 @@ import StoryBuilderOverlay from "../story/ui/StoryBuilderOverlay.svelte";
 import StoryBuilderTopBar from "../story/ui/StoryBuilderTopBar.svelte";
 import StoryBuilderWideAuthoring from "../story/ui/StoryBuilderWideAuthoring.svelte";
 import { translate } from '../core/i18n';
-import { findPresentationRoot } from "../story/presentationFrame";
-import { registerStoryCapture } from "../story/storyStageActions";
-
-/** The single builder plugin that owns stage-level actions. */
-const PRESENTATION_ASPECT_OWNER = "story-builder-overlay";
 
 export const createStoryBuilderPlugins = (
   options: StoryBuilderOptions = {},
@@ -32,8 +27,6 @@ export const createStoryBuilderPlugins = (
   ): ViewerPlugin => {
     let detach: (() => void) | null = null;
     let handle: { destroy: () => void } | null = null;
-    let stopCapture: (() => void) | null = null;
-    let presentationRoot: HTMLElement | null = null;
 
     return {
       id,
@@ -42,23 +35,8 @@ export const createStoryBuilderPlugins = (
       init(ctx) {
         detach = controller.attach(ctx);
         handle = createMount(ctx.mount, ctx);
-        /*
-         * The stage toolbar's capture button lives in the viewer layout, which
-         * has no reference to this controller. One owner only: every builder
-         * plugin shares this factory, and tearing any one of them down must not
-         * unregister the action while the rest are still running.
-         */
-        if (id === PRESENTATION_ASPECT_OWNER) {
-          presentationRoot = findPresentationRoot(ctx.mount);
-          stopCapture = registerStoryCapture(
-            presentationRoot,
-            controller.updateChapterPosition,
-          );
-        }
       },
       destroy() {
-        stopCapture?.();
-        stopCapture = null;
         handle?.destroy();
         handle = null;
         detach?.();
@@ -203,7 +181,6 @@ export const createStoryBuilderPlugins = (
         onUpdateAnnotationPlacement: controller.updateAnnotationPlacement,
         onUpdateAdvanceMode: controller.updateAdvanceMode,
         onUpdateDelay: controller.updateDelay,
-        onUpdateChapterPosition: controller.updateChapterPosition,
         onSetChapterPosition: controller.setChapterPosition,
         storyPreviewing: controller.isPreviewing,
         onPreviewChapter: controller.previewChapter,
@@ -222,14 +199,9 @@ export const createStoryBuilderPlugins = (
         onUpdateMotionInitialDwell: controller.updateMotionInitialDwell,
         onUpdateMotionEasing: controller.updateMotionEasing,
         motionPreviewing: controller.motionPreviewing,
-        motionPointDraft: controller.motionPointDraft,
         onApplyMotionPreset: controller.applyMotionPreset,
         onPreviewMotion: controller.previewMotion,
         onStopMotionPreview: controller.stopMotionPreview,
-        onStartMotionPointPositioning: controller.startMotionPointPositioning,
-        onConfirmMotionPointPositioning:
-          controller.confirmMotionPointPositioning,
-        onCancelMotionPointPositioning: controller.cancelMotionPointPositioning,
         positioningLanguage: controller.positioningLanguage,
         onStartAnnotationPositioning: controller.startAnnotationPositioning,
         onConfirmAnnotationPositioning: controller.confirmAnnotationPositioning,
@@ -278,7 +250,8 @@ export const createStoryBuilderPlugins = (
           onStopPreviewMediaSegment: controller.stopPreviewMediaSegment,
           onDeleteDrawingAnnotation: controller.deleteChapterDrawingAnnotation,
           onEditDrawingAnnotation: controller.editChapterDrawingAnnotation,
-          onAddPoint: () => controller.startMotionPointPositioning(),
+          selectedPointId: controller.selectedMotionPointId,
+          onAddPoint: controller.addMotionPoint,
           onDeletePoint: controller.deleteMotionPoint,
           onGoToPoint: controller.goToMotionPoint,
         },

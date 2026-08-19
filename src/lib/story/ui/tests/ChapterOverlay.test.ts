@@ -7,7 +7,6 @@ import type { ChapterTaskId } from "../../chapterTasks";
 import ChapterOverlay from "../ChapterOverlay.svelte";
 import { ANNOTATION_TOOLS } from "../../../features/annotations/annotationTools";
 import { createStoryStoreForTest } from "./testHelpers";
-import { reactiveProps } from "./reactiveProps.svelte";
 
 const createTarget = (): HTMLDivElement => {
   const target = document.createElement("div");
@@ -104,7 +103,7 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("no longer shows the viewer position changed notice", async () => {
+  it("has no capture control anywhere: the frame is edited on the stage", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -115,7 +114,6 @@ describe("ChapterOverlay", () => {
         },
       ],
     });
-    const viewBox = writable({ x: 0, y: 0, w: 100, h: 100 });
     const target = createTarget();
     const instance = mount(ChapterOverlay, {
       target,
@@ -124,25 +122,27 @@ describe("ChapterOverlay", () => {
         open: true,
         docked: true,
         chapterId: "chapter-image",
-        viewBox,
       },
     });
-
-    await new Promise((resolve) => setTimeout(resolve, 550));
-    viewBox.set({ x: 12, y: 18, w: 80, h: 80 });
+    (
+      target.querySelector('[data-task-id="position"] button') as HTMLButtonElement
+    ).click();
     await tick();
 
-    expect(
-      target.querySelector('[data-testid="chapter-update-view"]'),
-    ).toBeNull();
-    expect(target.textContent).not.toContain("The viewer has moved");
+    expect(target.querySelector('[data-testid="chapter-update-view"]')).toBeNull();
+    expect(target.querySelector('[data-testid="chapter-position-capture"]')).toBeNull();
+    expect(target.textContent).not.toContain("Use current view");
+    expect(target.textContent).not.toContain("Current view:");
+    // Nothing to save either: every edit lands on the chapter as it happens.
+    expect(target.querySelector('[data-testid="chapter-save"]')).toBeNull();
 
     unmount(instance);
     target.remove();
   });
 
-  it("shows the saved viewer position in its own panel and commits manual edits", async () => {
+  it("shows the frame's numbers in their own panel and keeps typed edits at the story's aspect", async () => {
     const store = createStoryStoreForTest({
+      presentationAspect: 3 / 4,
       chapters: [
         {
           id: "chapter-1",
@@ -161,7 +161,6 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-1",
         language: "en",
-        viewBox: writable({ x: 5, y: 10, w: 90, h: 80 }),
         onSetChapterPosition,
       },
     });
@@ -176,7 +175,7 @@ describe("ChapterOverlay", () => {
     const visibleTask = target.querySelector(
       ".chapter-overlay__task:not([hidden])",
     ) as HTMLElement;
-    expect(visibleTask.textContent).toContain("Viewer position");
+    expect(visibleTask.textContent).toContain("Frame");
     expect(visibleTask.textContent).not.toContain("Content (EN)");
 
     const xInput = target.querySelector(
@@ -195,32 +194,39 @@ describe("ChapterOverlay", () => {
     expect(yInput.value).toBe("200");
     expect(wInput.value).toBe("300");
     expect(hInput.value).toBe("400");
+    // What is drawn is what is stored, so there is no second set of numbers.
+    expect(target.querySelector('[data-testid="chapter-position-current"]')).toBeNull();
+    expect(target.querySelector('[data-testid="chapter-position-stored"]')).toBeNull();
+    expect(target.querySelector('[data-testid="chapter-position-note"]')).toBeNull();
     expect(
-      target.querySelector('[data-testid="chapter-position-current"]')
-        ?.textContent,
-    ).toContain("Current view: 5 · 10 · 90 · 80");
+      target.querySelector('[data-testid="chapter-position-aspect"]')?.textContent,
+    ).toContain("3:4");
 
     /*
-     * Manual entry is renormalised on commit, deliberately, so what a chapter
-     * ends up holding is not what was typed. With nothing on screen saying so,
-     * the obvious reading is that the editor mangled the input — and the first
-     * audience for this panel is people learning IIIF regions.
+     * A typed width pulls the height along at the story's aspect, so the
+     * numbers on screen always describe a frame the story can hold and the
+     * value typed is the value kept — nothing is rewritten on commit.
      */
-    expect(
-      target.querySelector('[data-testid="chapter-position-stored"]')
-        ?.textContent,
-    ).toContain("Stored as: 100 · 200 · 300 · 400");
-    expect(
-      target.querySelector('[data-testid="chapter-position-note"]')?.textContent,
-    ).toContain("presentation aspect");
-
-    wInput.value = "640";
+    wInput.value = "600";
     wInput.dispatchEvent(new Event("input"));
+    await tick();
+    expect(hInput.value).toBe("800");
     wInput.dispatchEvent(new Event("change"));
     expect(onSetChapterPosition).toHaveBeenCalledWith("chapter-1", {
-      x: 100,
+      x: 100.4,
       y: 200,
-      w: 640,
+      w: 600,
+      h: 800,
+    });
+
+    onSetChapterPosition.mockClear();
+    xInput.value = "50";
+    xInput.dispatchEvent(new Event("input"));
+    xInput.dispatchEvent(new Event("change"));
+    expect(onSetChapterPosition).toHaveBeenCalledWith("chapter-1", {
+      x: 50,
+      y: 200,
+      w: 300,
       h: 400,
     });
 
@@ -237,7 +243,7 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("supports capture and manual entry when no position is saved", async () => {
+  it("lets a frame be typed in when the chapter has none", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -249,7 +255,6 @@ describe("ChapterOverlay", () => {
     });
     const target = createTarget();
     const onSetChapterPosition = vi.fn();
-    const onUpdateChapterPosition = vi.fn();
     const instance = mount(ChapterOverlay, {
       target,
       props: {
@@ -257,16 +262,14 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-1",
         language: "en",
-        viewBox: writable({ x: 5, y: 10, w: 90, h: 80 }),
         onSetChapterPosition,
-        onUpdateChapterPosition,
       },
     });
 
     const section = target.querySelector(
       '[data-testid="chapter-position-section"]',
     ) as HTMLElement;
-    expect(section.textContent).toContain("No position is saved yet");
+    expect(section.textContent).toContain("No frame yet");
     const goTo = target.querySelector(
       '[data-testid="chapter-position-goto"]',
     ) as HTMLButtonElement;
@@ -304,20 +307,13 @@ describe("ChapterOverlay", () => {
       w: 800,
       h: 600,
     });
-
-    const capture = target.querySelector(
-      '[data-testid="chapter-position-capture"]',
-    ) as HTMLButtonElement;
-    capture.click();
-    await tick();
-    expect(onUpdateChapterPosition).toHaveBeenCalledWith("chapter-1");
-    expect(capture.textContent).toContain("Position updated");
+    expect(target.querySelector('[data-testid="chapter-position-capture"]')).toBeNull();
 
     unmount(instance);
     target.remove();
   });
 
-  it("exposes viewer position as its own chapter tool, disabled for audio chapters", async () => {
+  it("exposes the frame as its own chapter tool, disabled for audio chapters", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -342,7 +338,7 @@ describe("ChapterOverlay", () => {
     const card = target.querySelector(
       '[data-task-id="position"]',
     ) as HTMLElement;
-    expect(card.textContent).toContain("Viewer position");
+    expect(card.textContent).toContain("Frame");
     expect(card.textContent).toContain("Configured");
     expect(
       (card.querySelector("button") as HTMLButtonElement).disabled,
@@ -367,7 +363,7 @@ describe("ChapterOverlay", () => {
       '[data-task-id="position"]',
     ) as HTMLElement;
     expect(audioCard.textContent).toContain(
-      "Viewer position is available for image and PDF chapters only.",
+      "available for image and PDF chapters only.",
     );
 
     unmount(audioInstance);
@@ -1000,99 +996,6 @@ describe("ChapterOverlay", () => {
     skip.click();
 
     expect(onSkipNarration).toHaveBeenCalledWith("en");
-
-    unmount(instance);
-    target.remove();
-  });
-});
-
-describe("ChapterOverlay viewer position drift", () => {
-  /*
-   * The Viewer position card used to read "Configured" from the moment a
-   * chapter was created and could never say anything else, because a chapter
-   * always captures a view. These cover the wiring that makes it answer the
-   * question the author actually has: is the saved framing still the one on
-   * screen?
-   */
-  const SETTLE = 500;
-  const settle = () => new Promise((resolve) => setTimeout(resolve, SETTLE));
-
-  const positionStatus = (target: HTMLElement): string =>
-    target
-      .querySelector('[data-task-id="position"]')
-      ?.querySelector(".chapter-task-card__state")
-      ?.textContent?.trim() ?? "(missing)";
-
-  const mountOverlay = (viewBox: ReturnType<typeof writable>, chapterId = "one") => {
-    const store = createStoryStoreForTest({
-
-      chapters: [
-        {
-          id: "one",
-          manifest: "https://example.org/image-manifest.json",
-          canvasIndex: 0,
-          viewBox: { x: 0, y: 0, w: 1000, h: 1000 },
-        },
-        {
-          id: "two",
-          manifest: "https://example.org/image-manifest.json",
-          canvasIndex: 0,
-          viewBox: { x: 5000, y: 5000, w: 800, h: 800 },
-        },
-      ],
-    });
-    const target = createTarget();
-    const props = reactiveProps({
-      story: store.story,
-      open: true,
-      docked: true,
-      chapterId,
-      activeChapterTask: writable<ChapterTaskId | null>(null),
-      mediaType: writable("image" as const),
-      viewBox,
-    });
-    const instance = mount(ChapterOverlay, { target, props });
-    return { instance, target, props };
-  };
-
-  it("stays quiet until the author moves, then names the mismatch", async () => {
-    const viewBox = writable({ x: 0, y: 0, w: 1000, h: 1000 });
-    const { instance, target } = mountOverlay(viewBox);
-    await tick();
-    await settle();
-    await tick();
-    expect(positionStatus(target)).toBe("Configured");
-
-    viewBox.set({ x: 600, y: 600, w: 200, h: 200 });
-    await settle();
-    await tick();
-    expect(positionStatus(target)).toBe("Doesn't match current view");
-
-    unmount(instance);
-    target.remove();
-  });
-
-  it("does not fire when selecting a chapter leaves the viewer where it was", async () => {
-    /*
-     * Selecting a chapter does not move the viewer, so the framing on screen
-     * belongs to the chapter just left. Treating that as a reframing lit the
-     * warning permanently in any story with more than one chapter.
-     */
-    const viewBox = writable({ x: 5000, y: 5000, w: 800, h: 800 });
-    const { instance, target, props } = mountOverlay(viewBox, "two");
-    await tick();
-    await settle();
-    await tick();
-    expect(positionStatus(target)).toBe("Configured");
-
-    // Switch to a chapter framed somewhere entirely different, without moving.
-    props.chapterId = "one";
-    await tick();
-    // The viewer republishes its position on selection without having moved.
-    viewBox.set({ x: 5000, y: 5000, w: 800, h: 800 });
-    await settle();
-    await tick();
-    expect(positionStatus(target)).toBe("Configured");
 
     unmount(instance);
     target.remove();

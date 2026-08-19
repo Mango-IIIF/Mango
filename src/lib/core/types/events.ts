@@ -33,6 +33,13 @@ export type ViewerEventMap = {
   /** Edits on an annotation were committed as one save. */
   annotationSave: { annotationId: string; annotation: ResolvedAnnotation };
   annotationDelete: { annotationId: string };
+  /**
+   * A frame drawn on the stage was moved or resized and the gesture ended.
+   * The box is in canvas pixels and already holds the frame's locked aspect.
+   */
+  storyFrameChange: { frameId: string; viewBox: ViewBox };
+  /** The author took hold of a different frame on the stage. */
+  storyFrameSelect: { frameId: string | null };
   annotationHover: {
     id: string | null;
     annotation?: ResolvedAnnotation | null;

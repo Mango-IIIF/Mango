@@ -116,8 +116,7 @@
         "empty": "Non configuré",
         "partial": "Partiellement configuré",
         "complete": "Configuré",
-        "attention": "Nécessite une attention",
-        "positionDrift": "Ne correspond pas à la vue actuelle"
+        "attention": "Nécessite une attention"
       },
       "items": {
         "details": {
@@ -126,9 +125,8 @@
           "save": "Enregistrer les détails"
         },
         "position": {
-          "title": "Position du visualiseur",
-          "description": "La zone du canevas et le zoom sur lesquels ce chapitre s'ouvre.",
-          "save": "Enregistrer la position du visualiseur"
+          "title": "Cadre",
+          "description": "La région du canevas sur laquelle ce chapitre s'ouvre, dessinée sur la scène."
         },
         "focus": {
           "title": "Annotations",
@@ -248,20 +246,17 @@
       "captureHint": "Capturez un chapitre pour modifier le texte et le placement de l'annotation."
     },
     "position": {
-      "title": "Position du visualiseur",
-      "hint": "La zone du canevas cadrée par ce chapitre, en pixels du canevas.",
-      "empty": "Aucune position n'est enregistrée pour l'instant. Cadrez l'œuvre dans le visualiseur, puis capturez la vue actuelle.",
+      "title": "Cadre",
+      "hint": "Faites glisser le cadre sur la scène pour le déplacer, ou ses poignées pour le redimensionner. Saisissez ici une région en pixels du canevas si vous en avez une.",
+      "empty": "Aucun cadre pour l’instant. Saisissez une région en pixels du canevas pour en créer un.",
       "x": "X",
       "y": "Y",
       "width": "Largeur",
       "height": "Hauteur",
-      "capture": "Utiliser la vue actuelle",
-      "goTo": "Aller à la position enregistrée",
-      "current": "Vue actuelle : {x} · {y} · {w} · {h}",
-      "expand": "Développer la section de position du visualiseur",
-      "collapse": "Réduire la section de position du visualiseur",
-      "stored": "Enregistré comme : {x} · {y} · {w} · {h}",
-      "normalisedNote": "Les valeurs saisies ou capturées sont une demande. Les cadrages sont enregistrés au rapport d'aspect de présentation de l'histoire afin que les chapitres restent comparables ; les nombres enregistrés peuvent donc différer de ceux que vous avez saisis."
+      "goTo": "Aller au cadre",
+      "expand": "Développer la section du cadre",
+      "collapse": "Réduire la section du cadre",
+      "aspectLocked": "Verrouillé à {aspect} : la largeur et la hauteur changent ensemble, si bien que chaque lecteur voit exactement cette région."
     },
     "annotations": {
       "chapter": "Annotations du chapitre",
@@ -308,8 +303,8 @@
       "durationDwellError": "La durée doit laisser le temps de se déplacer après la pause initiale de {seconds} s.",
       "arcError": "Le balayage en arc nécessite au moins trois points de caméra. Ajoutez d'abord un autre point.",
       "dwellError": "La pause initiale doit être plus courte que le temps jusqu'au point de caméra suivant.",
-      "customHint": "Le mode personnalisé conserve le zoom du canevas capturé à chaque point. La prévisualisation démarre au point 1.",
-      "presetHint": "Les points définissent le cadrage ; le style de mouvement contrôle le zoom. La prévisualisation démarre au point 1.",
+      "customHint": "Le mode personnalisé conserve le cadre de chaque point tel que vous l’avez dessiné. La prévisualisation démarre au point 1.",
+      "presetHint": "Les points définissent le cadrage ; le style de mouvement contrôle le zoom. Redimensionner un point passe en Personnalisé. La prévisualisation démarre au point 1.",
       "preview": "Prévisualiser",
       "style": "Style de mouvement",
       "presets": "Préréglages de mouvement",
@@ -341,21 +336,13 @@
       "duration": "Durée du mouvement du chapitre",
       "durationHint": "Toutes les positions sont réparties automatiquement sur cette durée.",
       "durationSeconds": "Durée (secondes)",
-      "cameraPoints": "Points de caméra",
-      "movePointAt": "Déplacer le point de caméra {number} à {seconds} secondes",
-      "movePointTitle": "Déplacer le point de caméra {number} · {seconds} s",
-      "placePointHint": "Cliquez sur l'œuvre ou faites-la glisser pour placer le point de caméra",
-      "setPoint": "Définir le point de caméra",
-      "movePoint": "Déplacer le point {number}",
-      "placePoint": "Placer le point {number}",
-      "usePoint": "Utiliser ce point",
       "zoomValue": "Zoom {zoom}×",
       "timeline": "Chronologie du mouvement du chapitre",
       "goToPoint": "Aller au point de caméra {number}",
       "point": "Point {number}",
       "deletePoint": "Supprimer le point de caméra",
       "deletePointNumber": "Supprimer le point de caméra {number}",
-      "emptyPoints": "Aucun point de caméra pour l'instant. Ajoutez un point, puis faites glisser son repère à sa place dans le visualiseur.",
+      "emptyPoints": "Aucun point de caméra pour l’instant. Ajoutez un point, puis faites glisser son cadre à sa place sur la scène.",
       "addPoint": "Ajouter un point de caméra"
     },
     "settings": {
@@ -388,7 +375,6 @@
       "selectedChapter": "Chapitre sélectionné",
       "newStory": "Nouvelle histoire",
       "loadSource": "Charger une source",
-      "positionUpdated": "Position mise à jour",
       "previewChapter": "Prévisualiser le chapitre",
       "previewChapterHint": "Lisez ce chapitre seul, exactement comme l'histoire le présente.",
       "stopChapterPreview": "Arrêter la prévisualisation",
@@ -396,7 +382,7 @@
       "sourceHint": "Ajoutez la source de votre histoire, choisissez son canevas de départ et créez le premier chapitre. Vous pourrez ensuite ajuster le placement de l'image depuis les outils du chapitre.",
       "backToTools": "Retour aux outils du chapitre",
       "saveChapter": "Enregistrer le chapitre",
-      "revertView": "Revenir à la vue capturée",
+      "revertView": "Centrer la vue sur le cadre",
       "noChapter": "Aucun chapitre sélectionné",
       "noChapterHint": "Capturez un chapitre ou sélectionnez-en un dans la chronologie pour modifier son contenu.",
       "confirmPosition": "Confirmer la position"
@@ -426,6 +412,11 @@
       "showChapters": "Afficher les chapitres",
       "hideTools": "Masquer les outils du chapitre",
       "showTools": "Afficher les outils du chapitre"
+    },
+    "frame": {
+      "label": "Cadre",
+      "chapterAria": "Cadre du chapitre",
+      "keyframeAria": "Cadre du point de caméra {number}"
     }
   },
   "viewer": {
@@ -781,8 +772,7 @@
       "forward": "Avancer de 10 secondes",
       "rewind": "Reculer de 10 secondes",
       "media": "Média",
-      "mediaSelect": "Sélectionner la source média",
-      "saveView": "Enregistrer cette vue comme cadrage du chapitre"
+      "mediaSelect": "Sélectionner la source média"
     },
     "gallery": {
       "label": "Galerie de vignettes",

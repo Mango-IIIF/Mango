@@ -69,7 +69,7 @@ test("lets the narration editor resize without clipping the viewer or its contro
   expect(stageCanScroll).toBe(true);
 });
 
-test("previews saved chapter motion without showing authoring pins", async ({
+test("previews saved chapter motion without showing authoring frames", async ({
   page,
 }) => {
   await page.goto("/story-builder.html?iiif-content=test-story/demo.json");
@@ -94,37 +94,31 @@ test("previews saved chapter motion without showing authoring pins", async ({
   await page.waitForTimeout(300);
   await motionTask.click();
 
-  await page
-    .getByRole("button", { name: "Add camera point", exact: true })
-    .click();
-  let surface = page.locator(".story-builder-motion-point-surface");
-  let bounds = await surface.boundingBox();
-  expect(bounds).not.toBeNull();
-  if (!bounds) return;
-  await surface.click({
-    position: { x: bounds.width * 0.35, y: bounds.height * 0.45 },
+  /*
+   * A camera point is a frame on the stage, not a pin placed by clicking:
+   * each new point starts nested inside the last and is dragged into place.
+   * Two points nested one inside the other are already a zoom, which is all
+   * the preview below needs.
+   */
+  const addPoint = page.getByRole("button", {
+    name: "Add camera point",
+    exact: true,
   });
-  await page
-    .getByRole("button", { name: "Use this point", exact: true })
-    .click();
-
-  await page
-    .getByRole("button", { name: "Add camera point", exact: true })
-    .click();
-  surface = page.locator(".story-builder-motion-point-surface");
-  bounds = await surface.boundingBox();
-  expect(bounds).not.toBeNull();
-  if (!bounds) return;
-  await surface.click({
-    position: { x: bounds.width * 0.7, y: bounds.height * 0.55 },
-  });
-  await page
-    .getByRole("button", { name: "Use this point", exact: true })
-    .click();
+  await addPoint.click();
+  await expect(page.locator(".story-frame--keyframe")).toHaveCount(1);
+  await addPoint.click();
+  await expect(page.locator(".story-frame--keyframe")).toHaveCount(2);
+  // The point just added carries the handles.
+  await expect(
+    page.locator(".story-frame--keyframe.story-frame--selected"),
+  ).toHaveCount(1);
 
   await expect(page.locator(".story-wide-authoring__point")).toHaveCount(2);
   await page.getByRole("button", { name: "Save motion", exact: true }).click();
   await expect(page.locator(".story-wide-authoring")).toHaveCount(0);
+  // Out of the motion tool the keyframes leave the stage; the chapter frame stays.
+  await expect(page.locator(".story-frame--keyframe")).toHaveCount(0);
+  await expect(page.locator(".story-frame--chapter")).toHaveCount(1);
 
   const viewer = page.locator("mango-viewer");
   const viewBeforePreview = await viewer.evaluate((element: any) =>
@@ -133,7 +127,8 @@ test("previews saved chapter motion without showing authoring pins", async ({
   await page
     .getByRole("button", { name: "Preview story", exact: true })
     .click();
-  await expect(page.locator(".story-builder-motion-marker")).toHaveCount(0);
+  // Nothing is drawn on the stage while the preview drives it.
+  await expect(page.locator(".story-frame")).toHaveCount(0);
 
   await expect
     .poll(() => viewer.evaluate((element: any) => element.getViewBox()), {

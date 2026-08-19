@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getContext } from 'svelte';
-  import { Crosshair, House, RotateCwSquare } from '@lucide/svelte';
+  import { House, RotateCwSquare } from '@lucide/svelte';
   import { t } from '../../core/i18n';
   import type { MediaType } from '../../iiif/mediaResolver';
   import type { ViewportState } from '../../core/state/viewportState.svelte';
@@ -23,13 +23,6 @@
     onnextCanvas?: () => void;
     onsetCanvasIndex?: (payload: { index: number }) => void;
     onsetZoomPercent?: (payload: { percent: number }) => void;
-    /*
-     * Storing the current view as the chapter's framing. Optional because only
-     * the builder has a chapter to store it on — the button is absent, not
-     * disabled, everywhere else.
-     */
-    onsaveView?: () => void;
-    saveViewAcknowledged?: boolean;
   }
 
   let {
@@ -49,8 +42,6 @@
     onnextCanvas = undefined,
     onsetCanvasIndex = undefined,
     onsetZoomPercent = undefined,
-    onsaveView = undefined,
-    saveViewAcknowledged = false,
   }: Props = $props();
   const viewportState = getContext<ViewportState | undefined>(VIEWPORT_STATE_CONTEXT_KEY);
 
@@ -366,29 +357,6 @@
 
     <span class="stage__toolbar-separator" aria-hidden="true"></span>
 
-    {#if onsaveView}
-      <div class="stage__toolbar-group stage__toolbar-group--single">
-        <button
-          class="stage__toolbar-button stage__toolbar-button--single"
-          class:stage__toolbar-button--acknowledged={saveViewAcknowledged}
-          type="button"
-          data-testid="stage-save-view"
-          aria-label={$t('viewer.toolbar.saveView')}
-          title={$t('viewer.toolbar.saveView')}
-          disabled={!canZoom}
-          onclick={() => onsaveView?.()}
-        >
-          <Crosshair
-            class="stage__toolbar-icon"
-            aria-hidden="true"
-            strokeWidth={1.8}
-          />
-        </button>
-      </div>
-
-      <span class="stage__toolbar-separator" aria-hidden="true"></span>
-    {/if}
-
     <div class="stage__toolbar-group stage__toolbar-group--single">
       <button
         class="stage__toolbar-button stage__toolbar-button--single"
@@ -409,10 +377,6 @@
 {/if}
 
 <style>
-  .stage__toolbar-button--acknowledged {
-    color: var(--viewer-accent, #e07a3f);
-  }
-
   .stage__toolbar {
     --stage-toolbar-gap: 5px;
     --stage-toolbar-button-width: 36px;

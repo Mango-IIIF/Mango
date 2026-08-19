@@ -94,6 +94,16 @@ quantised to the whole pixels `xywh` is defined over; normalisation preserves
 centre and area, so a rounded framing lands on the same integers next time
 rather than creeping.
 
+Every framing — the chapter's and each camera keyframe's — is held to the
+story's `presentationAspect`. In the builder the framing is a frame drawn on
+the canvas, in canvas pixels, locked to that aspect and moved or resized by
+hand; it is never read from wherever the camera happens to be, so the editor's
+own shape can no longer leak into the stored region. The frame is also kept
+inside the canvas, scaled about its centre rather than clamped per side when it
+meets an edge, so the aspect survives. Framings that arrive from elsewhere — a
+new chapter's default, a typed region, a story authored before the lock — are
+normalised to the same aspect on the way in.
+
 The profile version is declared once, by the Mango context URL in `@context`.
 It is not restated as a `mango:storyVersion` property on the page or in any
 chapter body.

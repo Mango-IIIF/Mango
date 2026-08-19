@@ -7,6 +7,7 @@
   import type { ImageFilters } from '../../core/types/filters';
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
   import type { ContentSize, ViewBox } from '../../core/types/viewer';
+  import type { StoryFrame } from '../../core/types/story';
   import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
   import type { AVPlayerController } from '@mango-iiif/av/core';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
@@ -15,6 +16,7 @@
   import type { ViewerConfig } from '../../core/types/config';
   import AnnotationLayer from '../../features/annotations/AnnotationLayer.svelte';
   import AnnotationEditorLayer from '../../features/annotations/AnnotationEditorLayer.svelte';
+  import StoryFrameLayer from '../../story/ui/StoryFrameLayer.svelte';
   import type { OSDAnnotationEditor } from '@mango-iiif/annotation';
   import type { LabelSizing } from '../../features/annotations/rectangleLabelLayout';
   import type { LayerItem } from '../../features/annotations/workspace/LeftSidebar.svelte';
@@ -109,6 +111,11 @@
       | undefined;
     layoutMode?: 'single' | 'two-page' | 'continuous';
     activeLayoutImages?: ActiveLayoutImage[];
+    /** Story frames drawn on the stage as movable, aspect-locked regions. */
+    storyFrames?: StoryFrame[];
+    storyFrameSelection?: string | null;
+    onstoryframecommit?: ((payload: { frameId: string; viewBox: ViewBox }) => void) | undefined;
+    onstoryframeselect?: ((payload: { frameId: string | null }) => void) | undefined;
   }
 
   let {
@@ -170,6 +177,10 @@
     onannotationtoolchange = undefined,
     layoutMode = 'single',
     activeLayoutImages = [],
+    storyFrames = [],
+    storyFrameSelection = null,
+    onstoryframecommit = undefined,
+    onstoryframeselect = undefined,
   }: Props = $props();
   const viewportState = getContext<ViewportState | undefined>(VIEWPORT_STATE_CONTEXT_KEY);
   let effectiveCanvasId = $derived(canvasId ?? viewportState?.manifestId ?? null);
@@ -469,6 +480,18 @@
       onannotationselect={(payload) => onannotationselect?.(payload)}
       ontoolchange={(payload) => onannotationtoolchange?.(payload)}
     />
+
+    {#if storyFrames.length > 0}
+      <StoryFrameLayer
+        viewer={annotationViewer}
+        canvasWidth={annotationCanvasSize.width || mediaSource?.width || 0}
+        canvasHeight={annotationCanvasSize.height || mediaSource?.height || 0}
+        frames={storyFrames}
+        selectedFrameId={storyFrameSelection}
+        onframecommit={(payload) => onstoryframecommit?.(payload)}
+        onframeselect={(payload) => onstoryframeselect?.(payload)}
+      />
+    {/if}
 
     {#if overlayPlugins.length > 0}
       <div

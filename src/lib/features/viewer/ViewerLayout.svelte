@@ -5,7 +5,7 @@
   import { normaliseViewerConfig } from '../../core/config/normalise';
   import type { ViewerEventMap } from '../../core/types/events';
   import type { ViewerConfig } from '../../core/types/config';
-  import type { ChapterAnnotationTool } from '../../core/types/story';
+  import type { ChapterAnnotationTool, StoryFrame } from '../../core/types/story';
   import type { ContentSize, ViewBox } from '../../core/types/viewer';
   import type { ViewerPlugin } from '../../core/types/plugin';
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
@@ -63,8 +63,6 @@
     validateStoryViewer,
     type StoryWithDefaults,
   } from '../../story/viewer/storyLoader';
-  import { findPresentationRoot } from '../../story/presentationFrame';
-  import { requestStoryCapture } from '../../story/storyStageActions';
   import { createStoryViewerRuntime } from '../../story/viewer/storyViewerController';
   import { createStoryPlayback } from '../../story/viewer/storyPlayback.svelte';
   import { ViewportState, VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
@@ -274,7 +272,6 @@
   let showToolsEffective = $derived($showTools && $allowTools);
   const toolbarAboveMedia = false;
   let isStoryViewer = $derived(mode === 'story-viewer');
-  let viewerRootEl: HTMLElement | null = $state(null);
   /*
    * The authoring stage is the thing being edited, so it gets the whole width
    * and the panels float above it. Collapsing them is how an author checks a
@@ -325,22 +322,6 @@
     };
   };
 
-  let saveViewAcknowledged = $state(false);
-  let saveViewTimer: ReturnType<typeof setTimeout> | null = null;
-  /*
-   * One click, from where the author is already zooming. The panel route still
-   * exists for typing exact numbers; this is for the common case of "frame it
-   * by eye, keep that".
-   */
-  const handleSaveView = () => {
-    requestStoryCapture(findPresentationRoot(viewerRootEl));
-    saveViewAcknowledged = true;
-    if (saveViewTimer) clearTimeout(saveViewTimer);
-    saveViewTimer = setTimeout(() => {
-      saveViewAcknowledged = false;
-      saveViewTimer = null;
-    }, 1600);
-  };
   let isStoryBuilder = $derived(mode === 'story-builder');
   let isAnnotationEditor = $derived(mode === 'annotation-editor');
   let annotationLanguages = $derived(
@@ -438,6 +419,14 @@
   >('rectangle');
   let storyBuilderAnnotations = $state<ResolvedAnnotation[]>([]);
   let storyAnnotationEditing = $state(false);
+  /*
+   * Frames the story builder asks to have drawn on the stage: the chapter
+   * frame and, while motion is being authored, its keyframes. They are
+   * canvas-pixel objects the author moves and resizes in place; the builder
+   * owns what they mean and hears about edits through `storyFrameChange`.
+   */
+  let storyFrames = $state<StoryFrame[]>([]);
+  let storyFrameSelection = $state<string | null>(null);
   let storyBuilderActiveAnnotationId = $state<string | null>(null);
   let effectiveAnnotationMode = $derived(canDrawAnnotations ? $annotationMode : 'edit');
   let viewerSettingsLayout = $state<'1x1' | '1x2' | '2x1' | '1x2-panel' | '2x2'>('1x1');
@@ -1368,6 +1357,15 @@
     setStoryAnnotationSelection: (annotationId) => {
       storyBuilderActiveAnnotationId = annotationId;
     },
+    setStoryFrames: (frames) => {
+      storyFrames = frames;
+      if (storyFrameSelection && !frames.some((frame) => frame.id === storyFrameSelection)) {
+        storyFrameSelection = null;
+      }
+    },
+    setStoryFrameSelection: (frameId) => {
+      storyFrameSelection = frameId;
+    },
     updateLayerOpacity: (id: string, opacity: number) => {
       controller.updateLayerOpacity(id, opacity);
     },
@@ -2081,7 +2079,6 @@
 </script>
 
 <div
-  bind:this={viewerRootEl}
   class="viewer"
   class:viewer--story-viewer={isStoryViewer}
   class:viewer--story-builder={isStoryBuilder}
@@ -2442,8 +2439,6 @@
                   totalCanvases={$canvases.length}
                   {zoomPercent}
                   rotation={$rotation}
-                  onsaveView={isStoryBuilder ? handleSaveView : undefined}
-                  {saveViewAcknowledged}
                   onhome={handleHome}
                   onzoomIn={handleZoomIn}
                   onzoomOut={handleZoomOut}
@@ -2494,8 +2489,6 @@
                 {hasSource}
                 placement="above"
                 mediaType={$mediaType}
-                onsaveView={isStoryBuilder ? handleSaveView : undefined}
-                {saveViewAcknowledged}
                 selectedCanvasIndex={$selectedCanvasIndex}
                 totalCanvases={$canvases.length}
                 {zoomPercent}
@@ -2554,6 +2547,15 @@
                 annotationEditorAnnotations={storyBuilderAnnotations}
                 labelSizing={STORY_LABEL_SIZING}
                 {annotationLayers}
+                storyFrames={isStoryBuilder ? storyFrames : []}
+                {storyFrameSelection}
+                onstoryframecommit={(payload) => {
+                  controller.emitEvent('storyFrameChange', payload);
+                }}
+                onstoryframeselect={(payload) => {
+                  storyFrameSelection = payload.frameId;
+                  controller.emitEvent('storyFrameSelect', payload);
+                }}
                 onannotationdelete={(payload) => handleAnnotationDelete(payload.id)}
                 onannotationselect={(payload) => {
                   if (isStoryBuilder && storyAnnotationEditing) {
@@ -2573,8 +2575,6 @@
                 {hasSource}
                 placement="below"
                 mediaType={$mediaType}
-                onsaveView={isStoryBuilder ? handleSaveView : undefined}
-                {saveViewAcknowledged}
                 selectedCanvasIndex={$selectedCanvasIndex}
                 totalCanvases={$canvases.length}
                 {zoomPercent}

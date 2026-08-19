@@ -31,11 +31,12 @@
   import ChapterMotionPanel from "./ChapterMotionPanel.svelte";
   import {
     evaluateChapterTasks,
-    framingsDiffer,
     type ChapterInspectorView,
     type ChapterTaskEvaluation,
     type ChapterTaskId,
   } from "../chapterTasks";
+  import { resolvePresentationAspect } from "../framing";
+  import { applyFrameField } from "../frameGeometry";
   import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
@@ -64,7 +65,6 @@
   export let language = "en";
   export let languages: string[] = ["en"];
   export let currentManifest: string | null = null;
-  export let viewBox: Readable<ViewBox | null> = readable(null);
   export let canvasIndex = 0;
   export let canvasCount = 0;
   export let onClose: (() => void) | undefined;
@@ -120,7 +120,6 @@
     ((chapterId: string, mode: ChapterAdvance["mode"]) => void) | undefined;
   export let onUpdateDelay:
     ((chapterId: string, delayMs?: number) => void) | undefined;
-  export let onUpdateChapterPosition: ((chapterId: string) => void) | undefined;
   export let onSetChapterPosition:
     ((chapterId: string, viewBox: ViewBox) => void) | undefined = undefined;
   export let storyPreviewing: Readable<boolean> = readable(false);
@@ -197,8 +196,6 @@
   let dashboardHeading: HTMLDivElement | null = null;
   let saveAcknowledged = false;
   let saveFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
-  let viewUpdateAcknowledged = false;
-  let viewUpdateFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   let chapterHasSavedPosition = false;
 
   /*
@@ -206,7 +203,7 @@
    * decides whether to overwrite the author's in-progress form entry — a
    * tolerance here would silently discard a small manual edit. Use
    * `framingsWithin` when the question is whether the viewer has arrived
-   * somewhere, and `framingsDiffer` when it is whether the author reframed.
+   * somewhere.
    */
   const positionSignature = (value: ViewBox | null | undefined): string =>
     value ? `${value.x}:${value.y}:${value.w}:${value.h}` : "";
@@ -219,7 +216,6 @@
     if (evaluation?.availability.state !== "available") return;
     inspectorView = { mode: "task", task };
     saveAcknowledged = false;
-    viewUpdateAcknowledged = false;
     onChapterTaskChange?.(task);
   };
 
@@ -228,7 +224,6 @@
       inspectorView.mode === "task" && inspectorView.task === "focus";
     inspectorView = { mode: "dashboard" };
     saveAcknowledged = false;
-    viewUpdateAcknowledged = false;
     if (wasAnnotationTask) {
       onCancel?.();
     } else {
@@ -297,39 +292,70 @@
     h: formatPositionValue(value?.h),
   });
 
+  /*
+   * A typed width or height pulls the other dimension along as the author
+   * types, so the pair on screen always describes a frame the story can hold.
+   * The frame's shape is locked to the story's presentation aspect; the
+   * readout says so rather than quietly rewriting numbers on commit.
+   */
   const handlePositionFieldInput = (
     field: "x" | "y" | "w" | "h",
     value: string,
   ) => {
-    positionDrafts = { ...positionDrafts, [field]: value };
+    const next = { ...positionDrafts, [field]: value };
+    const numeric = Number(value);
+    if (
+      presentationAspect &&
+      value.trim() !== "" &&
+      Number.isFinite(numeric) &&
+      numeric > 0
+    ) {
+      if (field === "w") next.h = formatPositionValue(numeric / presentationAspect);
+      if (field === "h") next.w = formatPositionValue(numeric * presentationAspect);
+    }
+    positionDrafts = next;
   };
 
-  const commitPositionDrafts = () => {
+  const commitPositionField = (field: "x" | "y" | "w" | "h") => {
     if (!chapterId || !chapter) return;
     const drafts = positionDrafts;
+    const value = Number(drafts[field]);
+    const valid =
+      drafts[field].trim() !== "" &&
+      Number.isFinite(value) &&
+      (field === "x" || field === "y" || value > 0);
+    if (!valid) {
+      if (chapter.viewBox) {
+        positionDrafts = positionDraftsFromViewBox(chapter.viewBox);
+      }
+      return;
+    }
+    if (chapter.viewBox) {
+      const next = applyFrameField(
+        chapter.viewBox,
+        field,
+        value,
+        presentationAspect ?? Number.NaN,
+      );
+      if (positionSignature(next) === positionSignature(chapter.viewBox)) return;
+      onSetChapterPosition?.(chapterId, next);
+      return;
+    }
+    // No frame yet: the chapter needs all four numbers before it has one.
     const parsed = {
       x: Number(drafts.x),
       y: Number(drafts.y),
       w: Number(drafts.w),
       h: Number(drafts.h),
     };
-    const valid =
-      [drafts.x, drafts.y, drafts.w, drafts.h].every(
-        (entry) => entry.trim() !== "",
-      ) &&
+    if (
+      [drafts.x, drafts.y, drafts.w, drafts.h].every((entry) => entry.trim() !== "") &&
       [parsed.x, parsed.y, parsed.w, parsed.h].every(Number.isFinite) &&
       parsed.w > 0 &&
-      parsed.h > 0;
-    if (!valid) {
-      // Keep partial manual entry while nothing is saved yet; otherwise snap
-      // back to the stored position.
-      if (chapter.viewBox) {
-        positionDrafts = positionDraftsFromViewBox(chapter.viewBox);
-      }
-      return;
+      parsed.h > 0
+    ) {
+      onSetChapterPosition?.(chapterId, parsed);
     }
-    if (positionSignature(parsed) === positionSignature(chapter.viewBox)) return;
-    onSetChapterPosition?.(chapterId, parsed);
   };
 
   $: if (currentNarrationAudioRef) {
@@ -562,6 +588,10 @@
   }
 
   $: chapter = $story.chapters.find((item) => item.id === chapterId) ?? null;
+  $: presentationAspect =
+    $story.chapters.length > 0 || $story.presentationAspect
+      ? resolvePresentationAspect($story)
+      : null;
   $: selectedDrawingAnnotation =
     chapter?.drawingAnnotations?.find((item) => item.id === $selectedDrawingAnnotationId) ?? null;
   $: chapterHasSavedPosition = Boolean(chapter?.viewBox);
@@ -862,77 +892,6 @@
     if (chapterId) onPreviewChapter?.(chapterId);
   };
 
-  const handleUpdateView = () => {
-    if (!chapterId) return;
-    onUpdateChapterPosition?.(chapterId);
-    viewUpdateAcknowledged = true;
-    if (viewUpdateFeedbackTimeout) clearTimeout(viewUpdateFeedbackTimeout);
-    viewUpdateFeedbackTimeout = setTimeout(() => {
-      viewUpdateAcknowledged = false;
-      viewUpdateFeedbackTimeout = null;
-    }, 1800);
-  };
-
-  /*
-   * Selecting a chapter flies the viewer to its saved frame, so the live and
-   * saved boxes genuinely disagree for the length of that animation. Comparing
-   * against a settled view stops the position card flashing a warning on every
-   * chapter click, and stops it strobing while the author is mid-drag.
-   */
-  const VIEW_SETTLE_MS = 400;
-  /*
-   * The timer handle lives on an object rather than in a `let`. A `$:` block
-   * that both reads and reassigns a component-level binding depends on itself
-   * and re-runs when it changes, so clearing the handle from the reset below
-   * immediately restarted the settle it had just cancelled — resurrecting the
-   * stale comparison the chapter switch was meant to drop.
-   */
-  const viewSettle: { timer: ReturnType<typeof setTimeout> | null } = { timer: null };
-  let settledViewBox: ViewBox | null = null;
-  let viewAtSelection: ViewBox | null = null;
-  let viewBaselineChapterId: string | null = null;
-
-  /*
-   * Selecting a chapter does not move the viewer, so straight after a switch
-   * the framing on screen belongs to the chapter the author just left. That is
-   * not a statement about this chapter, and treating it as one would leave the
-   * warning permanently lit in any story with more than one chapter — a signal
-   * as useless as the tick that could never go red. Start afresh on each
-   * selection and stay quiet until the author actually moves the view.
-   */
-  $: if (chapterId !== viewBaselineChapterId) {
-    viewBaselineChapterId = chapterId;
-    if (viewSettle.timer) {
-      clearTimeout(viewSettle.timer);
-      viewSettle.timer = null;
-    }
-    viewAtSelection = $viewBox;
-    settledViewBox = null;
-  }
-
-  /*
-   * The framing only becomes a question about *this* chapter once the author
-   * has moved since selecting it. Remembering where the view was at selection
-   * is what makes that robust: the viewer republishes its position on selection
-   * without actually moving, and comparing against the saved frame directly
-   * would read that as the author having reframed the chapter.
-   */
-  $: authorHasMovedView = Boolean(
-    settledViewBox && viewAtSelection && framingsDiffer(viewAtSelection, settledViewBox),
-  );
-
-  $: {
-    const nextViewBox = $viewBox;
-    if (viewSettle.timer) clearTimeout(viewSettle.timer);
-    viewSettle.timer = setTimeout(() => {
-      settledViewBox = nextViewBox;
-      viewSettle.timer = null;
-    }, VIEW_SETTLE_MS);
-  }
-  onDestroy(() => {
-    if (viewSettle.timer) clearTimeout(viewSettle.timer);
-  });
-
   $: mediaTypeValue = $mediaType;
   $: taskEvaluations = chapter
     ? evaluateChapterTasks({
@@ -944,9 +903,6 @@
         loadedSources: layers,
         validationErrors: chapterValidationErrors,
         languages,
-        // During a preview the viewer is following the story, not the author.
-        currentViewBox:
-          $storyPreviewing || !authorHasMovedView ? null : settledViewBox,
       })
     : [];
   $: hasAvMedia = mediaTypeValue === "audio" || mediaTypeValue === "video";
@@ -981,7 +937,6 @@
 
   onDestroy(() => {
     if (saveFeedbackTimeout) clearTimeout(saveFeedbackTimeout);
-    if (viewUpdateFeedbackTimeout) clearTimeout(viewUpdateFeedbackTimeout);
     clearNarrationPreviewListener();
   });
 
@@ -1222,15 +1177,12 @@
               collapsed={positionSectionCollapsed}
               hasSavedPosition={chapterHasSavedPosition}
               {positionDrafts}
-              currentViewBox={$viewBox}
-              savedViewBox={chapter?.viewBox ?? null}
-              captureAcknowledged={viewUpdateAcknowledged}
+              aspect={presentationAspect}
               onToggle={() => {
                 positionSectionCollapsed = !positionSectionCollapsed;
               }}
               onFieldInput={handlePositionFieldInput}
-              onCommit={commitPositionDrafts}
-              onCapture={handleUpdateView}
+              onCommit={commitPositionField}
               onGoToPosition={handleRevertView}
             />
           {/if}
@@ -1693,19 +1645,23 @@
       {#if inspectorView.mode === "task"}
         <div class="chapter-overlay__actions">
           <div class="chapter-overlay__actions-group">
-            <button
-              class="chapter-overlay__button chapter-overlay__button--accent"
-              type="button"
-              data-testid="chapter-save"
-              disabled={saveDisabled}
-              on:click={handleSave}
-            >
-              {saveAcknowledged
-                ? $t('storyBuilder.topBar.saved')
-                : inspectorView.mode === "task"
-                  ? $t(`storyBuilder.tasks.items.${inspectorView.task}.save`)
-                  : $t('storyBuilder.overlay.saveChapter')}
-            </button>
+            <!--
+              The frame has no Save: it is an object on the canvas and every
+              move or typed value lands on the chapter as it happens.
+            -->
+            {#if inspectorView.task !== "position"}
+              <button
+                class="chapter-overlay__button chapter-overlay__button--accent"
+                type="button"
+                data-testid="chapter-save"
+                disabled={saveDisabled}
+                on:click={handleSave}
+              >
+                {saveAcknowledged
+                  ? $t('storyBuilder.topBar.saved')
+                  : $t(`storyBuilder.tasks.items.${inspectorView.task}.save`)}
+              </button>
+            {/if}
             {#if inspectorView.mode === "task" && inspectorView.task === "focus"}
               <button
                 class="chapter-overlay__button chapter-overlay__button--subtle"

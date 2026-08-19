@@ -116,8 +116,7 @@
         "empty": "未設定",
         "partial": "一部設定済み",
         "complete": "設定完了",
-        "attention": "要確認",
-        "positionDrift": "現在の表示と一致しません"
+        "attention": "要確認"
       },
       "items": {
         "details": {
@@ -126,9 +125,8 @@
           "save": "詳細を保存"
         },
         "position": {
-          "title": "ビューアの位置",
-          "description": "このチャプターを開いたときのキャンバス領域とズーム。",
-          "save": "ビューアの位置を保存"
+          "title": "フレーム",
+          "description": "このチャプターを開いたときのキャンバス領域。ステージ上に描かれます。"
         },
         "focus": {
           "title": "注釈",
@@ -248,20 +246,17 @@
       "captureHint": "Capture a chapter to edit annotation text and placement."
     },
     "position": {
-      "title": "ビューアの位置",
-      "hint": "この章が表示するキャンバス領域（キャンバスのピクセル単位）。",
-      "empty": "位置はまだ保存されていません。ビューアで作品を配置してから、現在のビューをキャプチャしてください。",
+      "title": "フレーム",
+      "hint": "ステージ上のフレームをドラッグして移動し、ハンドルでサイズを変更します。領域が決まっている場合はキャンバスのピクセル単位でここに入力してください。",
+      "empty": "フレームはまだありません。キャンバスのピクセル単位で領域を入力して作成してください。",
       "x": "X",
       "y": "Y",
       "width": "幅",
       "height": "高さ",
-      "capture": "現在のビューを使用",
-      "goTo": "保存した位置へ移動",
-      "current": "現在のビュー: {x} · {y} · {w} · {h}",
-      "expand": "ビューア位置セクションを展開",
-      "collapse": "ビューア位置セクションを折りたたむ",
-      "stored": "保存値: {x} · {y} · {w} · {h}",
-      "normalisedNote": "入力・取得した値は要求値です。章どうしを比較できるよう、フレーミングはストーリーの表示アスペクト比に合わせて保存されるため、保存後の数値は入力した値と異なることがあります。"
+      "goTo": "フレームへ移動",
+      "expand": "フレームセクションを展開",
+      "collapse": "フレームセクションを折りたたむ",
+      "aspectLocked": "{aspect} に固定されています。幅と高さは連動して変わるため、すべての読者にこの領域がそのまま表示されます。"
     },
     "annotations": {
       "chapter": "Chapter annotations",
@@ -308,8 +303,8 @@
       "durationDwellError": "移動時間は{seconds}秒の開始保持後の移動時間を残す必要があります。",
       "arcError": "アーク移動には少なくとも3つのポイントが必要です。",
       "dwellError": "静止時間は負の値にできません。",
-      "customHint": "カスタムカメラパスを作成します。",
-      "presetHint": "一般的なカメラの動きをすぐに適用できます。",
+      "customHint": "カスタムでは各ポイントのフレームを描いたとおりに保持します。プレビューはポイント 1 から始まります。",
+      "presetHint": "ポイントは注視点を決め、動きのスタイルがズームを制御します。ポイントのサイズを変えるとカスタムに切り替わります。プレビューはポイント 1 から始まります。",
       "preview": "モーションをプレビュー",
       "style": "モーションスタイル",
       "presets": "モーションプリセット",
@@ -341,21 +336,13 @@
       "duration": "移動時間",
       "durationHint": "このポイントまでの移動時間。",
       "durationSeconds": "移動時間（秒）",
-      "cameraPoints": "カメラポイント",
-      "movePointAt": "{seconds}秒位置のカメラポイント {number} を移動",
-      "movePointTitle": "カメラポイント {number} の移動 · {seconds}秒",
-      "placePointHint": "現在のビュー位置にポイントを配置します。",
-      "setPoint": "カメラポイントを設定",
-      "movePoint": "ポイント {number} を移動",
-      "placePoint": "ポイント {number} を配置",
-      "usePoint": "現在のビューを使用",
       "zoomValue": "ズーム値 ({zoom})",
       "timeline": "モーションタイムライン",
       "goToPoint": "カメラポイント {number} へ移動",
       "point": "カメラポイント {number}",
       "deletePoint": "ポイントを削除",
       "deletePointNumber": "カメラポイント {number} を削除",
-      "emptyPoints": "カメラポイントがまだ追加されていません。",
+      "emptyPoints": "カメラポイントがまだありません。ポイントを追加し、そのフレームをステージ上でドラッグして配置してください。",
       "addPoint": "カメラポイントを追加"
     },
     "settings": {
@@ -388,7 +375,6 @@
       "selectedChapter": "選択されたチャプター",
       "newStory": "新しいストーリー",
       "loadSource": "ソースを読み込む",
-      "positionUpdated": "ビュー位置が更新されました",
       "previewChapter": "チャプターをプレビュー",
       "previewChapterHint": "ストーリーでの見え方のまま、このチャプターだけを再生します。",
       "stopChapterPreview": "プレビューを停止",
@@ -396,7 +382,7 @@
       "sourceHint": "IIIFマニフェストを読み込んでコンテンツを選択します。",
       "backToTools": "ツールに戻る",
       "saveChapter": "チャプターを保存",
-      "revertView": "元のビューに戻す",
+      "revertView": "フレームを中心に表示",
       "noChapter": "チャプターが選択されていません",
       "noChapterHint": "タイムラインからチャプターを選択するか、新しいチャプターを作成してください。",
       "confirmPosition": "ビューアの位置を確定"
@@ -426,6 +412,11 @@
       "showChapters": "チャプターを表示",
       "hideTools": "チャプターツールを隠す",
       "showTools": "チャプターツールを表示"
+    },
+    "frame": {
+      "label": "フレーム",
+      "chapterAria": "チャプターのフレーム",
+      "keyframeAria": "カメラポイント {number} のフレーム"
     }
   },
   "viewer": {
@@ -781,8 +772,7 @@
       "forward": "10秒進む",
       "rewind": "10秒戻る",
       "media": "メディア",
-      "mediaSelect": "メディアソースを選択",
-      "saveView": "この表示をチャプターのフレーミングとして保存"
+      "mediaSelect": "メディアソースを選択"
     },
     "gallery": {
       "label": "サムネイルギャラリー",

@@ -3,15 +3,14 @@ import type { StoryState } from '../../core/types/story';
 import {
   DEFAULT_PRESENTATION_ASPECT,
   constrainViewBoxToContent,
+  fitViewBoxToContent,
   framingsWithin,
   inferPresentationAspect,
-  inscribeViewBox,
   isKeyframeEnvelope,
   normaliseStoryFraming,
   normaliseViewBox,
   resolvePresentationAspect,
 } from '../framing';
-import { framingsDiffer } from '../chapterTasks';
 
 const aspectOf = (box: { w: number; h: number }) => box.w / box.h;
 const centreOf = (box: { x: number; y: number; w: number; h: number }) => ({
@@ -27,29 +26,6 @@ describe('framing normalisation', () => {
     expect(aspectOf(normalised)).toBeCloseTo(4 / 3, 6);
     expect(normalised.w * normalised.h).toBeCloseTo(box.w * box.h, 4);
     expect(centreOf(normalised)).toEqual(centreOf(box));
-  });
-
-  it('recovers a framing from the viewport the renderer fitted it into', () => {
-    /*
-     * `setViewBox` fits, so a framing narrower than the stage comes back
-     * padded on one axis. Inscribing is what undoes that — and it is not
-     * normalisation, which would keep the padded area and report a zoom the
-     * author never applied.
-     */
-    const framing = { x: 500, y: 531, w: 2404, h: 1803 };
-    const stage = 0.8618;
-    const viewport = {
-      x: framing.x,
-      y: framing.y + framing.h / 2 - framing.w / stage / 2,
-      w: framing.w,
-      h: framing.w / stage,
-    };
-
-    const recovered = inscribeViewBox(viewport, 4 / 3);
-    expect(recovered.w).toBeCloseTo(framing.w, 3);
-    expect(recovered.h).toBeCloseTo(framing.w / (4 / 3), 3);
-    expect(centreOf(recovered)).toEqual(centreOf(viewport));
-    expect(recovered.w * recovered.h).toBeLessThan(viewport.w * viewport.h);
   });
 
   it('is a no-op for a box already at the canonical aspect', () => {
@@ -233,28 +209,6 @@ describe('framing comparison', () => {
     const box = { x: 0, y: 0, w: 100, h: 100 };
     expect(framingsWithin({ ...box, x: 0.5 }, box, 0.5)).toBe(true);
   });
-
-  /*
-   * The reason `framingsWithin` and `framingsDiffer` are separate functions
-   * rather than one with a tolerance argument. The same absolute shift is
-   * imperceptible on a large canvas and a different view entirely on a small
-   * crop, so an absolute tolerance cannot answer "did the author reframe".
-   * Collapsing the two would silently break drift detection at one end of the
-   * scale or the other, and this is what would catch it.
-   */
-  it('answers differently from drift detection at different canvas scales', () => {
-    const shift = 40;
-
-    const large = { x: 0, y: 0, w: 15000, h: 10000 };
-    const largeShifted = { ...large, x: large.x + shift };
-    expect(framingsWithin(largeShifted, large, 0.5)).toBe(false);
-    expect(framingsDiffer(large, largeShifted)).toBe(false);
-
-    const crop = { x: 0, y: 0, w: 300, h: 200 };
-    const cropShifted = { ...crop, x: crop.x + shift };
-    expect(framingsWithin(cropShifted, crop, 0.5)).toBe(false);
-    expect(framingsDiffer(crop, cropShifted)).toBe(true);
-  });
 });
 
 /*
@@ -311,5 +265,38 @@ describe('constrainViewBoxToContent', () => {
       expect(out.x + out.w).toBeLessThanOrEqual(canvas.width);
       expect(out.y + out.h).toBeLessThanOrEqual(canvas.height);
     }
+  });
+});
+
+/*
+ * The chapter frame is locked to the story's aspect, so bringing it inside
+ * the canvas must not clamp one side and leave the other: a frame wider than
+ * the picture would otherwise come back at the picture's width but its own
+ * height, and the lock would be broken by the edge of the image.
+ */
+describe('fitViewBoxToContent', () => {
+  const content = { width: 1000, height: 800 };
+
+  it('scales a box too large for the canvas about its centre, keeping its shape', () => {
+    const fitted = fitViewBoxToContent({ x: -400, y: 100, w: 1800, h: 600 }, content);
+    expect(fitted.w / fitted.h).toBeCloseTo(3, 9);
+    expect(fitted.w).toBeCloseTo(1000, 6);
+    expect(fitted.x).toBeCloseTo(0, 6);
+    // Centre kept where the canvas allows: the original centre was y = 400.
+    expect(fitted.y + fitted.h / 2).toBeCloseTo(400, 6);
+  });
+
+  it('shifts a box that hangs over an edge back in, size intact', () => {
+    expect(fitViewBoxToContent({ x: 800, y: -50, w: 400, h: 300 }, content)).toEqual({
+      x: 600,
+      y: 0,
+      w: 400,
+      h: 300,
+    });
+  });
+
+  it('leaves a box that already fits alone', () => {
+    const box = { x: 100, y: 100, w: 400, h: 300 };
+    expect(fitViewBoxToContent(box, content)).toEqual(box);
   });
 });

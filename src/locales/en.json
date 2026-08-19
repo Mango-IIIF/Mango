@@ -116,8 +116,7 @@
         "empty": "Not configured",
         "partial": "Partially configured",
         "complete": "Configured",
-        "attention": "Needs attention",
-        "positionDrift": "Doesn't match current view"
+        "attention": "Needs attention"
       },
       "items": {
         "details": {
@@ -126,9 +125,8 @@
           "save": "Save details"
         },
         "position": {
-          "title": "Viewer position",
-          "description": "The canvas area and zoom this chapter opens on.",
-          "save": "Save viewer position"
+          "title": "Frame",
+          "description": "The canvas region this chapter opens on, drawn on the stage."
         },
         "focus": {
           "title": "Annotations",
@@ -248,20 +246,17 @@
       "captureHint": "Capture a chapter to edit annotation text and placement."
     },
     "position": {
-      "title": "Viewer position",
-      "hint": "The canvas area this chapter frames, in canvas pixels.",
-      "empty": "No position is saved yet. Frame the artwork in the viewer, then capture the current view.",
+      "title": "Frame",
+      "hint": "Drag the frame on the stage to move it, or its handles to resize it. Type a region here in canvas pixels if you have one.",
+      "empty": "No frame yet. Type a region in canvas pixels to create one.",
       "x": "X",
       "y": "Y",
       "width": "Width",
       "height": "Height",
-      "capture": "Use current view",
-      "goTo": "Go to saved position",
-      "current": "Current view: {x} · {y} · {w} · {h}",
-      "expand": "Expand viewer position section",
-      "collapse": "Collapse viewer position section",
-      "stored": "Stored as: {x} · {y} · {w} · {h}",
-      "normalisedNote": "Typed and captured values are a request. Framings are stored at the story's presentation aspect so chapters stay comparable, so the stored numbers can differ from the ones you entered."
+      "goTo": "Go to frame",
+      "expand": "Expand frame section",
+      "collapse": "Collapse frame section",
+      "aspectLocked": "Locked to {aspect}: width and height change together, so every reader sees exactly this region."
     },
     "annotations": {
       "chapter": "Chapter annotations",
@@ -308,8 +303,8 @@
       "durationDwellError": "Duration must leave time to move after the {seconds}s start hold.",
       "arcError": "Arc sweep needs at least three camera points. Add another point first.",
       "dwellError": "The start hold must be shorter than the time to the next camera point.",
-      "customHint": "Custom keeps the canvas zoom captured for each point. Preview starts at Point 1.",
-      "presetHint": "Points set the focus; the movement style controls zoom. Preview starts at Point 1.",
+      "customHint": "Custom keeps each point’s frame as you drew it. Preview starts at Point 1.",
+      "presetHint": "Points set the focus; the movement style controls zoom. Resizing a point switches to Custom. Preview starts at Point 1.",
       "preview": "Preview",
       "style": "Movement style",
       "presets": "Motion presets",
@@ -341,21 +336,13 @@
       "duration": "Chapter motion duration",
       "durationHint": "All positions are spaced automatically across this duration.",
       "durationSeconds": "Duration (seconds)",
-      "cameraPoints": "Camera points",
-      "movePointAt": "Move camera point {number} at {seconds} seconds",
-      "movePointTitle": "Move camera point {number} · {seconds}s",
-      "placePointHint": "Click or drag the artwork to place the camera point",
-      "setPoint": "Set camera point",
-      "movePoint": "Move point {number}",
-      "placePoint": "Place point {number}",
-      "usePoint": "Use this point",
       "zoomValue": "{zoom}× zoom",
       "timeline": "Chapter motion timeline",
       "goToPoint": "Go to camera point {number}",
       "point": "Point {number}",
       "deletePoint": "Delete camera point",
       "deletePointNumber": "Delete camera point {number}",
-      "emptyPoints": "No camera points yet. Add a point, then drag its pin into position in the viewer.",
+      "emptyPoints": "No camera points yet. Add a point, then drag its frame into place on the stage.",
       "addPoint": "Add camera point"
     },
     "settings": {
@@ -388,7 +375,6 @@
       "selectedChapter": "Selected chapter",
       "newStory": "New story",
       "loadSource": "Load a source",
-      "positionUpdated": "Position updated",
       "previewChapter": "Preview chapter",
       "previewChapterHint": "Play this chapter on its own, exactly as the story presents it.",
       "stopChapterPreview": "Stop preview",
@@ -396,7 +382,7 @@
       "sourceHint": "Add the source for your story, choose its starting canvas, and create the first chapter. You can adjust image placement from the chapter tools afterwards.",
       "backToTools": "Back to chapter tools",
       "saveChapter": "Save chapter",
-      "revertView": "Reset camera to chapter view",
+      "revertView": "Centre the view on the frame",
       "noChapter": "No chapter selected",
       "noChapterHint": "Capture a chapter or select one from the timeline to edit its content.",
       "confirmPosition": "Confirm Position"
@@ -426,6 +412,11 @@
       "showChapters": "Show chapters",
       "hideTools": "Hide chapter tools",
       "showTools": "Show chapter tools"
+    },
+    "frame": {
+      "label": "Frame",
+      "chapterAria": "Chapter frame",
+      "keyframeAria": "Camera point {number} frame"
     }
   },
   "viewer": {
@@ -781,8 +772,7 @@
       "forward": "Fast forward 10 seconds",
       "rewind": "Rewind 10 seconds",
       "media": "Media",
-      "mediaSelect": "Select media source",
-      "saveView": "Save this view as the chapter framing"
+      "mediaSelect": "Select media source"
     },
     "gallery": {
       "label": "Thumbnail gallery",
