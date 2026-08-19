@@ -4137,10 +4137,22 @@
       box-shadow: none;
     }
 
-    .viewer--story-builder .panel-stack--right {
+    /*
+     * Back into the flow, like the chapters rail. Matched through `.viewer__grid`
+     * so it outranks the floating rule, which otherwise kept this panel
+     * absolutely positioned against the footer inset and crushed it to nothing
+     * once the narration editor took a row of its own.
+     */
+    .viewer--story-builder .viewer__grid .panel-stack--right {
+      position: relative;
+      inset: auto;
       grid-row: 2;
       grid-column: 2;
+      width: 100%;
+      max-width: none;
       height: 100%;
+      transform: none;
+      box-shadow: none;
     }
 
     .viewer__grid.viewer__grid--left.viewer__grid--right,
@@ -4423,7 +4435,8 @@
       grid-column: 1;
     }
 
-    .viewer--story-builder .panel-stack--right {
+    /* Matched like the tablet rule above, so that this one outranks it. */
+    .viewer--story-builder .viewer__grid .panel-stack--right {
       grid-row: 3;
       grid-column: 1;
     }

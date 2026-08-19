@@ -791,10 +791,13 @@ test.describe("priority mobile interactions", () => {
       .filter({ hasText: "Chapter 6" })
       .first();
     await chapterSix.click();
-    await inspector.getByRole("button", { name: "Annotations" }).click();
+    await inspector.locator('[data-testid="inspector-activate-focus"]').click();
     await stage.scrollIntoViewIfNeeded();
 
-    const drawingSurface = stage.locator(".mango-annotation-editor__svg");
+    // The chapter frame is drawn with the same editor; pick the drawing one.
+    const drawingSurface = stage.locator(
+      ".mango-annotation-editor:not(.story-frame-layer) .mango-annotation-editor__svg",
+    );
     await expect(drawingSurface).toBeVisible();
     await expectContained(drawingSurface, stage, 2);
     const stageSizing = await stage.evaluate((element) => ({

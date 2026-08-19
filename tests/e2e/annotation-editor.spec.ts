@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const openExampleStoryBuilder = async (page: Page) => {
   await page.goto("/story-builder.html?iiif-content=test-story/demo.json");
-  await expect(page.getByRole("button", { name: /Annotations/ })).toBeVisible();
+  await expect(page.locator('[data-testid="inspector-activate-focus"]')).toBeVisible();
   let previous = "";
   let stableSamples = 0;
   await expect
@@ -197,9 +197,14 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
   });
 
   await openExampleStoryBuilder(page);
-  await page.getByRole("button", { name: /Annotations/ }).click();
+  await page.locator('[data-testid="inspector-activate-focus"]').click();
 
-  let editor = page.locator(".mango-annotation-editor__svg");
+  // The chapter frame is drawn with the same editor; this is the drawing one.
+  const drawingEditor = () =>
+    page.locator(
+      ".mango-annotation-editor:not(.story-frame-layer) .mango-annotation-editor__svg",
+    );
+  let editor = drawingEditor();
   await expect(editor).toBeVisible();
   const editorBounds = await editor.boundingBox();
   expect(editorBounds).not.toBeNull();
@@ -207,9 +212,11 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
 
   await page.getByRole("button", { name: "Rectangle", exact: true }).click();
   await page.waitForTimeout(200);
-  await page.mouse.move(editorBounds.x + 250, editorBounds.y + 180);
+  // Draw in the middle of the stage, clear of the floating chapters rail and
+  // inspector on either side.
+  await page.mouse.move(editorBounds.x + 450, editorBounds.y + 180);
   await page.mouse.down();
-  await page.mouse.move(editorBounds.x + 500, editorBounds.y + 360, {
+  await page.mouse.move(editorBounds.x + 700, editorBounds.y + 360, {
     steps: 8,
   });
   await page.mouse.up();
@@ -282,11 +289,11 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
   expect(afterResize.width).toBeGreaterThan(afterMove.width + 20);
   expect(afterResize.height).toBeGreaterThan(afterMove.height + 15);
 
-  // The focus task is transactional: Save commits geometry; Back/Cancel must
+  // The focus task is transactional: Save commits geometry; Cancel must
   // restore the chapter snapshot rather than silently committing it.
   await page.getByRole("button", { name: "Save annotation" }).click();
-  await page.getByRole("button", { name: /Annotations/ }).click();
-  editor = page.locator(".mango-annotation-editor__svg");
+  await page.locator('[data-testid="inspector-activate-focus"]').click();
+  editor = drawingEditor();
   shape = editor
     .locator("rect[data-annotation-id]:not([data-handle])")
     .first();
@@ -313,18 +320,22 @@ test("opens and deletes a Mango annotation from the story footer", async ({
   });
 
   await openExampleStoryBuilder(page);
-  await page.getByRole("button", { name: /Annotations/ }).click();
+  await page.locator('[data-testid="inspector-activate-focus"]').click();
 
-  const editor = page.locator(".mango-annotation-editor__svg");
+  const editor = page.locator(
+    ".mango-annotation-editor:not(.story-frame-layer) .mango-annotation-editor__svg",
+  );
+  await expect(editor).toBeVisible();
   const editorBounds = await editor.boundingBox();
   expect(editorBounds).not.toBeNull();
   if (!editorBounds) return;
 
   await page.getByRole("button", { name: "Rectangle", exact: true }).click();
   await page.waitForTimeout(200);
-  await page.mouse.move(editorBounds.x + 250, editorBounds.y + 180);
+  // Clear of the floating chapters rail on the left.
+  await page.mouse.move(editorBounds.x + 450, editorBounds.y + 180);
   await page.mouse.down();
-  await page.mouse.move(editorBounds.x + 430, editorBounds.y + 320, {
+  await page.mouse.move(editorBounds.x + 630, editorBounds.y + 320, {
     steps: 6,
   });
   await page.mouse.up();

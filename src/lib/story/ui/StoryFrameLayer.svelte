@@ -289,6 +289,16 @@
       },
       onAnnotationChanged: handleChange,
     });
+    /*
+     * The editor appends its root to the viewer container and shares its class
+     * names with the drawing annotation editor, which mounts into the same
+     * container. Mark this one so styles and tests can tell the two apart.
+     */
+    const root = viewer.container.lastElementChild;
+    if (root instanceof HTMLElement && root.classList.contains('mango-annotation-editor')) {
+      root.classList.add('story-frame-layer');
+      root.dataset.storyFrameLayer = '';
+    }
     for (const shape of untrack(() => frames.map(toShape))) {
       pushedGeometry.set(shape.id, JSON.stringify(shape.geometry));
     }
