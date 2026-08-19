@@ -212,13 +212,18 @@
      * frame's numbers in the inspector are the keyboard route.
      */
     const keyboardTarget = document.createElement('div');
-    const instance = new OSDAnnotationEditor({
+    /*
+     * Built under `untrack`: constructing the editor renders once, and the
+     * render callbacks read `frames`. Tracked, that would make every frame
+     * change tear the editor down and build it again mid-gesture.
+     */
+    const instance = untrack(() => new OSDAnnotationEditor({
       viewer,
       keyboardTarget,
       canvasSize: { width: canvasWidth, height: canvasHeight },
       mode: 'select',
-      annotations: untrack(() => frames.map(toShape)),
-      selectedId: untrack(() => selectedFrameId),
+      annotations: frames.map(toShape),
+      selectedId: selectedFrameId,
       policy: (shape) => {
         const frame = frameById(shape.id);
         const editable = Boolean(frame?.editable);
@@ -288,7 +293,7 @@
         if (id !== wanted) onframeselect?.({ frameId: id });
       },
       onAnnotationChanged: handleChange,
-    });
+    }));
     /*
      * The editor appends its root to the viewer container and shares its class
      * names with the drawing annotation editor, which mounts into the same
