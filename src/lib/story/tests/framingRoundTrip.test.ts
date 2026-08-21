@@ -32,14 +32,20 @@ describe('presentation aspect round trip', () => {
     expect(aspect).toBeGreaterThan(0);
 
     const exported = serializeStoryToIiif(normalised);
+    const stateBody = exported.items[0].body as {
+      mangoState: Record<string, unknown>;
+    };
+    expect(stateBody.mangoState.presentationAspect).toBeUndefined();
 
     const reloaded = normaliseStoryInput(exported);
     expect(reloaded.ok).toBe(true);
-    expect(reloaded.story!.presentationAspect).toBeCloseTo(aspect, 9);
+    // The wire carries integer xywh rather than a second private aspect value,
+    // so reconstruction is stable to the exported pixel boundary.
+    expect(reloaded.story!.presentationAspect).toBeCloseTo(aspect, 3);
 
     // The reloaded story resolves to the same aspect rather than re-inferring
     // one from its own (already normalised) boxes.
-    expect(resolvePresentationAspect(reloaded.story!)).toBeCloseTo(aspect, 9);
+    expect(resolvePresentationAspect(reloaded.story!)).toBeCloseTo(aspect, 3);
   });
 
   it('brings differently-shaped chapters into agreement through a save cycle', () => {

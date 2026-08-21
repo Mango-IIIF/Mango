@@ -3688,6 +3688,22 @@
     pointer-events: none;
   }
 
+  /* Export is also a focused modal workspace. Keep the chapter and tools
+     drawers, including their restore handles, behind it until it closes. */
+  .viewer--story-builder
+    .viewer__grid--builder-overlay:global(.viewer__grid--export-modal)
+    :global(.panel-stack--left),
+  .viewer--story-builder
+    .viewer__grid--builder-overlay:global(.viewer__grid--export-modal)
+    .panel-stack--right,
+  .viewer--story-builder
+    .viewer__grid--builder-overlay:global(.viewer__grid--export-modal)
+    .builder-panel-toggle {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   /* Narration and source-media timing are focused modal workspaces. Keep the
      chapter list, inspector, and their restore controls out of the modal until
      it closes, without changing the user's saved collapse state. */
@@ -3714,6 +3730,14 @@
    */
   .viewer__grid--builder-annotation-editing:not(.viewer__grid--builder-right-collapsed)
     .stage__bottom:has(:global(.story-wide-authoring--bare)) {
+    display: none;
+  }
+
+  /* Once a shape tool is chosen, the artwork owns the workspace until the
+     geometry is placed. The hidden marker comes from the annotation footer;
+     using it here removes the footer shell as well as its contents. */
+  .stage--story-builder
+    .stage__bottom:has(:global(.story-wide-authoring--annotation-placing)) {
     display: none;
   }
 

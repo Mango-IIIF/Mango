@@ -396,7 +396,6 @@ export const serializeStoryToIiif = (
     bodyItems.push(
       createMangoViewerStateBody(
         { ...chapter, id: chapterId },
-        raw.presentationAspect,
         annotationId,
       ),
     );

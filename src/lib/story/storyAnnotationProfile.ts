@@ -48,9 +48,10 @@ export type MangoViewerState = {
    * annotation's own `id`, its place in an ordered `items` list, and the
    * target's `source` and `partOf` say the same thing. They are still read,
    * so stories written before the move keep loading.
-   */
+  */
   chapterId?: string;
   canvasIndex?: number;
+  /** @deprecated Inferred from exported chapter frames; read for migration only. */
   presentationAspect?: number;
   canvasId?: string;
   /**
@@ -361,7 +362,6 @@ export const buildViewerStateBodyId = (annotationId: string): string =>
 
 export const createMangoViewerStateBody = (
   chapter: Chapter,
-  presentationAspect?: number,
   annotationId?: string,
 ): MangoViewerStateBody => {
   const timing = resolveChapterTiming(chapter);
@@ -410,7 +410,6 @@ export const createMangoViewerStateBody = (
    */
   const state: MangoViewerState = {
       canvasIndex: chapter.canvasIndex,
-      ...(presentationAspect !== undefined ? { presentationAspect } : {}),
       ...(chapter.model ? { modelPose: chapter.model } : {}),
       ...(chapter.modelOptions ? { modelOptions: chapter.modelOptions } : {}),
       ...(chapter.layerOpacities

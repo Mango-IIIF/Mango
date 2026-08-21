@@ -64,7 +64,7 @@ describe("StoryBuilderWideAuthoring", () => {
     const motionPreviewing = writable(false);
     const selectedAnnotationId = writable<string | null>(null);
     const annotationTool = writable("select" as const);
-    const onSetAnnotationTool = vi.fn();
+    const onSetAnnotationTool = vi.fn((tool) => annotationTool.set(tool));
     const onSetAnnotationLabel = vi.fn();
     const onSetAnnotationStyle = vi.fn();
     const onEditAnnotation = vi.fn((annotationId: string) =>
@@ -336,6 +336,14 @@ describe("StoryBuilderWideAuthoring", () => {
       )].find((button) => button.textContent?.trim() === "Rectangle")!
     ).click();
     expect(onSetAnnotationTool).toHaveBeenCalledWith("rectangle");
+    await tick();
+    expect(target.querySelector(".story-wide-authoring--annotations")).toBeNull();
+    expect(
+      target.querySelector(".story-wide-authoring--annotation-placing"),
+    ).toBeTruthy();
+    // The viewer returns to Select after committing the new shape.
+    annotationTool.set("select");
+    await tick();
     (
       target.querySelector(".story-wide-annotations__select") as HTMLButtonElement
     ).click();
