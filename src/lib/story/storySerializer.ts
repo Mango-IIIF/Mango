@@ -17,7 +17,7 @@ import {
   W3C_WEB_ANNOTATION_CONTEXT,
   type MangoViewerStateBody,
 } from './storyAnnotationProfile';
-import { buildChapterAnnotationId, deriveChapterAnnotationBase } from './publicIdentifiers';
+import { buildChapterAnnotationId, MANGO_DRAFT_FALLBACK_ID } from './publicIdentifiers';
 import { translate } from '../core/i18n';
 import { storyDrawingDocument } from './storyDrawingAnnotations';
 
@@ -69,7 +69,12 @@ export type StoryAnnotationPage = {
   ];
   id: string;
   type: 'AnnotationPage';
-  label: Record<string, string[]>;
+  /**
+   * Absent on an untitled story. IIIF permits an AnnotationPage without a
+   * label, and the page label is the story title by contract — so a stand-in
+   * written here for display is a title the next load reads back as real.
+   */
+  label?: Record<string, string[]>;
   items: StoryAnnotation[];
 };
 
@@ -94,6 +99,24 @@ export type SaveState =
   | { status: 'error'; message?: string; code?: string };
 
 const normaliseStoryFragment = (value: string): string => value.replace('xywh=pixel:', 'xywh=');
+
+/**
+ * A IIIF language map, or nothing at all.
+ *
+ * Empty entries are dropped rather than written as `{"en": [""]}`: a blank
+ * string is not a shorter label, it is a label the resource does not have, and
+ * generic clients render it as an empty line where a title should be.
+ */
+const languageMap = (
+  values: Record<string, string> | undefined,
+): Record<string, string[]> | undefined => {
+  const map: Record<string, string[]> = {};
+  for (const [language, value] of Object.entries(values ?? {})) {
+    const text = value?.trim();
+    if (text) map[language] = [text];
+  }
+  return Object.keys(map).length > 0 ? map : undefined;
+};
 
 /**
  * The media fragment for a framing, written by the parser's selector codecs.
@@ -194,36 +217,25 @@ export const serializeStoryToIiif = (
   raw: StoryState,
   options: SerializeStoryOptions = {},
 ): StoryAnnotationPage => {
-  const label: Record<string, string[]> = {};
-  if (raw.title) {
-    for (const [lang, val] of Object.entries(raw.title)) {
-      label[lang] = [val];
-    }
-  }
+  const label = languageMap(raw.title);
 
-  const pageId = options.id ?? raw.id ?? 'urn:mango:draft:story';
-  const exportStory: StoryState = options.id ? { ...raw, id: options.id } : raw;
-  const annotationBase = deriveChapterAnnotationBase(exportStory);
+  /*
+   * Every export carries an HTTP(S) id, because IIIF requires one on an
+   * AnnotationPage and on an Annotation and a document that cannot satisfy
+   * that is not worth emitting. When the author has not chosen an identifier
+   * the story still has a generated one from `MANGO_DRAFT_ID_BASE`; whether
+   * that is good enough to publish is `validatePublicationIdentifiers`'
+   * question, not this function's.
+   */
+  const pageId = options.id ?? raw.id ?? MANGO_DRAFT_FALLBACK_ID;
+  const exportStory: StoryState = { ...raw, id: pageId };
 
   const items: StoryAnnotation[] = raw.chapters.flatMap((chapter, index) => {
     const chapterId = chapter.id || `chapter_${index + 1}`;
-    const annotationId = annotationBase
-      ? buildChapterAnnotationId(exportStory, chapterId)
-      : `urn:mango:draft:annotation/${encodeURIComponent(chapterId)}`;
+    const annotationId = buildChapterAnnotationId(exportStory, chapterId);
 
-    const labelMap: Record<string, string[]> = {};
-    if (chapter.title) {
-      for (const [lang, val] of Object.entries(chapter.title)) {
-        labelMap[lang] = [val];
-      }
-    }
-
-    const summaryMap: Record<string, string[]> = {};
-    if (chapter.description) {
-      for (const [lang, val] of Object.entries(chapter.description)) {
-        summaryMap[lang] = [val];
-      }
-    }
+    const labelMap = languageMap(chapter.title);
+    const summaryMap = languageMap(chapter.description);
 
     // Build target
     const canvasId = chapter.canvasId || `${chapter.manifest}/canvas/${chapter.canvasIndex}`;
@@ -393,8 +405,8 @@ export const serializeStoryToIiif = (
       id: annotationId,
       type: 'Annotation',
       motivation: 'supplementing',
-      label: Object.keys(labelMap).length > 0 ? labelMap : undefined,
-      summary: Object.keys(summaryMap).length > 0 ? summaryMap : undefined,
+      ...(labelMap ? { label: labelMap } : {}),
+      ...(summaryMap ? { summary: summaryMap } : {}),
       body: bodyItems.length === 1 ? bodyItems[0] : bodyItems.length > 1 ? bodyItems : undefined,
       target,
     };
@@ -416,7 +428,7 @@ export const serializeStoryToIiif = (
     ],
     id: pageId,
     type: 'AnnotationPage',
-    label: Object.keys(label).length > 0 ? label : { en: [translate('storyBuilder.export.trackLabel')] },
+    ...(label ? { label } : {}),
     items,
   };
 };

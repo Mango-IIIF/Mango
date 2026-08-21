@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { t } from '../../core/i18n';
+  import StoryStage from '../ui/StoryStage.svelte';
 
   interface Props {
     currentChapterIndex?: number;
@@ -27,6 +28,7 @@
     /** Stage opacity, ramped by the runtime to hide a source swap. */
     stageOpacity?: number;
     stageFadeMs?: number;
+    presentationAspect?: number | null;
     stage?: Snippet;
   }
 
@@ -54,6 +56,7 @@
     onnextChapter = undefined,
     stageOpacity = 1,
     stageFadeMs = 0,
+    presentationAspect = 16 / 9,
     stage = undefined,
   }: Props = $props();
 
@@ -198,9 +201,11 @@
         class="story-shell__stage-frame"
         style={`opacity: ${stageOpacity}; transition: opacity ${stageFadeMs}ms ease-in-out;`}
       >
-        {#if stage}
-          {@render stage()}
-        {/if}
+        <StoryStage aspect={presentationAspect}>
+          {#if stage}
+            {@render stage()}
+          {/if}
+        </StoryStage>
       </div>
     </section>
 

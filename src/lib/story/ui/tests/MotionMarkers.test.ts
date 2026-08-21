@@ -4,13 +4,10 @@ import { tick } from 'svelte';
 import { writable } from 'svelte/store';
 import StoryBuilderOverlay from '../StoryBuilderOverlay.svelte';
 
-describe('motion point viewer markers', () => {
-  it('forwards trajectory, dwell, and easing controls through the inspector surface', async () => {
+describe('motion authoring surfaces', () => {
+  it('keeps motion options in the wide workspace instead of duplicating them in the inspector', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
-    const onUpdateMotionPathType = vi.fn();
-    const onUpdateMotionInitialDwell = vi.fn();
-    const onUpdateMotionEasing = vi.fn();
     const story = writable({
       chapters: [
         {
@@ -62,10 +59,6 @@ describe('motion point viewer markers', () => {
         annotationLanguage: writable('en'),
         positioningLanguage: writable(null),
         motionPreviewing: writable(false),
-        motionPointDraft: writable(null),
-        onUpdateMotionPathType,
-        onUpdateMotionInitialDwell,
-        onUpdateMotionEasing,
       } as never,
     });
     await tick();
@@ -74,23 +67,21 @@ describe('motion point viewer markers', () => {
       [...target.querySelectorAll('button')].find(
         (entry) => entry.textContent === label,
       ) as HTMLButtonElement;
-    button('Curved Spline').click();
-    button('1.0s').click();
-    button('Ease out').click();
-
-    expect(onUpdateMotionPathType).toHaveBeenCalledWith('spline');
-    expect(onUpdateMotionInitialDwell).toHaveBeenCalledWith(1000);
-    expect(onUpdateMotionEasing).toHaveBeenCalledWith('ease-out');
+    expect(button('Curved Spline')).toBeUndefined();
+    expect(button('1.0s')).toBeUndefined();
+    expect(button('Ease out')).toBeUndefined();
+    expect(target.querySelector('[data-testid="inspector-summary-motion"]')).toBeTruthy();
     unmount(instance);
     target.remove();
   });
 
-  it('shows movable pins only while the motion authoring tool is active', async () => {
+  it('shows camera points as numbered pins only while Motion is active', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
-    const onStartMotionPointPositioning = vi.fn();
-    const activeChapterTask = writable<'motion' | null>('motion');
-    const motionPreviewing = writable(false);
+    const activeChapterTask = writable<null | 'motion'>('motion');
+    const selectedMotionPointId = writable<string | null>('two');
+    const onGoToMotionPoint = vi.fn();
+    const onMoveMotionPoint = vi.fn();
     const story = writable({
       chapters: [
         {
@@ -122,6 +113,9 @@ describe('motion point viewer markers', () => {
         viewBox: writable({ x: 0, y: 0, w: 100, h: 100 }),
         selectedChapterId: writable('chapter'),
         activeChapterTask,
+        selectedMotionPointId,
+        onGoToMotionPoint,
+        onMoveMotionPoint,
         validationErrors: writable([]),
         uiMode: writable('chapterEdit'),
         mediaType: writable('image'),
@@ -131,95 +125,48 @@ describe('motion point viewer markers', () => {
         saveModalPayload: writable(null),
         annotationLanguage: writable('en'),
         positioningLanguage: writable(null),
-        motionPreviewing,
-        motionPointDraft: writable(null),
-        onStartMotionPointPositioning,
-      } as never,
-    });
-    const pins = target.querySelectorAll('.story-builder-motion-marker');
-    expect(pins).toHaveLength(2);
-    expect(pins[0].textContent).toContain('1');
-    expect(pins[1].textContent).toContain('2');
-    (pins[1] as HTMLButtonElement).click();
-    expect(onStartMotionPointPositioning).toHaveBeenCalledWith('two');
-    expect((pins[0] as HTMLElement).style.cssText).not.toBe((pins[1] as HTMLElement).style.cssText);
-
-    motionPreviewing.set(true);
-    await tick();
-    expect(target.querySelectorAll('.story-builder-motion-marker')).toHaveLength(0);
-
-    motionPreviewing.set(false);
-    activeChapterTask.set(null);
-    await tick();
-    expect(target.querySelectorAll('.story-builder-motion-marker')).toHaveLength(0);
-    unmount(instance);
-    target.remove();
-  });
-
-  it('places a visible numbered pin by clicking directly on the canvas', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-    const onConfirmMotionPointPositioning = vi.fn();
-    const story = writable({
-      chapters: [
-        {
-          id: 'chapter',
-          manifest: 'https://example.org/manifest',
-          canvasIndex: 0,
-          viewBox: { x: 100, y: 200, w: 1000, h: 500 },
-        },
-      ],
-    });
-    const instance = mount(StoryBuilderOverlay, {
-      target,
-      props: {
-        story,
-        layers: writable([]),
-        layerOpacities: writable({}),
-        currentManifest: writable('https://example.org/manifest'),
-        viewBox: writable({ x: 100, y: 200, w: 1000, h: 500 }),
-        selectedChapterId: writable('chapter'),
-        activeChapterTask: writable('motion'),
-        validationErrors: writable([]),
-        uiMode: writable('motionPointPositioning'),
-        mediaType: writable('image'),
-        mediaMarks: writable({ lastTime: 0, markIn: null, markOut: null }),
-        avMarksValid: writable(true),
-        saveModalOpen: writable(false),
-        saveModalPayload: writable(null),
-        annotationLanguage: writable('en'),
-        positioningLanguage: writable(null),
         motionPreviewing: writable(false),
-        motionPointDraft: writable({}),
-        onConfirmMotionPointPositioning,
       } as never,
     });
-    const surface = target.querySelector('.story-builder-motion-point-surface') as HTMLElement;
-    vi.spyOn(surface, 'getBoundingClientRect').mockReturnValue({
+    await tick();
+
+    const pins = target.querySelectorAll<HTMLButtonElement>('.story-builder-motion-marker');
+    expect(pins).toHaveLength(2);
+    expect(pins[0].textContent?.trim()).toBe('1');
+    expect(pins[1].textContent?.trim()).toBe('2');
+    expect(pins[1].classList.contains('story-builder-motion-marker--selected')).toBe(true);
+
+    pins[0].click();
+    expect(onGoToMotionPoint).toHaveBeenCalledWith('one');
+
+    const overlay = target.querySelector('.story-builder-overlay-root') as HTMLDivElement;
+    overlay.getBoundingClientRect = vi.fn(() => ({
       x: 0,
       y: 0,
       left: 0,
       top: 0,
-      right: 800,
-      bottom: 400,
-      width: 800,
-      height: 400,
+      right: 200,
+      bottom: 100,
+      width: 200,
+      height: 100,
       toJSON: () => ({}),
-    });
-    surface.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 200, clientY: 100 }));
+    }));
+    const pointer = (type: string, clientX: number, clientY: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY });
+      Object.defineProperty(event, 'pointerId', { value: 7 });
+      return event;
+    };
+    pins[1].dispatchEvent(pointer('pointerdown', 100, 50));
+    pins[1].dispatchEvent(pointer('pointermove', 150, 25));
+    pins[1].dispatchEvent(pointer('pointerup', 150, 25));
+
+    expect(onMoveMotionPoint).toHaveBeenCalledWith('two', { x: 75, y: 25 });
+    pins[1].click();
+    expect(onGoToMotionPoint).toHaveBeenCalledTimes(1);
+
+    activeChapterTask.set(null);
     await tick();
-    const pin = target.querySelector('.story-builder-motion-placement-pin') as HTMLElement;
-    expect(pin).toBeTruthy();
-    expect(pin.textContent).toContain('1');
-    const confirm = [...target.querySelectorAll('button')].find((button) =>
-      button.textContent?.includes('Use this point'),
-    ) as HTMLButtonElement;
-    expect(confirm.disabled).toBe(false);
-    confirm.click();
-    expect(onConfirmMotionPointPositioning).toHaveBeenCalledWith({
-      x: 350,
-      y: 325,
-    });
+    expect(target.querySelectorAll('.story-builder-motion-marker')).toHaveLength(0);
     unmount(instance);
     target.remove();
   });

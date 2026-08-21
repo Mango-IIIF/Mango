@@ -131,6 +131,7 @@
    * on every `open` so a canvas change with no framing request still fits home.
    */
   let callerFramedViewport = false;
+  let pendingViewBoxRequest: ViewBox | null = null;
 
   const markUserViewportActivity = (): void => {
     userDrivingViewport = true;
@@ -518,6 +519,7 @@
   };
 
   export const setViewBox = (box: ViewBox): void => {
+    pendingViewBoxRequest = { ...box };
     if (!viewer?.viewport || !viewer?.world?.getItemAt(0)) {
       return;
     }
@@ -534,6 +536,8 @@
       // The viewBox animation will retry on the next frame
       return;
     }
+
+    pendingViewBoxRequest = null;
 
     // CRITICAL FIX: Clamp viewBox to image bounds to prevent zoom-out issue
     // If the viewBox is wider/taller than the image, it causes fitBounds() to zoom way out
@@ -622,6 +626,7 @@
     // An explicit Home hands the viewport back: whatever framing a caller had
     // claimed is exactly what the reader is asking to drop.
     callerFramedViewport = false;
+    pendingViewBoxRequest = null;
     viewer.viewport.goHome?.(true);
     viewer.viewport.applyConstraints?.();
   };
@@ -879,6 +884,14 @@
             }
             keepHomeViewportCentered();
             viewer?.viewport?.applyConstraints?.();
+            /*
+             * Nothing is emitted from here on purpose. `forceResize` only flags
+             * the viewer: OSD applies the new container size on its own next
+             * frame, so the viewport read at this point still describes the old
+             * stage and publishing it would hand every consumer a box that is
+             * about to be wrong. The fresh value arrives through `after-resize`
+             * below, once OSD has actually refitted the bounds.
+             */
             scheduleRenderedUpdate();
           });
         });
@@ -912,12 +925,26 @@
           settleInitialHome();
         }
         handleViewportChange();
+        // A story chapter or search result can arrive before OSD has created
+        // its first world item. `setViewBox` records that request; opening the
+        // source is the first point at which image-space coordinates are safe
+        // to resolve. Applying it here also claims the viewport so the initial
+        // home-settling loop cannot overwrite the requested framing.
+        if (pendingViewBoxRequest) {
+          setViewBox(pendingViewBoxRequest);
+        }
       });
       viewer.addHandler('zoom', handleViewportChange);
       viewer.addHandler('pan', handleViewportChange);
       viewer.addHandler('animation', handleAnimation);
       viewer.addHandler('animation-finish', handleViewportChange);
-      viewer.addHandler('resize', handleViewportChange);
+      /*
+       * `after-resize`, not `resize`: OSD raises `resize` before it refits the
+       * bounds to the new container, so a handler there reads and caches the
+       * pre-resize viewport. `after-resize` is raised once the bounds are
+       * recomputed, which is the value every consumer actually wants.
+       */
+      viewer.addHandler('after-resize', handleViewportChange);
       /*
        * Backstop for the same Safari problem the settle loop covers: if OSD's
        * container size still disagrees with the element once tiles are actually

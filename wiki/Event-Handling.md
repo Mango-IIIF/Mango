@@ -138,6 +138,17 @@ viewer.addEventListener("exportAnnotations", async (event) => {
 
 Mango does not choose an annotation storage or authentication service for you.
 
+## Story builder frame events
+
+| Event              | Payload                                 | Purpose                                                                                                                       |
+| ------------------ | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `storyFrameChange` | `{ frameId: string, viewBox: ViewBox }` | A frame drawn on the stage — the chapter frame (`"chapter"`) or a camera keyframe (`"keyframe:<id>"`) — was moved or resized. |
+| `storyFrameSelect` | `{ frameId: string \| null }`          | The author took hold of a different frame on the stage.                                                                       |
+
+Frame boxes are in canvas pixels and already carry the story's presentation
+aspect. The builder commits them to the story itself; hosts can listen to know
+that a framing changed without polling the story.
+
 ## Error events
 
 | Event         | Payload                                                                                                   | Purpose                                                                          |

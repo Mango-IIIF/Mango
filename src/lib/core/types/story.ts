@@ -116,6 +116,29 @@ export type ChapterCameraKeyframe = {
   layerOpacities?: Record<string, number>;
 };
 
+/**
+ * A framing drawn on the stage as an object the author moves and resizes.
+ *
+ * The chapter frame and the camera keyframes are regions of the canvas, so
+ * they are edited where they live — on the canvas, in canvas pixels — rather
+ * than captured from wherever the camera happens to be. Every frame is locked
+ * to the story's presentation aspect, which is what makes it the region every
+ * reader is guaranteed to see whatever their screen.
+ */
+export type StoryFrame = {
+  /** Stable identity for the frame; stays the same across edits. */
+  id: string;
+  kind: "chapter" | "keyframe";
+  /** Canvas-pixel region, in the same space as `Chapter.viewBox`. */
+  viewBox: ViewBox;
+  /** Width over height the frame is held to while it is moved or resized. */
+  aspect: number;
+  /** Short label drawn with the frame, such as a keyframe number. */
+  label?: string;
+  /** Whether the author can take hold of this frame right now. */
+  editable: boolean;
+};
+
 export type ChapterCameraTrack = {
   durationMs: number;
   keyframes: ChapterCameraKeyframe[];

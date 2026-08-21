@@ -104,6 +104,9 @@
     onmanifesttoggle = undefined,
     onpanelToggle = undefined,
   }: Props = $props();
+
+  // Comparison remains implemented, but is not ready to expose in the viewer yet.
+  const SHOW_COMPARISON_CONTROL = false;
 </script>
 
 {#if variant === 'sidebar' && !mobile}
@@ -276,17 +279,19 @@
             <span>{$t('workspace.sidebar.viewSettings')}</span>
           </button>
         {/if}
-        <button
-          class:viewer-sidebar__button--active={showCompare}
-          class="viewer-sidebar__button"
-          type="button"
-          title={iconOnly ? $t('workspace.sidebar.compare') : undefined}
-          aria-pressed={showCompare}
-          onclick={() => oncomparetoggle?.()}
-        >
-          <SquareSplitHorizontal aria-hidden="true" />
-          <span>{$t('workspace.sidebar.compare')}</span>
-        </button>
+        {#if SHOW_COMPARISON_CONTROL}
+          <button
+            class:viewer-sidebar__button--active={showCompare}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? $t('workspace.sidebar.compare') : undefined}
+            aria-pressed={showCompare}
+            onclick={() => oncomparetoggle?.()}
+          >
+            <SquareSplitHorizontal aria-hidden="true" />
+            <span>{$t('workspace.sidebar.compare')}</span>
+          </button>
+        {/if}
         <button
           class="viewer-sidebar__button"
           type="button"
@@ -484,17 +489,19 @@
           <Settings aria-hidden="true" />
         </button>
       {/if}
-      <button
-        class:viewer-mobile-nav__button--active={showCompare}
-        class="viewer-mobile-nav__button"
-        type="button"
-        aria-label={$t('workspace.sidebar.compare')}
-        title={$t('workspace.sidebar.compare')}
-        aria-pressed={showCompare}
-        onclick={() => oncomparetoggle?.()}
-      >
-        <SquareSplitHorizontal aria-hidden="true" />
-      </button>
+      {#if SHOW_COMPARISON_CONTROL}
+        <button
+          class:viewer-mobile-nav__button--active={showCompare}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label={$t('workspace.sidebar.compare')}
+          title={$t('workspace.sidebar.compare')}
+          aria-pressed={showCompare}
+          onclick={() => oncomparetoggle?.()}
+        >
+          <SquareSplitHorizontal aria-hidden="true" />
+        </button>
+      {/if}
       <button class="viewer-mobile-nav__button" type="button" aria-label={$t('workspace.sidebar.download')} title={$t('workspace.sidebar.download')} disabled>
         <Download aria-hidden="true" />
       </button>

@@ -8,6 +8,8 @@
   export let selectedChapterId: Readable<string | null>;
   export let selectedAnnotationId: Readable<string | null> = readable(null);
   export let language = 'en';
+  export let layout: 'wide' | 'inspector' = 'wide';
+  export let allowDelete = true;
   export let onDeleteDrawing: (annotationId: string) => void;
   export let onEditDrawing: (annotationId: string) => void;
 
@@ -20,7 +22,11 @@
   $: items = chapter?.drawingAnnotations ?? [];
 </script>
 
-<section class="story-wide-annotations" aria-labelledby="story-wide-annotations-title">
+<section
+  class="story-wide-annotations"
+  class:story-wide-annotations--inspector={layout === 'inspector'}
+  aria-labelledby="story-wide-annotations-title"
+>
   <header class="story-wide-annotations__header">
     <Shapes aria-hidden="true" />
     <strong id="story-wide-annotations-title">{$t('storyBuilder.annotations.chapter')} <span>{items.length}</span></strong>
@@ -46,12 +52,14 @@
               <small>{typeLabel(annotation)} · {annotation.fillMode === 'solid' ? $t('storyBuilder.annotations.solid') : $t('storyBuilder.annotations.transparent')}</small>
             </span>
           </button>
-          <button
-            class="story-wide-annotations__delete"
-            type="button"
-            aria-label={`${$t('storyBuilder.annotations.deleteDrawing', { type: typeLabel(annotation), index: index + 1 })}: ${labelValue(annotation) || typeLabel(annotation)}`}
-            on:click={() => onDeleteDrawing(annotation.id)}
-          ><Trash2 aria-hidden="true" /></button>
+          {#if allowDelete}
+            <button
+              class="story-wide-annotations__delete"
+              type="button"
+              aria-label={`${$t('storyBuilder.annotations.deleteDrawing', { type: typeLabel(annotation), index: index + 1 })}: ${labelValue(annotation) || typeLabel(annotation)}`}
+              on:click={() => onDeleteDrawing(annotation.id)}
+            ><Trash2 aria-hidden="true" /></button>
+          {/if}
         </article>
       {/each}
     </div>
@@ -79,4 +87,7 @@
   .story-wide-annotations__delete:hover { background:color-mix(in srgb, var(--viewer-danger, #ffb8b8) 12%, transparent); color:var(--viewer-danger, #ef5f7a); }
   .story-wide-annotations__delete :global(svg) { width:14px; }
   .story-wide-annotations__empty { margin:0; color:var(--viewer-muted, #9aa6b2); font-size:12px; }
+  .story-wide-annotations--inspector { padding:0; border:0; border-radius:0; background:transparent; }
+  .story-wide-annotations--inspector .story-wide-annotations__items { display:grid; grid-template-columns:minmax(0,1fr); max-height:230px; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; padding-inline-end:2px; }
+  .story-wide-annotations--inspector .story-wide-annotations__item { width:100%; min-width:0; box-sizing:border-box; }
 </style>

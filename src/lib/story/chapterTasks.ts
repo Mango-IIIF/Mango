@@ -1,5 +1,4 @@
 import type { Chapter, StoryState } from '../core/types/story';
-import type { ViewBox } from '../core/types/viewer';
 import type { MediaSource, MediaType } from '../iiif/mediaResolver';
 import { translate } from '../core/i18n';
 
@@ -15,7 +14,43 @@ export type ChapterTaskId =
   | 'comparison'
   | 'source';
 
-export type ChapterInspectorView = { mode: 'dashboard' } | { mode: 'task'; task: ChapterTaskId };
+/**
+ * The three groups of the chapter inspector. Every task lives in exactly one,
+ * and the stage tools — the tasks that open something on the stage — sit
+ * among the others rather than behind a drill-down.
+ */
+export type InspectorGroup = 'about' | 'timing' | 'source';
+
+export const INSPECTOR_GROUPS: InspectorGroup[] = ['about', 'timing', 'source'];
+
+const GROUP_FOR_TASK: Record<ChapterTaskId, InspectorGroup> = {
+  details: 'about',
+  position: 'about',
+  focus: 'about',
+  'transition-timing': 'timing',
+  'audio-timing': 'timing',
+  motion: 'timing',
+  'media-timing': 'timing',
+  source: 'source',
+  layers: 'source',
+  comparison: 'source',
+};
+
+export const inspectorGroupForTask = (task: ChapterTaskId): InspectorGroup => GROUP_FOR_TASK[task];
+
+const STAGE_TOOLS: ReadonlySet<ChapterTaskId> = new Set<ChapterTaskId>([
+  'position',
+  'focus',
+  'motion',
+  'audio-timing',
+  'media-timing',
+]);
+
+/**
+ * Whether a task opens a tool on the stage — the frame's handles, a drawing
+ * mode, a bottom panel.
+ */
+export const isStageTool = (task: ChapterTaskId): boolean => STAGE_TOOLS.has(task);
 
 export type TaskAvailability =
   | { state: 'available' }
@@ -45,14 +80,6 @@ export type ChapterTaskContext = {
   loadedSources?: MediaSource[];
   validationErrors?: string[];
   languages: string[];
-  /**
-   * Where the viewer is actually pointing, once it has settled. Only the
-   * chapter the author currently has open has a live view to be compared
-   * against, so this is absent for any other evaluation — and while a story
-   * preview is driving the viewer, when the framing on screen is the story's
-   * doing rather than the author's.
-   */
-  currentViewBox?: ViewBox | null;
 };
 
 export type ChapterTaskEvaluation = {
@@ -62,40 +89,6 @@ export type ChapterTaskEvaluation = {
 };
 
 const hasText = (value: string | undefined): boolean => Boolean(value?.trim());
-
-/*
- * Compared by centre and zoom rather than by raw edges. A chapter's framing is
- * stored at the story's presentation aspect while the live viewer carries the
- * editor stage's shape, so the same view is described by two different boxes —
- * and `normaliseViewBox` is defined to preserve exactly the centre and the
- * area, which is why those are the parts that carry the author's intent.
- * Comparing edges instead reported drift on a chapter nobody had touched yet.
- *
- * Both tolerances are relative: half a pixel means nothing on a 15000px canvas
- * and everything inside a 300px crop. They sit below anything an author would
- * call a different view, and above the wobble of the animation that flies the
- * viewer to a chapter.
- */
-const CENTRE_DRIFT_TOLERANCE = 0.02;
-const SCALE_DRIFT_TOLERANCE = 0.05;
-
-/**
- * Deliberately not `framingsWithin` from `framing.ts`: that one answers
- * whether the viewer has arrived somewhere, in absolute image pixels, and
- * cannot answer this question across canvas sizes.
- */
-export const framingsDiffer = (saved: ViewBox, current: ViewBox): boolean => {
-  if (!(saved.w > 0) || !(saved.h > 0) || !(current.w > 0) || !(current.h > 0)) {
-    return false;
-  }
-  const centreDrift = Math.max(
-    Math.abs(current.x + current.w / 2 - (saved.x + saved.w / 2)) / saved.w,
-    Math.abs(current.y + current.h / 2 - (saved.y + saved.h / 2)) / saved.h,
-  );
-  if (centreDrift > CENTRE_DRIFT_TOLERANCE) return true;
-  const scale = Math.sqrt((current.w * current.h) / (saved.w * saved.h));
-  return Math.abs(scale - 1) > SCALE_DRIFT_TOLERANCE;
-};
 
 const validationForTask = (task: ChapterTaskId, messages: string[]): string[] => {
   const patterns: Record<ChapterTaskId, RegExp> = {
@@ -227,24 +220,17 @@ export const evaluateTaskStatus = (
       );
     }
     case 'position': {
+      /*
+       * The frame is an object drawn on the canvas, so there is nothing here
+       * to compare it against: what the author sees is what is stored. This
+       * used to warn when the stored box drifted from the live viewport, a
+       * question that only made sense while framings were captured from the
+       * camera — and one that, asked across two different aspects, was wrong
+       * on every chapter anybody authored.
+       */
       const viewBox = chapter.viewBox;
       if (!viewBox) return withAttention('empty');
       if (!(viewBox.w > 0 && viewBox.h > 0)) return withAttention('attention');
-      /*
-       * "Configured" used to mean only that the field was not null — which it
-       * always is, because a chapter captures a view the moment it is created.
-       * So the tick could never go red, and it read as reassurance about a
-       * framing nobody had checked. The question worth answering is whether the
-       * captured view is still the one the author is looking at: they create a
-       * chapter, then explore to find what it is about, and the capture happens
-       * before that exploring rather than after it.
-       */
-      const current = context.currentViewBox;
-      if (current && framingsDiffer(viewBox, current)) {
-        return withAttention('attention', {
-          labelKey: 'storyBuilder.tasks.status.positionDrift',
-        });
-      }
       return withAttention('complete');
     }
     case 'focus': {

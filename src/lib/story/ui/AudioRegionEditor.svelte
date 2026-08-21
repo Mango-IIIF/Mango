@@ -150,7 +150,7 @@
   };
 
   export const playSelection = async (): Promise<boolean> => {
-    if (!waveSurfer || !region || loading || loadError) return false;
+    if (disabled || !waveSurfer || !region || loading || loadError) return false;
     try {
       await waveSurfer.play(region.start, region.end);
       return true;
@@ -237,10 +237,15 @@
   });
 </script>
 
-<div class="audio-region" data-testid={testId} aria-label={label ?? $t('storyBuilder.audio.waveformSelection')}>
+<div
+  class="audio-region"
+  data-testid={testId}
+  aria-label={label ?? $t('storyBuilder.audio.waveformSelection')}
+  aria-disabled={disabled}
+>
   {#if readyDuration > 0}
     <div class="audio-region__zoom" aria-label={$t('storyBuilder.audio.zoomControls')}>
-      <button type="button" on:click={() => applyZoom(0)}>{$t('storyBuilder.audio.fitMedia')}</button
+      <button type="button" disabled={disabled} on:click={() => applyZoom(0)}>{$t('storyBuilder.audio.fitMedia')}</button
       >
       <label>
         <span>{$t('storyBuilder.audio.zoom')}</span>
@@ -251,11 +256,12 @@
           step="1"
           value={zoomPxPerSec}
           aria-label={$t('storyBuilder.audio.waveformZoom')}
+          disabled={disabled}
           on:input={(event) =>
             applyZoom(Number((event.currentTarget as HTMLInputElement).value))}
         />
       </label>
-      <button type="button" on:click={zoomToSelection}>{$t('storyBuilder.audio.showSelection')}</button>
+      <button type="button" disabled={disabled} on:click={zoomToSelection}>{$t('storyBuilder.audio.showSelection')}</button>
     </div>
   {/if}
   <div class="audio-region__wave" bind:this={container}></div>
@@ -314,6 +320,9 @@
     color: var(--viewer-text, #e8edf4);
     font: inherit;
     cursor: pointer;
+  }
+  .audio-region__zoom :is(button, input):disabled {
+    cursor: not-allowed;
   }
   .audio-region__wave :global(::part(region)) {
     border-right: 2px solid var(--story-builder-accent-hover, #ffb184);

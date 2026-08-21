@@ -15,6 +15,7 @@
     start: number,
     end: number,
   ) => void;
+  export let onSkipNarration: (language: string) => void = () => {};
 
   let activeLanguage = language;
   let trackDraft = "";
@@ -22,6 +23,8 @@
   let endDraft = "0.00";
   let audioDuration = 0;
   let lastSyncKey = "";
+  let lastModeSyncKey = "";
+  let narrationEnabled = false;
   let previewing = false;
   let regionEditor: AudioRegionEditor | null = null;
 
@@ -34,6 +37,13 @@
   ];
   $: segment = chapter?.narrationSegment?.[activeLanguage];
   $: trackSource = $story.narration?.tracks?.[activeLanguage]?.src ?? "";
+  $: {
+    const modeSyncKey = `${chapter?.id ?? ""}:${activeLanguage}:${segment ? "1" : "0"}`;
+    if (modeSyncKey !== lastModeSyncKey) {
+      lastModeSyncKey = modeSyncKey;
+      narrationEnabled = Boolean(segment);
+    }
+  }
   $: {
     const syncKey = `${chapter?.id ?? ""}:${activeLanguage}:${trackSource}:${segment?.start ?? ""}:${segment?.end ?? ""}`;
     if (syncKey !== lastSyncKey) {
@@ -87,6 +97,12 @@
     if (!validSegment) return;
     previewing = (await regionEditor?.playSelection()) ?? false;
   };
+  const disableNarration = () => {
+    regionEditor?.stop();
+    previewing = false;
+    narrationEnabled = false;
+    onSkipNarration(activeLanguage);
+  };
 </script>
 
 <section
@@ -121,9 +137,36 @@
         {/each}
       </div>
     {/if}
+    <div
+      class="story-wide-narration__mode"
+      role="radiogroup"
+      aria-label={$t('storyBuilder.narration.mode')}
+    >
+      <button
+        type="button"
+        role="radio"
+        aria-checked={narrationEnabled}
+        class:story-wide-narration__mode--active={narrationEnabled}
+        data-testid="chapter-narration-use"
+        on:click={() => (narrationEnabled = true)}
+      >{$t('storyBuilder.narration.useNarration')}</button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={!narrationEnabled}
+        class:story-wide-narration__mode--active={!narrationEnabled}
+        data-testid="chapter-narration-none"
+        on:click={disableNarration}
+      >{$t('storyBuilder.narration.noNarration')}</button>
+    </div>
   </div>
 
-  <div class="story-wide-narration__editor">
+  <div
+    class="story-wide-narration__editor"
+    class:story-wide-narration__editor--disabled={!narrationEnabled}
+    aria-disabled={!narrationEnabled}
+    data-testid="chapter-narration-editor"
+  >
     <label class="story-wide-narration__track">
       <span>{$t('storyBuilder.narration.audioUrl')}</span>
       <input
@@ -131,12 +174,13 @@
         placeholder="https://example.org/narration.mp3"
         bind:value={trackDraft}
         on:change={commitTrack}
+        disabled={!narrationEnabled}
       />
     </label>
     <div class="story-wide-narration__waveform-header">
       <button
         type="button"
-        disabled={!trackSource || !validSegment}
+        disabled={!narrationEnabled || !trackSource || !validSegment}
         on:click={togglePreview}
       >
         {#if previewing}<Square aria-hidden="true" /> {$t('storyBuilder.media.stop')}{:else}<Play
@@ -153,6 +197,7 @@
       start={Number(startDraft) || 0}
       end={Number(endDraft) || audioDuration}
       duration={audioDuration}
+      disabled={!narrationEnabled}
       label={$t('storyBuilder.narration.waveform')}
       testId="chapter-narration-waveform"
       onChange={handleRegionChange}
@@ -174,6 +219,7 @@
           max={audioDuration || undefined}
           step="0.01"
           bind:value={startDraft}
+          disabled={!narrationEnabled}
           on:change={normalizeAndCommitSegment}
           on:blur={normalizeAndCommitSegment}
         /></label
@@ -186,6 +232,7 @@
           max={audioDuration || undefined}
           step="0.01"
           bind:value={endDraft}
+          disabled={!narrationEnabled}
           on:change={normalizeAndCommitSegment}
           on:blur={normalizeAndCommitSegment}
         /></label
@@ -193,7 +240,7 @@
       <button
         class="story-wide-narration__apply"
         type="button"
-        disabled={!chapter || !validSegment}
+        disabled={!narrationEnabled || !chapter || !validSegment}
         on:click={commitSegment}
         ><Check aria-hidden="true" /> {$t('storyBuilder.narration.apply')}</button
       >
@@ -299,11 +346,37 @@
     border-color: var(--accent, var(--story-builder-accent, #e07a3f));
     color: var(--viewer-text, #e8edf4);
   }
+  .story-wide-narration__mode {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .story-wide-narration__mode button {
+    min-width: 0;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
+    border-radius: 7px;
+    padding: 7px 8px;
+    background: transparent;
+    color: var(--viewer-muted, #9aa6b2);
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .story-wide-narration__mode .story-wide-narration__mode--active {
+    border-color: var(--accent, var(--story-builder-accent, #e07a3f));
+    background: color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 12%, transparent);
+    color: var(--viewer-text, #e8edf4);
+  }
   .story-wide-narration__editor {
     display: grid;
     align-content: start;
     gap: 8px;
     min-width: 0;
+  }
+  .story-wide-narration__editor--disabled {
+    opacity: 0.42;
+    pointer-events: none;
   }
   .story-wide-narration__track,
   .story-wide-narration__range label {
@@ -393,6 +466,20 @@
       overflow: visible;
       resize: none;
       scrollbar-gutter: auto;
+    }
+  }
+
+  @container mango-viewer (min-width: 760px) {
+    .story-wide-narration {
+      grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .story-wide-narration__summary {
+      padding: 0 14px 0 0;
+      border-right: 1px solid
+        var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      border-bottom: 0;
     }
   }
 </style>

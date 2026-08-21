@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const openExampleStoryBuilder = async (page: Page) => {
   await page.goto("/story-builder.html?iiif-content=test-story/demo.json");
-  await expect(page.getByRole("button", { name: /Annotations/ })).toBeVisible();
+  await expect(page.locator('[data-testid="inspector-activate-focus"]')).toBeVisible();
   let previous = "";
   let stableSamples = 0;
   await expect
@@ -25,6 +25,52 @@ const openExampleStoryBuilder = async (page: Page) => {
     )
     .toBeGreaterThanOrEqual(2);
 };
+
+test("returns from editing Chapter 6's existing annotation to the annotation list", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await openExampleStoryBuilder(page);
+  const viewer = page.locator("mango-viewer");
+  await viewer
+    .getByRole("button")
+    .filter({ hasText: "Chapter 6" })
+    .first()
+    .click();
+
+  await viewer.locator('[data-testid="inspector-activate-focus"]').click();
+  const workspace = viewer.locator('.story-wide-authoring--annotations');
+  await expect(workspace).toBeVisible();
+  await expect(workspace.locator('[role="tab"]')).toHaveCount(0);
+  await expect(workspace.getByText('Add annotation', { exact: true })).toBeVisible();
+  await expect(workspace.locator('.story-wide-authoring__annotation-tool')).toHaveCount(6);
+
+  // Existing content opens the focused edit form from the list.
+  const existing = viewer.getByRole("button", {
+    name: /Edit Rectangle annotation 1.*Annotations appear in context/i,
+  });
+  await expect(existing).toBeVisible();
+  await existing.click();
+
+  await expect(viewer.locator(".viewer__grid--builder-annotation-editing")).toHaveCount(1);
+  await expect(viewer.locator(".mango-annotation-editor__svg")).toBeVisible();
+  await expect(viewer.locator("[data-testid=chapter-preview]")).toHaveCount(0);
+  await expect(viewer.locator(".chapter-inspector__groups")).toHaveCount(0);
+  await expect(viewer.locator('#annotation-options-panel')).toBeVisible();
+
+  // Done in the focused edit form steps back to annotation management; it
+  // does not close the annotation tool or restore the sidebars.
+  await viewer.getByTestId('annotation-edit-done').click();
+  await expect(viewer.locator('#annotation-options-panel')).toHaveCount(0);
+  await expect(viewer.locator('#annotation-list-panel')).toBeVisible();
+  await expect(viewer.getByText('Add annotation', { exact: true })).toBeVisible();
+  await expect(viewer.locator('.viewer__grid--builder-annotation-editing')).toHaveCount(1);
+
+  const done = workspace.getByTestId('story-wide-done');
+  await expect(done).toBeVisible();
+  await done.click();
+  await expect(viewer.locator('.viewer__grid--builder-annotation-editing')).toHaveCount(0);
+});
 
 test("creates and saves an annotation with the package editor", async ({
   page,
@@ -197,9 +243,14 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
   });
 
   await openExampleStoryBuilder(page);
-  await page.getByRole("button", { name: /Annotations/ }).click();
+  await page.locator('[data-testid="inspector-activate-focus"]').click();
 
-  let editor = page.locator(".mango-annotation-editor__svg");
+  // The chapter frame is drawn with the same editor; this is the drawing one.
+  const drawingEditor = () =>
+    page.locator(
+      ".mango-annotation-editor:not(.story-frame-layer) .mango-annotation-editor__svg",
+    );
+  let editor = drawingEditor();
   await expect(editor).toBeVisible();
   const editorBounds = await editor.boundingBox();
   expect(editorBounds).not.toBeNull();
@@ -207,11 +258,32 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
 
   await page.getByRole("button", { name: "Rectangle", exact: true }).click();
   await page.waitForTimeout(200);
-  await page.mouse.move(editorBounds.x + 250, editorBounds.y + 180);
+  // Draw in the genuinely visible strip between the floating panels. The
+  // annotation inspector is deliberately wider in this mode, so fixed stage
+  // offsets can be covered even though they remain inside the SVG bounds.
+  const chaptersBounds = await page.locator(".panel-stack--left").boundingBox();
+  const inspectorBounds = await page.locator(".panel-stack--right").boundingBox();
+  expect(chaptersBounds).not.toBeNull();
+  expect(inspectorBounds).not.toBeNull();
+  const visibleLeft = Math.max(
+    editorBounds.x,
+    chaptersBounds!.x + chaptersBounds!.width,
+  );
+  const visibleRight = Math.min(
+    editorBounds.x + editorBounds.width,
+    inspectorBounds!.x,
+  );
+  const visibleWidth = visibleRight - visibleLeft;
+  await page.mouse.move(
+    visibleLeft + visibleWidth * 0.25,
+    editorBounds.y + editorBounds.height * 0.3,
+  );
   await page.mouse.down();
-  await page.mouse.move(editorBounds.x + 500, editorBounds.y + 360, {
-    steps: 8,
-  });
+  await page.mouse.move(
+    visibleLeft + visibleWidth * 0.55,
+    editorBounds.y + editorBounds.height * 0.55,
+    { steps: 8 },
+  );
   await page.mouse.up();
 
   const annotationShapes = editor.locator(
@@ -282,11 +354,11 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
   expect(afterResize.width).toBeGreaterThan(afterMove.width + 20);
   expect(afterResize.height).toBeGreaterThan(afterMove.height + 15);
 
-  // The focus task is transactional: Save commits geometry; Back/Cancel must
+  // The focus task is transactional: Save commits geometry; Cancel must
   // restore the chapter snapshot rather than silently committing it.
   await page.getByRole("button", { name: "Save annotation" }).click();
-  await page.getByRole("button", { name: /Annotations/ }).click();
-  editor = page.locator(".mango-annotation-editor__svg");
+  await page.locator('[data-testid="inspector-activate-focus"]').click();
+  editor = drawingEditor();
   shape = editor
     .locator("rect[data-annotation-id]:not([data-handle])")
     .first();
@@ -297,7 +369,7 @@ test("moves, resizes, and persists a story annotation", async ({ page }) => {
   expect(runtimeErrors).toEqual([]);
 });
 
-test("opens and deletes a Mango annotation from the story footer", async ({
+test("opens and deletes a Mango annotation from the inspector list", async ({
   page,
 }) => {
   const runtimeErrors: string[] = [];
@@ -313,24 +385,45 @@ test("opens and deletes a Mango annotation from the story footer", async ({
   });
 
   await openExampleStoryBuilder(page);
-  await page.getByRole("button", { name: /Annotations/ }).click();
+  await page.locator('[data-testid="inspector-activate-focus"]').click();
 
-  const editor = page.locator(".mango-annotation-editor__svg");
+  const editor = page.locator(
+    ".mango-annotation-editor:not(.story-frame-layer) .mango-annotation-editor__svg",
+  );
+  await expect(editor).toBeVisible();
   const editorBounds = await editor.boundingBox();
   expect(editorBounds).not.toBeNull();
   if (!editorBounds) return;
 
   await page.getByRole("button", { name: "Rectangle", exact: true }).click();
   await page.waitForTimeout(200);
-  await page.mouse.move(editorBounds.x + 250, editorBounds.y + 180);
+  // Draw in the genuinely visible strip between the two floating panels. The
+  // annotation inspector is deliberately wider in this mode, so fixed offsets
+  // can land under its transparent edge even though they are inside the SVG.
+  const chaptersBounds = await page.locator(".panel-stack--left").boundingBox();
+  const inspectorBounds = await page.locator(".panel-stack--right").boundingBox();
+  expect(chaptersBounds).not.toBeNull();
+  expect(inspectorBounds).not.toBeNull();
+  const visibleLeft = Math.max(editorBounds.x, chaptersBounds!.x + chaptersBounds!.width);
+  const visibleRight = Math.min(
+    editorBounds.x + editorBounds.width,
+    inspectorBounds!.x,
+  );
+  const visibleWidth = visibleRight - visibleLeft;
+  await page.mouse.move(
+    visibleLeft + visibleWidth * 0.3,
+    editorBounds.y + editorBounds.height * 0.32,
+  );
   await page.mouse.down();
-  await page.mouse.move(editorBounds.x + 430, editorBounds.y + 320, {
-    steps: 6,
-  });
+  await page.mouse.move(
+    visibleLeft + visibleWidth * 0.7,
+    editorBounds.y + editorBounds.height * 0.58,
+    { steps: 6 },
+  );
   await page.mouse.up();
 
-  const footerItems = page.locator(".story-wide-annotations__item");
-  await expect(footerItems).toHaveCount(1);
+  const inspectorItems = page.locator(".story-wide-annotations__item");
+  await expect(inspectorItems).toHaveCount(1);
   const zoom = page.getByRole("textbox", { name: "Zoom percent" });
   const zoomBefore = Number((await zoom.inputValue()).replace(/[^0-9.]/g, ""));
   await page.getByRole("button", { name: /Edit Rectangle annotation/ }).click();
@@ -345,7 +438,7 @@ test("opens and deletes a Mango annotation from the story footer", async ({
     .getByRole("button", { name: /Delete Rectangle annotation/ })
     .click();
   await expect(editor.locator("[data-annotation-id]")).toHaveCount(0);
-  await expect(footerItems).toHaveCount(0);
+  await expect(inspectorItems).toHaveCount(0);
   expect(runtimeErrors).toEqual([]);
 });
 

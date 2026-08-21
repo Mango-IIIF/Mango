@@ -12,6 +12,11 @@ import {
 } from "../storyAnnotationProfile";
 import { normalizeChapterAnnotations } from "../normalizeAnnotations";
 import { normaliseStoryFraming } from "../framing";
+import { isGeneratedDraftId, isLegacyDraftId } from "../publicIdentifiers";
+import {
+  isDrawingOverlayId,
+  parseStoryDrawingOverlay,
+} from "../storyDrawingOverlay";
 import { translate } from '../../core/i18n';
 
 export type StoryWithDefaults = StoryState & {
@@ -81,6 +86,32 @@ const parseSvgPoints = (value: string): Array<{ x: number; y: number }> => {
   return points;
 };
 
+/**
+ * The rectangle a spatial media fragment names, or nothing.
+ *
+ * `pixel:` is the default unit and may be written or omitted, so both spellings
+ * have to be read even though Mango writes only the bare form. Fractions are
+ * accepted on the way in although Mango rounds on the way out: this is somebody
+ * else's document as often as it is Mango's own. `percent:` deliberately does
+ * not match — those values are a proportion of a canvas this function has no
+ * dimensions for, and reading them as pixels would place the region silently
+ * wrong rather than not at all.
+ */
+const PIXEL_FRAGMENT =
+  /xywh=(?:pixel:)?(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/;
+
+const matchPixelFragment = (value: string | undefined): ViewBox | undefined => {
+  const match = value?.match(PIXEL_FRAGMENT);
+  if (!match) return undefined;
+  const [, x, y, w, h] = match;
+  return {
+    x: Number.parseFloat(x),
+    y: Number.parseFloat(y),
+    w: Number.parseFloat(w),
+    h: Number.parseFloat(h),
+  };
+};
+
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === "object" && value !== null
     ? (value as Record<string, unknown>)
@@ -95,12 +126,18 @@ const isIiifStoryPage = (value: unknown): value is IiifStoryPage => {
 };
 
 const parseIiifStory = (input: IiifStoryPage): StoryState => {
+  /*
+   * An absent label means an untitled story, and it has to stay untitled. The
+   * AnnotationPage label *is* the story title by contract, so anything invented
+   * here to stand in for one becomes a real, persisted title on the next save —
+   * which is how every untitled story ended up called "Story Annotation Track",
+   * in whichever language the editor happened to be in.
+   */
   const titleMap: LanguageMap = {};
   if (input.label) {
     for (const [lang, arr] of Object.entries(input.label)) {
-      if (Array.isArray(arr) && arr.length > 0) {
-        titleMap[lang] = arr[0];
-      }
+      const value = Array.isArray(arr) && typeof arr[0] === "string" ? arr[0].trim() : "";
+      if (value) titleMap[lang] = value;
     }
   }
 
@@ -156,18 +193,16 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
     const title: LanguageMap = {};
     if (item.label) {
       for (const [lang, arr] of Object.entries(item.label)) {
-        if (Array.isArray(arr) && arr.length > 0) {
-          title[lang] = arr[0];
-        }
+        const value = Array.isArray(arr) && typeof arr[0] === "string" ? arr[0].trim() : "";
+        if (value) title[lang] = value;
       }
     }
 
     const description: LanguageMap = {};
     if (item.summary) {
       for (const [lang, arr] of Object.entries(item.summary)) {
-        if (Array.isArray(arr) && arr.length > 0) {
-          description[lang] = arr[0];
-        }
+        const value = Array.isArray(arr) && typeof arr[0] === "string" ? arr[0].trim() : "";
+        if (value) description[lang] = value;
       }
     }
     /*
@@ -223,15 +258,7 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
          * Reading it only from a FragmentSelector meant such a chapter
          * loaded with no framing at all.
          */
-        const xywhMatch = fragment.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
-        if (xywhMatch) {
-          viewBox = {
-            x: parseInt(xywhMatch[1], 10),
-            y: parseInt(xywhMatch[2], 10),
-            w: parseInt(xywhMatch[3], 10),
-            h: parseInt(xywhMatch[4], 10),
-          };
-        }
+        viewBox = matchPixelFragment(fragment) ?? viewBox;
         const tMatch = fragment.match(/t=(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/);
         if (tMatch) {
           const start = parseFloat(tMatch[1]);
@@ -298,15 +325,7 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
           };
           continue;
         }
-        const match = val.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
-        if (match) {
-          viewBox = {
-            x: parseInt(match[1], 10),
-            y: parseInt(match[2], 10),
-            w: parseInt(match[3], 10),
-            h: parseInt(match[4], 10),
-          };
-        }
+        viewBox = matchPixelFragment(val) ?? viewBox;
 
         const tMatch = val.match(/t=(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/);
         if (tMatch) {
@@ -375,14 +394,9 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
             ? placementTarget.selector
             : [placementTarget.selector];
           for (const selector of selectors) {
-            const match = selector.value?.match(/xywh=(\d+),(\d+),(\d+),(\d+)/);
+            const match = matchPixelFragment(selector.value);
             if (match) {
-              placement = {
-                x: parseInt(match[1], 10),
-                y: parseInt(match[2], 10),
-                w: parseInt(match[3], 10),
-                h: parseInt(match[4], 10),
-              };
+              placement = match;
               break;
             }
           }
@@ -403,16 +417,42 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
       if (body.type === "TextualBody") return;
       processBodyItem(body);
     });
-    for (const overlay of overlayItems) {
-      const belongsToChapter =
+    /*
+     * Drawings and captions are both overlays and both live in `items`, so the
+     * split has to happen before either is read. Feeding a drawing through the
+     * caption pass is what let its own text be mistaken for the retired
+     * text-box model, minted as a fresh rectangle nobody drew, and then written
+     * back out — one more copy on every save, without bound.
+     */
+    const chapterOverlays = overlayItems.filter(
+      (overlay) =>
         overlay["mango:chapterId"] === chapterId ||
-        Boolean(item.id && overlay.id?.startsWith(`${item.id}/overlay/`));
-      if (!belongsToChapter || !overlay.body) continue;
+        Boolean(item.id && overlay.id?.startsWith(`${item.id}/overlay/`)),
+    );
+    const drawingOverlays = chapterOverlays.filter((overlay) =>
+      isDrawingOverlayId(overlay.id, item.id),
+    );
+    for (const overlay of chapterOverlays) {
+      if (isDrawingOverlayId(overlay.id, item.id) || !overlay.body) continue;
       const overlayBodies = Array.isArray(overlay.body)
         ? overlay.body
         : [overlay.body];
       overlayBodies.forEach((body) => processBodyItem(body, overlay.target));
     }
+
+    /*
+     * The published annotations are the drawings, not a second rendering of
+     * them. `mangoState.drawingAnnotations` is only consulted for stories
+     * written before that was true — a document carrying both agrees with
+     * itself, and preferring `items` is what keeps the IIIF copy exercised.
+     */
+    const overlayDrawings = drawingOverlays.flatMap((overlay) => {
+      const drawing = parseStoryDrawingOverlay(overlay, {
+        canvasId: viewerState?.canvasId ?? targetCanvasId,
+        chapterAnnotationId: item.id,
+      });
+      return drawing ? [drawing] : [];
+    });
 
     const advance = viewerState?.playback?.advance
       ? {
@@ -454,6 +494,7 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
        * already showing it.
        */
       drawingAnnotations:
+        (overlayDrawings.length > 0 ? overlayDrawings : undefined) ??
         viewerState?.drawingAnnotations ??
         (!hasMangoEnrichment && viewBox
           ? [
@@ -481,7 +522,17 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
   const firstChapter = chapters[0];
   const firstAnnotationId = chapterItems[0]?.id;
   let customAnnotationBase: string | undefined;
-  const isDraft = !input.id || input.id.startsWith("urn:mango:draft:");
+  /*
+   * A generated id is kept so a draft's identifiers stay stable across
+   * save/load — dropping it would mint a new one every cycle and churn every
+   * id in the document. It stays recognisable as generated, so the settings
+   * panel still shows the field empty and publication validation still
+   * refuses it. A legacy URN is dropped instead: preserving it would keep
+   * writing an id IIIF does not allow.
+   */
+  const generatedDraft = isGeneratedDraftId(input.id);
+  const legacyDraft = isLegacyDraftId(input.id);
+  const isDraft = !input.id || generatedDraft || legacyDraft;
   if (!isDraft && firstChapter && firstAnnotationId) {
     const suffix = encodeURIComponent(firstChapter.id);
     if (firstAnnotationId.endsWith(suffix)) {
@@ -501,7 +552,7 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
     input["mango:presentationAspect"];
 
   return {
-    id: isDraft ? undefined : input.id,
+    id: !input.id || legacyDraft ? undefined : input.id,
     ...(customAnnotationBase
       ? { publication: { annotationBase: customAnnotationBase } }
       : {}),
@@ -510,7 +561,7 @@ const parseIiifStory = (input: IiifStoryPage): StoryState => {
     declaredAspect > 0
       ? { presentationAspect: declaredAspect }
       : {}),
-    title: titleMap,
+    ...(Object.keys(titleMap).length > 0 ? { title: titleMap } : {}),
     narration:
       Object.keys(narrationTracks).length > 0
         ? { tracks: narrationTracks }

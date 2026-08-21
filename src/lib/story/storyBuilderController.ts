@@ -14,12 +14,13 @@ import { createModelPose } from "./modelPose";
 import { createNarrationPlayer } from "./narrationPlayer";
 import { captureAudioVideo, captureImagePdf, captureModel } from "./capture";
 import {
+  fitViewBoxToContent,
   framingsWithin,
-  inferPresentationAspect,
   normaliseStoryFraming,
   normaliseViewBox,
-  viewBoxAspect,
+  resolvePresentationAspect,
 } from "./framing";
+import { createDraftStoryId } from "./publicIdentifiers";
 import { resolveManifestForNewChapter } from "./manifestResolver";
 import {
   animateViewBoxTransition,
@@ -56,6 +57,7 @@ import type {
   ChapterAdvance,
   ChapterModel,
   NarrationSegment,
+  StoryFrame,
   StoryState,
 } from "../core/types/story";
 import type { ViewBox } from "../core/types/viewer";
@@ -113,6 +115,7 @@ export type StoryBuilderController = {
   deleteChapterDrawingAnnotation: (annotationId: string) => void;
   deleteChapterTextAnnotation: (lang: string) => void;
   editChapterDrawingAnnotation: (annotationId: string) => void;
+  finishChapterDrawingAnnotationEdit: () => void;
   editChapterTextAnnotation: (lang: string) => void;
   setChapterDrawingAnnotationLabel: (
     annotationId: string,
@@ -131,7 +134,11 @@ export type StoryBuilderController = {
   ) => void;
   addChapter: () => void;
   updateChapter: () => void;
-  updateChapterPosition: () => void;
+  /**
+   * Sets the chapter frame — the canvas region this chapter opens on — in
+   * canvas pixels. The frame is an object on the stage: this is how a drag of
+   * it, or a typed value, lands on the chapter. It does not move the camera.
+   */
   setChapterPosition: (viewBox: ViewBox) => void;
   deleteChapter: (chapterId: string) => void;
   duplicateChapter: (chapterId: string) => void;
@@ -146,6 +153,7 @@ export type StoryBuilderController = {
   closeNarration: () => void;
   openChapter: () => void;
   closeChapter: () => void;
+  loadManifestAndAddChapter: (manifest: string) => void;
   markIn: () => void;
   markOut: () => void;
   setMediaMarks: (start: number | null, end: number | null) => void;
@@ -155,10 +163,20 @@ export type StoryBuilderController = {
   setNarrationTrack: (lang: string, src: string) => void;
   updateStoryTitle: (lang: string, value: string) => void;
   updateStoryIdentifiers: (id: string, annotationBase: string) => void;
-  captureMotionPoint: (
-    keyframeId?: string,
-    focus?: { x: number; y: number },
-  ) => void;
+  /**
+   * Adds a camera point. For an image chapter it starts as a frame nested
+   * inside the previous point's (or the chapter's) frame, ready to be dragged
+   * into place on the stage; for a 3D chapter it holds the current pose.
+   */
+  addMotionPoint: () => void;
+  /** Where a camera point's frame was moved or resized to, in canvas pixels. */
+  setMotionPointViewBox: (keyframeId: string, viewBox: ViewBox) => void;
+  /** Moves a camera point's pin while preserving its framing/zoom. */
+  setMotionPointFocus: (keyframeId: string, focus: { x: number; y: number }) => void;
+  /** Replaces a camera point's pan and zoom with the live viewer viewport. */
+  updateMotionPointFromViewport: (keyframeId: string) => void;
+  /** The camera point whose frame carries the handles on the stage. */
+  selectedMotionPointId: Writable<string | null>;
   deleteMotionPoint: (keyframeId: string) => void;
   updateMotionDuration: (durationMs: number) => void;
   updateMotionPathType: (pathType: "linear" | "spline") => void;
@@ -173,10 +191,6 @@ export type StoryBuilderController = {
   motionPreviewing: Readable<boolean>;
   previewMotion: () => void;
   stopMotionPreview: () => void;
-  motionPointDraft: Readable<MotionPointDraft | null>;
-  startMotionPointPositioning: (keyframeId?: string) => void;
-  confirmMotionPointPositioning: (focus: { x: number; y: number }) => void;
-  cancelMotionPointPositioning: () => void;
   updateChapterTitle: (lang: string, value: string) => void;
   updateChapterDescription: (lang: string, value: string) => void;
   assignNarrationSegment: (lang: string, start: number, end: number) => void;
@@ -194,6 +208,12 @@ export type StoryBuilderController = {
   loadManifest: (manifest: string) => void;
   saveChapterSettings: () => void;
   cancelChapterSettings: () => void;
+  /**
+   * Re-reads the selected chapter from the viewer after the Source section
+   * moved it to another Manifest or Canvas, so the chapter stores the canvas
+   * it is now showing rather than the one it was created on.
+   */
+  applyChapterSource: () => void;
   saveExport: () => { ok: boolean; errors: string[] };
   exportStory: () => { ok: boolean; errors: string[] };
   /** A detached snapshot of the builder's editable story state. */
@@ -219,13 +239,7 @@ export type UIMode =
   | "idle"
   | "chapterEdit"
   | "narrationPanel"
-  | "annotationPositioning"
-  | "motionPointPositioning";
-
-export type MotionPointDraft = {
-  keyframeId?: string;
-  focus?: { x: number; y: number };
-};
+  | "annotationPositioning";
 
 export type StoryBuilderOptions = {
   language?: string;
@@ -295,7 +309,10 @@ export const createStoryBuilderController = (
     options.initialStory
       ? {
           ...options.initialStory,
-          id: options.annotationPageId ?? options.initialStory.id,
+          id:
+            options.annotationPageId ??
+            options.initialStory.id ??
+            createDraftStoryId(),
           publication: {
             ...options.initialStory.publication,
             ...(options.annotationBase
@@ -305,7 +322,7 @@ export const createStoryBuilderController = (
           },
         }
       : {
-          id: options.annotationPageId,
+          id: options.annotationPageId ?? createDraftStoryId(),
           publication:
             options.annotationBase || options.identifiersLocked
               ? {
@@ -370,16 +387,17 @@ export const createStoryBuilderController = (
   const activeChapterTask = writable<ChapterTaskId | null>(null);
   const selectedDrawingAnnotationId = writable<string | null>(null);
   const chapterAnnotationTool = writable<ChapterAnnotationTool>("select");
-  const uiMode = writable<UIMode>("idle");
+  /* A blank story begins with its source and metadata modal open. There is no
+     chapter inspector to show until the first source has been captured. */
+  const uiMode = writable<UIMode>(
+    initialStoryData.chapters.length === 0 ? "narrationPanel" : "idle",
+  );
   const positioningLanguage = writable<string | null>(null);
-  const motionPointDraft = writable<MotionPointDraft | null>(null);
+  const selectedMotionPointId = writable<string | null>(null);
   const motionPreviewing = writable(false);
   const drawerOpen = derived(
     uiMode,
-    (mode) =>
-      mode !== "idle" &&
-      mode !== "annotationPositioning" &&
-      mode !== "motionPointPositioning",
+    (mode) => mode !== "idle" && mode !== "annotationPositioning",
   );
   const viewBox = writable<ViewBox | null>(null);
   const mediaType = writable<MediaType | null>(null);
@@ -424,6 +442,8 @@ export const createStoryBuilderController = (
   const maxPendingApplyRetries = 8;
   let pendingAddChapter = false;
   let pendingUpdateChapter = false;
+  let sourceRetargetTimer: ReturnType<typeof setTimeout> | null = null;
+  let sourceRetargetForceCapture = false;
   let activePlaybackToken = 0;
   let activePlaybackChapterId: string | null = null;
   let activeMediaEnd: number | null = null;
@@ -700,11 +720,22 @@ export const createStoryBuilderController = (
     const drawing = get(storyStore)
       .chapters.find((entry) => entry.id === chapterId)
       ?.drawingAnnotations?.find((entry) => entry.id === annotationId);
-    if (!drawing || get(activeChapterTask) !== "focus") return;
+    if (!drawing) return;
+    // Existing annotations are content, not a drawing-tool side effect. A row
+    // in the closed inspector therefore opens the annotation workspace and
+    // selects the item in one action; authors no longer have to discover that
+    // "Draw" was the route to editing something that already exists.
+    if (get(activeChapterTask) !== "focus") activeChapterTask.set("focus");
     setChapterAnnotationTool("select");
     selectedDrawingAnnotationId.set(annotationId);
     syncEditableStoryAnnotations();
     viewer?.setStoryAnnotationSelection?.(annotationId);
+  };
+
+  const finishChapterDrawingAnnotationEdit = () => {
+    selectedDrawingAnnotationId.set(null);
+    viewer?.setStoryAnnotationSelection?.(null);
+    setChapterAnnotationTool("select");
   };
 
   const editChapterTextAnnotation = (lang: string) => {
@@ -1347,7 +1378,7 @@ export const createStoryBuilderController = (
       if (result.reason === "missing-manifest") {
         setError(null);
         selectedChapterId.set(null);
-        uiMode.set("chapterEdit");
+        uiMode.set("narrationPanel");
       } else {
         setError(translate('storyBuilder.errors.captureBlocked', {
           reason: translate(`storyBuilder.errors.capture.${result.reason}`),
@@ -1359,6 +1390,20 @@ export const createStoryBuilderController = (
     const activeLanguage = get(annotationLanguage);
     const latestNarrationSegment = latestNarrationSegments[activeLanguage];
     const transitionDelay = get(transitionDelayDefault);
+    const currentStory = storyStoreWrapper.exportStory();
+    if (
+      !(Number.isFinite(currentStory.presentationAspect) &&
+        (currentStory.presentationAspect ?? 0) > 0)
+    ) {
+      // Establish the output contract once, when the first chapter is
+      // created. The source canvas is content inside that frame; loading it
+      // must never redefine the editor's perspective.
+      runesStore.loadStory({
+        ...currentStory,
+        presentationAspect: presentationAspectFor(),
+      });
+      storyStore.set(runesStore.story);
+    }
     storyStoreWrapper.addChapterFromCapture({ capture: result.capture });
     const storyValue = get(storyStore);
     const lastId = storyValue.chapters[storyValue.chapters.length - 1]?.id;
@@ -1457,14 +1502,18 @@ export const createStoryBuilderController = (
     if (!result.ok) return result;
     const captured = (result as { capture?: { viewBox?: ViewBox } }).capture;
     if (!captured?.viewBox) return result;
+    const normalised = normaliseViewBox(
+      captured.viewBox,
+      presentationAspectFor(),
+    );
+    // Normalising can push a box back over the edge of the image; the
+    // default frame should start where every later edit will keep it.
+    const contentSize = viewer?.getContentSize?.() ?? null;
     return {
       ...result,
       capture: {
         ...captured,
-        viewBox: normaliseViewBox(
-          captured.viewBox,
-          presentationAspectFor(captured.viewBox),
-        ),
+        viewBox: contentSize ? fitViewBoxToContent(normalised, contentSize) : normalised,
       },
     };
   };
@@ -1500,6 +1549,70 @@ export const createStoryBuilderController = (
       return captureModel(viewer, modelPose.getPose(), manifestOverride);
     }
     return withNormalisedFraming(captureImagePdf(viewer, manifestOverride));
+  };
+
+  /*
+   * The fixed stage is the chapter frame. Motion points are map pins in the
+   * builder overlay, so this layer must not turn them into annotation-like
+   * rectangles. The frame event support remains for older hosts.
+   */
+  const CHAPTER_FRAME_ID = "chapter";
+  const KEYFRAME_FRAME_PREFIX = "keyframe:";
+  const keyframeIdFromFrame = (frameId: string): string | null =>
+    frameId.startsWith(KEYFRAME_FRAME_PREFIX)
+      ? frameId.slice(KEYFRAME_FRAME_PREFIX.length)
+      : null;
+
+  const stageFrames = derived(
+    [
+      storyStore,
+      selectedChapterId,
+      activeChapterTask,
+      isPreviewing,
+      uiMode,
+      mediaType,
+    ],
+    ([
+      $story,
+      $chapterId,
+      $task,
+      $previewing,
+      $mode,
+      $mediaType,
+    ]): { frames: StoryFrame[]; selection: string | null } => {
+      const none = { frames: [] as StoryFrame[], selection: null };
+      const chapter = $story.chapters.find((entry) => entry.id === $chapterId);
+      if (!chapter?.viewBox || $previewing || $mode === "annotationPositioning") {
+        return none;
+      }
+      if (
+        $mediaType === "audio" ||
+        $mediaType === "video" ||
+        $mediaType === "model" ||
+        chapter.model
+      ) {
+        return none;
+      }
+      const frames: StoryFrame[] = [];
+      const selection = $task === "position" ? CHAPTER_FRAME_ID : null;
+      return { frames, selection };
+    },
+  );
+  let lastPushedFrames = "";
+  const pushStageFrames = ({
+    frames,
+    selection,
+  }: {
+    frames: StoryFrame[];
+    selection: string | null;
+  }) => {
+    if (!viewer) return;
+    viewer.setStoryPresentationAspect?.(frameAspect());
+    const key = JSON.stringify({ frames, selection });
+    if (key === lastPushedFrames) return;
+    lastPushedFrames = key;
+    viewer.setStoryFrames?.(frames);
+    viewer.setStoryFrameSelection?.(selection);
   };
 
   const attach = (ctx: PluginContext) => {
@@ -1571,6 +1684,7 @@ export const createStoryBuilderController = (
         ) {
           viewer?.setCanvasByIndex(pendingChapterApply.canvasIndex);
         }
+        scheduleSourceRetargetCapture(true);
         setError(null);
       });
       const offPage = ctx.events.on("pageChange", ({ index }) => {
@@ -1584,6 +1698,7 @@ export const createStoryBuilderController = (
           pendingChapterApply = null;
           beginPendingApply(pending);
         }
+        scheduleSourceRetargetCapture();
       });
       const offViewBox = ctx.events.on(
         "viewBoxChange",
@@ -1673,6 +1788,22 @@ export const createStoryBuilderController = (
             deleteChapterDrawingAnnotation(annotationId);
         },
       );
+      const offFrameChange = ctx.events.on(
+        "storyFrameChange",
+        ({ frameId, viewBox: nextViewBox }) => {
+          if (frameId === CHAPTER_FRAME_ID) {
+            setChapterPosition(nextViewBox);
+            return;
+          }
+          const keyframeId = keyframeIdFromFrame(frameId);
+          if (keyframeId) setMotionPointViewBox(keyframeId, nextViewBox);
+        },
+      );
+      const offFrameSelect = ctx.events.on("storyFrameSelect", ({ frameId }) => {
+        const keyframeId = frameId ? keyframeIdFromFrame(frameId) : null;
+        if (keyframeId) selectedMotionPointId.set(keyframeId);
+      });
+      const offFrames = stageFrames.subscribe(pushStageFrames);
 
       detachEvents = () => {
         offState();
@@ -1687,6 +1818,13 @@ export const createStoryBuilderController = (
         offAnnotationCreate();
         offAnnotationUpdate();
         offAnnotationDelete();
+        offFrameChange();
+        offFrameSelect();
+        offFrames();
+        if (sourceRetargetTimer) clearTimeout(sourceRetargetTimer);
+        sourceRetargetTimer = null;
+        sourceRetargetForceCapture = false;
+        lastPushedFrames = "";
       };
 
       // Auto-select the first chapter on initial attach so editor shows content
@@ -1755,63 +1893,92 @@ export const createStoryBuilderController = (
   /**
    * The source task can retarget a chapter at a different Manifest or Canvas,
    * but the canvas the chapter stores is only ever written by a capture. Moving
-   * the dropdown moves the viewer alone, so without this the chapter keeps the
-   * canvas it was created on and silently replays the wrong image. A full
-   * re-capture is the right tool because the stored framing belongs to the old
-   * canvas too, and only re-reading the viewer brings both back into agreement.
+   * with the viewer controls changes the viewer alone, so without this the
+   * chapter keeps the canvas it was created on and silently replays the wrong
+   * image. A full re-capture is the right tool because the stored framing
+   * belongs to the old canvas too, and only re-reading the viewer brings both
+   * back into agreement.
    */
-  const captureSourceRetarget = () => {
+  const captureSourceRetarget = (force = false): boolean => {
     const chapterId = get(selectedChapterId);
-    if (!chapterId || !viewer) return;
+    if (!chapterId || !viewer) return false;
     const chapter = get(storyStore).chapters.find(
       (entry) => entry.id === chapterId,
     );
-    if (!chapter) return;
+    if (!chapter) return false;
 
+    const manifest = viewer.getManifestId?.() ?? null;
     const canvasId = viewer.getCanvasId?.() ?? null;
     const canvasIndex = viewer.getCanvasIndex?.() ?? -1;
     // A viewer that has not settled on a canvas has nothing to capture from.
-    if (!canvasId && canvasIndex < 0) return;
+    if (!manifest || (!canvasId && canvasIndex < 0)) return false;
 
-    const unchanged =
+    const mediaType = viewer.getMediaType?.();
+    if (
+      mediaType !== "audio" &&
+      mediaType !== "video" &&
+      mediaType !== "model" &&
+      !viewer.getViewBox?.()
+    ) {
+      return false;
+    }
+
+    const unchangedCanvas =
       chapter.canvasId && canvasId
         ? chapter.canvasId === canvasId
         : chapter.canvasIndex === canvasIndex;
-    if (unchanged) return;
+    if (!force && chapter.manifest === manifest && unchangedCanvas) return true;
 
     updateChapter();
+    return true;
   };
 
-  /**
-   * The aspect a framing should be stored at.
-   *
-   * An empty story has nothing to conform to, and the obvious candidate — the
-   * framing being captured — is the shape of the editor stage at that instant.
-   * Capture during a panel animation or before layout settles would then define
-   * the whole story. The canvas image is the one signal that does not move, so
-   * a new story takes its shape from the source it is about.
-   */
-  const presentationAspectFor = (box: ViewBox): number => {
-    const current = get(storyStore);
-    if (Number.isFinite(current.presentationAspect) && (current.presentationAspect ?? 0) > 0) {
-      return current.presentationAspect as number;
-    }
-    const inferred = inferPresentationAspect(current);
-    if (inferred !== null) return inferred;
-
-    const contentSize = viewer?.getContentSize?.() ?? null;
-    if (contentSize && contentSize.width > 0 && contentSize.height > 0) {
-      return contentSize.width / contentSize.height;
-    }
-    return viewBoxAspect(box) ?? 4 / 3;
+  const scheduleSourceRetargetCapture = (
+    force = false,
+    remainingAttempts = 30,
+  ) => {
+    if (get(activeChapterTask) !== "source") return;
+    sourceRetargetForceCapture ||= force;
+    if (sourceRetargetTimer) clearTimeout(sourceRetargetTimer);
+    sourceRetargetTimer = setTimeout(() => {
+      sourceRetargetTimer = null;
+      if (get(activeChapterTask) !== "source") return;
+      if (captureSourceRetarget(sourceRetargetForceCapture)) {
+        sourceRetargetForceCapture = false;
+        return;
+      }
+      if (remainingAttempts <= 0) {
+        sourceRetargetForceCapture = false;
+        return;
+      }
+      scheduleSourceRetargetCapture(
+        sourceRetargetForceCapture,
+        remainingAttempts - 1,
+      );
+    }, 100);
   };
+
+  /** The source sits inside the authored frame; it never chooses its aspect. */
+  const presentationAspectFor = (): number =>
+    resolvePresentationAspect(get(storyStore));
 
   const commitChapterViewBox = (chapterId: string, requested: ViewBox) => {
     // Stored at the story's canonical aspect so every chapter responds to a
     // reader's window the same way. A capture carries the editor stage's shape
     // and manual entry carries whatever was typed; neither should decide how
     // this chapter is framed relative to the others.
-    const viewBox = normaliseViewBox(requested, presentationAspectFor(requested));
+    /*
+     * Normalise first so the chapter is comparable with its siblings, then
+     * bring it inside the canvas: a framing is a region of the image, and one
+     * that hangs outside it cannot be written as a Media Fragment without
+     * being silently truncated on the way out. Fitted, not clamped, so the
+     * shape the frame was drawn at survives meeting the edge of the picture.
+     */
+    const contentSize = viewer?.getContentSize?.() ?? null;
+    const normalised = normaliseViewBox(requested, presentationAspectFor());
+    const viewBox = contentSize
+      ? fitViewBoxToContent(normalised, contentSize)
+      : normalised;
     pushHistorySnapshot();
     storyStoreWrapper.setChapterViewBox({ chapterId, viewBox });
     const chapter = get(storyStore).chapters.find(
@@ -1835,13 +2002,12 @@ export const createStoryBuilderController = (
     setError(null);
   };
 
-  const updateChapterPosition = () => {
-    const chapterId = get(selectedChapterId);
-    const viewBox = viewer?.getViewBox?.() ?? null;
-    if (!chapterId || !viewBox) return;
-    commitChapterViewBox(chapterId, viewBox);
-  };
-
+  /*
+   * The camera is deliberately left where it is. The frame is an object on
+   * the canvas the author has just placed by looking at it; flying the view to
+   * it would move the very thing they are judging it against. "Go to frame"
+   * in the inspector is the camera convenience, not this.
+   */
   const setChapterPosition = (nextViewBox: ViewBox) => {
     const chapterId = get(selectedChapterId);
     if (!chapterId) return;
@@ -1853,12 +2019,6 @@ export const createStoryBuilderController = (
     )
       return;
     commitChapterViewBox(chapterId, viewBox);
-    const current = viewer?.getViewBox?.() ?? null;
-    if (current && !viewBoxMatches(current, viewBox)) {
-      animateViewBox(viewBox);
-    } else if (!current) {
-      viewer?.setViewBox?.(viewBox);
-    }
   };
 
   const deleteChapter = (chapterId: string) => {
@@ -1938,7 +2098,7 @@ export const createStoryBuilderController = (
 
   const selectChapter = (chapterId: string | null) => {
     stopMotionPreview();
-    motionPointDraft.set(null);
+    selectedMotionPointId.set(null);
     activeChapterTask.set(null);
     setChapterAnnotationTool("select");
     selectedChapterId.set(chapterId);
@@ -1965,7 +2125,9 @@ export const createStoryBuilderController = (
 
   const openNarration = () => {
     activeChapterTask.set(null);
-    uiMode.set("narrationPanel");
+    uiMode.update((mode) =>
+      mode === "narrationPanel" ? "idle" : "narrationPanel",
+    );
   };
   const backFromNarration = () =>
     uiMode.set(get(selectedChapterId) ? "chapterEdit" : "idle");
@@ -1979,7 +2141,7 @@ export const createStoryBuilderController = (
   };
   const closeChapter = () => {
     stopMotionPreview();
-    motionPointDraft.set(null);
+    selectedMotionPointId.set(null);
     activeChapterTask.set(null);
     uiMode.set("idle");
   };
@@ -2106,10 +2268,30 @@ export const createStoryBuilderController = (
     });
   };
 
-  const captureMotionPoint = (
-    keyframeId?: string,
-    focus?: { x: number; y: number },
-  ) => {
+  /** The aspect every frame on the stage is held to. */
+  const frameAspect = (): number => presentationAspectFor();
+
+  /** A keyframe box as it is stored: at the lock, and inside the canvas. */
+  const settleKeyframeBox = (box: ViewBox): ViewBox => {
+    const normalised = normaliseViewBox(box, frameAspect());
+    const contentSize = viewer?.getContentSize?.() ?? null;
+    return contentSize
+      ? fitViewBoxToContent(normalised, contentSize)
+      : normalised;
+  };
+
+  const centreOf = (box: ViewBox): { x: number; y: number } => ({
+    x: box.x + box.w / 2,
+    y: box.y + box.h / 2,
+  });
+
+  /**
+   * A new camera point records what the author is looking at now: its pin is
+   * placed at the current viewport centre and its viewBox keeps the current
+   * zoom. A 3D point similarly records the live pose.
+   */
+  const addMotionPoint = () => {
+    const created: { id: string | null } = { id: null };
     updateCameraTrack((chapter) => {
       const durationMs = Math.max(
         1,
@@ -2118,71 +2300,159 @@ export const createStoryBuilderController = (
           5000,
       );
       const existing = chapter.cameraTrack?.keyframes ?? [];
-      const existingPoint = keyframeId
-        ? existing.find((entry) => entry.id === keyframeId)
-        : undefined;
-      const currentViewBox = viewer?.getViewBox?.() ?? chapter.viewBox;
-      const stableViewBox = chapter.viewBox ?? currentViewBox;
       const activePreset = chapter.cameraTrack?.preset ?? "custom";
-      const referenceViewBox =
-        activePreset === "custom"
-          ? (currentViewBox ?? existingPoint?.viewBox ?? stableViewBox)
-          : (existingPoint?.viewBox ?? stableViewBox);
-      // The reference is the live viewport when capturing fresh, so it carries
-      // the editor stage's shape. Normalising here is what keeps every point
-      // in every chapter at one aspect.
-      const normalisedReference = referenceViewBox
-        ? normaliseViewBox(referenceViewBox, presentationAspectFor(referenceViewBox))
-        : referenceViewBox;
-      const viewBox =
-        normalisedReference && focus
-          ? {
-              x: focus.x - normalisedReference.w / 2,
-              y: focus.y - normalisedReference.h / 2,
-              w: normalisedReference.w,
-              h: normalisedReference.h,
-            }
-          : normalisedReference;
-      const model =
-        existingPoint?.model ?? viewer?.getModelPose?.() ?? chapter.model;
+      const currentViewport =
+        viewer?.getViewBox?.() ?? get(viewBox) ?? chapter.viewBox;
+      const pointViewBox = currentViewport
+        ? normaliseViewBox(currentViewport, frameAspect())
+        : undefined;
+      const model = viewer?.getModelPose?.() ?? chapter.model;
       const capturedLayers =
-        existingPoint?.layerOpacities ??
-        viewer?.getLayerOpacities?.() ??
-        chapter.layerOpacities;
+        viewer?.getLayerOpacities?.() ?? chapter.layerOpacities;
+      if (!pointViewBox && !model) return chapter.cameraTrack;
       const point = {
-        ...existingPoint,
-        id: keyframeId ?? motionPointId(),
-        timeMs: existingPoint?.timeMs ?? 0,
-        ...(focus ? { focus } : {}),
-        ...(viewBox ? { viewBox } : {}),
+        id: motionPointId(),
+        timeMs: 0,
+        ...(pointViewBox
+          ? { focus: centreOf(pointViewBox), viewBox: pointViewBox }
+          : {}),
         ...(model ? { model } : {}),
         ...(capturedLayers ? { layerOpacities: capturedLayers } : {}),
       };
-      const nextPoints = keyframeId
-        ? existing.map((entry) => (entry.id === keyframeId ? point : entry))
-        : [...existing, point];
+      created.id = point.id;
       const nextTrack: NonNullable<Chapter["cameraTrack"]> = {
         ...chapter.cameraTrack,
         durationMs,
         preset: activePreset,
         easing: chapter.cameraTrack?.easing ?? "ease-in-out",
-        keyframes: retimeCameraKeyframes(nextPoints, durationMs),
+        keyframes: retimeCameraKeyframes([...existing, point], durationMs),
       };
-      return activePreset !== "custom" && stableViewBox
+      return activePreset !== "custom" && chapter.viewBox
         ? configureCameraTrackPreset(
             nextTrack,
             activePreset,
-            stableViewBox,
+            chapter.viewBox,
             durationMs,
-            {
-              preservePoints: true,
-            },
+            { preservePoints: true },
+          )
+        : nextTrack;
+    });
+    if (created.id) selectedMotionPointId.set(created.id);
+  };
+
+  /**
+   * Commits a keyframe frame that was moved or resized on the stage.
+   *
+   * A named motion style sizes its points itself and only asks where they
+   * look, so moving a point keeps the style and only its focus changes.
+   * Resizing one is a different statement — the author wants this point at
+   * this zoom — and the track becomes custom so the size is kept.
+   */
+  const setMotionPointViewBox = (keyframeId: string, nextViewBox: ViewBox) => {
+    if (
+      ![nextViewBox.x, nextViewBox.y, nextViewBox.w, nextViewBox.h].every(
+        Number.isFinite,
+      ) ||
+      nextViewBox.w <= 0 ||
+      nextViewBox.h <= 0
+    )
+      return;
+    updateCameraTrack((chapter) => {
+      const track = chapter.cameraTrack;
+      const existing = track?.keyframes ?? [];
+      const point = existing.find((entry) => entry.id === keyframeId);
+      if (!track || !point) return track;
+      const viewBox = settleKeyframeBox(nextViewBox);
+      const tolerance = Math.max(1, viewBox.w * 0.005);
+      const resized =
+        !point.viewBox ||
+        Math.abs(point.viewBox.w - viewBox.w) > tolerance ||
+        Math.abs(point.viewBox.h - viewBox.h) > tolerance;
+      const activePreset = track.preset ?? "custom";
+      const preset = resized && activePreset !== "custom" ? "custom" : activePreset;
+      const keyframes = existing.map((entry) =>
+        entry.id === keyframeId
+          ? { ...entry, focus: centreOf(viewBox), viewBox }
+          : entry,
+      );
+      const nextTrack: NonNullable<Chapter["cameraTrack"]> = {
+        ...track,
+        preset,
+        keyframes,
+      };
+      return preset !== "custom" && chapter.viewBox
+        ? configureCameraTrackPreset(
+            nextTrack,
+            preset,
+            chapter.viewBox,
+            track.durationMs,
+            { preservePoints: true },
           )
         : nextTrack;
     });
   };
 
+  const setMotionPointFocus = (
+    keyframeId: string,
+    focus: { x: number; y: number },
+  ) => {
+    if (![focus.x, focus.y].every(Number.isFinite)) return;
+    selectedMotionPointId.set(keyframeId);
+    const contentSize = viewer?.getContentSize?.() ?? null;
+    const nextFocus = contentSize
+      ? {
+          x: Math.min(contentSize.width, Math.max(0, focus.x)),
+          y: Math.min(contentSize.height, Math.max(0, focus.y)),
+        }
+      : focus;
+
+    updateCameraTrack((chapter) => {
+      const track = chapter.cameraTrack;
+      if (!track) return track;
+      const keyframes = track.keyframes.map((entry) =>
+        entry.id === keyframeId
+          ? {
+              ...entry,
+              focus: nextFocus,
+              ...(entry.viewBox
+                ? {
+                    viewBox: {
+                      x: nextFocus.x - entry.viewBox.w / 2,
+                      y: nextFocus.y - entry.viewBox.h / 2,
+                      w: entry.viewBox.w,
+                      h: entry.viewBox.h,
+                    },
+                  }
+                : {}),
+            }
+          : entry,
+      );
+      if (!keyframes.some((entry) => entry.id === keyframeId)) return track;
+      const nextTrack: NonNullable<Chapter["cameraTrack"]> = {
+        ...track,
+        keyframes,
+      };
+      return (track.preset ?? "custom") !== "custom" && chapter.viewBox
+        ? configureCameraTrackPreset(
+            nextTrack,
+            track.preset ?? "custom",
+            chapter.viewBox,
+            track.durationMs,
+            { preservePoints: true },
+          )
+        : nextTrack;
+    });
+  };
+
+  const updateMotionPointFromViewport = (keyframeId: string) => {
+    const currentViewport = viewer?.getViewBox?.() ?? get(viewBox);
+    if (!currentViewport) return;
+    selectedMotionPointId.set(keyframeId);
+    setMotionPointViewBox(keyframeId, currentViewport);
+  };
+
   const deleteMotionPoint = (keyframeId: string) => {
+    if (get(selectedMotionPointId) === keyframeId) selectedMotionPointId.set(null);
     updateCameraTrack((chapter) => {
       if (!chapter.cameraTrack) return undefined;
       const keyframes = chapter.cameraTrack.keyframes.filter(
@@ -2220,7 +2490,7 @@ export const createStoryBuilderController = (
 
   const updateMotionPathType = (pathType: "linear" | "spline") => {
     updateCameraTrack((chapter) => {
-      const currentView = chapter.viewBox ?? viewer?.getViewBox?.();
+      const currentView = chapter.viewBox;
       const track =
         chapter.cameraTrack ??
         (currentView
@@ -2236,7 +2506,7 @@ export const createStoryBuilderController = (
 
   const updateMotionInitialDwell = (dwellMs: number) => {
     updateCameraTrack((chapter) => {
-      const currentView = chapter.viewBox ?? viewer?.getViewBox?.();
+      const currentView = chapter.viewBox;
       const track =
         chapter.cameraTrack ??
         (currentView
@@ -2273,7 +2543,9 @@ export const createStoryBuilderController = (
     const point = get(storyStore)
       .chapters.find((chapter) => chapter.id === chapterId)
       ?.cameraTrack?.keyframes.find((entry) => entry.id === keyframeId);
-    if (!point || !viewer) return;
+    if (!point) return;
+    selectedMotionPointId.set(keyframeId);
+    if (!viewer) return;
     if (point.viewBox) viewer.setViewBox?.(point.viewBox);
     if (point.model) viewer.setModelPose?.(point.model);
     for (const [id, opacity] of Object.entries(point.layerOpacities ?? {})) {
@@ -2286,7 +2558,8 @@ export const createStoryBuilderController = (
   ) => {
     if (!preset) return;
     updateCameraTrack((chapter) => {
-      const currentView = chapter.viewBox ?? viewer?.getViewBox?.();
+      // A preset is shaped from the chapter frame, never from the camera.
+      const currentView = chapter.viewBox;
       if (!currentView) return chapter.cameraTrack;
       const duration =
         chapter.cameraTrack?.durationMs ??
@@ -2366,45 +2639,6 @@ export const createStoryBuilderController = (
       }
     };
     motionPreviewFrame = requestAnimationFrame(frame);
-  };
-
-  const startMotionPointPositioning = (keyframeId?: string) => {
-    stopMotionPreview();
-    const chapterId = get(selectedChapterId);
-    const point = get(storyStore)
-      .chapters.find((chapter) => chapter.id === chapterId)
-      ?.cameraTrack?.keyframes.find((entry) => entry.id === keyframeId);
-    const focus =
-      point?.focus ??
-      (point?.viewBox
-        ? {
-            x: point.viewBox.x + point.viewBox.w / 2,
-            y: point.viewBox.y + point.viewBox.h / 2,
-          }
-        : undefined) ??
-      (() => {
-        const view = viewer?.getViewBox?.();
-        return view
-          ? { x: view.x + view.w / 2, y: view.y + view.h / 2 }
-          : undefined;
-      })();
-    motionPointDraft.set({
-      ...(keyframeId ? { keyframeId } : {}),
-      ...(focus ? { focus } : {}),
-    });
-    uiMode.set("motionPointPositioning");
-  };
-
-  const confirmMotionPointPositioning = (focus: { x: number; y: number }) => {
-    const draft = get(motionPointDraft);
-    if (draft) captureMotionPoint(draft.keyframeId, focus);
-    motionPointDraft.set(null);
-    uiMode.set("chapterEdit");
-  };
-
-  const cancelMotionPointPositioning = () => {
-    motionPointDraft.set(null);
-    uiMode.set("chapterEdit");
   };
 
   const updateChapterTitle = (lang: string, value: string) => {
@@ -2520,6 +2754,10 @@ export const createStoryBuilderController = (
     }
     viewerCanvasIndex.set(canvasIndex);
     viewer.setCanvasByIndex(canvasIndex);
+    // Canvas navigation settles asynchronously in the real viewer. Capturing
+    // on the next settled turn avoids pairing the new canvas with the old
+    // canvas's viewport while still removing the need for a second Save action.
+    scheduleSourceRetargetCapture();
   };
 
   const loadManifest = (manifest: string) => {
@@ -2538,8 +2776,36 @@ export const createStoryBuilderController = (
     setError(null);
   };
 
+  /**
+   * First-source onboarding is a single action. Loading a Manifest is async,
+   * so retry capture briefly until the viewer has resolved its active canvas
+   * rather than asking the author to confirm that canvas in a second form.
+   */
+  const loadManifestAndAddChapter = (manifest: string) => {
+    if (pendingAddChapter) return;
+    loadManifest(manifest);
+    if (!viewer || !manifest.trim()) return;
+
+    pendingAddChapter = true;
+    pushHistorySnapshot();
+    const attemptCapture = (remainingAttempts: number) => {
+      const result = capture();
+      if (result.ok || remainingAttempts <= 0) {
+        pendingAddChapter = false;
+        handleCaptureResult(result);
+        return;
+      }
+      setTimeout(() => attemptCapture(remainingAttempts - 1), 100);
+    };
+    setTimeout(() => attemptCapture(40), 0);
+  };
+
   const saveChapterSettings = () => {
     setError(null);
+    if (get(activeChapterTask) === "position") {
+      const currentView = viewer?.getViewBox?.();
+      if (currentView) setChapterPosition(currentView);
+    }
     if (get(activeChapterTask) === "focus") {
       if (annotationTransactionSnapshot && annotationTransactionChanged) {
         history.push(annotationTransactionSnapshot);
@@ -2676,7 +2942,6 @@ export const createStoryBuilderController = (
     attach,
     addChapter,
     updateChapter,
-    updateChapterPosition,
     setChapterPosition,
     deleteChapter,
     duplicateChapter,
@@ -2687,6 +2952,7 @@ export const createStoryBuilderController = (
     closeNarration,
     openChapter,
     closeChapter,
+    loadManifestAndAddChapter,
     markIn,
     markOut,
     setMediaMarks,
@@ -2696,7 +2962,11 @@ export const createStoryBuilderController = (
     setNarrationTrack,
     updateStoryTitle,
     updateStoryIdentifiers,
-    captureMotionPoint,
+    addMotionPoint,
+    setMotionPointViewBox,
+    setMotionPointFocus,
+    updateMotionPointFromViewport,
+    selectedMotionPointId,
     deleteMotionPoint,
     updateMotionDuration,
     updateMotionPathType,
@@ -2707,10 +2977,6 @@ export const createStoryBuilderController = (
     motionPreviewing,
     previewMotion,
     stopMotionPreview,
-    motionPointDraft,
-    startMotionPointPositioning,
-    confirmMotionPointPositioning,
-    cancelMotionPointPositioning,
     updateChapterTitle,
     updateChapterDescription,
     assignNarrationSegment,
@@ -2725,6 +2991,7 @@ export const createStoryBuilderController = (
     loadManifest,
     saveChapterSettings,
     cancelChapterSettings,
+    applyChapterSource: captureSourceRetarget,
     saveExport,
     exportStory,
     getStory,
@@ -2738,6 +3005,7 @@ export const createStoryBuilderController = (
     deleteChapterDrawingAnnotation,
     deleteChapterTextAnnotation,
     editChapterDrawingAnnotation,
+    finishChapterDrawingAnnotationEdit,
     editChapterTextAnnotation,
     setChapterDrawingAnnotationLabel,
     setChapterDrawingAnnotationStyle,

@@ -53,8 +53,7 @@
       "advance": "Advance",
       "advanceHint": "Auto-play will move to the next chapter after the delay below. Leave empty to stay on manual.",
       "advanceDelay": "Delay between chapters (seconds)",
-      "save": "Save",
-      "saveHint": "Select a chapter to save settings."
+      "save": "Save"
     },
     "export": {
       "title": "Export story JSON",
@@ -63,7 +62,7 @@
       "downloadIiif": "Download IIIF story JSON",
       "jsonLabel": "Exported story JSON",
       "empty": "// No export payload available",
-      "trackLabel": "Story Annotation Track"
+      "draftIdentifiers": "This export uses an identifier Mango generated under mangoviewer.dev. It is valid IIIF, but it is not your domain — set an AnnotationPage ID in Story settings before publishing."
     },
     "topBar": {
       "saved": "Saved",
@@ -80,14 +79,7 @@
     },
     "source": {
       "reloadManifest": "Reload manifest",
-      "loadManifest": "Load manifest",
-      "stepLoad": "Step 1 of 2 · Load a IIIF Manifest.",
-      "canvas": "Canvas",
-      "canvasPosition": "Canvas {current} of {total}",
-      "chooseCanvasHint": "Choose a canvas, then save the source to apply it to this chapter.",
-      "stepCreate": "Step 2 of 2 · Choose a canvas and create the first chapter. Image placement can be adjusted afterwards from the chapter tools.",
-      "createFirst": "Create first chapter",
-      "loading": "Loading the manifest and its canvases…"
+      "loadManifest": "Load manifest"
     },
     "transition": {
       "title": "Chapter transition time",
@@ -109,26 +101,22 @@
     },
     "tasks": {
       "title": "Chapter tools",
-      "description": "Select a tool to edit this chapter.",
-      "advanced": "Advanced",
+      "description": "Everything about this chapter, in three groups. Sections that work on the stage open from here.",
       "languages": "{translated}/{total} languages",
       "status": {
         "empty": "Not configured",
         "partial": "Partially configured",
         "complete": "Configured",
-        "attention": "Needs attention",
-        "positionDrift": "Doesn't match current view"
+        "attention": "Needs attention"
       },
       "items": {
         "details": {
           "title": "Details",
-          "description": "Title, description and translations.",
-          "save": "Save details"
+          "description": "Title, description and translations."
         },
         "position": {
-          "title": "Viewer position",
-          "description": "The canvas area and zoom this chapter opens on.",
-          "save": "Save viewer position"
+          "title": "Frame",
+          "description": "The canvas region this chapter opens on, drawn on the stage."
         },
         "focus": {
           "title": "Annotations",
@@ -137,33 +125,27 @@
         },
         "motion": {
           "title": "Motion",
-          "description": "Timed camera points for in-chapter movement.",
-          "save": "Save motion"
+          "description": "Timed camera points for in-chapter movement."
         },
         "audio-timing": {
           "title": "Narration",
-          "description": "Voiceover tracks and chapter narration timing.",
-          "save": "Save narration"
+          "description": "Voiceover tracks and chapter narration timing."
         },
         "transition-timing": {
           "title": "Chapter transition time",
-          "description": "Set the delay before moving to the next chapter.",
-          "save": "Save chapter transition time"
+          "description": "Set the delay before moving to the next chapter."
         },
         "media-timing": {
           "title": "Media timing",
-          "description": "Start and end points for this chapter’s source audio or video.",
-          "save": "Save media timing"
+          "description": "Start and end points for this chapter’s source audio or video."
         },
         "layers": {
           "title": "Layers",
-          "description": "Visibility and opacity for image layers.",
-          "save": "Save layers"
+          "description": "Visibility and opacity for image layers."
         },
         "comparison": {
           "title": "Comparison",
-          "description": "Present compatible sources together.",
-          "save": "Save comparison"
+          "description": "Present compatible sources together."
         },
         "source": {
           "title": "Source · Advanced",
@@ -216,6 +198,9 @@
       "button": "Audio narrator",
       "title": "Narration",
       "description": "Choose the narration track and drag or resize the chapter region.",
+      "mode": "Chapter narration mode",
+      "useNarration": "Use narration",
+      "noNarration": "No narration",
       "language": "Narration language",
       "audioUrl": "Narration audio URL",
       "preview": "Preview narration",
@@ -235,37 +220,29 @@
     "content": {
       "language": "Content language",
       "title": "Content ({language})",
-      "expandMetadata": "Expand metadata section",
-      "collapseMetadata": "Collapse metadata section",
       "titleLabel": "Title",
-      "descriptionLabel": "Description",
-      "textBox": "Text box annotation ({language})",
-      "expandAnnotation": "Expand annotation section",
-      "collapseAnnotation": "Collapse annotation section",
-      "textBoxHint": "This creates a positioned text box. It is separate from the drawing tools above.",
-      "textPlaceholder": "Enter text for this text box",
-      "placeText": "Place text box on artwork",
-      "captureHint": "Capture a chapter to edit annotation text and placement."
+      "descriptionLabel": "Description"
     },
     "position": {
-      "title": "Viewer position",
-      "hint": "The canvas area this chapter frames, in canvas pixels.",
-      "empty": "No position is saved yet. Frame the artwork in the viewer, then capture the current view.",
+      "title": "Frame",
+      "hint": "Pan and zoom the artwork beneath the fixed story frame. For precise IIIF authoring, you can also type the canvas region here.",
+      "empty": "No frame yet. Type a region in canvas pixels to create one.",
       "x": "X",
       "y": "Y",
       "width": "Width",
       "height": "Height",
-      "capture": "Use current view",
-      "goTo": "Go to saved position",
-      "current": "Current view: {x} · {y} · {w} · {h}",
-      "expand": "Expand viewer position section",
-      "collapse": "Collapse viewer position section"
+      "goTo": "Go to frame",
+      "aspectLocked": "Story frame {aspect}. Preview and readers preserve this exact shape; width and height change together.",
+      "stageLabel": "Story frame · {aspect}"
     },
     "annotations": {
       "chapter": "Chapter annotations",
+      "annotationsTab": "Annotations",
+      "optionsTab": "Options",
       "drawing": "Drawing annotations",
+      "add": "Add annotation",
       "tools": "Annotation drawing tools",
-      "drawingHint": "Add a point, shape, or line directly to the artwork. Select an annotation in the footer to edit it here.",
+      "drawingHint": "Choose Select / Pan to edit an existing annotation, or choose a shape to add one.",
       "edit": "Edit annotation",
       "editDrawing": "Edit {type} annotation {index}",
       "deleteDrawing": "Delete {type} annotation {index}",
@@ -283,7 +260,7 @@
         "medium": "Medium",
         "thick": "Thick"
       },
-      "emptySelection": "Draw an annotation, or select one from the footer to edit its text and appearance.",
+      "emptySelection": "Select an annotation from the list or artwork to edit its text and appearance.",
       "empty": "No annotations in this chapter.",
       "motivation": "Motivation",
       "motivationAuto": "Automatic (from shape)",
@@ -306,8 +283,8 @@
       "durationDwellError": "Duration must leave time to move after the {seconds}s start hold.",
       "arcError": "Arc sweep needs at least three camera points. Add another point first.",
       "dwellError": "The start hold must be shorter than the time to the next camera point.",
-      "customHint": "Custom keeps the canvas zoom captured for each point. Preview starts at Point 1.",
-      "presetHint": "Points set the focus; the movement style controls zoom. Preview starts at Point 1.",
+      "customHint": "Custom keeps each point’s frame as you drew it. Preview starts at Point 1.",
+      "presetHint": "Points set the focus; the movement style controls zoom. Resizing a point switches to Custom. Preview starts at Point 1.",
       "preview": "Preview",
       "style": "Movement style",
       "presets": "Motion presets",
@@ -339,22 +316,18 @@
       "duration": "Chapter motion duration",
       "durationHint": "All positions are spaced automatically across this duration.",
       "durationSeconds": "Duration (seconds)",
-      "cameraPoints": "Camera points",
-      "movePointAt": "Move camera point {number} at {seconds} seconds",
-      "movePointTitle": "Move camera point {number} · {seconds}s",
-      "placePointHint": "Click or drag the artwork to place the camera point",
-      "setPoint": "Set camera point",
-      "movePoint": "Move point {number}",
-      "placePoint": "Place point {number}",
-      "usePoint": "Use this point",
       "zoomValue": "{zoom}× zoom",
       "timeline": "Chapter motion timeline",
+      "pinsTab": "Pins",
+      "optionsTab": "Options",
       "goToPoint": "Go to camera point {number}",
       "point": "Point {number}",
       "deletePoint": "Delete camera point",
       "deletePointNumber": "Delete camera point {number}",
-      "emptyPoints": "No camera points yet. Add a point, then drag its pin into position in the viewer.",
-      "addPoint": "Add camera point"
+      "emptyPoints": "No camera points yet. Add a point; it will appear at the centre of the current view.",
+      "addPoint": "Add camera point",
+      "updatePoint": "Update pin from current view",
+      "selectPointToUpdate": "Select a pin to update its pan and zoom."
     },
     "settings": {
       "title": "Story settings",
@@ -378,22 +351,19 @@
       "audioFileUrl": "Audio file URL",
       "audioPreview": "Audio preview",
       "audioPreviewHint": "Enter a URL to preview the narration track.",
-      "saveAudio": "Save audio source"
+      "saveAudio": "Save audio source",
+      "draftIdentifiers": "Without an AnnotationPage ID, Mango generates one under mangoviewer.dev. Exports stay valid IIIF, but set your own domain before publishing."
     },
     "overlay": {
       "closeMetadata": "Close chapter metadata",
       "selectedChapter": "Selected chapter",
       "newStory": "New story",
       "loadSource": "Load a source",
-      "positionUpdated": "Position updated",
       "previewChapter": "Preview chapter",
       "previewChapterHint": "Play this chapter on its own, exactly as the story presents it.",
       "stopChapterPreview": "Stop preview",
       "chapterPreviewPlaying": "Playing this chapter. Click to stop.",
-      "sourceHint": "Add the source for your story, choose its starting canvas, and create the first chapter. You can adjust image placement from the chapter tools afterwards.",
-      "backToTools": "Back to chapter tools",
-      "saveChapter": "Save chapter",
-      "revertView": "Reset camera to chapter view",
+      "sourceHint": "Add the source for your story to create the first chapter. Use the viewer controls to change canvas; image placement can be adjusted afterwards.",
       "noChapter": "No chapter selected",
       "noChapterHint": "Capture a chapter or select one from the timeline to edit its content.",
       "confirmPosition": "Confirm Position"
@@ -417,6 +387,41 @@
       "invalidSaveResponse": "Save failed (invalid JSON response)",
       "saveTimeout": "Save timed out",
       "network": "Could not reach server"
+    },
+    "panels": {
+      "hideChapters": "Hide chapters",
+      "showChapters": "Show chapters",
+      "hideTools": "Hide chapter tools",
+      "showTools": "Show chapter tools",
+      "hideAnnotationInspector": "Hide annotation inspector",
+      "showAnnotationInspector": "Show annotation inspector"
+    },
+    "frame": {
+      "label": "Chapter frame",
+      "chapterAria": "Chapter frame",
+      "keyframeAria": "Camera point {number} frame",
+      "keyframeTag": "Point {number}"
+    },
+    "inspector": {
+      "groupsLabel": "Chapter inspector",
+      "groups": {
+        "about": "About",
+        "timing": "Timing",
+        "source": "Source"
+      },
+      "edit": "Edit",
+      "draw": "Draw",
+      "open": "Open",
+      "done": "Done",
+      "onStage": "On stage",
+      "annotationsSummary": "{count} annotations. Use the stage workspace to add, select, and edit them.",
+      "motionNone": "No camera movement. Edit to add camera points on the stage.",
+      "motionSummary": "{count} camera points · {style} · {seconds}s",
+      "narrationNone": "No narration segment for {language}.",
+      "narrationSummary": "{language}: {start}–{end}",
+      "mediaSummary": "Plays {start}–{end} of the source.",
+      "mediaWhole": "Plays the whole source.",
+      "adjust": "Adjust"
     }
   },
   "viewer": {
@@ -1065,7 +1070,8 @@
       "whitespace": "{label}: contains unsafe whitespace",
       "publishedStory": "Story ID: a published story requires a canonical HTTP(S) identifier",
       "unsafeChapter": "Chapter ID: unsafe identifier \"{id}\"",
-      "collision": "Chapter ID collision: {id}"
+      "collision": "Chapter ID collision: {id}",
+      "generatedDraft": "Story ID: still a Mango-generated draft identifier — set your own AnnotationPage ID before publishing"
     }
   },
   "warnings": {

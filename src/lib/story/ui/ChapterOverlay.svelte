@@ -1,17 +1,10 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { Play, Square } from "@lucide/svelte";
-  import {
-    ANNOTATION_TOOLS,
-    annotationToolLabelKey,
-  } from "../../features/annotations/annotationTools";
   import { readable, type Readable } from "svelte/store";
   import {
-    CHAPTER_ANNOTATION_MOTIVATIONS,
     type AnnotationPlacement,
     type ChapterAdvance,
-    type ChapterAnnotationTool,
-    type ChapterDrawingAnnotation,
     type StoryState,
   } from "../../core/types/story";
   import type { ViewBox } from "../../core/types/viewer";
@@ -24,18 +17,20 @@
   } from "../annotationPlacement";
   import ChapterTimelineSection from "./ChapterTimelineSection.svelte";
   import ChapterTextForm from "./ChapterTextForm.svelte";
-  import LanguageTabs from "../../features/annotations/LanguageTabs.svelte";
   import ChapterPositionSection from "./ChapterPositionSection.svelte";
   import ChapterCameraConfig from "./ChapterCameraConfig.svelte";
-  import ChapterDashboard from "./ChapterDashboard.svelte";
-  import ChapterMotionPanel from "./ChapterMotionPanel.svelte";
+  import InspectorSection from "./InspectorSection.svelte";
   import {
     evaluateChapterTasks,
-    framingsDiffer,
-    type ChapterInspectorView,
+    INSPECTOR_GROUPS,
+    inspectorGroupForTask,
+    isStageTool,
     type ChapterTaskEvaluation,
     type ChapterTaskId,
+    type InspectorGroup,
   } from "../chapterTasks";
+  import { resolvePresentationAspect } from "../framing";
+  import { applyFrameField } from "../frameGeometry";
   import { t } from '../../core/i18n';
 
   export let story: Readable<StoryState>;
@@ -45,6 +40,10 @@
     ((id: string, opacity: number) => void) | undefined = undefined;
 
   let manifestSupportsLayers = false;
+  /* Comparison authoring remains implemented but is not ready to expose in
+     Chapter tools yet. Keep this gate local so the section can be restored
+     without removing its task evaluation or UI implementation. */
+  const SHOW_COMPARISON_TOOL = false;
   $: manifestSupportsLayers =
     layers.length > 1 && layers.every((src) => src.type === "image");
 
@@ -64,9 +63,6 @@
   export let language = "en";
   export let languages: string[] = ["en"];
   export let currentManifest: string | null = null;
-  export let viewBox: Readable<ViewBox | null> = readable(null);
-  export let canvasIndex = 0;
-  export let canvasCount = 0;
   export let onClose: (() => void) | undefined;
   export let onSetMediaMarks:
     ((start: number | null, end: number | null) => void) | undefined;
@@ -78,23 +74,6 @@
     ((lang: string, start: number, end: number) => void) | undefined;
   export let onSkipNarration: ((lang: string) => void) | undefined;
   export let onSetAnnotationLanguage: ((lang: string) => void) | undefined;
-  export let annotationTool: Readable<ChapterAnnotationTool> =
-    readable("select");
-  export let selectedDrawingAnnotationId: Readable<string | null> = readable(null);
-  export let onSetAnnotationTool:
-    ((tool: ChapterAnnotationTool) => void) | undefined;
-  export let onSetDrawingAnnotationLabel:
-    ((annotationId: string, lang: string, value: string) => void) | undefined;
-  export let onSetDrawingAnnotationStyle:
-    ((
-      annotationId: string,
-      style: {
-        color?: string | null;
-        strokeWidth?: "thin" | "medium" | "thick";
-        fillMode?: ChapterDrawingAnnotation["fillMode"];
-        motivation?: ChapterDrawingAnnotation["motivation"] | null;
-      },
-    ) => void) | undefined;
   export let onUpdateManifest:
     ((chapterId: string, manifest: string) => void) | undefined;
   export let onLoadManifest: ((manifest: string) => void) | undefined;
@@ -102,7 +81,6 @@
   export let onReloadManifest:
     | ((chapterId: string, manifest: string, canvasIndex: number) => void)
     | undefined;
-  export let onSelectCanvas: ((canvasIndex: number) => void) | undefined;
   export let onUpdateChapterTitle:
     ((chapterId: string, lang: string, value: string) => void) | undefined;
   export let onUpdateChapterDescription:
@@ -120,7 +98,6 @@
     ((chapterId: string, mode: ChapterAdvance["mode"]) => void) | undefined;
   export let onUpdateDelay:
     ((chapterId: string, delayMs?: number) => void) | undefined;
-  export let onUpdateChapterPosition: ((chapterId: string) => void) | undefined;
   export let onSetChapterPosition:
     ((chapterId: string, viewBox: ViewBox) => void) | undefined = undefined;
   export let storyPreviewing: Readable<boolean> = readable(false);
@@ -130,27 +107,7 @@
   export let onRevertChapterPosition: ((chapterId: string) => void) | undefined;
   export let onSave: (() => void) | undefined;
   export let onCancel: (() => void) | undefined;
-  export let onSetAnnotationPositioning: ((lang: string) => void) | undefined =
-    undefined;
-  export let onUpdateMotionDuration:
-    ((durationMs: number) => void) | undefined = undefined;
-  export let onUpdateMotionPathType:
-    ((pathType: "linear" | "spline") => void) | undefined = undefined;
-  export let onUpdateMotionInitialDwell:
-    ((dwellMs: number) => void) | undefined = undefined;
-  export let onUpdateMotionEasing:
-    | ((easing: "linear" | "ease-in" | "ease-out" | "ease-in-out") => void)
-    | undefined = undefined;
-  export let motionPreviewing = false;
-  export let onApplyMotionPreset:
-    | ((
-        preset: NonNullable<
-          NonNullable<StoryState["chapters"][number]["cameraTrack"]>["preset"]
-        >,
-      ) => void)
-    | undefined = undefined;
-  export let onPreviewMotion: (() => void) | undefined = undefined;
-  export let onStopMotionPreview: (() => void) | undefined = undefined;
+  /** Re-reads the chapter from the viewer after its source or canvas changed. */
   export let onChapterTaskChange:
     ((task: ChapterTaskId | null) => void) | undefined = undefined;
 
@@ -160,9 +117,6 @@
   let chapterValidationErrors: string[] = [];
   let chapterTitleDraft = "";
 
-  const handleSetPositionClick = () => {
-    onSetAnnotationPositioning?.(activeLanguage);
-  };
   let chapterDescriptionDraft = "";
   let chapterTitleDrafts: Record<string, string> = {};
   let chapterDescriptionDrafts: Record<string, string> = {};
@@ -176,7 +130,6 @@
   let delayDraft: number | undefined = undefined;
   let lastChapterId: string | null = null;
   let lastCurrentManifest: string | null = null;
-  let saveDisabled = false;
   let markInDraft = "";
   let markOutDraft = "";
   let lastMarksApplied: { markIn: number | null; markOut: number | null } = {
@@ -191,14 +144,8 @@
   let hasAvMedia = false;
   let marksValid = true;
   let mediaTypeValue: MediaType | null = null;
-  let inspectorView: ChapterInspectorView = { mode: "dashboard" };
   let taskEvaluations: ChapterTaskEvaluation[] = [];
   let chapterIndex = -1;
-  let dashboardHeading: HTMLDivElement | null = null;
-  let saveAcknowledged = false;
-  let saveFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
-  let viewUpdateAcknowledged = false;
-  let viewUpdateFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   let chapterHasSavedPosition = false;
 
   /*
@@ -206,49 +153,92 @@
    * decides whether to overwrite the author's in-progress form entry — a
    * tolerance here would silently discard a small manual edit. Use
    * `framingsWithin` when the question is whether the viewer has arrived
-   * somewhere, and `framingsDiffer` when it is whether the author reframed.
+   * somewhere.
    */
   const positionSignature = (value: ViewBox | null | undefined): string =>
     value ? `${value.x}:${value.y}:${value.w}:${value.h}` : "";
 
-  const annotationTools = ANNOTATION_TOOLS;
-  const annotationPalette = ["#e07a3f", "#f6c343", "#39b57e", "#3aa0e0", "#a06eff", "#ef5f7a"];
+  /*
+   * One inspector, three groups, no back button. Everything about the
+   * selected chapter is stacked under About, Timing and Source; the sections
+   * that work on the stage — drawing, camera points, narration, media timing
+   * — open their tool in place and the inspector follows the open tool into
+   * its group, so a tool started from elsewhere (the annotation list, say) is
+   * never out of sight.
+  */
+  let inspectorGroup: InspectorGroup = "about";
+  let collapsedSections: Partial<Record<ChapterTaskId, boolean>> = {
+    position: true,
+    "transition-timing": true,
+    layers: true,
+    comparison: true,
+  };
 
-  const openTask = (task: ChapterTaskId) => {
-    const evaluation = taskEvaluations.find((item) => item.id === task);
-    if (evaluation?.availability.state !== "available") return;
-    inspectorView = { mode: "task", task };
-    saveAcknowledged = false;
-    viewUpdateAcknowledged = false;
+  const selectGroup = (group: InspectorGroup) => {
+    inspectorGroup = group;
+  };
+
+  const toggleSection = (task: ChapterTaskId) => {
+    collapsedSections = {
+      ...collapsedSections,
+      [task]: !collapsedSections[task],
+    };
+  };
+
+  /*
+   * Keyed for the template. A lookup function would hide the dependency on
+   * `taskEvaluations` from the compiler, and a section rendered before the
+   * viewer had settled on a media type would never learn that it had.
+   */
+  let evaluations: Partial<Record<ChapterTaskId, ChapterTaskEvaluation>> = {};
+  $: evaluations = Object.fromEntries(
+    taskEvaluations.map((evaluation) => [evaluation.id, evaluation]),
+  ) as Partial<Record<ChapterTaskId, ChapterTaskEvaluation>>;
+  const evaluationFor = (task: ChapterTaskId): ChapterTaskEvaluation | undefined =>
+    evaluations[task];
+
+  const activateTool = (task: ChapterTaskId) => {
+    if (evaluationFor(task)?.availability.state !== "available") return;
+    collapsedSections = { ...collapsedSections, [task]: false };
     onChapterTaskChange?.(task);
   };
 
-  const returnToDashboard = () => {
-    const wasAnnotationTask =
-      inspectorView.mode === "task" && inspectorView.task === "focus";
-    inspectorView = { mode: "dashboard" };
-    saveAcknowledged = false;
-    viewUpdateAcknowledged = false;
-    if (wasAnnotationTask) {
-      onCancel?.();
-    } else {
-      onChapterTaskChange?.(null);
-    }
-    requestAnimationFrame(() => dashboardHeading?.focus());
+  /** Closes whatever tool is open on the stage, keeping its edits. */
+  const finishTool = () => {
+    handleSave();
   };
+
+  let followedTask: ChapterTaskId | null = null;
+  $: {
+    const task = $activeChapterTask;
+    if (task && task !== followedTask) {
+      const previousTask = followedTask;
+      followedTask = task;
+      inspectorGroup = inspectorGroupForTask(task);
+      collapsedSections = {
+        ...collapsedSections,
+        ...(previousTask === "position" || task !== "position"
+          ? { position: true }
+          : {}),
+        [task]: false,
+      };
+    } else if (!task) {
+      if (followedTask === "position") {
+        collapsedSections = { ...collapsedSections, position: true };
+      }
+      followedTask = null;
+    }
+  }
 
   let inspectorChapterId: string | null = null;
   $: if (chapterId !== inspectorChapterId) {
     inspectorChapterId = chapterId;
-    inspectorView = { mode: "dashboard" };
+    collapsedSections = {
+      ...collapsedSections,
+      position: true,
+      "transition-timing": true,
+    };
     onChapterTaskChange?.(null);
-  }
-  $: if (
-    onChapterTaskChange &&
-    $activeChapterTask === null &&
-    inspectorView.mode === "task"
-  ) {
-    inspectorView = { mode: "dashboard" };
   }
 
   let fallbackPlacement: AnnotationPlacement | undefined;
@@ -268,11 +258,8 @@
   let detachNarrationPreviewStop: (() => void) | null = null;
 
   let activeNarrationUrl = "";
-  let metadataSectionCollapsed = false;
-  let positionSectionCollapsed = false;
   let narrationSectionCollapsed = false;
   let avSectionCollapsed = false;
-  let annotationSectionCollapsed = false;
   let lastSectionSyncKey = "";
   let positionDrafts: { x: string; y: string; w: string; h: string } = {
     x: "",
@@ -297,39 +284,70 @@
     h: formatPositionValue(value?.h),
   });
 
+  /*
+   * A typed width or height pulls the other dimension along as the author
+   * types, so the pair on screen always describes a frame the story can hold.
+   * The frame's shape is locked to the story's presentation aspect; the
+   * readout says so rather than quietly rewriting numbers on commit.
+   */
   const handlePositionFieldInput = (
     field: "x" | "y" | "w" | "h",
     value: string,
   ) => {
-    positionDrafts = { ...positionDrafts, [field]: value };
+    const next = { ...positionDrafts, [field]: value };
+    const numeric = Number(value);
+    if (
+      presentationAspect &&
+      value.trim() !== "" &&
+      Number.isFinite(numeric) &&
+      numeric > 0
+    ) {
+      if (field === "w") next.h = formatPositionValue(numeric / presentationAspect);
+      if (field === "h") next.w = formatPositionValue(numeric * presentationAspect);
+    }
+    positionDrafts = next;
   };
 
-  const commitPositionDrafts = () => {
+  const commitPositionField = (field: "x" | "y" | "w" | "h") => {
     if (!chapterId || !chapter) return;
     const drafts = positionDrafts;
+    const value = Number(drafts[field]);
+    const valid =
+      drafts[field].trim() !== "" &&
+      Number.isFinite(value) &&
+      (field === "x" || field === "y" || value > 0);
+    if (!valid) {
+      if (chapter.viewBox) {
+        positionDrafts = positionDraftsFromViewBox(chapter.viewBox);
+      }
+      return;
+    }
+    if (chapter.viewBox) {
+      const next = applyFrameField(
+        chapter.viewBox,
+        field,
+        value,
+        presentationAspect ?? Number.NaN,
+      );
+      if (positionSignature(next) === positionSignature(chapter.viewBox)) return;
+      onSetChapterPosition?.(chapterId, next);
+      return;
+    }
+    // No frame yet: the chapter needs all four numbers before it has one.
     const parsed = {
       x: Number(drafts.x),
       y: Number(drafts.y),
       w: Number(drafts.w),
       h: Number(drafts.h),
     };
-    const valid =
-      [drafts.x, drafts.y, drafts.w, drafts.h].every(
-        (entry) => entry.trim() !== "",
-      ) &&
+    if (
+      [drafts.x, drafts.y, drafts.w, drafts.h].every((entry) => entry.trim() !== "") &&
       [parsed.x, parsed.y, parsed.w, parsed.h].every(Number.isFinite) &&
       parsed.w > 0 &&
-      parsed.h > 0;
-    if (!valid) {
-      // Keep partial manual entry while nothing is saved yet; otherwise snap
-      // back to the stored position.
-      if (chapter.viewBox) {
-        positionDrafts = positionDraftsFromViewBox(chapter.viewBox);
-      }
-      return;
+      parsed.h > 0
+    ) {
+      onSetChapterPosition?.(chapterId, parsed);
     }
-    if (positionSignature(parsed) === positionSignature(chapter.viewBox)) return;
-    onSetChapterPosition?.(chapterId, parsed);
   };
 
   $: if (currentNarrationAudioRef) {
@@ -562,8 +580,10 @@
   }
 
   $: chapter = $story.chapters.find((item) => item.id === chapterId) ?? null;
-  $: selectedDrawingAnnotation =
-    chapter?.drawingAnnotations?.find((item) => item.id === $selectedDrawingAnnotationId) ?? null;
+  $: presentationAspect =
+    $story.chapters.length > 0 || $story.presentationAspect
+      ? resolvePresentationAspect($story)
+      : null;
   $: chapterHasSavedPosition = Boolean(chapter?.viewBox);
   $: {
     const positionSyncKey = `${chapterId ?? ""}:${positionSignature(chapter?.viewBox)}`;
@@ -591,7 +611,6 @@
 
   $: if (chapterId !== lastChapterId) {
     lastChapterId = chapterId;
-    inspectorView = { mode: "dashboard" };
     manifestDraft = chapter?.manifest ?? "";
 
     chapterTitleDrafts = {};
@@ -764,7 +783,6 @@
     .map((entry) => coerceAnnotationPlacement(entry?.placement))
     .find((entry): entry is AnnotationPlacement => Boolean(entry));
   $: delayMs = delayDraft;
-  $: saveDisabled = !chapterId || !chapter;
 
   const handleManifestInput = (event: Event) => {
     const value = (event.target as HTMLInputElement).value;
@@ -781,15 +799,6 @@
       return;
     }
     onReloadManifest?.(chapterId, manifestDraft, chapter.canvasIndex);
-  };
-
-  const handleAnnotationInput = (event: Event) => {
-    const value = (event.target as HTMLTextAreaElement).value;
-    annotationDraft = value;
-    annotationDrafts[activeLanguage] = value;
-    if (chapterId) {
-      onUpdateAnnotationText?.(chapterId, activeLanguage, value);
-    }
   };
 
   const handleChapterTitleInput = (event: Event) => {
@@ -829,25 +838,7 @@
     if (!chapterId || !chapter) return;
     commitMediaMarks();
     applyDrafts(chapterId);
-    if (
-      inspectorView.mode === "task" &&
-      inspectorView.task === "transition-timing"
-    ) {
-      const nextDelay = delayDraft ?? transitionDelayDefaultMs;
-      onUpdateAdvanceMode?.(chapterId, "auto");
-      onUpdateDelay?.(chapterId, nextDelay);
-    }
-    saveAcknowledged = true;
-    if (saveFeedbackTimeout) clearTimeout(saveFeedbackTimeout);
-    saveFeedbackTimeout = setTimeout(() => {
-      saveAcknowledged = false;
-      saveFeedbackTimeout = null;
-    }, 1800);
     onSave?.();
-  };
-
-  const handleCancel = () => {
-    onCancel?.();
   };
 
   const handleRevertView = () => {
@@ -862,77 +853,6 @@
     if (chapterId) onPreviewChapter?.(chapterId);
   };
 
-  const handleUpdateView = () => {
-    if (!chapterId) return;
-    onUpdateChapterPosition?.(chapterId);
-    viewUpdateAcknowledged = true;
-    if (viewUpdateFeedbackTimeout) clearTimeout(viewUpdateFeedbackTimeout);
-    viewUpdateFeedbackTimeout = setTimeout(() => {
-      viewUpdateAcknowledged = false;
-      viewUpdateFeedbackTimeout = null;
-    }, 1800);
-  };
-
-  /*
-   * Selecting a chapter flies the viewer to its saved frame, so the live and
-   * saved boxes genuinely disagree for the length of that animation. Comparing
-   * against a settled view stops the position card flashing a warning on every
-   * chapter click, and stops it strobing while the author is mid-drag.
-   */
-  const VIEW_SETTLE_MS = 400;
-  /*
-   * The timer handle lives on an object rather than in a `let`. A `$:` block
-   * that both reads and reassigns a component-level binding depends on itself
-   * and re-runs when it changes, so clearing the handle from the reset below
-   * immediately restarted the settle it had just cancelled — resurrecting the
-   * stale comparison the chapter switch was meant to drop.
-   */
-  const viewSettle: { timer: ReturnType<typeof setTimeout> | null } = { timer: null };
-  let settledViewBox: ViewBox | null = null;
-  let viewAtSelection: ViewBox | null = null;
-  let viewBaselineChapterId: string | null = null;
-
-  /*
-   * Selecting a chapter does not move the viewer, so straight after a switch
-   * the framing on screen belongs to the chapter the author just left. That is
-   * not a statement about this chapter, and treating it as one would leave the
-   * warning permanently lit in any story with more than one chapter — a signal
-   * as useless as the tick that could never go red. Start afresh on each
-   * selection and stay quiet until the author actually moves the view.
-   */
-  $: if (chapterId !== viewBaselineChapterId) {
-    viewBaselineChapterId = chapterId;
-    if (viewSettle.timer) {
-      clearTimeout(viewSettle.timer);
-      viewSettle.timer = null;
-    }
-    viewAtSelection = $viewBox;
-    settledViewBox = null;
-  }
-
-  /*
-   * The framing only becomes a question about *this* chapter once the author
-   * has moved since selecting it. Remembering where the view was at selection
-   * is what makes that robust: the viewer republishes its position on selection
-   * without actually moving, and comparing against the saved frame directly
-   * would read that as the author having reframed the chapter.
-   */
-  $: authorHasMovedView = Boolean(
-    settledViewBox && viewAtSelection && framingsDiffer(viewAtSelection, settledViewBox),
-  );
-
-  $: {
-    const nextViewBox = $viewBox;
-    if (viewSettle.timer) clearTimeout(viewSettle.timer);
-    viewSettle.timer = setTimeout(() => {
-      settledViewBox = nextViewBox;
-      viewSettle.timer = null;
-    }, VIEW_SETTLE_MS);
-  }
-  onDestroy(() => {
-    if (viewSettle.timer) clearTimeout(viewSettle.timer);
-  });
-
   $: mediaTypeValue = $mediaType;
   $: taskEvaluations = chapter
     ? evaluateChapterTasks({
@@ -944,9 +864,6 @@
         loadedSources: layers,
         validationErrors: chapterValidationErrors,
         languages,
-        // During a preview the viewer is following the story, not the author.
-        currentViewBox:
-          $storyPreviewing || !authorHasMovedView ? null : settledViewBox,
       })
     : [];
   $: hasAvMedia = mediaTypeValue === "audio" || mediaTypeValue === "video";
@@ -962,26 +879,48 @@
 
   $: activeNarrationUrl = $story.narration?.tracks?.[activeLanguage]?.src ?? "";
 
+  /*
+   * One line each for the stage tools while they are closed, so the inspector
+   * says what a chapter has without the tool having to be opened to find out.
+   */
+  $: motionSummary = (() => {
+    const track = chapter?.cameraTrack;
+    const count = track?.keyframes.length ?? 0;
+    if (count === 0) return $t('storyBuilder.inspector.motionNone');
+    const style = $t(`storyBuilder.motion.preset.${track?.preset ?? "custom"}`);
+    const seconds = Math.round((track?.durationMs ?? 0) / 100) / 10;
+    return $t('storyBuilder.inspector.motionSummary', { count, style, seconds });
+  })();
+  $: narrationSummary = (() => {
+    const segment = chapter?.narrationSegment?.[activeLanguage];
+    if (!segment || !(segment.end > segment.start)) {
+      return $t('storyBuilder.inspector.narrationNone', {
+        language: activeLanguage.toUpperCase(),
+      });
+    }
+    return $t('storyBuilder.inspector.narrationSummary', {
+      language: activeLanguage.toUpperCase(),
+      start: formatHms(segment.start),
+      end: formatHms(segment.end),
+    });
+  })();
+  $: mediaSummary = chapter?.media
+    ? $t('storyBuilder.inspector.mediaSummary', {
+        start: formatHms(chapter.media.start),
+        end: formatHms(chapter.media.end),
+      })
+    : $t('storyBuilder.inspector.mediaWhole');
+
   $: {
     const nextSyncKey = `${open ? "1" : "0"}:${chapterId ?? ""}:${activeLanguage}`;
     if (nextSyncKey !== lastSectionSyncKey) {
       lastSectionSyncKey = nextSyncKey;
-
-      metadataSectionCollapsed = false;
-
-      positionSectionCollapsed = false;
-
       narrationSectionCollapsed = false;
-
       avSectionCollapsed = !hasValidRange(markInDraft, markOutDraft);
-
-      annotationSectionCollapsed = false;
     }
   }
 
   onDestroy(() => {
-    if (saveFeedbackTimeout) clearTimeout(saveFeedbackTimeout);
-    if (viewUpdateFeedbackTimeout) clearTimeout(viewUpdateFeedbackTimeout);
     clearNarrationPreviewListener();
   });
 
@@ -1022,16 +961,22 @@
 
 <svelte:window
   on:keydown={(event) => {
-    if (open && event.key === "Escape") {
-      if (inspectorView.mode === "task") returnToDashboard();
-      else onClose?.();
+    if (!open || event.key !== "Escape") return;
+    const task = $activeChapterTask;
+    if (task && isStageTool(task)) {
+      // Drawing is a transaction; leaving it by Escape discards, as Cancel does.
+      if (task === "focus") onCancel?.();
+      else onChapterTaskChange?.(null);
+      return;
     }
+    onClose?.();
   }}
 />
 
 <div
   class="chapter-overlay"
   class:chapter-overlay--docked={docked}
+  class:chapter-overlay--annotation-task={$activeChapterTask === "focus"}
   data-testid="chapter-overlay"
   aria-hidden={!open}
   hidden={!open}
@@ -1074,20 +1019,13 @@
               ? $t('storyBuilder.overlay.selectedChapter')
               : $t('storyBuilder.overlay.newStory')}
         </div>
-        <div
-          class="chapter-overlay__title"
-          id="chapter-overlay-title"
-          tabindex="-1"
-          bind:this={dashboardHeading}
-        >
-          {inspectorView.mode === "task"
-            ? $t(`storyBuilder.tasks.items.${inspectorView.task}.title`)
-            : chapter
-              ? $t('storyBuilder.tasks.title')
-              : $t('storyBuilder.overlay.loadSource')}
+        <div class="chapter-overlay__title" id="chapter-overlay-title">
+          {chapter
+            ? chapterTitleDraft.trim() || $t('storyBuilder.tasks.title')
+            : $t('storyBuilder.overlay.loadSource')}
         </div>
       </div>
-      {#if chapter}
+      {#if chapter && $activeChapterTask !== "focus"}
         <button
           class="chapter-overlay__preview-chapter"
           type="button"
@@ -1127,7 +1065,7 @@
     </div>
 
     <form class="chapter-overlay__form" on:submit|preventDefault>
-      {#if chapterValidationErrors.length > 0 && inspectorView.mode === "task"}
+      {#if chapterValidationErrors.length > 0}
         <div class="chapter-overlay__validation" role="alert">
           <strong>{$t('storyBuilder.tasks.status.attention')}</strong>
           <ul>
@@ -1137,614 +1075,360 @@
           </ul>
         </div>
       {/if}
-      <div class="chapter-overlay__body">
-        {#if inspectorView.mode === "dashboard" && chapter}
-          <ChapterDashboard tasks={taskEvaluations} onOpenTask={openTask} />
-        {:else if inspectorView.mode === "dashboard"}
+
+      {#if !chapter}
+        <div class="chapter-overlay__body">
           <div class="chapter-overlay__empty-source">
             <p class="chapter-overlay__hint">
               {$t('storyBuilder.overlay.sourceHint')}
             </p>
             <ChapterCameraConfig
-              section="source"
               chapterExists={false}
               chapterCanvasIndex={0}
-              {canvasIndex}
-              {canvasCount}
               {manifestDraft}
               sourceLoaded={Boolean(
                 currentManifest && currentManifest === manifestDraft.trim(),
               )}
-              {delayMs}
               onManifestInput={handleManifestInput}
               onReloadManifest={() => handleReload()}
-              {onSelectCanvas}
-              onDelayChange={handleDelaySecondsChange}
               {onCreateChapter}
             />
           </div>
+        </div>
+      {:else}
+        {#if $activeChapterTask !== "focus"}
+          <div class="chapter-inspector__groups" role="tablist" aria-label={$t('storyBuilder.inspector.groupsLabel')}>
+            {#each INSPECTOR_GROUPS as group (group)}
+              <button
+                class="chapter-inspector__group"
+                class:chapter-inspector__group--active={inspectorGroup === group}
+                type="button"
+                role="tab"
+                aria-selected={inspectorGroup === group}
+                data-testid={`inspector-group-${group}`}
+                on:click={() => selectGroup(group)}
+              >
+                {$t(`storyBuilder.inspector.groups.${group}`)}
+              </button>
+            {/each}
+          </div>
         {/if}
 
-        <section
-          class="chapter-overlay__task"
-          hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "details"}
-          aria-hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "details"}
-        >
-          <button
-            class="chapter-overlay__task-back"
-            type="button"
-            on:click={returnToDashboard}
-          >
-            ← {$t('storyBuilder.overlay.backToTools')}
-          </button>
-          <ChapterTextForm
-            section="details"
-            {activeLanguage}
-            {languages}
-            {metadataSectionCollapsed}
-            {annotationSectionCollapsed}
-            {chapterTitleDraft}
-            {chapterDescriptionDraft}
-            {annotationDraft}
-            hasChapter={Boolean(chapter)}
-            onLanguageChange={handleLanguageChange}
-            onToggleMetadata={() => {
-              metadataSectionCollapsed = !metadataSectionCollapsed;
-            }}
-            onToggleAnnotation={() => {
-              annotationSectionCollapsed = !annotationSectionCollapsed;
-            }}
-            onChapterTitleInput={handleChapterTitleInput}
-            onChapterDescriptionInput={handleChapterDescriptionInput}
-            onAnnotationInput={handleAnnotationInput}
-            onSetPositionClick={handleSetPositionClick}
-          />
-        </section>
-
-        <section
-          class="chapter-overlay__task"
-          hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "position"}
-          aria-hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "position"}
-        >
-          <button
-            class="chapter-overlay__task-back"
-            type="button"
-            on:click={returnToDashboard}
-          >
-            ← {$t('storyBuilder.overlay.backToTools')}
-          </button>
-          {#if positionSectionAvailable}
-            <ChapterPositionSection
-              collapsed={positionSectionCollapsed}
-              hasSavedPosition={chapterHasSavedPosition}
-              {positionDrafts}
-              currentViewBox={$viewBox}
-              captureAcknowledged={viewUpdateAcknowledged}
-              onToggle={() => {
-                positionSectionCollapsed = !positionSectionCollapsed;
-              }}
-              onFieldInput={handlePositionFieldInput}
-              onCommit={commitPositionDrafts}
-              onCapture={handleUpdateView}
-              onGoToPosition={handleRevertView}
-            />
-          {/if}
-        </section>
-
-        <section
-          class="chapter-overlay__task"
-          hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "media-timing"}
-          aria-hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "media-timing"}
-        >
-          <button
-            class="chapter-overlay__task-back"
-            type="button"
-            on:click={returnToDashboard}
-          >
-            ← {$t('storyBuilder.overlay.backToTools')}
-          </button>
-          <div class="chapter-overlay__section chapter-overlay__section--card">
-            <div class="chapter-overlay__section-title">
-              {mediaTypeValue === "video"
-                ? $t('storyBuilder.media.videoTiming')
-                : $t('storyBuilder.media.audioTiming')}
-            </div>
-            <div class="chapter-overlay__wide-tool-note">
-              <strong
-                >{$t('storyBuilder.media.chooseSegment', {
-                  type: mediaTypeValue === 'video'
-                    ? $t('media.type.video').toLowerCase()
-                    : $t('media.type.audio').toLowerCase(),
-                })}</strong
-              >
-              <span>
-                {$t('storyBuilder.media.editorHint', {
-                  type: mediaTypeValue === 'video'
-                    ? $t('media.type.video').toLowerCase()
-                    : $t('media.type.audio').toLowerCase(),
-                })}
-              </span>
-              <ul>
-                <li>
-                  {$t('storyBuilder.media.dragSelection')}
-                </li>
-                <li>{$t('storyBuilder.media.dragEdge')}</li>
-                <li>
-                  {$t('storyBuilder.media.longMediaHint')}
-                </li>
-                <li>
-                  {$t('storyBuilder.media.autoSaveHint')}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        <section
-          class="chapter-overlay__task"
-          hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "focus"}
-          aria-hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "focus"}
-        >
-          <button
-            class="chapter-overlay__task-back"
-            type="button"
-            on:click={returnToDashboard}
-          >
-            ← {$t('storyBuilder.overlay.backToTools')}
-          </button>
-          <div class="chapter-overlay__section chapter-overlay__section--card">
-            <div class="chapter-overlay__section-title">
-              {$t('storyBuilder.annotations.drawing')}
-            </div>
-            <p class="chapter-overlay__hint">
-              {$t('storyBuilder.annotations.drawingHint')}
-            </p>
-            <div
-              class="chapter-overlay__annotation-tools"
-              aria-label={$t('storyBuilder.annotations.tools')}
+        <div class="chapter-overlay__body chapter-inspector__sections" role="tabpanel">
+          {#if inspectorGroup === "about"}
+            {#if $activeChapterTask !== "focus"}
+            <InspectorSection
+              id="details"
+              title={$t('storyBuilder.tasks.items.details.title')}
+              status={evaluations["details"]?.status}
+              availability={evaluations["details"]?.availability ?? { state: "available" }}
+              collapsed={Boolean(collapsedSections.details)}
+              onToggle={() => toggleSection("details")}
             >
-              {#each annotationTools as tool}
-                <button
-                  type="button"
-                  class:chapter-overlay__annotation-tool--active={$annotationTool ===
-                    tool.id}
-                  aria-pressed={$annotationTool === tool.id}
-                  on:click={() => onSetAnnotationTool?.(tool.id)}
-                >
-                  <svelte:component this={tool.icon} aria-hidden="true" />
-                  <span>{$t(annotationToolLabelKey(tool.id))}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
-          {#if selectedDrawingAnnotation}
-            <div class="chapter-overlay__section chapter-overlay__section--card chapter-overlay__annotation-editor">
-              <div class="chapter-overlay__section-title">{$t('storyBuilder.annotations.edit')}</div>
+              <ChapterTextForm
+                {activeLanguage}
+                {languages}
+                {chapterTitleDraft}
+                {chapterDescriptionDraft}
+                onLanguageChange={handleLanguageChange}
+                onChapterTitleInput={handleChapterTitleInput}
+                onChapterDescriptionInput={handleChapterDescriptionInput}
+              />
+            </InspectorSection>
 
-              <div class="chapter-overlay__field">
-                <span>{$t('storyBuilder.annotations.translations')}</span>
-                <LanguageTabs
-                  {languages}
-                  activeLanguage={activeLanguage}
-                  ariaLabel={$t('storyBuilder.annotations.translations')}
-                  testIdPrefix="drawing-language"
-                  onchange={handleLanguageChange}
+            <InspectorSection
+              id="position"
+              title={$t('storyBuilder.tasks.items.position.title')}
+              status={evaluations["position"]?.status}
+              availability={evaluations["position"]?.availability ?? { state: "available" }}
+              collapsed={Boolean(collapsedSections.position)}
+              onToggle={() => toggleSection("position")}
+              active={$activeChapterTask === "position"}
+              activateLabel={$t('storyBuilder.inspector.adjust')}
+              onActivate={() => activateTool("position")}
+              onDone={finishTool}
+            >
+              {#if positionSectionAvailable}
+                <ChapterPositionSection
+                  hasSavedPosition={chapterHasSavedPosition}
+                  {positionDrafts}
+                  aspect={presentationAspect}
+                  onFieldInput={handlePositionFieldInput}
+                  onCommit={commitPositionField}
+                  onGoToPosition={handleRevertView}
                 />
-                <label class="chapter-overlay__translation-field">
-                  <small>{activeLanguage.toUpperCase()}</small>
-                  <textarea
-                    rows="3"
-                    value={selectedDrawingAnnotation.label?.[activeLanguage] ?? ""}
-                    placeholder={$t('storyBuilder.annotations.textPlaceholder', { language: activeLanguage.toUpperCase() })}
-                    on:input={(event) => onSetDrawingAnnotationLabel?.(
-                      selectedDrawingAnnotation!.id,
-                      activeLanguage,
-                      (event.currentTarget as HTMLInputElement).value,
-                    )}
-                  ></textarea>
-                </label>
-              </div>
+              {/if}
+            </InspectorSection>
+            {/if}
 
-              <div class="chapter-overlay__field">
-                <span>{$t('storyBuilder.annotations.colour')}</span>
-                <div class="chapter-overlay__annotation-palette">
-                  {#each annotationPalette as color}
-                    <button
-                      type="button"
-                      style={`--annotation-color:${color}`}
-                      class:chapter-overlay__annotation-swatch--active={(selectedDrawingAnnotation.color ?? "#e07a3f") === color}
-                      aria-label={$t('storyBuilder.annotations.setColour', { colour: color })}
-                      aria-pressed={(selectedDrawingAnnotation.color ?? "#e07a3f") === color}
-                      on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { color })}
-                    ></button>
-                  {/each}
-                  <input
-                    type="color"
-                    value={selectedDrawingAnnotation.color ?? "#e07a3f"}
-                    aria-label={$t('storyBuilder.annotations.customColour')}
-                    on:input={(event) => onSetDrawingAnnotationStyle?.(
-                      selectedDrawingAnnotation!.id,
-                      { color: (event.currentTarget as HTMLInputElement).value },
+            <InspectorSection
+              id="focus"
+              title={$t('storyBuilder.tasks.items.focus.title')}
+              status={evaluations["focus"]?.status}
+              availability={evaluations["focus"]?.availability ?? { state: "available" }}
+              collapsed={Boolean(collapsedSections.focus)}
+              onToggle={() => toggleSection("focus")}
+              active={$activeChapterTask === "focus"}
+              activateLabel={$t('storyBuilder.inspector.open')}
+              onActivate={() => activateTool("focus")}
+              onDone={finishTool}
+            >
+              <p class="chapter-overlay__hint" data-testid="inspector-summary-focus">
+                {$t('storyBuilder.inspector.annotationsSummary', {
+                  count: chapter.drawingAnnotations?.length ?? 0,
+                })}
+              </p>
+            </InspectorSection>
+          {:else if inspectorGroup === "timing"}
+            <InspectorSection
+              id="transition-timing"
+              title={$t('storyBuilder.tasks.items.transition-timing.title')}
+              status={evaluations["transition-timing"]?.status}
+              availability={evaluations["transition-timing"]?.availability ?? { state: "available" }}
+              collapsed={Boolean(collapsedSections["transition-timing"])}
+              onToggle={() => toggleSection("transition-timing")}
+            >
+              <p class="chapter-overlay__hint">
+                {$t('storyBuilder.transition.description')}
+              </p>
+              <label class="chapter-overlay__label">
+                {$t('storyBuilder.transition.delay')}
+                <input
+                  class="chapter-overlay__input"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  data-testid="chapter-transition-delay"
+                  value={delayMs !== undefined ? (delayMs / 1000).toString() : ''}
+                  on:input={handleDelaySecondsChange}
+                />
+              </label>
+            </InspectorSection>
+
+            <InspectorSection
+              id="audio-timing"
+              title={$t('storyBuilder.tasks.items.audio-timing.title')}
+              status={evaluations["audio-timing"]?.status}
+              availability={evaluations["audio-timing"]?.availability ?? { state: "available" }}
+              collapsed={Boolean(collapsedSections["audio-timing"])}
+              onToggle={() => toggleSection("audio-timing")}
+              active={$activeChapterTask === "audio-timing"}
+              activateLabel={$t('storyBuilder.inspector.edit')}
+              onActivate={() => activateTool("audio-timing")}
+              onDone={finishTool}
+            >
+              {#if $activeChapterTask === "audio-timing"}
+                <div class="chapter-overlay__wide-tool-note">
+                  <strong>{$t('storyBuilder.narration.editor')}</strong>
+                  <span>{$t('storyBuilder.narration.editorHint')}</span>
+                </div>
+                <div class="chapter-overlay__narration-compat">
+                  <ChapterTimelineSection
+                    {activeLanguage}
+                    {hasAvMedia}
+                    {marksValid}
+                    {markInDraft}
+                    {markOutDraft}
+                    {activeNarrationUrl}
+                    {narrationSectionCollapsed}
+                    {avSectionCollapsed}
+                    {narrationPreviewing}
+                    {narrationPreviewLanguage}
+                    narrationStartDraft={narrationStartDrafts[activeLanguage] ?? ""}
+                    narrationEndDraft={narrationEndDrafts[activeLanguage] ?? ""}
+                    bind:currentNarrationAudioRef
+                    {parseHms}
+                    onToggleNarration={() => {
+                      narrationSectionCollapsed = !narrationSectionCollapsed;
+                    }}
+                    onNarrationTrackInput={handleNarrationTrackInput}
+                    onNarrationTimeUpdate={handleNarrationTimeUpdate(activeLanguage)}
+                    onNarrationLoadedMetadata={handleNarrationLoadedMetadata(
+                      activeLanguage,
                     )}
+                    onToggleNarrationPlayback={toggleNarrationSegmentPlayback(
+                      activeLanguage,
+                    )}
+                    onNarrationStartInput={handleNarrationStartInput}
+                    onNarrationEndInput={handleNarrationEndInput}
+                    onNarrationMarksCommit={commitNarrationMarks(activeLanguage)}
+                    onUseNarrationStartCurrent={useNarrationCurrentTime(
+                      activeLanguage,
+                      "start",
+                    )}
+                    onUseNarrationEndCurrent={useNarrationCurrentTime(
+                      activeLanguage,
+                      "end",
+                    )}
+                    onSkipNarration={() => onSkipNarration?.(activeLanguage)}
+                    onToggleAv={() => {
+                      avSectionCollapsed = !avSectionCollapsed;
+                    }}
+                    onCommitMediaMarks={commitMediaMarks}
+                    onMarkInInput={handleMarkInInput}
+                    onMarkOutInput={handleMarkOutInput}
+                    onUseMarkInCurrent={() => useCurrentTime("in")}
+                    onUseMarkOutCurrent={() => useCurrentTime("out")}
+                    onPreviewMedia={onPreviewMediaSegment}
+                    onStopPreviewMedia={onStopPreviewMediaSegment}
                   />
                 </div>
-              </div>
+              {:else}
+                <p class="chapter-overlay__hint" data-testid="inspector-summary-audio-timing">
+                  {narrationSummary}
+                </p>
+              {/if}
+            </InspectorSection>
 
-              {#if selectedDrawingAnnotation.type === "rectangle" || selectedDrawingAnnotation.type === "polygon"}
-                <div class="chapter-overlay__field">
-                  <span>{$t('storyBuilder.annotations.background')}</span>
-                  <div class="chapter-overlay__segmented-control">
-                    <button
-                      type="button"
-                      class:chapter-overlay__segmented-control--active={selectedDrawingAnnotation.fillMode !== "solid"}
-                      on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { fillMode: "transparent" })}
-                    >{$t('storyBuilder.annotations.transparent')}</button>
-                    <button
-                      type="button"
-                      class:chapter-overlay__segmented-control--active={selectedDrawingAnnotation.fillMode === "solid"}
-                      on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { fillMode: "solid" })}
-                    >{$t('storyBuilder.annotations.solid')}</button>
-                  </div>
+            <InspectorSection
+              id="motion"
+              title={$t('storyBuilder.tasks.items.motion.title')}
+              status={evaluations["motion"]?.status}
+              availability={evaluations["motion"]?.availability ?? { state: "available" }}
+              collapsed={Boolean(collapsedSections.motion)}
+              onToggle={() => toggleSection("motion")}
+              active={$activeChapterTask === "motion"}
+              activateLabel={$t('storyBuilder.inspector.edit')}
+              onActivate={() => activateTool("motion")}
+              onDone={finishTool}
+            >
+              <p class="chapter-overlay__hint" data-testid="inspector-summary-motion">
+                {motionSummary}
+              </p>
+            </InspectorSection>
+
+            <InspectorSection
+              id="media-timing"
+              title={$t('storyBuilder.tasks.items.media-timing.title')}
+              status={evaluations["media-timing"]?.status}
+              availability={evaluations["media-timing"]?.availability ?? { state: "hidden" }}
+              collapsed={Boolean(collapsedSections["media-timing"])}
+              onToggle={() => toggleSection("media-timing")}
+              active={$activeChapterTask === "media-timing"}
+              activateLabel={$t('storyBuilder.inspector.edit')}
+              onActivate={() => activateTool("media-timing")}
+              onDone={finishTool}
+            >
+              {#if $activeChapterTask === "media-timing"}
+                <div class="chapter-overlay__section-title">
+                  {mediaTypeValue === "video"
+                    ? $t('storyBuilder.media.videoTiming')
+                    : $t('storyBuilder.media.audioTiming')}
+                </div>
+                <div class="chapter-overlay__wide-tool-note">
+                  <strong
+                    >{$t('storyBuilder.media.chooseSegment', {
+                      type: mediaTypeValue === 'video'
+                        ? $t('media.type.video').toLowerCase()
+                        : $t('media.type.audio').toLowerCase(),
+                    })}</strong
+                  >
+                  <span>
+                    {$t('storyBuilder.media.editorHint', {
+                      type: mediaTypeValue === 'video'
+                        ? $t('media.type.video').toLowerCase()
+                        : $t('media.type.audio').toLowerCase(),
+                    })}
+                  </span>
+                  <ul>
+                    <li>
+                      {$t('storyBuilder.media.dragSelection')}
+                    </li>
+                    <li>{$t('storyBuilder.media.dragEdge')}</li>
+                    <li>
+                      {$t('storyBuilder.media.longMediaHint')}
+                    </li>
+                    <li>
+                      {$t('storyBuilder.media.autoSaveHint')}
+                    </li>
+                  </ul>
+                </div>
+              {:else}
+                <p class="chapter-overlay__hint" data-testid="inspector-summary-media-timing">
+                  {mediaSummary}
+                </p>
+              {/if}
+            </InspectorSection>
+          {:else}
+            <InspectorSection
+              id="source"
+              title={$t('storyBuilder.tasks.items.source.title')}
+              status={evaluations["source"]?.status}
+              availability={evaluations["source"]?.availability ?? { state: "available" }}
+              collapsed={Boolean(collapsedSections.source)}
+              onToggle={() => toggleSection("source")}
+            >
+              <ChapterCameraConfig
+                embedded={true}
+                chapterExists={true}
+                chapterCanvasIndex={chapter.canvasIndex}
+                {manifestDraft}
+                onManifestInput={handleManifestInput}
+                onReloadManifest={() => handleReload()}
+              />
+            </InspectorSection>
+
+            <InspectorSection
+              id="layers"
+              title={$t('storyBuilder.tasks.items.layers.title')}
+              availability={evaluations["layers"]?.availability ?? { state: "available" }}
+              collapsed={Boolean(collapsedSections.layers)}
+              onToggle={() => toggleSection("layers")}
+            >
+              {#if manifestSupportsLayers}
+                <div class="chapter-overlay__section-content">
+                  {#each layers as layer, index (layer.id)}
+                    {@const opacity =
+                      layerOpacities[layer.id] !== undefined
+                        ? layerOpacities[layer.id]
+                        : index === 0
+                          ? 1.0
+                          : 0.0}
+                    <div class="chapter-overlay__layer-item">
+                      <div class="chapter-overlay__layer-info">
+                        <span class="chapter-overlay__layer-name">
+                          {layer.label ||
+                            (index === 0
+                              ? $t('viewer.panels.layers.baseImage')
+                              : $t('viewer.panels.layers.layerNumber', { number: index + 1 }))}
+                        </span>
+                        <span class="chapter-overlay__layer-value"
+                          >{Math.round(opacity * 100)}%</span
+                        >
+                      </div>
+                      <input
+                        class="chapter-overlay__layer-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(opacity * 100)}
+                        on:input={(event) => {
+                          const val = Number(event.currentTarget.value) / 100;
+                          onUpdateLayerOpacity?.(layer.id, val);
+                        }}
+                      />
+                    </div>
+                  {/each}
                 </div>
               {/if}
+            </InspectorSection>
 
-              <div class="chapter-overlay__field">
-                <span>{$t('storyBuilder.annotations.stroke')}</span>
-                <div class="chapter-overlay__segmented-control">
-                  {#each ["thin", "medium", "thick"] as width}
-                    <button
-                      type="button"
-                      class:chapter-overlay__segmented-control--active={(selectedDrawingAnnotation.strokeWidth ?? "medium") === width}
-                      on:click={() => onSetDrawingAnnotationStyle?.(
-                        selectedDrawingAnnotation!.id,
-                        { strokeWidth: width as "thin" | "medium" | "thick" },
-                      )}
-                    >{$t(`storyBuilder.annotations.strokeWidth.${width}`)}</button>
-                  {/each}
-                </div>
-              </div>
-
-              <!--
-                Optional on purpose. Leaving it unset keeps the behaviour every
-                existing story relies on, where the export infers a motivation
-                from whether the shape carries words. Choosing one says
-                something the geometry cannot.
-              -->
-              <div class="chapter-overlay__field">
-                <label for="drawing-motivation">
-                  {$t('storyBuilder.annotations.motivation')}
-                </label>
-                <select
-                  id="drawing-motivation"
-                  value={selectedDrawingAnnotation.motivation ?? ''}
-                  on:change={(event) => onSetDrawingAnnotationStyle?.(
-                    selectedDrawingAnnotation!.id,
-                    {
-                      motivation:
-                        (event.currentTarget.value ||
-                          null) as ChapterDrawingAnnotation["motivation"] | null,
-                    },
-                  )}
-                >
-                  <option value="">
-                    {$t('storyBuilder.annotations.motivationAuto')}
-                  </option>
-                  {#each CHAPTER_ANNOTATION_MOTIVATIONS as motivation}
-                    <option value={motivation}>
-                      {$t(`storyBuilder.annotations.motivations.${motivation}`)}
-                    </option>
-                  {/each}
-                </select>
-              </div>
-            </div>
-          {:else}
-            <p class="chapter-overlay__hint">{$t('storyBuilder.annotations.emptySelection')}</p>
-          {/if}
-        </section>
-
-        {#if chapter}
-          <section
-            class="chapter-overlay__task"
-            hidden={inspectorView.mode !== "task" ||
-              inspectorView.task !== "source"}
-            aria-hidden={inspectorView.mode !== "task" ||
-              inspectorView.task !== "source"}
-          >
-            <button
-              class="chapter-overlay__task-back"
-              type="button"
-              on:click={returnToDashboard}
-            >
-              ← {$t('storyBuilder.overlay.backToTools')}
-            </button>
-            <ChapterCameraConfig
-              section="source"
-              chapterExists={true}
-              chapterCanvasIndex={chapter.canvasIndex}
-              {canvasIndex}
-              {canvasCount}
-              {manifestDraft}
-              {delayMs}
-              onManifestInput={handleManifestInput}
-              onReloadManifest={() => handleReload()}
-              {onSelectCanvas}
-              onDelayChange={handleDelaySecondsChange}
-            />
-          </section>
-        {/if}
-
-        <section
-          class="chapter-overlay__task"
-          hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "layers"}
-          aria-hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "layers"}
-        >
-          <button
-            class="chapter-overlay__task-back"
-            type="button"
-            on:click={returnToDashboard}
-          >
-            ← {$t('storyBuilder.overlay.backToTools')}
-          </button>
-          {#if manifestSupportsLayers}
-            <div
-              class="chapter-overlay__section chapter-overlay__section--card"
-            >
-              <div class="chapter-overlay__section-header">
-                <div class="chapter-overlay__section-title">{$t('viewer.panels.layers.title')}</div>
-              </div>
-              <div class="chapter-overlay__section-content">
-                {#each layers as layer, index (layer.id)}
-                  {@const opacity =
-                    layerOpacities[layer.id] !== undefined
-                      ? layerOpacities[layer.id]
-                      : index === 0
-                        ? 1.0
-                        : 0.0}
-                  <div class="chapter-overlay__layer-item">
-                    <div class="chapter-overlay__layer-info">
-                      <span class="chapter-overlay__layer-name">
-                        {layer.label ||
-                          (index === 0
-                            ? $t('viewer.panels.layers.baseImage')
-                            : $t('viewer.panels.layers.layerNumber', { number: index + 1 }))}
-                      </span>
-                      <span class="chapter-overlay__layer-value"
-                        >{Math.round(opacity * 100)}%</span
-                      >
-                    </div>
-                    <input
-                      class="chapter-overlay__layer-slider"
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={Math.round(opacity * 100)}
-                      on:input={(event) => {
-                        const val = Number(event.currentTarget.value) / 100;
-                        onUpdateLayerOpacity?.(layer.id, val);
-                      }}
-                    />
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </section>
-
-        <section
-          class="chapter-overlay__task"
-          hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "audio-timing"}
-          aria-hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "audio-timing"}
-        >
-          <button
-            class="chapter-overlay__task-back"
-            type="button"
-            on:click={returnToDashboard}
-          >
-            ← {$t('storyBuilder.overlay.backToTools')}
-          </button>
-          <div class="chapter-overlay__wide-tool-note">
-            <strong>{$t('storyBuilder.narration.editor')}</strong>
-            <span
-              >{$t('storyBuilder.narration.editorHint')}</span
-            >
-          </div>
-          <div class="chapter-overlay__narration-compat">
-            <ChapterTimelineSection
-              {activeLanguage}
-              {hasAvMedia}
-              {marksValid}
-              {markInDraft}
-              {markOutDraft}
-              {activeNarrationUrl}
-              {narrationSectionCollapsed}
-              {avSectionCollapsed}
-              {narrationPreviewing}
-              {narrationPreviewLanguage}
-              narrationStartDraft={narrationStartDrafts[activeLanguage] ?? ""}
-              narrationEndDraft={narrationEndDrafts[activeLanguage] ?? ""}
-              bind:currentNarrationAudioRef
-              {parseHms}
-              onToggleNarration={() => {
-                narrationSectionCollapsed = !narrationSectionCollapsed;
-              }}
-              onNarrationTrackInput={handleNarrationTrackInput}
-              onNarrationTimeUpdate={handleNarrationTimeUpdate(activeLanguage)}
-              onNarrationLoadedMetadata={handleNarrationLoadedMetadata(
-                activeLanguage,
-              )}
-              onToggleNarrationPlayback={toggleNarrationSegmentPlayback(
-                activeLanguage,
-              )}
-              onNarrationStartInput={handleNarrationStartInput}
-              onNarrationEndInput={handleNarrationEndInput}
-              onNarrationMarksCommit={commitNarrationMarks(activeLanguage)}
-              onUseNarrationStartCurrent={useNarrationCurrentTime(
-                activeLanguage,
-                "start",
-              )}
-              onUseNarrationEndCurrent={useNarrationCurrentTime(
-                activeLanguage,
-                "end",
-              )}
-              onSkipNarration={() => onSkipNarration?.(activeLanguage)}
-              onToggleAv={() => {
-                avSectionCollapsed = !avSectionCollapsed;
-              }}
-              onCommitMediaMarks={commitMediaMarks}
-              onMarkInInput={handleMarkInInput}
-              onMarkOutInput={handleMarkOutInput}
-              onUseMarkInCurrent={() => useCurrentTime("in")}
-              onUseMarkOutCurrent={() => useCurrentTime("out")}
-              onPreviewMedia={onPreviewMediaSegment}
-              onStopPreviewMedia={onStopPreviewMediaSegment}
-            />
-          </div>
-        </section>
-
-        <section
-          class="chapter-overlay__task"
-          hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "transition-timing"}
-          aria-hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "transition-timing"}
-        >
-          <button
-            class="chapter-overlay__task-back"
-            type="button"
-            on:click={returnToDashboard}
-          >
-            ← {$t('storyBuilder.overlay.backToTools')}
-          </button>
-          <ChapterCameraConfig
-            section="transition-timing"
-            chapterExists={Boolean(chapter)}
-            chapterCanvasIndex={chapter?.canvasIndex ?? 0}
-            {manifestDraft}
-            {delayMs}
-            onManifestInput={handleManifestInput}
-            onReloadManifest={() => handleReload()}
-            onDelayChange={handleDelaySecondsChange}
-          />
-        </section>
-
-        <section
-          class="chapter-overlay__task"
-          hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "motion"}
-          aria-hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "motion"}
-        >
-          <button
-            class="chapter-overlay__task-back"
-            type="button"
-            on:click={returnToDashboard}
-          >
-            ← {$t('storyBuilder.overlay.backToTools')}
-          </button>
-          <ChapterMotionPanel
-            track={chapter?.cameraTrack}
-            previewing={motionPreviewing}
-            onUpdateDuration={(durationMs) =>
-              onUpdateMotionDuration?.(durationMs)}
-            onUpdatePathType={(pathType) => onUpdateMotionPathType?.(pathType)}
-            onUpdateDwell={(dwellMs) => onUpdateMotionInitialDwell?.(dwellMs)}
-            onUpdateEasing={(easing) => onUpdateMotionEasing?.(easing)}
-            onApplyPreset={(preset) => onApplyMotionPreset?.(preset)}
-            onPreview={() => onPreviewMotion?.()}
-            onStopPreview={() => onStopMotionPreview?.()}
-          />
-        </section>
-
-        <section
-          class="chapter-overlay__task"
-          hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "comparison"}
-          aria-hidden={inspectorView.mode !== "task" ||
-            inspectorView.task !== "comparison"}
-        >
-          <button
-            class="chapter-overlay__task-back"
-            type="button"
-            on:click={returnToDashboard}
-          >
-            ← {$t('storyBuilder.overlay.backToTools')}
-          </button>
-          <div class="chapter-overlay__section chapter-overlay__section--card">
-            <div class="chapter-overlay__section-title">{$t('storyBuilder.tasks.items.comparison.title')}</div>
-            <p class="chapter-overlay__hint">
-              {$t('storyBuilder.comparison.hint')}
-            </p>
-          </div>
-        </section>
-      </div>
-      {#if inspectorView.mode === "task"}
-        <div class="chapter-overlay__actions">
-          <div class="chapter-overlay__actions-group">
-            <button
-              class="chapter-overlay__button chapter-overlay__button--accent"
-              type="button"
-              data-testid="chapter-save"
-              disabled={saveDisabled}
-              on:click={handleSave}
-            >
-              {saveAcknowledged
-                ? $t('storyBuilder.topBar.saved')
-                : inspectorView.mode === "task"
-                  ? $t(`storyBuilder.tasks.items.${inspectorView.task}.save`)
-                  : $t('storyBuilder.overlay.saveChapter')}
-            </button>
-            {#if inspectorView.mode === "task" && inspectorView.task === "focus"}
-              <button
-                class="chapter-overlay__button chapter-overlay__button--subtle"
-                type="button"
-                data-testid="chapter-cancel"
-                on:click={handleCancel}
+            {#if SHOW_COMPARISON_TOOL}
+              <InspectorSection
+                id="comparison"
+                title={$t('storyBuilder.tasks.items.comparison.title')}
+                availability={evaluations["comparison"]?.availability ?? { state: "available" }}
+                collapsed={Boolean(collapsedSections.comparison)}
+                onToggle={() => toggleSection("comparison")}
               >
-                {$t('storyBuilder.chapters.cancel')}
-              </button>
+                <p class="chapter-overlay__hint">
+                  {$t('storyBuilder.comparison.hint')}
+                </p>
+              </InspectorSection>
             {/if}
-            {#if docked}
-              <button
-                class="chapter-overlay__button chapter-overlay__button--subtle"
-                type="button"
-                data-testid="chapter-revert-view"
-                disabled={saveDisabled}
-                on:click={handleRevertView}
-              >
-                {$t('storyBuilder.overlay.revertView')}
-              </button>
-            {/if}
-          </div>
-          {#if saveDisabled}
-            <div class="chapter-overlay__hint">
-              {$t('storyBuilder.chapter.saveHint')}
-            </div>
           {/if}
         </div>
-      {:else if chapter}
-        <div class="chapter-overlay__dashboard-hint">
-          {$t('storyBuilder.tasks.description')}
-        </div>
-        <button
-          class="chapter-overlay__dashboard-save-compat"
-          type="button"
-          data-testid="chapter-save"
-          tabindex="-1"
-          aria-hidden="true"
-          on:click={handleSave}>{$t('storyBuilder.overlay.saveChapter')}</button
-        >
+
       {/if}
     </form>
   </div>
@@ -1828,6 +1512,23 @@
       background: var(--viewer-panel, #121922);
       border-bottom: 1px solid
         var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    }
+
+    /* Annotation editing is a focused workspace, not another dashboard view.
+       Keep its chapter identity but give the list, tools and properties the
+       vertical space otherwise spent on preview and inspector navigation. */
+    .chapter-overlay--annotation-task .chapter-overlay__header {
+      padding: 10px 14px;
+    }
+
+    .chapter-overlay--annotation-task .chapter-overlay__form {
+      gap: 8px;
+      padding: 8px 12px 0;
+    }
+
+    .chapter-overlay--annotation-task .chapter-overlay__body,
+    .chapter-overlay--annotation-task .inspector-section__body {
+      gap: 8px;
     }
 
     .chapter-overlay__eyebrow {
@@ -1953,17 +1654,74 @@
       gap: 12px;
     }
 
-    .chapter-overlay__dashboard-hint {
-      margin-top: auto;
-      padding: 14px 0 2px;
-      border-top: 1px solid
-        var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
-      color: var(--viewer-muted, #9aa6b2);
-      font-size: 11px;
+    /*
+     * The three groups of the inspector: a segmented row that stays put while
+     * the sections beneath it change, so there is no drill-down and nothing to
+     * go back from.
+     */
+    .chapter-inspector__groups {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      background: color-mix(in srgb, var(--viewer-text, #e8edf4) 3%, transparent);
     }
 
-    .chapter-overlay__dashboard-save-compat {
-      display: none;
+    .chapter-inspector__group {
+      padding: 8px 6px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--viewer-muted, #9aa6b2);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+    }
+
+    .chapter-inspector__group:hover {
+      color: var(--viewer-text, #e8edf4);
+    }
+
+    .chapter-inspector__group:focus-visible {
+      outline: 2px solid var(--accent, var(--story-builder-accent, #e07a3f));
+      outline-offset: -2px;
+    }
+
+    .chapter-inspector__group--active {
+      background: var(--viewer-surface, #151d26);
+      color: var(--viewer-text, #e8edf4);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    .chapter-inspector__sections {
+      align-content: start;
+    }
+
+    .chapter-inspector__tool-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chapter-overlay--annotation-task .chapter-inspector__tool-actions {
+      position: sticky;
+      bottom: 0;
+      z-index: 4;
+      margin: 2px -14px -14px;
+      padding: 10px 14px 12px;
+      border-top: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      background: color-mix(in srgb, var(--viewer-panel, #121922) 96%, transparent);
+      box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.16);
+    }
+
+    .chapter-inspector__tool-actions .chapter-overlay__button {
+      flex: 1 1 120px;
     }
 
     .chapter-overlay__wide-tool-note {
@@ -2000,6 +1758,10 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 7px;
       margin-top: 11px;
+    }
+    .chapter-overlay--annotation-task .chapter-overlay__annotation-tools {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 3px;
     }
     .chapter-overlay__annotation-tools button {
       min-width: 0;
@@ -2038,31 +1800,6 @@
     .chapter-overlay__segmented-control { display:flex; gap:5px; }
     .chapter-overlay__segmented-control button { flex:1; border:1px solid var(--viewer-panel-border, rgba(255,255,255,.1)); border-radius:8px; padding:7px; background:transparent; color:var(--viewer-muted, #9aa6b2); text-transform:capitalize; cursor:pointer; }
     .chapter-overlay__segmented-control .chapter-overlay__segmented-control--active { border-color:var(--accent, var(--story-builder-accent, #e07a3f)); background:color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 14%, transparent); color:var(--viewer-text, #e8edf4); }
-
-    .chapter-overlay__task {
-      display: grid;
-      gap: 12px;
-    }
-
-    .chapter-overlay__task[hidden] {
-      display: none;
-    }
-
-    .chapter-overlay__task-back {
-      justify-self: start;
-      border: 0;
-      padding: 4px 0;
-      background: transparent;
-      color: var(--viewer-muted, #9aa6b2);
-      font-size: 12px;
-      font-weight: 650;
-      cursor: pointer;
-    }
-
-    .chapter-overlay__task-back:hover,
-    .chapter-overlay__task-back:focus-visible {
-      color: var(--viewer-text, #e8edf4);
-    }
 
     .chapter-overlay__section {
       display: grid;
@@ -2366,28 +2103,6 @@
 
     .chapter-overlay__hint--placement {
       margin-top: -2px;
-    }
-
-    .chapter-overlay__actions {
-      position: sticky;
-      bottom: -22px;
-      z-index: 2;
-      display: grid;
-      gap: 8px;
-      margin: 0 -18px -22px;
-      padding: 12px 18px 18px;
-      border-top: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 10%, transparent);
-      background: var(--viewer-panel, #121922);
-    }
-
-    .chapter-overlay__actions-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .chapter-overlay__actions-group .chapter-overlay__button {
-      flex: 1 1 150px;
     }
 
     .chapter-overlay__layer-item {

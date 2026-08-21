@@ -77,3 +77,60 @@ describe('presentation aspect round trip', () => {
     expect(body.mangoState.presentationAspect).toBeUndefined();
   });
 });
+
+describe('the frame lock', () => {
+  /*
+   * In the builder every framing is a frame on the canvas held to the story's
+   * aspect, so what reaches the serializer is already canonical — and what
+   * comes back from a save cycle must be too, for the chapter frame and for
+   * every keyframe, or the lock would be undone by the very act of saving.
+   */
+  it('keeps chapter and keyframe frames at the presentation aspect through a save cycle', () => {
+    const locked: StoryState = {
+      presentationAspect: 16 / 9,
+      chapters: [
+        {
+          id: 'chapter_1',
+          manifest: 'https://example.org/manifest.json',
+          canvasIndex: 0,
+          canvasId: 'https://example.org/canvas/0',
+          viewBox: { x: 120, y: 80, w: 1600, h: 900 },
+          cameraTrack: {
+            durationMs: 5000,
+            preset: 'custom',
+            keyframes: [
+              {
+                id: 'a',
+                timeMs: 0,
+                focus: { x: 920, y: 530 },
+                viewBox: { x: 120, y: 80, w: 1600, h: 900 },
+              },
+              {
+                id: 'b',
+                timeMs: 5000,
+                focus: { x: 1000, y: 600 },
+                viewBox: { x: 600, y: 375, w: 800, h: 450 },
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const exported = serializeStoryToIiif(normaliseStoryFraming(locked));
+    const reloaded = normaliseStoryInput(exported).story!;
+
+    expect(reloaded.presentationAspect).toBeCloseTo(16 / 9, 9);
+    const boxes = reloaded.chapters.flatMap((chapter) => [
+      chapter.viewBox!,
+      ...(chapter.cameraTrack?.keyframes ?? []).map((point) => point.viewBox!),
+    ]);
+    expect(boxes).toHaveLength(3);
+    for (const box of boxes) {
+      // Integer xywh on the wire, so a pixel of slack is the most this allows.
+      expect(Math.abs(box.w / box.h - 16 / 9)).toBeLessThan(0.002);
+    }
+    // Nothing was moved by the round trip either.
+    expect(reloaded.chapters[0].viewBox).toMatchObject({ x: 120, y: 80, w: 1600, h: 900 });
+  });
+});

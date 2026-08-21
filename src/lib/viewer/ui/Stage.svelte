@@ -7,6 +7,7 @@
   import type { ImageFilters } from '../../core/types/filters';
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
   import type { ContentSize, ViewBox } from '../../core/types/viewer';
+  import type { StoryFrame } from '../../core/types/story';
   import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
   import type { AVPlayerController } from '@mango-iiif/av/core';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
@@ -15,6 +16,7 @@
   import type { ViewerConfig } from '../../core/types/config';
   import AnnotationLayer from '../../features/annotations/AnnotationLayer.svelte';
   import AnnotationEditorLayer from '../../features/annotations/AnnotationEditorLayer.svelte';
+  import StoryFrameLayer from '../../story/ui/StoryFrameLayer.svelte';
   import type { OSDAnnotationEditor } from '@mango-iiif/annotation';
   import type { LabelSizing } from '../../features/annotations/rectangleLabelLayout';
   import type { LayerItem } from '../../features/annotations/workspace/LeftSidebar.svelte';
@@ -109,6 +111,11 @@
       | undefined;
     layoutMode?: 'single' | 'two-page' | 'continuous';
     activeLayoutImages?: ActiveLayoutImage[];
+    /** Story frames drawn on the stage as movable, aspect-locked regions. */
+    storyFrames?: StoryFrame[];
+    storyFrameSelection?: string | null;
+    onstoryframecommit?: ((payload: { frameId: string; viewBox: ViewBox }) => void) | undefined;
+    onstoryframeselect?: ((payload: { frameId: string | null }) => void) | undefined;
   }
 
   let {
@@ -170,6 +177,10 @@
     onannotationtoolchange = undefined,
     layoutMode = 'single',
     activeLayoutImages = [],
+    storyFrames = [],
+    storyFrameSelection = null,
+    onstoryframecommit = undefined,
+    onstoryframeselect = undefined,
   }: Props = $props();
   const viewportState = getContext<ViewportState | undefined>(VIEWPORT_STATE_CONTEXT_KEY);
   let effectiveCanvasId = $derived(canvasId ?? viewportState?.manifestId ?? null);
@@ -187,6 +198,7 @@
   let stageWidth = $state(0);
   let stageHeight = $state(0);
   let stageViewBox = $state<ViewBox | null>(null);
+  let pendingViewBox: ViewBox | null = $state(null);
   let pendingModelPose: ModelPose | null = $state(null);
   let pendingModelPoseOptions: ModelPoseOptions = $state({});
   let rendererError = $state('');
@@ -196,7 +208,16 @@
     rendererInstance?.getContentSize?.() ?? null;
 
   export const setViewBox = (box: ViewBox): void => {
-    rendererInstance?.setViewBox?.(box);
+    if (rendererInstance?.setViewBox) {
+      rendererInstance.setViewBox(box);
+      pendingViewBox = null;
+      return;
+    }
+    // Story playback can request its first framing while the dynamically
+    // imported renderer is still mounting. Keep that request instead of
+    // silently dropping it; the renderer-level queue below covers the later
+    // interval while OSD itself is opening the tile source.
+    pendingViewBox = { ...box };
   };
 
   export const zoomBy = (factor: number): void => {
@@ -204,6 +225,7 @@
   };
 
   export const goHome = (): void => {
+    pendingViewBox = null;
     rendererInstance?.goHome?.();
   };
 
@@ -332,6 +354,13 @@
 
   $effect(() => {
     canZoom = Boolean(rendererInstance?.zoomBy);
+  });
+  $effect(() => {
+    if (rendererInstance?.setViewBox && pendingViewBox) {
+      const box = pendingViewBox;
+      pendingViewBox = null;
+      rendererInstance.setViewBox(box);
+    }
   });
   $effect(() => {
     if (rendererInstance?.setModelPose && pendingModelPose) {
@@ -470,6 +499,18 @@
       ontoolchange={(payload) => onannotationtoolchange?.(payload)}
     />
 
+    {#if storyFrames.length > 0}
+      <StoryFrameLayer
+        viewer={annotationViewer}
+        canvasWidth={annotationCanvasSize.width || mediaSource?.width || 0}
+        canvasHeight={annotationCanvasSize.height || mediaSource?.height || 0}
+        frames={storyFrames}
+        selectedFrameId={storyFrameSelection}
+        onframecommit={(payload) => onstoryframecommit?.(payload)}
+        onframeselect={(payload) => onstoryframeselect?.(payload)}
+      />
+    {/if}
+
     {#if overlayPlugins.length > 0}
       <div
         class:stage__overlay--flush={fillHeight}
@@ -489,6 +530,14 @@
     gap: 16px;
     height: 100%;
     min-height: 0;
+    /*
+     * A size container so a story stage can be sized against the slot it
+     * actually sits in. The viewer-level container is the whole element,
+     * including its bars, which is the wrong reference for "how much room does
+     * the picture have".
+     */
+    container-type: size;
+    container-name: mango-stage;
     /* The OSD <canvas> has an intrinsic width; without a zero min-width it can
        force this column — and therefore the whole stage — wider than the viewer. */
     min-width: 0;

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { StoryState } from '../../core/types/story';
 import {
   DEFAULT_PRESENTATION_ASPECT,
+  constrainViewBoxToContent,
+  fitViewBoxToContent,
   framingsWithin,
   inferPresentationAspect,
   isKeyframeEnvelope,
@@ -9,7 +11,6 @@ import {
   normaliseViewBox,
   resolvePresentationAspect,
 } from '../framing';
-import { framingsDiffer } from '../chapterTasks';
 
 const aspectOf = (box: { w: number; h: number }) => box.w / box.h;
 const centreOf = (box: { x: number; y: number; w: number; h: number }) => ({
@@ -208,26 +209,94 @@ describe('framing comparison', () => {
     const box = { x: 0, y: 0, w: 100, h: 100 };
     expect(framingsWithin({ ...box, x: 0.5 }, box, 0.5)).toBe(true);
   });
+});
 
-  /*
-   * The reason `framingsWithin` and `framingsDiffer` are separate functions
-   * rather than one with a tolerance argument. The same absolute shift is
-   * imperceptible on a large canvas and a different view entirely on a small
-   * crop, so an absolute tolerance cannot answer "did the author reframe".
-   * Collapsing the two would silently break drift detection at one end of the
-   * scale or the other, and this is what would catch it.
-   */
-  it('answers differently from drift detection at different canvas scales', () => {
-    const shift = 40;
+/*
+ * A chapter framed on a stage that is not the canvas's shape used to store the
+ * letterbox bars along with the picture. The author saw the image filling the
+ * frame; every later reader saw it about a sixth smaller, because the padding
+ * was re-fitted on their stage as though it were part of the image. Position
+ * looked right — the centre survives — which made it read as a zoom bug with
+ * no obvious cause.
+ */
+describe('constrainViewBoxToContent', () => {
+  const canvas = { width: 4032, height: 3024 };
 
-    const large = { x: 0, y: 0, w: 15000, h: 10000 };
-    const largeShifted = { ...large, x: large.x + shift };
-    expect(framingsWithin(largeShifted, large, 0.5)).toBe(false);
-    expect(framingsDiffer(large, largeShifted)).toBe(false);
+  it('drops letterbox padding from a whole-image capture', () => {
+    // A "fit the whole image" view on a portrait stage: 4032 wide, but the
+    // viewport runs well above and below the picture.
+    const captured = { x: 0, y: -859.97, w: 4032, h: 4743.94 };
 
-    const crop = { x: 0, y: 0, w: 300, h: 200 };
-    const cropShifted = { ...crop, x: crop.x + shift };
-    expect(framingsWithin(cropShifted, crop, 0.5)).toBe(false);
-    expect(framingsDiffer(crop, cropShifted)).toBe(true);
+    expect(constrainViewBoxToContent(captured, canvas)).toEqual({
+      x: 0,
+      y: 0,
+      w: 4032,
+      h: 3024,
+    });
+  });
+
+  it('keeps a framing that is already a region of the image', () => {
+    const inside = { x: 500, y: 531, w: 2404, h: 1803 };
+    expect(constrainViewBoxToContent(inside, canvas)).toEqual(inside);
+  });
+
+  it('shifts an overhanging framing inside rather than shrinking it', () => {
+    // Zoom is the author's decision; only the part that was never picture goes.
+    const overhanging = { x: 3500, y: 100, w: 1200, h: 900 };
+    const constrained = constrainViewBoxToContent(overhanging, canvas);
+
+    expect(constrained.w).toBe(1200);
+    expect(constrained.h).toBe(900);
+    expect(constrained.x + constrained.w).toBeLessThanOrEqual(canvas.width);
+    expect(constrained.y).toBe(100);
+  });
+
+  it('always yields a box a Media Fragment can express', () => {
+    const cases = [
+      { x: -1000, y: 0, w: 6032, h: 3024 },
+      { x: -500, y: -400, w: 5015, h: 3761 },
+      { x: 0, y: -859.97, w: 4032, h: 4743.94 },
+    ];
+
+    for (const box of cases) {
+      const out = constrainViewBoxToContent(box, canvas);
+      expect(out.x).toBeGreaterThanOrEqual(0);
+      expect(out.y).toBeGreaterThanOrEqual(0);
+      expect(out.x + out.w).toBeLessThanOrEqual(canvas.width);
+      expect(out.y + out.h).toBeLessThanOrEqual(canvas.height);
+    }
+  });
+});
+
+/*
+ * The chapter frame is locked to the story's aspect, so bringing it inside
+ * the canvas must not clamp one side and leave the other: a frame wider than
+ * the picture would otherwise come back at the picture's width but its own
+ * height, and the lock would be broken by the edge of the image.
+ */
+describe('fitViewBoxToContent', () => {
+  const content = { width: 1000, height: 800 };
+
+  it('scales a box too large for the canvas about its centre, keeping its shape', () => {
+    const fitted = fitViewBoxToContent({ x: -400, y: 100, w: 1800, h: 600 }, content);
+    expect(fitted.w / fitted.h).toBeCloseTo(3, 9);
+    expect(fitted.w).toBeCloseTo(1000, 6);
+    expect(fitted.x).toBeCloseTo(0, 6);
+    // Centre kept where the canvas allows: the original centre was y = 400.
+    expect(fitted.y + fitted.h / 2).toBeCloseTo(400, 6);
+  });
+
+  it('shifts a box that hangs over an edge back in, size intact', () => {
+    expect(fitViewBoxToContent({ x: 800, y: -50, w: 400, h: 300 }, content)).toEqual({
+      x: 600,
+      y: 0,
+      w: 400,
+      h: 300,
+    });
+  });
+
+  it('leaves a box that already fits alone', () => {
+    const box = { x: 100, y: 100, w: 400, h: 300 };
+    expect(fitViewBoxToContent(box, content)).toEqual(box);
   });
 });

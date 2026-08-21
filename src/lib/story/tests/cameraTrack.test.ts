@@ -62,6 +62,42 @@ describe('in-chapter camera track sampling', () => {
     ]);
   });
 
+  it('keeps the first captured pan and zoom as the exact start of a named style', () => {
+    const capturedStart = { x: 240, y: 120, w: 320, h: 160 };
+    const placed = {
+      durationMs: 5000,
+      preset: 'custom' as const,
+      keyframes: [
+        {
+          id: 'zoom-out-start',
+          timeMs: 0,
+          focus: { x: 400, y: 200 },
+          viewBox: capturedStart,
+        },
+        {
+          id: 'zoom-out-end',
+          timeMs: 5000,
+          focus: { x: 700, y: 350 },
+          viewBox: { x: 500, y: 250, w: 400, h: 200 },
+        },
+      ],
+    };
+    const styled = configureCameraTrackPreset(
+      placed,
+      'zoom-out',
+      { x: 0, y: 0, w: 1000, h: 500 },
+      5000,
+    );
+
+    expect(styled.keyframes.map((point) => point.id)).toEqual([
+      'zoom-out-start',
+      'zoom-out-end',
+    ]);
+    expect(styled.keyframes[0].viewBox).toEqual(capturedStart);
+    expect(sampleCameraTrack(styled, 0)?.viewBox).toEqual(capturedStart);
+    expect(styled.keyframes[1].viewBox!.w).toBeGreaterThan(capturedStart.w);
+  });
+
   it('uses the stable chapter frame for named-style zoom when focal points move', () => {
     const baseView = { x: 0, y: 0, w: 1000, h: 500 };
     const generated = generateCameraPreset('ken-burns', baseView, 5000);

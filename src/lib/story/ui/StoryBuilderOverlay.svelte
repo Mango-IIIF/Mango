@@ -11,7 +11,6 @@
   import type {
     AnnotationPlacement,
     ChapterAdvance,
-    ChapterAnnotationTool,
   } from '../../core/types/story';
   import type { ViewBox } from '../../core/types/viewer';
   import type { UIMode } from '../storyBuilderController';
@@ -27,11 +26,15 @@
   export let layerOpacities: Readable<Record<string, number>>;
   export let onUpdateLayerOpacity: (id: string, opacity: number) => void;
   export let currentManifest: Readable<string | null>;
-  export let viewerCanvasIndex: Readable<number>;
-  export let viewerCanvasCount: Readable<number>;
   export let viewBox: Readable<ViewBox | null>;
   export let selectedChapterId: Writable<string | null>;
   export let activeChapterTask: Readable<ChapterTaskId | null>;
+  export let selectedMotionPointId: Readable<string | null> = readable(null);
+  export let onGoToMotionPoint: (keyframeId: string) => void = () => {};
+  export let onMoveMotionPoint: (
+    keyframeId: string,
+    focus: { x: number; y: number },
+  ) => void = () => {};
   export let onChapterTaskChange: ((task: ChapterTaskId | null) => void) | undefined = undefined;
   export let validationErrors: Readable<string[]>;
   export let uiMode: Readable<UIMode>;
@@ -44,21 +47,8 @@
   export let onCloseSaveModal: () => void;
   export let onSetAnnotationLanguage: (lang: string) => void;
   export let annotationLanguage: Readable<string>;
-  export let annotationTool: Readable<ChapterAnnotationTool>;
-  export let selectedDrawingAnnotationId: Readable<string | null>;
-  export let onSetAnnotationTool: (tool: ChapterAnnotationTool) => void;
-  export let onSetDrawingAnnotationLabel: (annotationId: string, lang: string, value: string) => void;
-  export let onSetDrawingAnnotationStyle: (
-    annotationId: string,
-    style: {
-      color?: string | null;
-      strokeWidth?: 'thin' | 'medium' | 'thick';
-      fillMode?: 'transparent' | 'solid';
-    },
-  ) => void;
   export let language = 'en';
   export let languages: string[] = ['en'];
-  export let onBackNarration: () => void;
   export let onCloseNarration: () => void;
   export let onCloseChapter: () => void;
   export let onSetMediaMarks: (start: number | null, end: number | null) => void;
@@ -75,8 +65,8 @@
   export let onSkipNarration: (lang: string) => void;
   export let onUpdateManifest: (manifest: string) => void;
   export let onReloadManifest: (manifest: string, canvasIndex: number) => void;
-  export let onSelectCanvas: (canvasIndex: number) => void;
   export let onLoadManifest: (manifest: string) => void;
+  export let onLoadSource: (manifest: string) => void;
   export let onAddChapter: () => void;
   export let onUpdateChapterTitle: (lang: string, value: string) => void;
   export let onUpdateChapterDescription: (lang: string, value: string) => void;
@@ -84,7 +74,6 @@
   export let onUpdateAnnotationPlacement: (lang: string, placement: AnnotationPlacement) => void;
   export let onUpdateAdvanceMode: (mode: ChapterAdvance['mode']) => void;
   export let onUpdateDelay: (delayMs?: number) => void;
-  export let onUpdateChapterPosition: () => void;
   export let onSetChapterPosition: (viewBox: ViewBox) => void;
   export let storyPreviewing: Readable<boolean> = readable(false);
   export let onPreviewChapter: (chapterId?: string) => void = () => {};
@@ -92,26 +81,7 @@
   export let onRevertChapterPosition: () => void;
   export let onSaveChapterSettings: () => void;
   export let onCancelChapterSettings: () => void = () => {};
-  export let onUpdateMotionDuration: (durationMs: number) => void;
-  export let onUpdateMotionPathType: (pathType: 'linear' | 'spline') => void;
-  export let onUpdateMotionInitialDwell: (dwellMs: number) => void;
-  export let onUpdateMotionEasing: (
-    easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out',
-  ) => void;
   export let motionPreviewing: Readable<boolean>;
-  export let motionPointDraft: Readable<{
-    keyframeId?: string;
-    focus?: { x: number; y: number };
-  } | null>;
-  export let onApplyMotionPreset: (
-    preset: NonNullable<NonNullable<StoryState['chapters'][number]['cameraTrack']>['preset']>,
-  ) => void;
-  export let onPreviewMotion: () => void;
-  export let onStopMotionPreview: () => void;
-  export let onStartMotionPointPositioning: (keyframeId?: string) => void;
-  export let onConfirmMotionPointPositioning: (focus: { x: number; y: number }) => void;
-  export let onCancelMotionPointPositioning: () => void;
-
   let chapterId: string | null = null;
   let manifestValue: string | null = null;
   let currentMode: UIMode = 'idle';
@@ -146,6 +116,7 @@
 
   let overlayWidth = 0;
   let overlayHeight = 0;
+  let overlayRoot: HTMLDivElement | null = null;
 
   let currentViewBox: ViewBox | null = null;
   $: currentViewBox = $viewBox;
@@ -187,6 +158,96 @@
     });
   }
 
+  let motionDrag: {
+    id: string;
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    x: number;
+    y: number;
+    moved: boolean;
+  } | null = null;
+  let suppressMotionClickFor: string | null = null;
+
+  const motionPositionFromPointer = (
+    event: PointerEvent,
+  ): { x: number; y: number } | null => {
+    const bounds = overlayRoot?.getBoundingClientRect();
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return null;
+    return {
+      x: Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width)),
+      y: Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height)),
+    };
+  };
+
+  const handleMotionPointerDown = (
+    event: PointerEvent,
+    marker: (typeof motionMarkers)[number],
+  ) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+    motionDrag = {
+      id: marker.id,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      x: marker.x,
+      y: marker.y,
+      moved: false,
+    };
+  };
+
+  const handleMotionPointerMove = (event: PointerEvent) => {
+    if (!motionDrag || motionDrag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const position = motionPositionFromPointer(event);
+    if (!position) return;
+    const moved =
+      motionDrag.moved ||
+      Math.hypot(
+        event.clientX - motionDrag.startClientX,
+        event.clientY - motionDrag.startClientY,
+      ) >= 3;
+    motionDrag = { ...motionDrag, ...position, moved };
+  };
+
+  const finishMotionDrag = (event: PointerEvent, commit: boolean) => {
+    if (!motionDrag || motionDrag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const drag = motionDrag;
+    const position = motionPositionFromPointer(event) ?? { x: drag.x, y: drag.y };
+    const moved =
+      drag.moved ||
+      Math.hypot(
+        event.clientX - drag.startClientX,
+        event.clientY - drag.startClientY,
+      ) >= 3;
+    motionDrag = null;
+    if (!commit || !moved || !currentViewBox) return;
+    suppressMotionClickFor = drag.id;
+    onMoveMotionPoint(drag.id, {
+      x: currentViewBox.x + position.x * currentViewBox.w,
+      y: currentViewBox.y + position.y * currentViewBox.h,
+    });
+  };
+
+  const handleMotionClick = (event: MouseEvent, markerId: string) => {
+    event.stopPropagation();
+    if (suppressMotionClickFor === markerId) {
+      suppressMotionClickFor = null;
+      return;
+    }
+    onGoToMotionPoint(markerId);
+  };
+
+  const markerX = (marker: (typeof motionMarkers)[number]): number =>
+    motionDrag?.id === marker.id ? motionDrag.x : marker.x;
+  const markerY = (marker: (typeof motionMarkers)[number]): number =>
+    motionDrag?.id === marker.id ? motionDrag.y : marker.y;
   let placementRectValue: {
     x: number;
     y: number;
@@ -353,111 +414,14 @@
     onCancelAnnotationPositioning();
   };
 
-  let motionPlacementFocus: { x: number; y: number } | null = null;
-  let effectiveMotionPlacementFocus: { x: number; y: number } | null = null;
-  let motionReferenceViewBox: ViewBox | null = null;
-  let motionPlacementNumber = 1;
-  let lastMotionPlacementKey = '';
-  $: {
-    const draft = $motionPointDraft;
-    const key = draft
-      ? `${currentMode}:${draft.keyframeId ?? 'new'}:${draft.focus?.x ?? 'none'}:${draft.focus?.y ?? 'none'}`
-      : '';
-    if (!draft) {
-      lastMotionPlacementKey = '';
-      motionPlacementFocus = null;
-    } else if (key !== lastMotionPlacementKey) {
-      lastMotionPlacementKey = key;
-      motionPlacementFocus = draft.focus ?? null;
-    }
-  }
-  $: if (
-    currentMode === 'motionPointPositioning' &&
-    $motionPointDraft &&
-    !motionPlacementFocus &&
-    currentViewBox
-  ) {
-    motionPlacementFocus = $motionPointDraft.focus ?? {
-      x: currentViewBox.x + currentViewBox.w / 2,
-      y: currentViewBox.y + currentViewBox.h / 2,
-    };
-  }
-  $: motionReferenceViewBox =
-    currentViewBox ?? $story.chapters.find((entry) => entry.id === chapterId)?.viewBox ?? null;
-  $: effectiveMotionPlacementFocus =
-    motionPlacementFocus ??
-    $motionPointDraft?.focus ??
-    (motionReferenceViewBox
-      ? {
-          x: motionReferenceViewBox.x + motionReferenceViewBox.w / 2,
-          y: motionReferenceViewBox.y + motionReferenceViewBox.h / 2,
-        }
-      : null);
-  $: motionPlacementPinStyle =
-    effectiveMotionPlacementFocus && motionReferenceViewBox
-      ? `left:${((effectiveMotionPlacementFocus.x - motionReferenceViewBox.x) / motionReferenceViewBox.w) * 100}%;top:${((effectiveMotionPlacementFocus.y - motionReferenceViewBox.y) / motionReferenceViewBox.h) * 100}%`
-      : '';
-  $: {
-    const activeChapter = $story.chapters.find((entry) => entry.id === chapterId);
-    const existingIndex = activeChapter?.cameraTrack?.keyframes.findIndex(
-      (point) => point.id === $motionPointDraft?.keyframeId,
-    );
-    motionPlacementNumber =
-      existingIndex !== undefined && existingIndex >= 0
-        ? existingIndex + 1
-        : (activeChapter?.cameraTrack?.keyframes.length ?? 0) + 1;
-  }
-  let motionPointDragging = false;
-  let motionSurfaceElement: HTMLElement | null = null;
-  const focusFromPointer = (event: MouseEvent | PointerEvent): { x: number; y: number } | null => {
-    if (!motionReferenceViewBox) return null;
-    const targetEl = motionSurfaceElement || (event.currentTarget as HTMLElement | null);
-    const bounds = targetEl?.getBoundingClientRect();
-    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return null;
-    const xRatio = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width));
-    const yRatio = Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height));
-    return {
-      x: motionReferenceViewBox.x + xRatio * motionReferenceViewBox.w,
-      y: motionReferenceViewBox.y + yRatio * motionReferenceViewBox.h,
-    };
-  };
-  const handleMotionCanvasClick = (event: MouseEvent) => {
-    motionPlacementFocus = focusFromPointer(event) ?? motionPlacementFocus;
-  };
-  const handleMotionPointerDown = (event: PointerEvent) => {
-    motionPointDragging = true;
-    if (event.currentTarget instanceof HTMLElement) {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
-    motionPlacementFocus = focusFromPointer(event) ?? motionPlacementFocus;
-  };
-  const handleMotionPointerMove = (event: PointerEvent) => {
-    if (motionPointDragging) motionPlacementFocus = focusFromPointer(event) ?? motionPlacementFocus;
-  };
-  const handleMotionPointerUp = (event: PointerEvent) => {
-    motionPlacementFocus = focusFromPointer(event) ?? motionPlacementFocus;
-    motionPointDragging = false;
-  };
 </script>
 
 {#if surface === 'inspector'}
-  <div class="story-builder-inspector-root" data-testid="story-builder-inspector">
-    {#if narrationOpen}
-      <StoryNarrationOverlay
-        {story}
-        open={true}
-        docked={true}
-        {chapterId}
-        {language}
-        {languages}
-        onBack={onBackNarration}
-        onClose={onCloseNarration}
-        {onSetNarrationTrack}
-        {onUpdateStoryTitle}
-        {onUpdateStoryIdentifiers}
-        {onAssignSegment}
-      />
-    {:else if chapterId || currentMode === 'chapterEdit' || !manifestValue || $story.chapters.length === 0}
+  <div
+    class="story-builder-inspector-root"
+    data-testid="story-builder-inspector"
+  >
+    {#if chapterId}
       <StoryChapterOverlay
         {story}
         open={chapterOpen}
@@ -466,9 +430,6 @@
         {activeChapterTask}
         validationErrors={$validationErrors}
         currentManifest={manifestValue}
-        {viewBox}
-        canvasIndex={$viewerCanvasIndex}
-        canvasCount={$viewerCanvasCount}
         {mediaType}
         {mediaMarks}
         {avMarksValid}
@@ -487,7 +448,6 @@
         onCreateChapter={onAddChapter}
         onReloadManifest={(chapterId, manifest, canvasIndex) =>
           onReloadManifest(manifest, canvasIndex)}
-        {onSelectCanvas}
         onUpdateChapterTitle={(chapterId, lang, value) => onUpdateChapterTitle(lang, value)}
         onUpdateChapterDescription={(chapterId, lang, value) =>
           onUpdateChapterDescription(lang, value)}
@@ -496,7 +456,6 @@
           onUpdateAnnotationPlacement(lang, placement)}
         onUpdateAdvanceMode={(chapterId, mode) => onUpdateAdvanceMode(mode)}
         onUpdateDelay={(chapterId, delayMs) => onUpdateDelay(delayMs)}
-        onUpdateChapterPosition={() => onUpdateChapterPosition()}
         onSetChapterPosition={(chapterId, viewBox) => onSetChapterPosition(viewBox)}
         {storyPreviewing}
         onPreviewChapter={(chapterId) => onPreviewChapter(chapterId)}
@@ -505,24 +464,9 @@
         onSave={onSaveChapterSettings}
         onCancel={onCancelChapterSettings}
         {onSetAnnotationLanguage}
-        {annotationTool}
-        {selectedDrawingAnnotationId}
-        {onSetAnnotationTool}
-        {onSetDrawingAnnotationLabel}
-        {onSetDrawingAnnotationStyle}
-        onSetAnnotationPositioning={(lang) => onStartAnnotationPositioning(lang)}
         layers={$layers}
         layerOpacities={$layerOpacities}
         {onUpdateLayerOpacity}
-        {onUpdateMotionDuration}
-        {onUpdateMotionPathType}
-        {onUpdateMotionInitialDwell}
-        {onUpdateMotionEasing}
-        motionPreviewing={$motionPreviewing}
-        {onApplyMotionPreset}
-        {onPreviewMotion}
-        {onStopMotionPreview}
-        {onStartMotionPointPositioning}
         {onChapterTaskChange}
       />
     {:else}
@@ -534,6 +478,7 @@
   </div>
 {:else}
   <div
+    bind:this={overlayRoot}
     class="story-builder-overlay-root"
     bind:clientWidth={overlayWidth}
     bind:clientHeight={overlayHeight}
@@ -550,18 +495,23 @@
       />
     {/if}
 
-    <SaveExportModal open={exportModalOpen} payload={exportPayload} onclose={onCloseSaveModal} />
-
-    {#if chapterId && $activeChapterTask === 'motion' && !$motionPreviewing && currentMode !== 'annotationPositioning' && currentMode !== 'motionPointPositioning' && currentMode !== 'narrationPanel' && motionMarkers.length > 0}
+    {#if chapterId && $activeChapterTask === 'motion' && !$motionPreviewing && currentMode !== 'annotationPositioning' && currentMode !== 'narrationPanel' && motionMarkers.length > 0}
       <div class="story-builder-motion-markers" aria-label={$t('storyBuilder.motion.cameraPoints')}>
         {#each motionMarkers as marker (marker.id)}
           <button
             class="story-builder-motion-marker"
+            class:story-builder-motion-marker--selected={$selectedMotionPointId === marker.id}
+            class:story-builder-motion-marker--dragging={motionDrag?.id === marker.id}
             type="button"
-            style={`--motion-x:${marker.x * 100}%;--motion-y:${marker.y * 100}%;--motion-offset-x:${marker.offsetX}px;--motion-offset-y:${marker.offsetY}px`}
-            aria-label={$t('storyBuilder.motion.movePointAt', { number: marker.index + 1, seconds: (marker.timeMs / 1000).toFixed(1) })}
+            style={`--motion-x:${markerX(marker) * 100}%;--motion-y:${markerY(marker) * 100}%;--motion-offset-x:${motionDrag?.id === marker.id ? 0 : marker.offsetX}px;--motion-offset-y:${motionDrag?.id === marker.id ? 0 : marker.offsetY}px`}
+            aria-label={$t('storyBuilder.motion.goToPoint', { number: marker.index + 1 })}
+            aria-pressed={$selectedMotionPointId === marker.id}
             title={$t('storyBuilder.motion.movePointTitle', { number: marker.index + 1, seconds: (marker.timeMs / 1000).toFixed(1) })}
-            on:click={() => onStartMotionPointPositioning(marker.id)}
+            on:pointerdown={(event) => handleMotionPointerDown(event, marker)}
+            on:pointermove={handleMotionPointerMove}
+            on:pointerup={(event) => finishMotionDrag(event, true)}
+            on:pointercancel={(event) => finishMotionDrag(event, false)}
+            on:click={(event) => handleMotionClick(event, marker.id)}
           >
             <MapPin aria-hidden="true" />
             <span>{marker.index + 1}</span>
@@ -569,6 +519,25 @@
         {/each}
       </div>
     {/if}
+
+    {#if narrationOpen}
+      <StoryNarrationOverlay
+        {story}
+        open={true}
+        docked={false}
+        {language}
+        {languages}
+        showSourceSetup={$story.chapters.length === 0}
+        currentManifest={manifestValue}
+        onClose={onCloseNarration}
+        {onSetNarrationTrack}
+        {onUpdateStoryTitle}
+        {onUpdateStoryIdentifiers}
+        {onLoadSource}
+      />
+    {/if}
+
+    <SaveExportModal open={exportModalOpen} payload={exportPayload} onclose={onCloseSaveModal} />
 
     {#if currentMode === 'annotationPositioning'}
       <div class="story-builder-positioning-container">
@@ -608,50 +577,6 @@
       </div>
     {/if}
 
-    {#if currentMode === 'motionPointPositioning' && $motionPointDraft}
-      <button
-        bind:this={motionSurfaceElement}
-        class="story-builder-motion-point-surface"
-        type="button"
-        aria-label={$t('storyBuilder.motion.placePointHint')}
-        on:click={handleMotionCanvasClick}
-        on:pointerdown={handleMotionPointerDown}
-        on:pointermove={handleMotionPointerMove}
-        on:pointerup={handleMotionPointerUp}
-      >
-        {#if effectiveMotionPlacementFocus}
-          <div
-            class="story-builder-motion-placement-pin"
-            class:story-builder-motion-placement-pin--dragging={motionPointDragging}
-            style={motionPlacementPinStyle}
-          >
-            <div class="story-builder-motion-placement-target" aria-hidden="true"></div>
-            <MapPin aria-hidden="true" />
-            <span>{motionPlacementNumber}</span>
-          </div>
-        {/if}
-      </button>
-      <div class="story-builder-motion-placement" role="dialog" aria-label={$t('storyBuilder.motion.setPoint')}>
-        <div class="story-builder-motion-placement__message">
-          <strong>
-            {$motionPointDraft.keyframeId
-              ? $t('storyBuilder.motion.movePoint', { number: motionPlacementNumber })
-              : $t('storyBuilder.motion.placePoint', { number: motionPlacementNumber })}
-          </strong>
-        </div>
-        <div class="story-builder-motion-placement__actions">
-          <button type="button" on:click={onCancelMotionPointPositioning}>{$t('storyBuilder.chapters.cancel')}</button>
-          <button
-            class="story-builder-motion-placement__confirm"
-            type="button"
-            disabled={!effectiveMotionPlacementFocus}
-            on:click={() =>
-              effectiveMotionPlacementFocus &&
-              onConfirmMotionPointPositioning(effectiveMotionPlacementFocus)}>{$t('storyBuilder.motion.usePoint')}</button
-          >
-        </div>
-      </div>
-    {/if}
   </div>
 {/if}
 
@@ -660,7 +585,8 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 40;
+    /* Above the artwork, below the floating sidebars and authoring footer. */
+    z-index: 3;
   }
 
   .story-builder-inspector-root {
@@ -677,6 +603,7 @@
     pointer-events: none;
     z-index: 45;
   }
+
   .story-builder-motion-marker {
     position: absolute;
     left: var(--motion-x);
@@ -693,9 +620,11 @@
     filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.72));
     font-size: 11px;
     font-weight: 800;
-    cursor: move;
+    cursor: grab;
     pointer-events: auto;
+    touch-action: none;
   }
+
   .story-builder-motion-marker :global(svg) {
     position: absolute;
     inset: 0;
@@ -705,17 +634,24 @@
     stroke: white;
     stroke-width: 1.8;
   }
+
   .story-builder-motion-marker span {
     position: relative;
     z-index: 1;
     margin-top: -7px;
   }
+
   .story-builder-motion-marker:hover,
-  .story-builder-motion-marker:focus-visible {
+  .story-builder-motion-marker:focus-visible,
+  .story-builder-motion-marker--selected {
     transform: translate(calc(-50% + var(--motion-offset-x)), calc(-88% + var(--motion-offset-y)))
       scale(1.14);
     outline: 2px solid color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 45%, white);
     outline-offset: 2px;
+  }
+
+  .story-builder-motion-marker--dragging {
+    cursor: grabbing;
   }
 
   .story-builder-inspector-empty {
@@ -792,132 +728,4 @@
     box-shadow: 0 0 12px color-mix(in srgb, var(--story-builder-accent, #e07a3f) 40%, transparent);
   }
 
-  .story-builder-motion-placement {
-    position: absolute;
-    left: 50%;
-    bottom: 16px;
-    z-index: 102;
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    width: auto;
-    max-width: min(440px, calc(100% - 32px));
-    padding: 6px 12px;
-    transform: translateX(-50%);
-    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 14%, transparent);
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--viewer-panel, #121922) 96%, transparent);
-    color: var(--viewer-text, #e8edf4);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
-    pointer-events: auto;
-  }
-
-  .story-builder-motion-point-surface {
-    position: absolute;
-    inset: 0;
-    z-index: 100;
-    cursor: crosshair;
-    pointer-events: auto;
-    border: 0;
-    padding: 0;
-    background: transparent;
-  }
-
-  .story-builder-motion-placement-pin {
-    position: absolute;
-    width: 42px;
-    height: 50px;
-    display: grid;
-    place-items: center;
-    transform: translate(-50%, -88%);
-    color: white;
-    filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.75));
-    pointer-events: none;
-    transition:
-      filter 0.15s ease,
-      transform 0.1s ease;
-  }
-
-  .story-builder-motion-placement-pin--dragging {
-    filter: drop-shadow(0 8px 14px color-mix(in srgb, var(--story-builder-accent, #e07a3f) 85%, transparent));
-    transform: translate(-50%, -96%) scale(1.08);
-  }
-
-  .story-builder-motion-placement-target {
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    width: 14px;
-    height: 14px;
-    transform: translate(-50%, 50%);
-    border: 2px solid white;
-    border-radius: 50%;
-    background: var(--accent, var(--story-builder-accent, #e07a3f));
-    box-shadow:
-      0 0 8px rgba(0, 0, 0, 0.6),
-      inset 0 0 0 2px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
-  }
-
-  .story-builder-motion-placement-pin :global(svg) {
-    position: absolute;
-    inset: 0;
-    width: 42px;
-    height: 50px;
-    fill: var(--accent, var(--story-builder-accent, #e07a3f));
-    stroke: white;
-    stroke-width: 1.8;
-  }
-
-  .story-builder-motion-placement-pin span {
-    position: relative;
-    z-index: 1;
-    margin-top: -9px;
-    font-size: 12px;
-    font-weight: 850;
-  }
-
-  .story-builder-motion-placement__message {
-    display: grid;
-    gap: 3px;
-    min-width: 0;
-    margin-right: auto;
-  }
-  .story-builder-motion-placement__message strong {
-    font-size: 13px;
-  }
-  .story-builder-motion-placement__actions {
-    display: flex;
-    gap: 7px;
-    flex: 0 0 auto;
-  }
-  .story-builder-motion-placement__actions button {
-    border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 12%, transparent);
-    border-radius: 9px;
-    padding: 9px 11px;
-    background: color-mix(in srgb, var(--viewer-text, #e8edf4) 8%, transparent);
-    color: inherit;
-    font-weight: 650;
-    cursor: pointer;
-  }
-  .story-builder-motion-placement__actions .story-builder-motion-placement__confirm {
-    border-color: transparent;
-    background: var(--accent, var(--story-builder-accent, #e07a3f));
-    color: white;
-  }
-  .story-builder-motion-placement__actions .story-builder-motion-placement__confirm:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  @media (max-width: 560px) {
-    .story-builder-motion-placement {
-      align-items: stretch;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .story-builder-motion-placement__actions {
-      justify-content: flex-end;
-    }
-  }
 </style>

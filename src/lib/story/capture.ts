@@ -1,6 +1,7 @@
 import type { ModelPose } from '../core/types/model';
 import type { ViewerApi } from '../core/types/viewer-api';
 import type { CapturePayload } from '../core/state/story.svelte';
+import { constrainViewBoxToContent } from './framing';
 
 export type CaptureErrorReason =
   | 'unsupported-media'
@@ -27,10 +28,21 @@ export const captureImagePdf = (
     return { ok: false, reason: 'missing-manifest' };
   }
 
-  const viewBox = viewer.getViewBox();
-  if (!viewBox) {
+  const rawViewBox = viewer.getViewBox();
+  if (!rawViewBox) {
     return { ok: false, reason: 'missing-viewbox' };
   }
+
+  /*
+   * What the author framed is a region of the image, not of the stage. A
+   * letterboxed capture carries the empty bars either side of the picture, and
+   * keeping them would store a chapter that reads as zoomed out everywhere it
+   * is later shown.
+   */
+  const contentSize = viewer.getContentSize?.() ?? null;
+  const viewBox = contentSize
+    ? constrainViewBoxToContent(rawViewBox, contentSize)
+    : rawViewBox;
 
   const canvasIndex = viewer.getCanvasIndex();
   const canvasId = viewer.getCanvasId() ?? undefined;

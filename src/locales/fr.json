@@ -53,8 +53,7 @@
       "advance": "Avance",
       "advanceHint": "La lecture automatique passera au chapitre suivant après le délai ci-dessous. Laissez vide pour rester en manuel.",
       "advanceDelay": "Délai entre les chapitres (secondes)",
-      "save": "Enregistrer",
-      "saveHint": "Sélectionnez un chapitre pour enregistrer les paramètres."
+      "save": "Enregistrer"
     },
     "export": {
       "title": "Exporter le JSON de l'histoire",
@@ -63,7 +62,7 @@
       "downloadIiif": "Télécharger le JSON IIIF de l'histoire",
       "jsonLabel": "JSON de l'histoire exportée",
       "empty": "// Aucune donnée d'export disponible",
-      "trackLabel": "Piste d'annotations de l'histoire"
+      "draftIdentifiers": "Cet export utilise un identifiant généré par Mango sous mangoviewer.dev. Il s'agit de IIIF valide, mais ce n'est pas votre domaine : définissez un identifiant d'AnnotationPage dans les réglages de l'histoire avant de publier."
     },
     "topBar": {
       "saved": "Enregistré",
@@ -80,14 +79,7 @@
     },
     "source": {
       "reloadManifest": "Recharger le manifeste",
-      "loadManifest": "Charger le manifeste",
-      "stepLoad": "Étape 1 sur 2 · Chargez un manifeste IIIF.",
-      "canvas": "Canevas",
-      "canvasPosition": "Canevas {current} sur {total}",
-      "chooseCanvasHint": "Choisissez un canevas, puis enregistrez la source pour l'appliquer à ce chapitre.",
-      "stepCreate": "Étape 2 sur 2 · Choisissez un canevas et créez le premier chapitre. Le placement de l'image pourra être ajusté ensuite depuis les outils du chapitre.",
-      "createFirst": "Créer le premier chapitre",
-      "loading": "Chargement du manifeste et de ses canevas…"
+      "loadManifest": "Charger le manifeste"
     },
     "transition": {
       "title": "Temps de transition entre chapitres",
@@ -109,26 +101,22 @@
     },
     "tasks": {
       "title": "Outils du chapitre",
-      "description": "Sélectionnez un outil pour modifier ce chapitre.",
-      "advanced": "Avancé",
+      "description": "Tout sur ce chapitre, en trois groupes. Les sections qui travaillent sur la scène s’ouvrent d’ici.",
       "languages": "{translated}/{total} langues",
       "status": {
         "empty": "Non configuré",
         "partial": "Partiellement configuré",
         "complete": "Configuré",
-        "attention": "Nécessite une attention",
-        "positionDrift": "Ne correspond pas à la vue actuelle"
+        "attention": "Nécessite une attention"
       },
       "items": {
         "details": {
           "title": "Détails",
-          "description": "Titre, description et traductions.",
-          "save": "Enregistrer les détails"
+          "description": "Titre, description et traductions."
         },
         "position": {
-          "title": "Position du visualiseur",
-          "description": "La zone du canevas et le zoom sur lesquels ce chapitre s'ouvre.",
-          "save": "Enregistrer la position du visualiseur"
+          "title": "Cadre",
+          "description": "La région du canevas sur laquelle ce chapitre s'ouvre, dessinée sur la scène."
         },
         "focus": {
           "title": "Annotations",
@@ -137,33 +125,27 @@
         },
         "motion": {
           "title": "Mouvement",
-          "description": "Points de caméra minutés pour le mouvement au sein du chapitre.",
-          "save": "Enregistrer le mouvement"
+          "description": "Points de caméra minutés pour le mouvement au sein du chapitre."
         },
         "audio-timing": {
           "title": "Narration",
-          "description": "Pistes de voix off et minutage de la narration du chapitre.",
-          "save": "Enregistrer la narration"
+          "description": "Pistes de voix off et minutage de la narration du chapitre."
         },
         "transition-timing": {
           "title": "Temps de transition entre chapitres",
-          "description": "Définissez le délai avant de passer au chapitre suivant.",
-          "save": "Enregistrer le temps de transition entre chapitres"
+          "description": "Définissez le délai avant de passer au chapitre suivant."
         },
         "media-timing": {
           "title": "Minutage du média",
-          "description": "Points de début et de fin de l'audio ou de la vidéo source de ce chapitre.",
-          "save": "Enregistrer le minutage du média"
+          "description": "Points de début et de fin de l'audio ou de la vidéo source de ce chapitre."
         },
         "layers": {
           "title": "Calques",
-          "description": "Visibilité et opacité des calques d'image.",
-          "save": "Enregistrer les calques"
+          "description": "Visibilité et opacité des calques d'image."
         },
         "comparison": {
           "title": "Comparaison",
-          "description": "Présenter ensemble des sources compatibles.",
-          "save": "Enregistrer la comparaison"
+          "description": "Présenter ensemble des sources compatibles."
         },
         "source": {
           "title": "Source · Avancé",
@@ -216,6 +198,9 @@
       "button": "Narrateur audio",
       "title": "Narration",
       "description": "Choisissez la piste de narration, puis déplacez ou redimensionnez la région du chapitre.",
+      "mode": "Mode de narration du chapitre",
+      "useNarration": "Utiliser la narration",
+      "noNarration": "Sans narration",
       "language": "Langue de la narration",
       "audioUrl": "URL de l'audio de narration",
       "preview": "Prévisualiser la narration",
@@ -235,37 +220,29 @@
     "content": {
       "language": "Langue du contenu",
       "title": "Contenu ({language})",
-      "expandMetadata": "Développer la section des métadonnées",
-      "collapseMetadata": "Réduire la section des métadonnées",
       "titleLabel": "Titre",
-      "descriptionLabel": "Description",
-      "textBox": "Annotation en zone de texte ({language})",
-      "expandAnnotation": "Développer la section des annotations",
-      "collapseAnnotation": "Réduire la section des annotations",
-      "textBoxHint": "Ceci crée une zone de texte positionnée. Elle est distincte des outils de dessin ci-dessus.",
-      "textPlaceholder": "Saisissez le texte de cette zone",
-      "placeText": "Placer la zone de texte sur l'œuvre",
-      "captureHint": "Capturez un chapitre pour modifier le texte et le placement de l'annotation."
+      "descriptionLabel": "Description"
     },
     "position": {
-      "title": "Position du visualiseur",
-      "hint": "La zone du canevas cadrée par ce chapitre, en pixels du canevas.",
-      "empty": "Aucune position n'est enregistrée pour l'instant. Cadrez l'œuvre dans le visualiseur, puis capturez la vue actuelle.",
+      "title": "Cadre",
+      "hint": "Déplacez et zoomez l’œuvre sous le cadre fixe du récit. Pour une édition IIIF précise, vous pouvez aussi saisir ici la région du canevas.",
+      "empty": "Aucun cadre pour l’instant. Saisissez une région en pixels du canevas pour en créer un.",
       "x": "X",
       "y": "Y",
       "width": "Largeur",
       "height": "Hauteur",
-      "capture": "Utiliser la vue actuelle",
-      "goTo": "Aller à la position enregistrée",
-      "current": "Vue actuelle : {x} · {y} · {w} · {h}",
-      "expand": "Développer la section de position du visualiseur",
-      "collapse": "Réduire la section de position du visualiseur"
+      "goTo": "Aller au cadre",
+      "aspectLocked": "Cadre du récit {aspect}. L’aperçu et les lecteurs conservent exactement cette forme ; la largeur et la hauteur changent ensemble.",
+      "stageLabel": "Cadre du récit · {aspect}"
     },
     "annotations": {
       "chapter": "Annotations du chapitre",
+      "annotationsTab": "Annotations",
+      "optionsTab": "Options",
       "drawing": "Annotations dessinées",
+      "add": "Ajouter une annotation",
       "tools": "Outils de dessin d'annotations",
-      "drawingHint": "Ajoutez un point, une forme ou une ligne directement sur l'œuvre. Sélectionnez une annotation dans le pied de page pour la modifier ici.",
+      "drawingHint": "Choisissez Sélectionner / Déplacer pour modifier une annotation existante, ou choisissez une forme pour en ajouter une.",
       "edit": "Modifier l'annotation",
       "editDrawing": "Modifier l'annotation {type} {index}",
       "deleteDrawing": "Supprimer l'annotation {type} {index}",
@@ -283,7 +260,7 @@
         "medium": "Moyen",
         "thick": "Épais"
       },
-      "emptySelection": "Dessinez une annotation, ou sélectionnez-en une dans le pied de page pour modifier son texte et son apparence.",
+      "emptySelection": "Sélectionnez une annotation dans la liste ou sur l'œuvre pour modifier son texte et son apparence.",
       "empty": "Aucune annotation dans ce chapitre.",
       "motivation": "Motivation",
       "motivationAuto": "Automatique (selon la forme)",
@@ -306,8 +283,8 @@
       "durationDwellError": "La durée doit laisser le temps de se déplacer après la pause initiale de {seconds} s.",
       "arcError": "Le balayage en arc nécessite au moins trois points de caméra. Ajoutez d'abord un autre point.",
       "dwellError": "La pause initiale doit être plus courte que le temps jusqu'au point de caméra suivant.",
-      "customHint": "Le mode personnalisé conserve le zoom du canevas capturé à chaque point. La prévisualisation démarre au point 1.",
-      "presetHint": "Les points définissent le cadrage ; le style de mouvement contrôle le zoom. La prévisualisation démarre au point 1.",
+      "customHint": "Le mode personnalisé conserve le cadre de chaque point tel que vous l’avez dessiné. La prévisualisation démarre au point 1.",
+      "presetHint": "Les points définissent le cadrage ; le style de mouvement contrôle le zoom. Redimensionner un point passe en Personnalisé. La prévisualisation démarre au point 1.",
       "preview": "Prévisualiser",
       "style": "Style de mouvement",
       "presets": "Préréglages de mouvement",
@@ -339,22 +316,18 @@
       "duration": "Durée du mouvement du chapitre",
       "durationHint": "Toutes les positions sont réparties automatiquement sur cette durée.",
       "durationSeconds": "Durée (secondes)",
-      "cameraPoints": "Points de caméra",
-      "movePointAt": "Déplacer le point de caméra {number} à {seconds} secondes",
-      "movePointTitle": "Déplacer le point de caméra {number} · {seconds} s",
-      "placePointHint": "Cliquez sur l'œuvre ou faites-la glisser pour placer le point de caméra",
-      "setPoint": "Définir le point de caméra",
-      "movePoint": "Déplacer le point {number}",
-      "placePoint": "Placer le point {number}",
-      "usePoint": "Utiliser ce point",
       "zoomValue": "Zoom {zoom}×",
       "timeline": "Chronologie du mouvement du chapitre",
+      "pinsTab": "Repères",
+      "optionsTab": "Options",
       "goToPoint": "Aller au point de caméra {number}",
       "point": "Point {number}",
       "deletePoint": "Supprimer le point de caméra",
       "deletePointNumber": "Supprimer le point de caméra {number}",
-      "emptyPoints": "Aucun point de caméra pour l'instant. Ajoutez un point, puis faites glisser son repère à sa place dans le visualiseur.",
-      "addPoint": "Ajouter un point de caméra"
+      "emptyPoints": "Aucun point de caméra pour l’instant. Ajoutez un point ; il apparaîtra au centre de la vue actuelle.",
+      "addPoint": "Ajouter un point de caméra",
+      "updatePoint": "Actualiser le repère depuis la vue actuelle",
+      "selectPointToUpdate": "Sélectionnez un repère pour actualiser son cadrage et son zoom."
     },
     "settings": {
       "title": "Paramètres de l'histoire",
@@ -378,22 +351,19 @@
       "audioFileUrl": "URL du fichier audio",
       "audioPreview": "Prévisualisation audio",
       "audioPreviewHint": "Saisissez une URL pour prévisualiser la piste de narration.",
-      "saveAudio": "Enregistrer la source audio"
+      "saveAudio": "Enregistrer la source audio",
+      "draftIdentifiers": "Sans identifiant d'AnnotationPage, Mango en génère un sous mangoviewer.dev. Les exports restent du IIIF valide, mais définissez votre propre domaine avant de publier."
     },
     "overlay": {
       "closeMetadata": "Fermer les métadonnées du chapitre",
       "selectedChapter": "Chapitre sélectionné",
       "newStory": "Nouvelle histoire",
       "loadSource": "Charger une source",
-      "positionUpdated": "Position mise à jour",
       "previewChapter": "Prévisualiser le chapitre",
       "previewChapterHint": "Lisez ce chapitre seul, exactement comme l'histoire le présente.",
       "stopChapterPreview": "Arrêter la prévisualisation",
       "chapterPreviewPlaying": "Lecture de ce chapitre. Cliquez pour arrêter.",
-      "sourceHint": "Ajoutez la source de votre histoire, choisissez son canevas de départ et créez le premier chapitre. Vous pourrez ensuite ajuster le placement de l'image depuis les outils du chapitre.",
-      "backToTools": "Retour aux outils du chapitre",
-      "saveChapter": "Enregistrer le chapitre",
-      "revertView": "Revenir à la vue capturée",
+      "sourceHint": "Ajoutez la source de votre histoire pour créer le premier chapitre. Utilisez les commandes de la visionneuse pour changer de canevas, puis ajustez le placement de l'image si nécessaire.",
       "noChapter": "Aucun chapitre sélectionné",
       "noChapterHint": "Capturez un chapitre ou sélectionnez-en un dans la chronologie pour modifier son contenu.",
       "confirmPosition": "Confirmer la position"
@@ -417,6 +387,41 @@
       "invalidSaveResponse": "Échec de l'enregistrement (réponse JSON invalide)",
       "saveTimeout": "Délai d'enregistrement dépassé",
       "network": "Impossible de joindre le serveur"
+    },
+    "panels": {
+      "hideChapters": "Masquer les chapitres",
+      "showChapters": "Afficher les chapitres",
+      "hideTools": "Masquer les outils du chapitre",
+      "showTools": "Afficher les outils du chapitre",
+      "hideAnnotationInspector": "Masquer l’inspecteur d’annotations",
+      "showAnnotationInspector": "Afficher l’inspecteur d’annotations"
+    },
+    "frame": {
+      "label": "Cadre du chapitre",
+      "chapterAria": "Cadre du chapitre",
+      "keyframeAria": "Cadre du point de caméra {number}",
+      "keyframeTag": "Point {number}"
+    },
+    "inspector": {
+      "groupsLabel": "Inspecteur du chapitre",
+      "groups": {
+        "about": "À propos",
+        "timing": "Durées",
+        "source": "Source"
+      },
+      "edit": "Modifier",
+      "draw": "Dessiner",
+      "open": "Ouvrir",
+      "done": "Terminé",
+      "onStage": "Sur la scène",
+      "annotationsSummary": "{count} annotations. Utilisez l’espace de travail de la scène pour les ajouter, les sélectionner et les modifier.",
+      "motionNone": "Aucun mouvement de caméra. Modifiez pour ajouter des points de caméra sur la scène.",
+      "motionSummary": "{count} points de caméra · {style} · {seconds}s",
+      "narrationNone": "Aucun segment de narration pour {language}.",
+      "narrationSummary": "{language} : {start}–{end}",
+      "mediaSummary": "Lit {start}–{end} de la source.",
+      "mediaWhole": "Lit la source entière.",
+      "adjust": "Ajuster"
     }
   },
   "viewer": {
@@ -1065,7 +1070,8 @@
       "whitespace": "{label} : contient des espaces non sûrs",
       "publishedStory": "ID de l'histoire : une histoire publiée nécessite un identifiant HTTP(S) canonique",
       "unsafeChapter": "ID du chapitre : identifiant non sûr « {id} »",
-      "collision": "Collision d'ID de chapitre : {id}"
+      "collision": "Collision d'ID de chapitre : {id}",
+      "generatedDraft": "Identifiant de l'histoire : toujours un identifiant provisoire généré par Mango — définissez le vôtre avant de publier"
     }
   },
   "warnings": {

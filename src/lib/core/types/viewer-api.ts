@@ -2,7 +2,7 @@ import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
 import type { ModelPose, ModelPoseOptions } from './model';
 import type { ViewerEventMap } from './events';
 import type { ContentSize, ViewBox, ViewerStateSnapshot } from './viewer';
-import type { ChapterAnnotationTool } from './story';
+import type { ChapterAnnotationTool, StoryFrame } from './story';
 import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
 
 export type ViewerApi = {
@@ -52,6 +52,15 @@ export type ViewerApi = {
   setStoryAnnotations?: (annotations: ResolvedAnnotation[]) => void;
   setStoryAnnotationEditing?: (enabled: boolean) => void;
   setStoryAnnotationSelection?: (annotationId: string | null) => void;
+  /** Fixed width/height contract for the builder's authored output surface. */
+  setStoryPresentationAspect?: (aspect: number) => void;
+  /**
+   * Camera-keyframe objects the story builder wants drawn on the stage.
+   * Chapter framing itself is the fixed stage camera, not a second rectangle.
+   */
+  setStoryFrames?: (frames: StoryFrame[]) => void;
+  /** Which of the frames carries the handles. */
+  setStoryFrameSelection?: (frameId: string | null) => void;
   updateLayerOpacity?: (id: string, opacity: number) => void;
   getLayerOpacities?: () => Record<string, number>;
   getMediaSources?: () => MediaSource[];

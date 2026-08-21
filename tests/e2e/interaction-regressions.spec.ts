@@ -274,7 +274,11 @@ test.describe("viewer interaction regressions", () => {
     await page.goto("/story-builder.html?iiif-content=test-story/demo.json");
     await page.waitForTimeout(4000);
     await page
-      .locator('[data-task-id="audio-timing"] button')
+      .locator('[data-testid="inspector-group-timing"]')
+      .first()
+      .click({ timeout: 10000 });
+    await page
+      .locator('[data-testid="inspector-activate-audio-timing"]')
       .first()
       .click({ timeout: 10000 });
     await page.waitForTimeout(2500);

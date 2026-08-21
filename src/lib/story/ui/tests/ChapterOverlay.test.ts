@@ -5,9 +5,7 @@ import { writable } from "svelte/store";
 import type { ChapterAdvance, StoryState } from "../../../core/types/story";
 import type { ChapterTaskId } from "../../chapterTasks";
 import ChapterOverlay from "../ChapterOverlay.svelte";
-import { ANNOTATION_TOOLS } from "../../../features/annotations/annotationTools";
 import { createStoryStoreForTest } from "./testHelpers";
-import { reactiveProps } from "./reactiveProps.svelte";
 
 const createTarget = (): HTMLDivElement => {
   const target = document.createElement("div");
@@ -16,7 +14,7 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe("ChapterOverlay", () => {
-  it("renders its annotation palette from the shared tool list", async () => {
+  it("keeps annotation tools and inventory out of the inspector workspace", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -24,11 +22,18 @@ describe("ChapterOverlay", () => {
           manifest: "https://example.org/image-manifest.json",
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          drawingAnnotations: [
+            {
+              id: "drawing-1",
+              type: "rectangle",
+              rect: { x: 10, y: 10, w: 20, h: 20 },
+              label: { en: "First detail" },
+            },
+          ],
         },
       ],
     });
     const target = createTarget();
-    const onSetAnnotationTool = vi.fn();
     const instance = mount(ChapterOverlay, {
       target,
       props: {
@@ -37,18 +42,14 @@ describe("ChapterOverlay", () => {
         docked: true,
         chapterId: "chapter-image",
         activeChapterTask: writable<ChapterTaskId | null>("focus"),
-        onSetAnnotationTool,
       },
     });
     await tick();
 
-    const palette = target.querySelector(".chapter-overlay__annotation-tools");
-    const buttons = Array.from(palette?.querySelectorAll("button") ?? []);
-    // One button per shared tool: the builder no longer keeps its own list.
-    expect(buttons).toHaveLength(ANNOTATION_TOOLS.length);
-
-    buttons[0].click();
-    expect(onSetAnnotationTool).toHaveBeenCalledWith(ANNOTATION_TOOLS[0].id);
+    expect(target.querySelector(".chapter-overlay__annotation-tools")).toBeNull();
+    expect(target.querySelector(".story-wide-annotations")).toBeNull();
+    expect(target.querySelector('[data-testid="inspector-summary-focus"]')).toBeTruthy();
+    expect(target.textContent).toContain("1 annotation");
 
     unmount(instance);
     target.remove();
@@ -104,7 +105,7 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("no longer shows the viewer position changed notice", async () => {
+  it("has no capture control anywhere: the frame is edited on the stage", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -115,7 +116,6 @@ describe("ChapterOverlay", () => {
         },
       ],
     });
-    const viewBox = writable({ x: 0, y: 0, w: 100, h: 100 });
     const target = createTarget();
     const instance = mount(ChapterOverlay, {
       target,
@@ -124,25 +124,25 @@ describe("ChapterOverlay", () => {
         open: true,
         docked: true,
         chapterId: "chapter-image",
-        viewBox,
       },
     });
-
-    await new Promise((resolve) => setTimeout(resolve, 550));
-    viewBox.set({ x: 12, y: 18, w: 80, h: 80 });
     await tick();
 
-    expect(
-      target.querySelector('[data-testid="chapter-update-view"]'),
-    ).toBeNull();
-    expect(target.textContent).not.toContain("The viewer has moved");
+    expect(target.querySelector('[data-testid="inspector-section-position"]')).toBeTruthy();
+    expect(target.querySelector('[data-testid="chapter-update-view"]')).toBeNull();
+    expect(target.querySelector('[data-testid="chapter-position-capture"]')).toBeNull();
+    expect(target.textContent).not.toContain("Use current view");
+    expect(target.textContent).not.toContain("Current view:");
+    // Nothing to save either: every edit lands on the chapter as it happens.
+    expect(target.querySelector('[data-testid="chapter-save"]')).toBeNull();
 
     unmount(instance);
     target.remove();
   });
 
-  it("shows the saved viewer position in its own panel and commits manual edits", async () => {
+  it("shows the frame's numbers in their own panel and keeps typed edits at the story's aspect", async () => {
     const store = createStoryStoreForTest({
+      presentationAspect: 3 / 4,
       chapters: [
         {
           id: "chapter-1",
@@ -161,23 +161,25 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-1",
         language: "en",
-        viewBox: writable({ x: 5, y: 10, w: 90, h: 80 }),
         onSetChapterPosition,
       },
     });
 
-    (
-      target.querySelector(
-        '[data-task-id="position"] button',
-      ) as HTMLButtonElement
-    ).click();
     await tick();
 
-    const visibleTask = target.querySelector(
-      ".chapter-overlay__task:not([hidden])",
+    // The frame sits in About alongside the details, no drill-down needed.
+    const section = target.querySelector(
+      '[data-testid="inspector-section-position"]',
     ) as HTMLElement;
-    expect(visibleTask.textContent).toContain("Viewer position");
-    expect(visibleTask.textContent).not.toContain("Content (EN)");
+    expect(section.textContent).toContain("Frame");
+    expect(section.textContent).not.toContain("Content (EN)");
+    const frameToggle = target.querySelector(
+      '[data-testid="inspector-toggle-position"]',
+    ) as HTMLButtonElement;
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("false");
+    frameToggle.click();
+    await tick();
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("true");
 
     const xInput = target.querySelector(
       '[data-testid="chapter-position-x"]',
@@ -195,18 +197,39 @@ describe("ChapterOverlay", () => {
     expect(yInput.value).toBe("200");
     expect(wInput.value).toBe("300");
     expect(hInput.value).toBe("400");
+    // What is drawn is what is stored, so there is no second set of numbers.
+    expect(target.querySelector('[data-testid="chapter-position-current"]')).toBeNull();
+    expect(target.querySelector('[data-testid="chapter-position-stored"]')).toBeNull();
+    expect(target.querySelector('[data-testid="chapter-position-note"]')).toBeNull();
     expect(
-      target.querySelector('[data-testid="chapter-position-current"]')
-        ?.textContent,
-    ).toContain("Current view: 5 · 10 · 90 · 80");
+      target.querySelector('[data-testid="chapter-position-aspect"]')?.textContent,
+    ).toContain("3:4");
 
-    wInput.value = "640";
+    /*
+     * A typed width pulls the height along at the story's aspect, so the
+     * numbers on screen always describe a frame the story can hold and the
+     * value typed is the value kept — nothing is rewritten on commit.
+     */
+    wInput.value = "600";
     wInput.dispatchEvent(new Event("input"));
+    await tick();
+    expect(hInput.value).toBe("800");
     wInput.dispatchEvent(new Event("change"));
     expect(onSetChapterPosition).toHaveBeenCalledWith("chapter-1", {
-      x: 100,
+      x: 100.4,
       y: 200,
-      w: 640,
+      w: 600,
+      h: 800,
+    });
+
+    onSetChapterPosition.mockClear();
+    xInput.value = "50";
+    xInput.dispatchEvent(new Event("input"));
+    xInput.dispatchEvent(new Event("change"));
+    expect(onSetChapterPosition).toHaveBeenCalledWith("chapter-1", {
+      x: 50,
+      y: 200,
+      w: 300,
       h: 400,
     });
 
@@ -223,7 +246,73 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("supports capture and manual entry when no position is saved", async () => {
+  it("closes Frame again whenever its tool is no longer active", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const activeChapterTask = writable<ChapterTaskId | null>(null);
+    const onChapterTaskChange = vi.fn((task: ChapterTaskId | null) =>
+      activeChapterTask.set(task),
+    );
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: "chapter-1",
+        activeChapterTask,
+        onChapterTaskChange,
+      },
+    });
+    await tick();
+
+    const frameToggle = target.querySelector(
+      '[data-testid="inspector-toggle-position"]',
+    ) as HTMLButtonElement;
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("false");
+
+    (
+      target.querySelector(
+        '[data-testid="inspector-activate-position"]',
+      ) as HTMLButtonElement
+    ).click();
+    await tick();
+    expect(onChapterTaskChange).toHaveBeenLastCalledWith("position");
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("true");
+
+    activeChapterTask.set(null);
+    await tick();
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("false");
+
+    frameToggle.click();
+    await tick();
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("true");
+    activeChapterTask.set("focus");
+    await tick();
+    expect(
+      target.querySelector('[data-testid="inspector-toggle-position"]'),
+    ).toBeNull();
+    activeChapterTask.set(null);
+    await tick();
+    expect(
+      target
+        .querySelector('[data-testid="inspector-toggle-position"]')
+        ?.getAttribute("aria-expanded"),
+    ).toBe("false");
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it("lets a frame be typed in when the chapter has none", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -235,7 +324,6 @@ describe("ChapterOverlay", () => {
     });
     const target = createTarget();
     const onSetChapterPosition = vi.fn();
-    const onUpdateChapterPosition = vi.fn();
     const instance = mount(ChapterOverlay, {
       target,
       props: {
@@ -243,16 +331,14 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-1",
         language: "en",
-        viewBox: writable({ x: 5, y: 10, w: 90, h: 80 }),
         onSetChapterPosition,
-        onUpdateChapterPosition,
       },
     });
 
     const section = target.querySelector(
       '[data-testid="chapter-position-section"]',
     ) as HTMLElement;
-    expect(section.textContent).toContain("No position is saved yet");
+    expect(section.textContent).toContain("No frame yet");
     const goTo = target.querySelector(
       '[data-testid="chapter-position-goto"]',
     ) as HTMLButtonElement;
@@ -290,20 +376,13 @@ describe("ChapterOverlay", () => {
       w: 800,
       h: 600,
     });
-
-    const capture = target.querySelector(
-      '[data-testid="chapter-position-capture"]',
-    ) as HTMLButtonElement;
-    capture.click();
-    await tick();
-    expect(onUpdateChapterPosition).toHaveBeenCalledWith("chapter-1");
-    expect(capture.textContent).toContain("Position updated");
+    expect(target.querySelector('[data-testid="chapter-position-capture"]')).toBeNull();
 
     unmount(instance);
     target.remove();
   });
 
-  it("exposes viewer position as its own chapter tool, disabled for audio chapters", async () => {
+  it("exposes the frame as its own chapter tool, disabled for audio chapters", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -328,7 +407,7 @@ describe("ChapterOverlay", () => {
     const card = target.querySelector(
       '[data-task-id="position"]',
     ) as HTMLElement;
-    expect(card.textContent).toContain("Viewer position");
+    expect(card.textContent).toContain("Frame");
     expect(card.textContent).toContain("Configured");
     expect(
       (card.querySelector("button") as HTMLButtonElement).disabled,
@@ -352,8 +431,19 @@ describe("ChapterOverlay", () => {
     const audioCard = audioTarget.querySelector(
       '[data-task-id="position"]',
     ) as HTMLElement;
+    expect(
+      audioCard
+        .querySelector('[data-testid="inspector-toggle-position"]')
+        ?.getAttribute("aria-expanded"),
+    ).toBe("false");
+    (
+      audioCard.querySelector(
+        '[data-testid="inspector-toggle-position"]',
+      ) as HTMLButtonElement
+    ).click();
+    await tick();
     expect(audioCard.textContent).toContain(
-      "Viewer position is available for image and PDF chapters only.",
+      "available for image and PDF chapters only.",
     );
 
     unmount(audioInstance);
@@ -432,14 +522,14 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-audio",
         mediaType: writable("audio"),
+        activeChapterTask: writable<ChapterTaskId | null>("media-timing"),
       },
     });
-
-    const mediaTiming = Array.from(target.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Media timing"),
-    ) as HTMLButtonElement;
-    mediaTiming.click();
     await tick();
+    // The inspector follows the open tool into its group.
+    expect(
+      target.querySelector('[data-testid="inspector-group-timing"]')?.getAttribute("aria-selected"),
+    ).toBe("true");
 
     const instructions = target.textContent?.replace(/\s+/g, " ") ?? "";
     expect(instructions).toContain("Manifest audio timing");
@@ -470,13 +560,9 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-video",
         mediaType: writable("video"),
+        activeChapterTask: writable<ChapterTaskId | null>("media-timing"),
       },
     });
-
-    const mediaTiming = Array.from(target.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Media timing"),
-    ) as HTMLButtonElement;
-    mediaTiming.click();
     await tick();
 
     const instructions = target.textContent?.replace(/\s+/g, " ") ?? "";
@@ -527,8 +613,9 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("creates the first chapter after the manifest canvases are ready", () => {
+  it("loads the first source and creates its chapter in one action", () => {
     const target = createTarget();
+    const onLoadManifest = vi.fn();
     const onCreateChapter = vi.fn();
     const instance = mount(ChapterOverlay, {
       target,
@@ -538,18 +625,19 @@ describe("ChapterOverlay", () => {
         docked: true,
         chapterId: null,
         currentManifest: "https://example.org/manifest.json",
-        canvasCount: 2,
+        onLoadManifest,
         onCreateChapter,
       },
     });
 
-    const onboarding = target.textContent?.replace(/\s+/g, " ") ?? "";
-    expect(onboarding).toContain("Step 2 of 2");
-    expect(onboarding).toContain("Image placement can be adjusted afterwards");
-    const create = target.querySelector(
-      '[data-testid="chapter-create-first"]',
+    expect(target.querySelector('[data-testid="chapter-canvas-select"]')).toBeNull();
+    const load = target.querySelector(
+      '[data-testid="chapter-manifest-reload"]',
     ) as HTMLButtonElement;
-    create.click();
+    load.click();
+    expect(onLoadManifest).toHaveBeenCalledWith(
+      "https://example.org/manifest.json",
+    );
     expect(onCreateChapter).toHaveBeenCalledOnce();
 
     unmount(instance);
@@ -569,7 +657,6 @@ describe("ChapterOverlay", () => {
     });
     const target = createTarget();
     let reloadPayload: { manifest: string; canvasIndex: number } | null = null;
-    let selectedCanvas = -1;
 
     const instance = mount(ChapterOverlay, {
       target,
@@ -577,8 +664,6 @@ describe("ChapterOverlay", () => {
         story: store.story,
         open: true,
         chapterId: "chapter-1",
-        canvasIndex: 2,
-        canvasCount: 3,
         language: "en",
         onUpdateManifest: (chapterId: string, manifest: string) =>
           store.setChapterManifest({ chapterId, manifest }),
@@ -589,23 +674,18 @@ describe("ChapterOverlay", () => {
         ) => {
           reloadPayload = { manifest, canvasIndex };
         },
-        onSelectCanvas: (canvasIndex: number) => {
-          selectedCanvas = canvasIndex;
-        },
       },
     });
+
+    (
+      target.querySelector('[data-testid="inspector-group-source"]') as HTMLButtonElement
+    ).click();
+    await tick();
 
     const input = target.querySelector(
       '[data-testid="chapter-manifest"]',
     ) as HTMLInputElement;
-    const canvasSelect = target.querySelector(
-      '[data-testid="chapter-canvas-select"]',
-    ) as HTMLSelectElement;
-    expect(canvasSelect.options).toHaveLength(3);
-    expect(canvasSelect.value).toBe("2");
-    canvasSelect.value = "1";
-    canvasSelect.dispatchEvent(new Event("change"));
-    expect(selectedCanvas).toBe(1);
+    expect(target.querySelector('[data-testid="chapter-canvas-select"]')).toBeNull();
     input.value = "https://example.org/updated.json";
     input.dispatchEvent(new Event("input"));
     await tick();
@@ -613,6 +693,7 @@ describe("ChapterOverlay", () => {
     const reload = target.querySelector(
       '[data-testid="chapter-manifest-reload"]',
     ) as HTMLButtonElement;
+    expect(target.querySelector('[data-testid="chapter-apply-source"]')).toBeNull();
     reload.click();
 
     await tick();
@@ -631,7 +712,7 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("edits selected Mango annotation translations and appearance in the sidebar", async () => {
+  it("does not duplicate selected annotation options in the sidebar", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -651,10 +732,6 @@ describe("ChapterOverlay", () => {
       ],
     });
     const target = createTarget();
-    const selectedDrawingAnnotationId = writable<string | null>("rectangle-1");
-    const onSetDrawingAnnotationLabel = vi.fn();
-    const onSetDrawingAnnotationStyle = vi.fn();
-
     const instance = mount(ChapterOverlay, {
       target,
       props: {
@@ -663,41 +740,14 @@ describe("ChapterOverlay", () => {
         chapterId: "chapter-1",
         language: "en",
         languages: ["en", "cy"],
-        selectedDrawingAnnotationId,
-        onSetDrawingAnnotationLabel,
-        onSetDrawingAnnotationStyle,
+        activeChapterTask: writable<ChapterTaskId | null>("focus"),
       },
     });
-
-    (
-      target.querySelector('[data-task-id="focus"] button') as HTMLButtonElement
-    ).click();
     await tick();
 
-    (
-      target.querySelector('[data-testid="drawing-language-cy"]') as HTMLButtonElement
-    ).click();
-    await tick();
-    const translationInput = target.querySelector<HTMLTextAreaElement>(
-      ".chapter-overlay__translation-field textarea",
-    )!;
-    translationInput.value = "Nodyn";
-    translationInput.dispatchEvent(new Event("input"));
-    expect(onSetDrawingAnnotationLabel).toHaveBeenCalledWith(
-      "rectangle-1",
-      "cy",
-      "Nodyn",
-    );
-
-    const solidButton = Array.from(
-      target.querySelectorAll<HTMLButtonElement>(
-        ".chapter-overlay__segmented-control button",
-      ),
-    ).find((button) => button.textContent?.trim() === "Solid")!;
-    solidButton.click();
-    expect(onSetDrawingAnnotationStyle).toHaveBeenCalledWith("rectangle-1", {
-      fillMode: "solid",
-    });
+    expect(target.querySelector('[data-testid="drawing-language-cy"]')).toBeNull();
+    expect(target.querySelector(".chapter-overlay__annotation-editor")).toBeNull();
+    expect(target.querySelector('[data-testid="inspector-summary-focus"]')).toBeTruthy();
 
     unmount(instance);
     target.remove();
@@ -732,17 +782,26 @@ describe("ChapterOverlay", () => {
       },
     });
 
-    const transitionTiming = target.querySelector(
-      '[data-task-id="transition-timing"] button',
-    ) as HTMLButtonElement;
-    transitionTiming.click();
+    (
+      target.querySelector('[data-testid="inspector-group-timing"]') as HTMLButtonElement
+    ).click();
     await tick();
 
     const visibleTask = target.querySelector(
-      ".chapter-overlay__task:not([hidden])",
+      '[data-testid="inspector-section-transition-timing"]',
     ) as HTMLElement;
     expect(visibleTask.textContent).toContain("Chapter transition time");
     expect(visibleTask.textContent).not.toContain("Advance timing");
+    const transitionToggle = visibleTask.querySelector(
+      '[data-testid="inspector-toggle-transition-timing"]',
+    ) as HTMLButtonElement;
+    expect(transitionToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(
+      visibleTask.querySelector('#inspector-section-transition-timing')?.hasAttribute('hidden'),
+    ).toBe(true);
+    transitionToggle.click();
+    await tick();
+    expect(transitionToggle.getAttribute("aria-expanded")).toBe("true");
 
     const delayInput = visibleTask.querySelector(
       '[data-testid="chapter-transition-delay"]',
@@ -820,7 +879,7 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("collapses and expands metadata section", async () => {
+  it("collapses and expands the details section", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -848,21 +907,20 @@ describe("ChapterOverlay", () => {
       '[data-testid="chapter-title"]',
     ) as HTMLInputElement;
     const sectionContent = titleInput.closest(
-      ".chapter-overlay__section-content",
+      ".inspector-section__body",
     ) as HTMLElement;
     expect(sectionContent.hidden).toBe(false);
 
-    const collapseButton = target.querySelector(
-      'button[aria-label="Collapse metadata section"]',
+    const toggle = target.querySelector(
+      '[data-testid="inspector-toggle-details"]',
     ) as HTMLButtonElement;
-    collapseButton.click();
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    toggle.click();
     await tick();
     expect(sectionContent.hidden).toBe(true);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
 
-    const expandButton = target.querySelector(
-      'button[aria-label="Expand metadata section"]',
-    ) as HTMLButtonElement;
-    expandButton.click();
+    toggle.click();
     await tick();
     expect(sectionContent.hidden).toBe(false);
 
@@ -896,6 +954,7 @@ describe("ChapterOverlay", () => {
         open: true,
         chapterId: "chapter-1",
         language: "en",
+        activeChapterTask: writable<ChapterTaskId | null>("audio-timing"),
       },
     });
     await tick();
@@ -976,6 +1035,7 @@ describe("ChapterOverlay", () => {
         chapterId: "chapter-1",
         language: "en",
         onSkipNarration,
+        activeChapterTask: writable<ChapterTaskId | null>("audio-timing"),
       },
     });
     await tick();
@@ -986,99 +1046,6 @@ describe("ChapterOverlay", () => {
     skip.click();
 
     expect(onSkipNarration).toHaveBeenCalledWith("en");
-
-    unmount(instance);
-    target.remove();
-  });
-});
-
-describe("ChapterOverlay viewer position drift", () => {
-  /*
-   * The Viewer position card used to read "Configured" from the moment a
-   * chapter was created and could never say anything else, because a chapter
-   * always captures a view. These cover the wiring that makes it answer the
-   * question the author actually has: is the saved framing still the one on
-   * screen?
-   */
-  const SETTLE = 500;
-  const settle = () => new Promise((resolve) => setTimeout(resolve, SETTLE));
-
-  const positionStatus = (target: HTMLElement): string =>
-    target
-      .querySelector('[data-task-id="position"]')
-      ?.querySelector(".chapter-task-card__state")
-      ?.textContent?.trim() ?? "(missing)";
-
-  const mountOverlay = (viewBox: ReturnType<typeof writable>, chapterId = "one") => {
-    const store = createStoryStoreForTest({
-
-      chapters: [
-        {
-          id: "one",
-          manifest: "https://example.org/image-manifest.json",
-          canvasIndex: 0,
-          viewBox: { x: 0, y: 0, w: 1000, h: 1000 },
-        },
-        {
-          id: "two",
-          manifest: "https://example.org/image-manifest.json",
-          canvasIndex: 0,
-          viewBox: { x: 5000, y: 5000, w: 800, h: 800 },
-        },
-      ],
-    });
-    const target = createTarget();
-    const props = reactiveProps({
-      story: store.story,
-      open: true,
-      docked: true,
-      chapterId,
-      activeChapterTask: writable<ChapterTaskId | null>(null),
-      mediaType: writable("image" as const),
-      viewBox,
-    });
-    const instance = mount(ChapterOverlay, { target, props });
-    return { instance, target, props };
-  };
-
-  it("stays quiet until the author moves, then names the mismatch", async () => {
-    const viewBox = writable({ x: 0, y: 0, w: 1000, h: 1000 });
-    const { instance, target } = mountOverlay(viewBox);
-    await tick();
-    await settle();
-    await tick();
-    expect(positionStatus(target)).toBe("Configured");
-
-    viewBox.set({ x: 600, y: 600, w: 200, h: 200 });
-    await settle();
-    await tick();
-    expect(positionStatus(target)).toBe("Doesn't match current view");
-
-    unmount(instance);
-    target.remove();
-  });
-
-  it("does not fire when selecting a chapter leaves the viewer where it was", async () => {
-    /*
-     * Selecting a chapter does not move the viewer, so the framing on screen
-     * belongs to the chapter just left. Treating that as a reframing lit the
-     * warning permanently in any story with more than one chapter.
-     */
-    const viewBox = writable({ x: 5000, y: 5000, w: 800, h: 800 });
-    const { instance, target, props } = mountOverlay(viewBox, "two");
-    await tick();
-    await settle();
-    await tick();
-    expect(positionStatus(target)).toBe("Configured");
-
-    // Switch to a chapter framed somewhere entirely different, without moving.
-    props.chapterId = "one";
-    await tick();
-    // The viewer republishes its position on selection without having moved.
-    viewBox.set({ x: 5000, y: 5000, w: 800, h: 800 });
-    await settle();
-    await tick();
-    expect(positionStatus(target)).toBe("Configured");
 
     unmount(instance);
     target.remove();

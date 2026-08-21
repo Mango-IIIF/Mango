@@ -53,8 +53,7 @@
       "advance": "自動送り",
       "advanceHint": "自動再生は設定した遅延時間後に次のチャプターへ移動します。手動ナビゲーションにする場合は空欄にしてください。",
       "advanceDelay": "チャプター間の遅延時間（秒）",
-      "save": "保存",
-      "saveHint": "設定を保存するチャプターを選択してください。"
+      "save": "保存"
     },
     "export": {
       "title": "ストーリーJSONのエクスポート",
@@ -63,7 +62,7 @@
       "downloadIiif": "IIIFストーリーJSONをダウンロード",
       "jsonLabel": "エクスポートされたストーリーJSON",
       "empty": "// エクスポート可能なデータがありません",
-      "trackLabel": "ストーリー注釈トラック"
+      "draftIdentifiers": "このエクスポートは Mango が mangoviewer.dev 配下で生成した識別子を使用しています。IIIF としては有効ですが、あなたのドメインではありません。公開前にストーリー設定で AnnotationPage ID を設定してください。"
     },
     "topBar": {
       "saved": "保存済み",
@@ -80,14 +79,7 @@
     },
     "source": {
       "reloadManifest": "マニフェストを再読み込み",
-      "loadManifest": "マニフェストを読み込む",
-      "stepLoad": "ステップ 1 / 2 · IIIFマニフェストを読み込んでください。",
-      "canvas": "キャンバス",
-      "canvasPosition": "キャンバス {current} / {total}",
-      "chooseCanvasHint": "キャンバスを選択し、ソースを保存してこのチャプターに適用してください。",
-      "stepCreate": "ステップ 2 / 2 · キャンバスを選択して最初のチャプターを作成します。画像の位置はチャプターツールで調整できます。",
-      "createFirst": "最初のチャプターを作成",
-      "loading": "マニフェストとキャンバスを読み込み中…"
+      "loadManifest": "マニフェストを読み込む"
     },
     "transition": {
       "title": "チャプター遷移時間",
@@ -109,26 +101,22 @@
     },
     "tasks": {
       "title": "チャプターツール",
-      "description": "このチャプターを編集するツールを選択してください。",
-      "advanced": "詳細設定",
+      "description": "このチャプターに関するすべてを 3 つのグループで表示します。ステージ上で操作するセクションはここから開きます。",
       "languages": "{translated}/{total} 言語",
       "status": {
         "empty": "未設定",
         "partial": "一部設定済み",
         "complete": "設定完了",
-        "attention": "要確認",
-        "positionDrift": "現在の表示と一致しません"
+        "attention": "要確認"
       },
       "items": {
         "details": {
           "title": "詳細情報",
-          "description": "タイトル、説明文、および翻訳。",
-          "save": "詳細を保存"
+          "description": "タイトル、説明文、および翻訳。"
         },
         "position": {
-          "title": "ビューアの位置",
-          "description": "このチャプターを開いたときのキャンバス領域とズーム。",
-          "save": "ビューアの位置を保存"
+          "title": "フレーム",
+          "description": "このチャプターを開いたときのキャンバス領域。ステージ上に描かれます。"
         },
         "focus": {
           "title": "注釈",
@@ -137,33 +125,27 @@
         },
         "motion": {
           "title": "モーション",
-          "description": "チャプター内のカメラの移動ポイント。",
-          "save": "モーションを保存"
+          "description": "チャプター内のカメラの移動ポイント。"
         },
         "audio-timing": {
           "title": "ナレーション",
-          "description": "ボイスオーバーのトラックとタイミング。",
-          "save": "ナレーションを保存"
+          "description": "ボイスオーバーのトラックとタイミング。"
         },
         "transition-timing": {
           "title": "チャプター遷移時間",
-          "description": "次のチャプターへ進む前の遅延時間を設定。",
-          "save": "遷移時間を保存"
+          "description": "次のチャプターへ進む前の遅延時間を設定。"
         },
         "media-timing": {
           "title": "メディアタイミング",
-          "description": "このチャプターのソース音声・動画の開始／終了ポイント。",
-          "save": "メディアタイミングを保存"
+          "description": "このチャプターのソース音声・動画の開始／終了ポイント。"
         },
         "layers": {
           "title": "レイヤー",
-          "description": "画像レイヤーの表示状態と不透明度。",
-          "save": "レイヤーを保存"
+          "description": "画像レイヤーの表示状態と不透明度。"
         },
         "comparison": {
           "title": "比較",
-          "description": "互換性のある複数のソースを並べてプレゼンテーション。",
-          "save": "比較を保存"
+          "description": "互換性のある複数のソースを並べてプレゼンテーション。"
         },
         "source": {
           "title": "ソース · 詳細",
@@ -216,6 +198,9 @@
       "button": "ナレーション設定",
       "title": "ナレーション",
       "description": "チャプターのボイスオーバートラックを選択し、ナレーションテキストを同期します。",
+      "mode": "チャプターのナレーションモード",
+      "useNarration": "ナレーションを使用",
+      "noNarration": "ナレーションなし",
       "language": "言語",
       "audioUrl": "音声ファイルのURL",
       "preview": "ナレーションをプレビュー",
@@ -235,37 +220,29 @@
     "content": {
       "language": "Content language",
       "title": "タイトル ({language})",
-      "expandMetadata": "Expand metadata section",
-      "collapseMetadata": "Collapse metadata section",
       "titleLabel": "Title",
-      "descriptionLabel": "Description",
-      "textBox": "Text box annotation ({language})",
-      "expandAnnotation": "Expand annotation section",
-      "collapseAnnotation": "Collapse annotation section",
-      "textBoxHint": "This creates a positioned text box. It is separate from the drawing tools above.",
-      "textPlaceholder": "Enter text for this text box",
-      "placeText": "Place text box on artwork",
-      "captureHint": "Capture a chapter to edit annotation text and placement."
+      "descriptionLabel": "Description"
     },
     "position": {
-      "title": "ビューアの位置",
-      "hint": "この章が表示するキャンバス領域（キャンバスのピクセル単位）。",
-      "empty": "位置はまだ保存されていません。ビューアで作品を配置してから、現在のビューをキャプチャしてください。",
+      "title": "フレーム",
+      "hint": "固定されたストーリーフレームの下で作品をパン・ズームします。正確な IIIF 編集では、キャンバス領域をここに直接入力することもできます。",
+      "empty": "フレームはまだありません。キャンバスのピクセル単位で領域を入力して作成してください。",
       "x": "X",
       "y": "Y",
       "width": "幅",
       "height": "高さ",
-      "capture": "現在のビューを使用",
-      "goTo": "保存した位置へ移動",
-      "current": "現在のビュー: {x} · {y} · {w} · {h}",
-      "expand": "ビューア位置セクションを展開",
-      "collapse": "ビューア位置セクションを折りたたむ"
+      "goTo": "フレームへ移動",
+      "aspectLocked": "ストーリーフレームは {aspect} です。プレビューと閲覧画面はこの形を正確に保ち、幅と高さは連動して変わります。",
+      "stageLabel": "ストーリーフレーム · {aspect}"
     },
     "annotations": {
       "chapter": "Chapter annotations",
+      "annotationsTab": "アノテーション",
+      "optionsTab": "オプション",
       "drawing": "描画モード",
+      "add": "アノテーションを追加",
       "tools": "Annotation drawing tools",
-      "drawingHint": "Add a point, shape, or line directly to the artwork. Select an annotation in the footer to edit it here.",
+      "drawingHint": "既存のアノテーションを編集するには「選択 / 移動」を、新しく追加するには図形を選びます。",
       "edit": "Edit annotation",
       "editDrawing": "Edit {type} annotation {index}",
       "deleteDrawing": "Delete {type} annotation {index}",
@@ -283,7 +260,7 @@
         "medium": "Medium",
         "thick": "Thick"
       },
-      "emptySelection": "Draw an annotation, or select one from the footer to edit its text and appearance.",
+      "emptySelection": "一覧または作品上のアノテーションを選択して、テキストと外観を編集してください。",
       "empty": "No annotations in this chapter.",
       "motivation": "動機",
       "motivationAuto": "自動（形状から判断）",
@@ -306,8 +283,8 @@
       "durationDwellError": "移動時間は{seconds}秒の開始保持後の移動時間を残す必要があります。",
       "arcError": "アーク移動には少なくとも3つのポイントが必要です。",
       "dwellError": "静止時間は負の値にできません。",
-      "customHint": "カスタムカメラパスを作成します。",
-      "presetHint": "一般的なカメラの動きをすぐに適用できます。",
+      "customHint": "カスタムでは各ポイントのフレームを描いたとおりに保持します。プレビューはポイント 1 から始まります。",
+      "presetHint": "ポイントは注視点を決め、動きのスタイルがズームを制御します。ポイントのサイズを変えるとカスタムに切り替わります。プレビューはポイント 1 から始まります。",
       "preview": "モーションをプレビュー",
       "style": "モーションスタイル",
       "presets": "モーションプリセット",
@@ -339,22 +316,18 @@
       "duration": "移動時間",
       "durationHint": "このポイントまでの移動時間。",
       "durationSeconds": "移動時間（秒）",
-      "cameraPoints": "カメラポイント",
-      "movePointAt": "{seconds}秒位置のカメラポイント {number} を移動",
-      "movePointTitle": "カメラポイント {number} の移動 · {seconds}秒",
-      "placePointHint": "現在のビュー位置にポイントを配置します。",
-      "setPoint": "カメラポイントを設定",
-      "movePoint": "ポイント {number} を移動",
-      "placePoint": "ポイント {number} を配置",
-      "usePoint": "現在のビューを使用",
       "zoomValue": "ズーム値 ({zoom})",
       "timeline": "モーションタイムライン",
+      "pinsTab": "ピン",
+      "optionsTab": "オプション",
       "goToPoint": "カメラポイント {number} へ移動",
       "point": "カメラポイント {number}",
       "deletePoint": "ポイントを削除",
       "deletePointNumber": "カメラポイント {number} を削除",
-      "emptyPoints": "カメラポイントがまだ追加されていません。",
-      "addPoint": "カメラポイントを追加"
+      "emptyPoints": "カメラポイントがまだありません。ポイントを追加すると、現在のビューの中央に表示されます。",
+      "addPoint": "カメラポイントを追加",
+      "updatePoint": "現在のビューからピンを更新",
+      "selectPointToUpdate": "パンとズームを更新するピンを選択してください。"
     },
     "settings": {
       "title": "タイトル",
@@ -378,22 +351,19 @@
       "audioFileUrl": "音声ファイルのURL",
       "audioPreview": "音声をプレビュー",
       "audioPreviewHint": "ストーリー音声を再生して動作を確認します。",
-      "saveAudio": "音声設定を保存"
+      "saveAudio": "音声設定を保存",
+      "draftIdentifiers": "AnnotationPage ID を設定しない場合、Mango が mangoviewer.dev 配下の ID を生成します。エクスポートは有効な IIIF のままですが、公開前に自分のドメインを設定してください。"
     },
     "overlay": {
       "closeMetadata": "メタデータを閉じる",
       "selectedChapter": "選択されたチャプター",
       "newStory": "新しいストーリー",
       "loadSource": "ソースを読み込む",
-      "positionUpdated": "ビュー位置が更新されました",
       "previewChapter": "チャプターをプレビュー",
       "previewChapterHint": "ストーリーでの見え方のまま、このチャプターだけを再生します。",
       "stopChapterPreview": "プレビューを停止",
       "chapterPreviewPlaying": "このチャプターを再生中です。クリックで停止します。",
-      "sourceHint": "IIIFマニフェストを読み込んでコンテンツを選択します。",
-      "backToTools": "ツールに戻る",
-      "saveChapter": "チャプターを保存",
-      "revertView": "元のビューに戻す",
+      "sourceHint": "ストーリーのソースを追加して最初のチャプターを作成します。キャンバスの切り替えにはビューアーのコントロールを使用します。",
       "noChapter": "チャプターが選択されていません",
       "noChapterHint": "タイムラインからチャプターを選択するか、新しいチャプターを作成してください。",
       "confirmPosition": "ビューアの位置を確定"
@@ -417,6 +387,41 @@
       "invalidSaveResponse": "無効な保存レスポンスです。",
       "saveTimeout": "保存処理がタイムアウトしました。",
       "network": "ネットワークエラーが発生しました。"
+    },
+    "panels": {
+      "hideChapters": "チャプターを隠す",
+      "showChapters": "チャプターを表示",
+      "hideTools": "チャプターツールを隠す",
+      "showTools": "チャプターツールを表示",
+      "hideAnnotationInspector": "アノテーションインスペクターを隠す",
+      "showAnnotationInspector": "アノテーションインスペクターを表示"
+    },
+    "frame": {
+      "label": "チャプターのフレーム",
+      "chapterAria": "チャプターのフレーム",
+      "keyframeAria": "カメラポイント {number} のフレーム",
+      "keyframeTag": "ポイント {number}"
+    },
+    "inspector": {
+      "groupsLabel": "チャプターインスペクター",
+      "groups": {
+        "about": "概要",
+        "timing": "タイミング",
+        "source": "ソース"
+      },
+      "edit": "編集",
+      "draw": "描画",
+      "open": "開く",
+      "done": "完了",
+      "onStage": "ステージ上",
+      "annotationsSummary": "アノテーション {count} 件。ステージのワークスペースで追加、選択、編集できます。",
+      "motionNone": "カメラの動きはありません。編集してステージ上にカメラポイントを追加してください。",
+      "motionSummary": "カメラポイント {count} 件 · {style} · {seconds}秒",
+      "narrationNone": "{language} のナレーション区間はありません。",
+      "narrationSummary": "{language}: {start}–{end}",
+      "mediaSummary": "ソースの {start}–{end} を再生します。",
+      "mediaWhole": "ソース全体を再生します。",
+      "adjust": "調整"
     }
   },
   "viewer": {
@@ -1065,7 +1070,8 @@
       "whitespace": "{label}: 安全でない空白文字が含まれています",
       "publishedStory": "Story ID: a published story requires a canonical HTTP(S) identifier",
       "unsafeChapter": "Chapter ID: unsafe identifier \"{id}\"",
-      "collision": "チャプターIDの衝突: {id}"
+      "collision": "チャプターIDの衝突: {id}",
+      "generatedDraft": "ストーリー ID: まだ Mango が生成した暫定識別子です。公開前に独自の AnnotationPage ID を設定してください"
     }
   },
   "warnings": {

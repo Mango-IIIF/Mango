@@ -711,13 +711,20 @@ test.describe("priority mobile interactions", () => {
     }
   });
 
-  test("keeps all story-builder work areas reachable inside its own scroller", async ({
+  test("keeps the story stage primary and exposes chapters and tools as drawers", async ({
     page,
   }) => {
-    await page.goto("/story-builder.html");
+    await page.goto("/story-edit.html");
     const host = page.locator("mango-viewer");
     const grid = host.locator(".viewer__grid");
     const viewer = host.locator(".viewer");
+
+    // A blank story starts in the combined source/settings modal. The same
+    // top-row action closes it and returns to the ordinary drawer workspace.
+    await expect(host.getByTestId("narration-overlay")).toBeVisible();
+    await expect(host.getByTestId("story-source-setup")).toBeVisible();
+    await host.getByRole("button", { name: "Story settings", exact: true }).click();
+    await expect(host.getByTestId("narration-overlay")).toBeHidden();
 
     await expectContained(
       host.getByRole("button", { name: "Undo" }),
@@ -741,33 +748,37 @@ test.describe("priority mobile interactions", () => {
       expect(controlBox.height).toBeGreaterThanOrEqual(40);
     }
 
-    for (const selector of [
-      ".stage",
-      ".panel-stack--left",
-      ".panel-stack--right",
-    ]) {
-      const region = host.locator(selector);
-      await expect(region).toBeAttached();
-      await region.scrollIntoViewIfNeeded();
-      await expect(region).toBeVisible();
-      const [regionBox, gridBox] = await Promise.all([box(region), box(grid)]);
-      expect(regionBox.x).toBeGreaterThanOrEqual(gridBox.x - 2);
-      expect(regionBox.x + regionBox.width).toBeLessThanOrEqual(
-        gridBox.x + gridBox.width + 2,
-      );
-      // A work area may be taller than the viewport, but its start must be
-      // reachable and the grid—not the host page—must own the vertical scroll.
-      expect(regionBox.y).toBeGreaterThanOrEqual(gridBox.y - 12);
-      expect(regionBox.y).toBeLessThan(gridBox.y + gridBox.height);
-    }
+    const settings = host.getByRole("button", {
+      name: "Story settings",
+      exact: true,
+    });
+    await settings.click();
+    await expect(host.getByTestId("narration-overlay")).toBeVisible();
+    await settings.click();
+    await expect(host.getByTestId("narration-overlay")).toBeHidden();
+
+    await expectContained(host.locator(".stage"), grid, 2);
+    const chapterToggle = host.locator('[data-testid="builder-toggle-chapters"]');
+    const toolsToggle = host.locator('[data-testid="builder-toggle-tools"]');
+
+    await chapterToggle.click();
+    await page.waitForTimeout(250);
+    await expectContained(host.locator(".panel-stack--left"), grid, 2);
+    await expect(host.locator(".viewer__grid--builder-right-collapsed")).toHaveCount(1);
+
+    await toolsToggle.click();
+    await page.waitForTimeout(250);
+    await expectContained(host.locator(".panel-stack--right"), grid, 2);
+    await expect(host.locator(".viewer__grid--builder-left-collapsed")).toHaveCount(1);
+
     const sizes = await grid.evaluate((element) => ({
       clientHeight: element.clientHeight,
       scrollHeight: element.scrollHeight,
     }));
-    expect(sizes.scrollHeight).toBeGreaterThan(sizes.clientHeight);
+    expect(sizes.scrollHeight).toBeLessThanOrEqual(sizes.clientHeight + 2);
   });
 
-  test("keeps the Chapter 6 annotation canvas between navigation and inspector", async ({
+  test("keeps the Chapter 6 annotation canvas useful while navigation and inspector are drawers", async ({
     page,
   }) => {
     await page.goto("/story-edit.html?iiif-content=test-story/demo.json");
@@ -777,34 +788,33 @@ test.describe("priority mobile interactions", () => {
     const stage = host.locator(".stage");
     const inspector = host.locator(".panel-stack--right");
 
-    const [railBox, stageBox, inspectorBox] = await Promise.all([
-      box(chapterRail),
-      box(stage),
-      box(inspector),
-    ]);
-    expect(railBox.y).toBeLessThan(stageBox.y);
-    expect(stageBox.y).toBeLessThan(inspectorBox.y);
-    expect(stageBox.height).toBeGreaterThanOrEqual(599.5);
+    await host.locator('[data-testid="builder-toggle-chapters"]').click();
+    await page.waitForTimeout(250);
 
     const chapterSix = chapterRail
       .getByRole("button")
       .filter({ hasText: "Chapter 6" })
       .first();
     await chapterSix.click();
-    await inspector.getByRole("button", { name: "Annotations" }).click();
-    await stage.scrollIntoViewIfNeeded();
+    await host.locator('[data-testid="builder-toggle-tools"]').click();
+    await page.waitForTimeout(250);
+    await inspector.locator('[data-testid="inspector-activate-focus"]').click();
 
-    const drawingSurface = stage.locator(".mango-annotation-editor__svg");
+    const drawingSurface = stage.locator(
+      ".mango-annotation-editor:not(.story-frame-layer) .mango-annotation-editor__svg",
+    );
     await expect(drawingSurface).toBeVisible();
     await expectContained(drawingSurface, stage, 2);
-    const stageSizing = await stage.evaluate((element) => ({
+    const surfaceBox = await box(host.locator('[data-testid="story-stage-surface"]'));
+    const storyStageBox = await box(host.locator('[data-testid="story-stage"]'));
+    expect(surfaceBox.height).toBeGreaterThan(150);
+    expect(Math.abs(surfaceBox.width - storyStageBox.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(surfaceBox.height - storyStageBox.height)).toBeLessThanOrEqual(1);
+    const gridSizing = await grid.evaluate((element) => ({
       clientHeight: element.clientHeight,
       scrollHeight: element.scrollHeight,
     }));
-    expect(stageSizing.scrollHeight).toBeLessThanOrEqual(
-      stageSizing.clientHeight + 2,
-    );
-    expect(await grid.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    expect(gridSizing.scrollHeight).toBeLessThanOrEqual(gridSizing.clientHeight + 2);
   });
 
   test("keeps annotation tools, canvas, table, and inspector reachable", async ({

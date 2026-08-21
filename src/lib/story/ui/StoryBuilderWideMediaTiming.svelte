@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Play, RotateCcw, Square } from "@lucide/svelte";
+  import { onDestroy } from "svelte";
   import type { Readable } from "svelte/store";
   import type { StoryState } from "../../core/types/story";
   import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
@@ -21,6 +22,10 @@
   let endDraft = "0.00";
   let waveformDuration = 0;
   let lastSyncKey = "";
+  let videoElement: HTMLVideoElement | null = null;
+  let videoTime = 0;
+  let videoPreviewEnd: number | null = null;
+  let pausedSourceId = "";
 
   const formatTime = (value: number) => value.toFixed(2);
 
@@ -31,6 +36,12 @@
     $mediaSources.find(
       (entry) => entry.type === "audio" || entry.type === "video",
     );
+  $: videoSource = source?.type === "video" ? source : null;
+  $: if (videoSource && pausedSourceId !== videoSource.id) {
+    pausedSourceId = videoSource.id;
+    // Opening the modal transfers playback ownership away from the stage.
+    onStopPreview();
+  }
   $: duration = Math.max(
     1,
     source?.duration ?? 0,
@@ -68,14 +79,39 @@
       onAssignMediaSegment(nextStart, nextEnd);
   };
 
-  const preview = () => {
+  const preview = async () => {
     if (!valid) return;
     commit();
+    if (videoSource && videoElement) {
+      // The modal owns video preview. Pause the renderer behind it so two
+      // copies of the same source never play at once.
+      onStopPreview();
+      videoPreviewEnd = Number(endDraft);
+      videoElement.currentTime = Number(startDraft);
+      videoTime = videoElement.currentTime;
+      try {
+        const playback = videoElement.play();
+        if (playback) await playback;
+      } catch {
+        // The browser keeps its native play affordance available if autoplay
+        // policy or the source format prevents programmatic playback.
+      }
+      return;
+    }
     onPreview();
   };
 
+  const stop = () => {
+    videoPreviewEnd = null;
+    videoElement?.pause();
+    onStopPreview();
+  };
+
   const useCurrent = (edge: "start" | "end") => {
-    const current = Math.max(0, Math.min(duration, $mediaMarks.lastTime));
+    const current = Math.max(
+      0,
+      Math.min(duration, videoSource ? videoTime : $mediaMarks.lastTime),
+    );
     if (edge === "start")
       startDraft = formatTime(Math.min(current, Number(endDraft) - 0.01));
     else endDraft = formatTime(Math.max(current, Number(startDraft) + 0.01));
@@ -103,21 +139,84 @@
   ) => {
     startDraft = formatTime(start);
     endDraft = formatTime(end);
-    if (committed) commit();
+    if (committed) {
+      commit();
+      if (videoElement) {
+        videoElement.currentTime = start;
+        videoTime = start;
+      }
+    }
   };
+
+  const handleVideoLoaded = () => {
+    if (!videoElement) return;
+    if (Number.isFinite(videoElement.duration) && videoElement.duration > 0) {
+      waveformDuration = Math.max(waveformDuration, videoElement.duration);
+    }
+    const initialTime = Math.max(
+      0,
+      Math.min(videoElement.duration || duration, Number(startDraft) || 0),
+    );
+    videoElement.currentTime = initialTime;
+    videoTime = initialTime;
+  };
+
+  const handleVideoTimeUpdate = () => {
+    if (!videoElement) return;
+    videoTime = videoElement.currentTime;
+    if (videoPreviewEnd === null || videoTime < videoPreviewEnd - 0.025) return;
+    videoElement.pause();
+    videoElement.currentTime = videoPreviewEnd;
+    videoTime = videoPreviewEnd;
+    videoPreviewEnd = null;
+  };
+
+  onDestroy(() => {
+    videoElement?.pause();
+    onStopPreview();
+  });
 </script>
 
-<section class="story-wide-media" data-testid="chapter-media-timing-editor">
+<section
+  class="story-wide-media"
+  class:story-wide-media--video={Boolean(videoSource)}
+  data-testid="chapter-media-timing-editor"
+>
+  {#if videoSource}
+    <div class="story-wide-media__preview">
+      <!-- This is a chapter-timing preview rather than the story's publishing
+           playback surface; the source resolver does not expose caption tracks. -->
+      <!-- svelte-ignore a11y_media_has_caption -->
+      <video
+        bind:this={videoElement}
+        data-testid="chapter-media-video-preview"
+        src={videoSource.src}
+        poster={videoSource.poster}
+        controls
+        playsinline
+        preload="metadata"
+        aria-label={videoSource.label ?? $t('storyBuilder.media.media')}
+        on:loadedmetadata={handleVideoLoaded}
+        on:timeupdate={handleVideoTimeUpdate}
+        on:seeked={handleVideoTimeUpdate}
+        on:ended={() => (videoPreviewEnd = null)}
+      ></video>
+      {#if videoSource.label}
+        <small>{videoSource.label}</small>
+      {/if}
+    </div>
+  {/if}
+
   <div class="story-wide-media__editor">
     <div class="story-wide-media__toolbar">
       <strong>{$t('storyBuilder.media.segment')}</strong>
       <button type="button" on:click={useFullMedia}>
         <RotateCcw aria-hidden="true" /> {$t('storyBuilder.media.useFull')}
       </button>
-      <button type="button" disabled={!valid} on:click={preview}>
+      <button type="button" disabled={!valid} on:click={() => void preview()}>
         <Play aria-hidden="true" /> {$t('storyBuilder.chapter.preview')}
       </button>
-      <button type="button" on:click={onStopPreview}>
+      <button type="button" on:click={stop}>
         <Square aria-hidden="true" /> {$t('storyBuilder.media.stop')}
       </button>
     </div>
@@ -198,6 +297,33 @@
       transparent
     );
     color: var(--viewer-text, #e8edf4);
+  }
+  .story-wide-media--video {
+    grid-template-columns: minmax(260px, 0.72fr) minmax(420px, 1.28fr);
+    align-items: start;
+  }
+  .story-wide-media__preview {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    min-width: 0;
+  }
+  .story-wide-media__preview video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 320px;
+    object-fit: contain;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    background: #05080c;
+  }
+  .story-wide-media__preview small {
+    overflow: hidden;
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .story-wide-media__toolbar {
     display: flex;
@@ -285,6 +411,15 @@
     }
     .story-wide-media__range > span {
       display: none;
+    }
+  }
+  @container mango-viewer (max-width: 820px) {
+    .story-wide-media--video {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .story-wide-media__preview video {
+      max-height: min(280px, 36cqh);
     }
   }
 </style>

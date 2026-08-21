@@ -259,7 +259,9 @@ export const configureCameraTrackPreset = (
     'custom-end',
   ]);
   const generatedTrack =
-    points.length > 0 && points.every((point) => generatedPointIds.has(point.id));
+    track?.preset !== 'custom' &&
+    points.length > 0 &&
+    points.every((point) => generatedPointIds.has(point.id));
 
   if (preset === 'static' || points.length < 2 || (generatedTrack && !options.preservePoints)) {
     return generateCameraPreset(preset, currentView, duration, existingDwell);
@@ -274,6 +276,11 @@ export const configureCameraTrackPreset = (
     };
   }
 
+  // Once the author has placed points, Pin 1 is the camera's source of truth:
+  // preview must begin at that exact pan and zoom. Named styles can shape the
+  // zoom progression after it, but must not jump away from the captured start.
+  const firstView = generatedTrack ? currentView : (points[0]?.viewBox ?? currentView);
+
   const keyframes = points.map((point, index) => {
     const focus = point.focus ?? {
       x: (point.viewBox?.x ?? currentView.x) + (point.viewBox?.w ?? currentView.w) / 2,
@@ -285,17 +292,17 @@ export const configureCameraTrackPreset = (
       preset === 'ken-burns'
         ? 1 - ratio * 0.3
         : preset === 'hero-reveal'
-          ? 0.44 + ratio * 0.56
+          ? 1 + ratio * (1 / 0.44 - 1)
           : preset === 'zoom-in'
             ? 1 - ratio * 0.56
             : preset === 'zoom-out'
-              ? 0.44 + ratio * 0.56
+              ? 1 + ratio * (1 / 0.44 - 1)
               : preset === 'drift-zoom'
                 ? 1 - ratio * 0.28
                 : 1;
 
-    const w = currentView.w * scale;
-    const h = currentView.h * scale;
+    const w = firstView.w * scale;
+    const h = firstView.h * scale;
 
     const dwellMs =
       index === 0
@@ -306,7 +313,10 @@ export const configureCameraTrackPreset = (
       ...point,
       focus,
       ...(dwellMs ? { dwellMs } : {}),
-      viewBox: { x: focus.x - w / 2, y: focus.y - h / 2, w, h },
+      viewBox:
+        index === 0 && point.viewBox && !generatedTrack
+          ? point.viewBox
+          : { x: focus.x - w / 2, y: focus.y - h / 2, w, h },
     };
   });
 
