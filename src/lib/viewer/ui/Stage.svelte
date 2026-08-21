@@ -198,6 +198,7 @@
   let stageWidth = $state(0);
   let stageHeight = $state(0);
   let stageViewBox = $state<ViewBox | null>(null);
+  let pendingViewBox: ViewBox | null = $state(null);
   let pendingModelPose: ModelPose | null = $state(null);
   let pendingModelPoseOptions: ModelPoseOptions = $state({});
   let rendererError = $state('');
@@ -207,7 +208,16 @@
     rendererInstance?.getContentSize?.() ?? null;
 
   export const setViewBox = (box: ViewBox): void => {
-    rendererInstance?.setViewBox?.(box);
+    if (rendererInstance?.setViewBox) {
+      rendererInstance.setViewBox(box);
+      pendingViewBox = null;
+      return;
+    }
+    // Story playback can request its first framing while the dynamically
+    // imported renderer is still mounting. Keep that request instead of
+    // silently dropping it; the renderer-level queue below covers the later
+    // interval while OSD itself is opening the tile source.
+    pendingViewBox = { ...box };
   };
 
   export const zoomBy = (factor: number): void => {
@@ -215,6 +225,7 @@
   };
 
   export const goHome = (): void => {
+    pendingViewBox = null;
     rendererInstance?.goHome?.();
   };
 
@@ -343,6 +354,13 @@
 
   $effect(() => {
     canZoom = Boolean(rendererInstance?.zoomBy);
+  });
+  $effect(() => {
+    if (rendererInstance?.setViewBox && pendingViewBox) {
+      const box = pendingViewBox;
+      pendingViewBox = null;
+      rendererInstance.setViewBox(box);
+    }
   });
   $effect(() => {
     if (rendererInstance?.setModelPose && pendingModelPose) {

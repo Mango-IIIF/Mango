@@ -79,14 +79,7 @@
     },
     "source": {
       "reloadManifest": "マニフェストを再読み込み",
-      "loadManifest": "マニフェストを読み込む",
-      "stepLoad": "ステップ 1 / 2 · IIIFマニフェストを読み込んでください。",
-      "canvas": "キャンバス",
-      "canvasPosition": "キャンバス {current} / {total}",
-      "chooseCanvasHint": "キャンバスを選択し、ソースを保存してこのチャプターに適用してください。",
-      "stepCreate": "ステップ 2 / 2 · キャンバスを選択して最初のチャプターを作成します。画像の位置はチャプターツールで調整できます。",
-      "createFirst": "最初のチャプターを作成",
-      "loading": "マニフェストとキャンバスを読み込み中…"
+      "loadManifest": "マニフェストを読み込む"
     },
     "transition": {
       "title": "チャプター遷移時間",
@@ -205,6 +198,9 @@
       "button": "ナレーション設定",
       "title": "ナレーション",
       "description": "チャプターのボイスオーバートラックを選択し、ナレーションテキストを同期します。",
+      "mode": "チャプターのナレーションモード",
+      "useNarration": "ナレーションを使用",
+      "noNarration": "ナレーションなし",
       "language": "言語",
       "audioUrl": "音声ファイルのURL",
       "preview": "ナレーションをプレビュー",
@@ -229,20 +225,24 @@
     },
     "position": {
       "title": "フレーム",
-      "hint": "ステージ上でフレームを調整します。ドラッグして移動し、ハンドルでサイズを変更します。領域が決まっている場合はキャンバスのピクセル単位でここに入力してください。",
+      "hint": "固定されたストーリーフレームの下で作品をパン・ズームします。正確な IIIF 編集では、キャンバス領域をここに直接入力することもできます。",
       "empty": "フレームはまだありません。キャンバスのピクセル単位で領域を入力して作成してください。",
       "x": "X",
       "y": "Y",
       "width": "幅",
       "height": "高さ",
       "goTo": "フレームへ移動",
-      "aspectLocked": "{aspect} に固定されています。幅と高さは連動して変わるため、すべての読者にこの領域がそのまま表示されます。"
+      "aspectLocked": "ストーリーフレームは {aspect} です。プレビューと閲覧画面はこの形を正確に保ち、幅と高さは連動して変わります。",
+      "stageLabel": "ストーリーフレーム · {aspect}"
     },
     "annotations": {
       "chapter": "Chapter annotations",
+      "annotationsTab": "アノテーション",
+      "optionsTab": "オプション",
       "drawing": "描画モード",
+      "add": "アノテーションを追加",
       "tools": "Annotation drawing tools",
-      "drawingHint": "Add a point, shape, or line directly to the artwork. Select an annotation in the footer to edit it here.",
+      "drawingHint": "既存のアノテーションを編集するには「選択 / 移動」を、新しく追加するには図形を選びます。",
       "edit": "Edit annotation",
       "editDrawing": "Edit {type} annotation {index}",
       "deleteDrawing": "Delete {type} annotation {index}",
@@ -260,7 +260,7 @@
         "medium": "Medium",
         "thick": "Thick"
       },
-      "emptySelection": "Draw an annotation, or select one from the footer to edit its text and appearance.",
+      "emptySelection": "一覧または作品上のアノテーションを選択して、テキストと外観を編集してください。",
       "empty": "No annotations in this chapter.",
       "motivation": "動機",
       "motivationAuto": "自動（形状から判断）",
@@ -318,12 +318,16 @@
       "durationSeconds": "移動時間（秒）",
       "zoomValue": "ズーム値 ({zoom})",
       "timeline": "モーションタイムライン",
+      "pinsTab": "ピン",
+      "optionsTab": "オプション",
       "goToPoint": "カメラポイント {number} へ移動",
       "point": "カメラポイント {number}",
       "deletePoint": "ポイントを削除",
       "deletePointNumber": "カメラポイント {number} を削除",
-      "emptyPoints": "カメラポイントがまだありません。ポイントを追加し、そのフレームをステージ上でドラッグして配置してください。",
-      "addPoint": "カメラポイントを追加"
+      "emptyPoints": "カメラポイントがまだありません。ポイントを追加すると、現在のビューの中央に表示されます。",
+      "addPoint": "カメラポイントを追加",
+      "updatePoint": "現在のビューからピンを更新",
+      "selectPointToUpdate": "パンとズームを更新するピンを選択してください。"
     },
     "settings": {
       "title": "タイトル",
@@ -359,7 +363,7 @@
       "previewChapterHint": "ストーリーでの見え方のまま、このチャプターだけを再生します。",
       "stopChapterPreview": "プレビューを停止",
       "chapterPreviewPlaying": "このチャプターを再生中です。クリックで停止します。",
-      "sourceHint": "IIIFマニフェストを読み込んでコンテンツを選択します。",
+      "sourceHint": "ストーリーのソースを追加して最初のチャプターを作成します。キャンバスの切り替えにはビューアーのコントロールを使用します。",
       "noChapter": "チャプターが選択されていません",
       "noChapterHint": "タイムラインからチャプターを選択するか、新しいチャプターを作成してください。",
       "confirmPosition": "ビューアの位置を確定"
@@ -388,7 +392,9 @@
       "hideChapters": "チャプターを隠す",
       "showChapters": "チャプターを表示",
       "hideTools": "チャプターツールを隠す",
-      "showTools": "チャプターツールを表示"
+      "showTools": "チャプターツールを表示",
+      "hideAnnotationInspector": "アノテーションインスペクターを隠す",
+      "showAnnotationInspector": "アノテーションインスペクターを表示"
     },
     "frame": {
       "label": "チャプターのフレーム",
@@ -405,9 +411,10 @@
       },
       "edit": "編集",
       "draw": "描画",
+      "open": "開く",
       "done": "完了",
       "onStage": "ステージ上",
-      "annotationsSummary": "描画アノテーション {count} 件。ステージ上で追加・編集するには「描画」を押してください。",
+      "annotationsSummary": "アノテーション {count} 件。ステージのワークスペースで追加、選択、編集できます。",
       "motionNone": "カメラの動きはありません。編集してステージ上にカメラポイントを追加してください。",
       "motionSummary": "カメラポイント {count} 件 · {style} · {seconds}秒",
       "narrationNone": "{language} のナレーション区間はありません。",

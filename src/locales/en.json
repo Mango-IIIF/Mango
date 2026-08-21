@@ -79,14 +79,7 @@
     },
     "source": {
       "reloadManifest": "Reload manifest",
-      "loadManifest": "Load manifest",
-      "stepLoad": "Step 1 of 2 · Load a IIIF Manifest.",
-      "canvas": "Canvas",
-      "canvasPosition": "Canvas {current} of {total}",
-      "chooseCanvasHint": "Choose a canvas, then save the source to apply it to this chapter.",
-      "stepCreate": "Step 2 of 2 · Choose a canvas and create the first chapter. Image placement can be adjusted afterwards from the chapter tools.",
-      "createFirst": "Create first chapter",
-      "loading": "Loading the manifest and its canvases…"
+      "loadManifest": "Load manifest"
     },
     "transition": {
       "title": "Chapter transition time",
@@ -205,6 +198,9 @@
       "button": "Audio narrator",
       "title": "Narration",
       "description": "Choose the narration track and drag or resize the chapter region.",
+      "mode": "Chapter narration mode",
+      "useNarration": "Use narration",
+      "noNarration": "No narration",
       "language": "Narration language",
       "audioUrl": "Narration audio URL",
       "preview": "Preview narration",
@@ -229,20 +225,24 @@
     },
     "position": {
       "title": "Frame",
-      "hint": "Adjust the frame on the stage: drag it to move, its handles to resize. Type a region here in canvas pixels if you have one.",
+      "hint": "Pan and zoom the artwork beneath the fixed story frame. For precise IIIF authoring, you can also type the canvas region here.",
       "empty": "No frame yet. Type a region in canvas pixels to create one.",
       "x": "X",
       "y": "Y",
       "width": "Width",
       "height": "Height",
       "goTo": "Go to frame",
-      "aspectLocked": "Locked to {aspect}: width and height change together, so every reader sees exactly this region."
+      "aspectLocked": "Story frame {aspect}. Preview and readers preserve this exact shape; width and height change together.",
+      "stageLabel": "Story frame · {aspect}"
     },
     "annotations": {
       "chapter": "Chapter annotations",
+      "annotationsTab": "Annotations",
+      "optionsTab": "Options",
       "drawing": "Drawing annotations",
+      "add": "Add annotation",
       "tools": "Annotation drawing tools",
-      "drawingHint": "Add a point, shape, or line directly to the artwork. Select an annotation in the footer to edit it here.",
+      "drawingHint": "Choose Select / Pan to edit an existing annotation, or choose a shape to add one.",
       "edit": "Edit annotation",
       "editDrawing": "Edit {type} annotation {index}",
       "deleteDrawing": "Delete {type} annotation {index}",
@@ -260,7 +260,7 @@
         "medium": "Medium",
         "thick": "Thick"
       },
-      "emptySelection": "Draw an annotation, or select one from the footer to edit its text and appearance.",
+      "emptySelection": "Select an annotation from the list or artwork to edit its text and appearance.",
       "empty": "No annotations in this chapter.",
       "motivation": "Motivation",
       "motivationAuto": "Automatic (from shape)",
@@ -318,12 +318,16 @@
       "durationSeconds": "Duration (seconds)",
       "zoomValue": "{zoom}× zoom",
       "timeline": "Chapter motion timeline",
+      "pinsTab": "Pins",
+      "optionsTab": "Options",
       "goToPoint": "Go to camera point {number}",
       "point": "Point {number}",
       "deletePoint": "Delete camera point",
       "deletePointNumber": "Delete camera point {number}",
-      "emptyPoints": "No camera points yet. Add a point, then drag its frame into place on the stage.",
-      "addPoint": "Add camera point"
+      "emptyPoints": "No camera points yet. Add a point; it will appear at the centre of the current view.",
+      "addPoint": "Add camera point",
+      "updatePoint": "Update pin from current view",
+      "selectPointToUpdate": "Select a pin to update its pan and zoom."
     },
     "settings": {
       "title": "Story settings",
@@ -359,7 +363,7 @@
       "previewChapterHint": "Play this chapter on its own, exactly as the story presents it.",
       "stopChapterPreview": "Stop preview",
       "chapterPreviewPlaying": "Playing this chapter. Click to stop.",
-      "sourceHint": "Add the source for your story, choose its starting canvas, and create the first chapter. You can adjust image placement from the chapter tools afterwards.",
+      "sourceHint": "Add the source for your story to create the first chapter. Use the viewer controls to change canvas; image placement can be adjusted afterwards.",
       "noChapter": "No chapter selected",
       "noChapterHint": "Capture a chapter or select one from the timeline to edit its content.",
       "confirmPosition": "Confirm Position"
@@ -388,7 +392,9 @@
       "hideChapters": "Hide chapters",
       "showChapters": "Show chapters",
       "hideTools": "Hide chapter tools",
-      "showTools": "Show chapter tools"
+      "showTools": "Show chapter tools",
+      "hideAnnotationInspector": "Hide annotation inspector",
+      "showAnnotationInspector": "Show annotation inspector"
     },
     "frame": {
       "label": "Chapter frame",
@@ -405,9 +411,10 @@
       },
       "edit": "Edit",
       "draw": "Draw",
+      "open": "Open",
       "done": "Done",
       "onStage": "On stage",
-      "annotationsSummary": "{count} drawing annotations. Draw to add or edit them on the stage.",
+      "annotationsSummary": "{count} annotations. Use the stage workspace to add, select, and edit them.",
       "motionNone": "No camera movement. Edit to add camera points on the stage.",
       "motionSummary": "{count} camera points · {style} · {seconds}s",
       "narrationNone": "No narration segment for {language}.",

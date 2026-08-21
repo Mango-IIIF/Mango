@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mount, unmount } from 'svelte';
 import { tick } from 'svelte';
 import { createStoryStoreForTest } from './testHelpers';
@@ -11,8 +11,51 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe('NarrationOverlay', () => {
+  it('combines first-source setup with story settings', async () => {
+    const target = createTarget();
+    const onLoadSource = vi.fn();
+    const instance = mount(NarrationOverlay, {
+      target,
+      props: {
+        story: createStoryStoreForTest({ chapters: [] }).story,
+        open: true,
+        showSourceSetup: true,
+        currentManifest: 'https://example.org/manifest.json',
+        onLoadSource,
+      },
+    });
+    await tick();
+
+    expect(target.querySelector('.story-settings-modal')).toBeTruthy();
+    expect(target.textContent).toContain('New story');
+    expect(target.textContent).toContain('Load a source');
+    expect(target.querySelector('[data-testid="story-title"]')).toBeTruthy();
+
+    const sourceSection = target.querySelector('[data-testid="story-source-setup"]')!;
+    const identifierSection = target.querySelector('[data-testid="story-publishing-identifiers"]')!;
+    const languageAudioSection = target.querySelector('[data-testid="story-language-audio"]')!;
+    expect(sourceSection.compareDocumentPosition(identifierSection)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(identifierSection.compareDocumentPosition(languageAudioSection)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(target.querySelectorAll('.narration-overlay__divider')).toHaveLength(2);
+
+    const manifest = target.querySelector('[data-testid="chapter-manifest"]') as HTMLInputElement;
+    expect(manifest.value).toBe('https://example.org/manifest.json');
+    expect(target.querySelector('[data-testid="chapter-canvas-select"]')).toBeNull();
+
+    manifest.value = 'https://example.org/next.json';
+    manifest.dispatchEvent(new Event('input'));
+    target.querySelector<HTMLButtonElement>('[data-testid="chapter-manifest-reload"]')?.click();
+    expect(onLoadSource).toHaveBeenCalledWith('https://example.org/next.json');
+
+    unmount(instance);
+    target.remove();
+  });
+
   it('updates the whole-story title for the active language', async () => {
-    const store = createStoryStoreForTest({ title: { en: 'Old title' }, chapters: [] });
+    const store = createStoryStoreForTest({
+      title: { en: 'Old title' },
+      chapters: [],
+    });
     const target = createTarget();
 
     const instance = mount(NarrationOverlay, {
@@ -22,8 +65,7 @@ describe('NarrationOverlay', () => {
         open: true,
         language: 'en',
         languages: ['en'],
-        onUpdateStoryTitle: (lang: string, value: string) =>
-          store.setStoryTitle({ language: lang, value }),
+        onUpdateStoryTitle: (lang: string, value: string) => store.setStoryTitle({ language: lang, value }),
       },
     });
 
@@ -53,7 +95,12 @@ describe('NarrationOverlay', () => {
 
     const instance = mount(NarrationOverlay, {
       target,
-      props: { story: store.story, open: true, language: 'en', languages: ['en'] },
+      props: {
+        story: store.story,
+        open: true,
+        language: 'en',
+        languages: ['en'],
+      },
     });
 
     const notice = () => target.querySelector('[data-testid="story-draft-identifiers"]');
@@ -88,8 +135,7 @@ describe('NarrationOverlay', () => {
         open: true,
         language: 'en',
         languages: ['en'],
-        onSetNarrationTrack: (lang: string, src: string) =>
-          store.setNarrationTrack({ language: lang, src }),
+        onSetNarrationTrack: (lang: string, src: string) => store.setNarrationTrack({ language: lang, src }),
       },
     });
 
@@ -129,8 +175,7 @@ describe('NarrationOverlay', () => {
         open: true,
         language: 'en',
         languages: ['en', 'cy'],
-        onSetNarrationTrack: (lang: string, src: string) =>
-          store.setNarrationTrack({ language: lang, src }),
+        onSetNarrationTrack: (lang: string, src: string) => store.setNarrationTrack({ language: lang, src }),
       },
     });
 

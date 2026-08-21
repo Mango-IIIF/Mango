@@ -6,8 +6,73 @@ import {
   collectLatestNarrationSegments,
   createStoryBuilderController,
 } from "../storyBuilderController";
+import { DEFAULT_PRESENTATION_ASPECT } from "../framing";
 
 describe("story builder narration defaults", () => {
+  it("opens settings for a new story and toggles it from the top-bar action", () => {
+    const controller = createStoryBuilderController({
+      initialStory: { chapters: [] },
+    });
+
+    expect(get(controller.uiMode)).toBe("narrationPanel");
+    controller.openNarration();
+    expect(get(controller.uiMode)).toBe("idle");
+    controller.openNarration();
+    expect(get(controller.uiMode)).toBe("narrationPanel");
+  });
+
+  it("loads a first source and captures the viewer's active canvas in one action", async () => {
+    vi.useFakeTimers();
+    const manifest = "https://example.org/manifest.json";
+    let ready = false;
+    const controller = createStoryBuilderController({
+      initialStory: { chapters: [] },
+    });
+    const events = createEventBus();
+    const viewer = {
+      getManifestId: () => (ready ? manifest : null),
+      getState: () => null,
+      getViewBox: () => (ready ? { x: 0, y: 0, w: 100, h: 80 } : null),
+      getContentSize: () => ({ width: 100, height: 80 }),
+      getCanvasIndex: () => 2,
+      getCanvasCount: () => (ready ? 3 : 0),
+      getCanvasId: () => (ready ? "canvas-3" : null),
+      getMediaType: () => "image",
+      getMediaSources: () => [],
+      getLayerOpacities: () => ({}),
+      setManifest: vi.fn(() => {
+        setTimeout(() => {
+          ready = true;
+        }, 150);
+      }),
+    };
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events,
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+
+    controller.loadManifestAndAddChapter(manifest);
+    expect(get(controller.story).chapters).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(get(controller.story).chapters).toHaveLength(1);
+    expect(get(controller.story).chapters[0]).toMatchObject({
+      manifest,
+      canvasIndex: 2,
+      canvasId: "canvas-3",
+    });
+    expect(get(controller.story).presentationAspect).toBe(
+      DEFAULT_PRESENTATION_ASPECT,
+    );
+    const viewBox = get(controller.story).chapters[0].viewBox!;
+    expect(viewBox.w / viewBox.h).toBeCloseTo(DEFAULT_PRESENTATION_ASPECT, 6);
+
+    detach();
+    vi.useRealTimers();
+  });
+
   it("saves through a host persistence handler without requiring an HTTP endpoint", async () => {
     const handler = vi.fn().mockResolvedValue({
       ok: true,
@@ -392,10 +457,23 @@ describe("story builder narration defaults", () => {
     expect(get(controller.selectedDrawingAnnotationId)).toBe("rectangle-1");
     expect(get(controller.story).chapters[0].annotations).toBeUndefined();
 
+    controller.finishChapterDrawingAnnotationEdit();
+    expect(get(controller.activeChapterTask)).toBe("focus");
+    expect(get(controller.selectedDrawingAnnotationId)).toBeNull();
+    expect(viewer.setStoryAnnotationSelection).toHaveBeenLastCalledWith(null);
+
+    controller.editChapterDrawingAnnotation("rectangle-1");
     controller.saveChapterSettings();
     expect(get(controller.activeChapterTask)).toBeNull();
     expect(get(controller.selectedDrawingAnnotationId)).toBeNull();
     expect(viewer.setStoryAnnotationSelection).toHaveBeenLastCalledWith(null);
+
+    // The closed inspector list is a direct route to existing content. It
+    // opens the annotation workspace and selects the row in one action.
+    controller.editChapterDrawingAnnotation("rectangle-1");
+    expect(get(controller.activeChapterTask)).toBe("focus");
+    expect(get(controller.selectedDrawingAnnotationId)).toBe("rectangle-1");
+    controller.saveChapterSettings();
 
     controller.updateLayerOpacity("painting-layer", 0.35);
     expect(viewer.updateLayerOpacity).toHaveBeenCalledWith(
@@ -496,7 +574,7 @@ describe("story builder narration defaults", () => {
     expect(get(controller.canUndo)).toBe(false);
   });
 
-  it("takes a new story's shape from the canvas, not the stage it was captured on", () => {
+  it("keeps a new story's frame independent of its source canvas", () => {
     const controller = createStoryBuilderController({
       initialStory: { chapters: [] },
     });
@@ -539,12 +617,15 @@ describe("story builder narration defaults", () => {
 
     controller.addChapter();
     const framing = get(controller.story).chapters[0].viewBox!;
-    expect(framing.w / framing.h).toBeCloseTo(9310 / 6237, 6);
+    expect(framing.w / framing.h).toBeCloseTo(DEFAULT_PRESENTATION_ASPECT, 6);
+    expect(get(controller.story).presentationAspect).toBe(
+      DEFAULT_PRESENTATION_ASPECT,
+    );
 
     detach();
   });
 
-  it("lets the first capture define the story shape and conforms later ones", () => {
+  it("keeps the default frame when content size is unavailable and conforms later captures", () => {
     const controller = createStoryBuilderController({
       initialStory: { chapters: [] },
     });
@@ -586,16 +667,19 @@ describe("story builder narration defaults", () => {
 
     controller.addChapter();
     const first = get(controller.story).chapters[0].viewBox!;
-    // This viewer reports no content size, so the story falls back to taking
-    // its shape from the first framing captured.
-    expect(first.w / first.h).toBeCloseTo(1.7, 6);
+    // Neither a transient viewport nor missing source dimensions may redefine
+    // the frame that was already shown for this new story.
+    expect(first.w / first.h).toBeCloseTo(DEFAULT_PRESENTATION_ASPECT, 6);
+    expect(get(controller.story).presentationAspect).toBe(
+      DEFAULT_PRESENTATION_ASPECT,
+    );
 
     // The stage is now a different shape — a panel opened, or the window was
     // resized. The second chapter must still be stored at the story's shape.
     viewer.getViewBox.mockReturnValue({ x: 0, y: 0, w: 1288, h: 1000 });
     controller.addChapter();
     const second = get(controller.story).chapters[1].viewBox!;
-    expect(second.w / second.h).toBeCloseTo(1.7, 6);
+    expect(second.w / second.h).toBeCloseTo(DEFAULT_PRESENTATION_ASPECT, 6);
     // ...while still covering what the author had on screen.
     expect(second.w * second.h).toBeCloseTo(1288 * 1000, 2);
 
@@ -882,12 +966,13 @@ describe("story builder source task", () => {
     return { controller, detach };
   };
 
-  it("stores the chosen canvas on the chapter when the source task is saved", () => {
+  it("stores the chosen canvas without requiring a second source action", async () => {
+    vi.useFakeTimers();
     const viewer = createSourceViewer();
     const { controller, detach } = attachSourceController(viewer);
 
     controller.selectCanvas(1);
-    controller.saveChapterSettings();
+    await vi.advanceTimersByTimeAsync(100);
 
     const chapter = get(controller.story).chapters[0];
     expect(chapter.canvasIndex).toBe(1);
@@ -895,6 +980,7 @@ describe("story builder source task", () => {
     // The old framing belonged to the previous canvas, so it is re-read too.
     expect(chapter.viewBox).toMatchObject({ x: 5, y: 5 });
     detach();
+    vi.useRealTimers();
   });
 
   it("leaves a chapter untouched when the source task is saved on the same canvas", () => {
@@ -1137,6 +1223,7 @@ describe("story builder chapter frame", () => {
     setStoryAnnotations: vi.fn(),
     setStoryAnnotationEditing: vi.fn(),
     setStoryAnnotationSelection: vi.fn(),
+    setStoryPresentationAspect: vi.fn(),
     setStoryFrames: vi.fn(),
     setStoryFrameSelection: vi.fn(),
     setAnnotationTool: vi.fn(),
@@ -1159,7 +1246,7 @@ describe("story builder chapter frame", () => {
   const lastSelection = (viewer: ReturnType<typeof createFrameViewer>) =>
     viewer.setStoryFrameSelection.mock.calls.at(-1)?.[0];
 
-  it("draws the selected chapter's frame on the stage as a quiet guide, and hands it the handles in the Frame tool", () => {
+  it("uses the fixed stage as the chapter frame instead of drawing a second rectangle", () => {
     const controller = createStoryBuilderController({ initialStory: frameStory });
     const viewer = createFrameViewer();
     const events = createEventBus();
@@ -1172,27 +1259,19 @@ describe("story builder chapter frame", () => {
 
     controller.selectedChapterId.set("chapter-1");
 
-    // Always drawn, so a default nobody moved is visible — but quiet: no
-    // handles until the author opens the Frame tool, so it never reads as a
-    // selection nobody made and panning near its edge cannot move it.
-    expect(lastFrames(viewer)).toEqual([
-      {
-        id: "chapter",
-        kind: "chapter",
-        viewBox: { x: 100, y: 100, w: 800, h: 400 },
-        aspect: 2,
-        editable: false,
-      },
-    ]);
+    expect(lastFrames(viewer)).toEqual([]);
+    expect(viewer.setStoryPresentationAspect).toHaveBeenLastCalledWith(2);
     expect(lastSelection(viewer)).toBeNull();
 
     controller.activeChapterTask.set("position");
-    expect(lastFrames(viewer)).toMatchObject([{ id: "chapter", editable: true }]);
+    expect(lastFrames(viewer)).toEqual([]);
+    // The sentinel only focuses the builder chrome; there is no matching SVG
+    // frame for it to render or drag.
     expect(lastSelection(viewer)).toBe("chapter");
     detach();
   });
 
-  it("steps the chapter frame back while annotations are drawn and hands the handles to keyframes for motion", () => {
+  it("keeps motion points out of the rectangular frame layer", () => {
     const controller = createStoryBuilderController({ initialStory: frameStory });
     const viewer = createFrameViewer();
     const events = createEventBus();
@@ -1205,37 +1284,27 @@ describe("story builder chapter frame", () => {
     controller.selectedChapterId.set("chapter-1");
 
     controller.activeChapterTask.set("focus");
-    expect(lastFrames(viewer)).toMatchObject([{ id: "chapter", editable: false }]);
+    expect(lastFrames(viewer)).toEqual([]);
     expect(lastSelection(viewer)).toBeNull();
 
     controller.activeChapterTask.set("motion");
-    expect(lastFrames(viewer)).toMatchObject([
-      { id: "chapter", kind: "chapter", editable: false },
-      {
-        id: "keyframe:kf-1",
-        kind: "keyframe",
-        label: "1",
-        editable: true,
-        aspect: 2,
-        viewBox: { x: 300, y: 200, w: 400, h: 200 },
-      },
-    ]);
-    // Nothing is selected until the author takes hold of a point.
+    expect(lastFrames(viewer)).toEqual([]);
     expect(lastSelection(viewer)).toBeNull();
 
-    events.emit("storyFrameSelect", { frameId: "keyframe:kf-1" });
+    controller.goToMotionPoint("kf-1");
     expect(get(controller.selectedMotionPointId)).toBe("kf-1");
-    expect(lastSelection(viewer)).toBe("keyframe:kf-1");
+    expect(lastFrames(viewer)).toEqual([]);
+    expect(lastSelection(viewer)).toBeNull();
 
     controller.activeChapterTask.set(null);
-    expect(lastFrames(viewer)).toMatchObject([{ id: "chapter", editable: false }]);
+    expect(lastFrames(viewer)).toEqual([]);
     expect(lastSelection(viewer)).toBeNull();
     detach();
   });
 
-  it("pulls the camera back around the frame when the Frame tool opens", async () => {
+  it("keeps the camera in place when Frame opens and captures the fixed-stage view on Done", () => {
     const controller = createStoryBuilderController({ initialStory: frameStory });
-    const viewer = createFrameViewer();
+    const viewer = createFrameViewer({ x: 400, y: 300, w: 600, h: 300 });
     const events = createEventBus();
     const detach = controller.attach({
       mount: document.createElement("div"),
@@ -1247,25 +1316,18 @@ describe("story builder chapter frame", () => {
     viewer.setViewBox.mockClear();
 
     controller.activeChapterTask.set("position");
-    // The move is animated over a few frames.
-    await new Promise((resolve) => setTimeout(resolve, 450));
-
-    // Selecting the chapter framed it edge to edge; adjusting wants room
-    // around it, so the view is widened about the frame's centre.
-    expect(viewer.setViewBox).toHaveBeenCalled();
-    const target = viewer.setViewBox.mock.calls.at(-1)?.[0] as {
-      x: number;
-      y: number;
-      w: number;
-      h: number;
-    };
-    expect(target.w).toBeGreaterThan(800);
-    expect(target.x + target.w / 2).toBeCloseTo(500, 6);
-    expect(target.y + target.h / 2).toBeCloseTo(300, 6);
+    expect(viewer.setViewBox).not.toHaveBeenCalled();
+    controller.saveChapterSettings();
+    expect(get(controller.story).chapters[0].viewBox).toEqual({
+      x: 400,
+      y: 300,
+      w: 600,
+      h: 300,
+    });
     detach();
   });
 
-  it("hides every frame while a preview is driving the viewer", () => {
+  it("does not introduce rectangular motion frames around preview", () => {
     const controller = createStoryBuilderController({ initialStory: frameStory });
     const viewer = createFrameViewer();
     const events = createEventBus();
@@ -1276,16 +1338,67 @@ describe("story builder chapter frame", () => {
       config: {},
     } as unknown as PluginContext);
     controller.selectedChapterId.set("chapter-1");
-    expect(lastFrames(viewer)).toHaveLength(1);
+    controller.activeChapterTask.set("motion");
+    expect(lastFrames(viewer)).toEqual([]);
 
     controller.startPreview();
     expect(lastFrames(viewer)).toEqual([]);
     controller.stopPreview();
-    expect(lastFrames(viewer)).toHaveLength(1);
+    expect(lastFrames(viewer)).toEqual([]);
     detach();
   });
 
-  it("commits a dragged chapter frame to the chapter without moving the camera", () => {
+  it("starts a motion preview at the first pin's exact captured frame", () => {
+    const start = { x: 320, y: 180, w: 480, h: 240 };
+    const controller = createStoryBuilderController({
+      initialStory: {
+        ...frameStory,
+        chapters: [
+          {
+            ...frameStory.chapters[0],
+            cameraTrack: {
+              durationMs: 4000,
+              preset: "custom" as const,
+              keyframes: [
+                { id: "start", timeMs: 0, viewBox: start },
+                {
+                  id: "end",
+                  timeMs: 4000,
+                  viewBox: { x: 900, y: 350, w: 240, h: 120 },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    const viewer = createFrameViewer();
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events: createEventBus(),
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+    controller.selectedChapterId.set("chapter-1");
+    const previousRaf = globalThis.requestAnimationFrame;
+    const previousCancelRaf = globalThis.cancelAnimationFrame;
+    globalThis.requestAnimationFrame = vi.fn(() => 1);
+    globalThis.cancelAnimationFrame = vi.fn();
+
+    controller.previewMotion();
+
+    expect(viewer.setViewBox).toHaveBeenLastCalledWith(start);
+    expect(get(controller.motionPreviewing)).toBe(true);
+    controller.stopMotionPreview();
+    expect(get(controller.motionPreviewing)).toBe(false);
+    if (previousRaf) globalThis.requestAnimationFrame = previousRaf;
+    else delete (globalThis as Partial<typeof globalThis>).requestAnimationFrame;
+    if (previousCancelRaf) globalThis.cancelAnimationFrame = previousCancelRaf;
+    else delete (globalThis as Partial<typeof globalThis>).cancelAnimationFrame;
+    detach();
+  });
+
+  it("accepts a legacy chapter-frame commit without restoring the removed overlay", () => {
     const controller = createStoryBuilderController({ initialStory: frameStory });
     const viewer = createFrameViewer();
     const events = createEventBus();
@@ -1310,7 +1423,7 @@ describe("story builder chapter frame", () => {
       h: 300,
     });
     expect(viewer.setViewBox).not.toHaveBeenCalled();
-    expect(lastFrames(viewer)[0].viewBox).toEqual({ x: 400, y: 300, w: 600, h: 300 });
+    expect(lastFrames(viewer)).toEqual([]);
     detach();
   });
 
@@ -1340,6 +1453,29 @@ describe("story builder chapter frame", () => {
     detach();
   });
 
+  it("moves a motion pin without changing that point's zoom", () => {
+    const controller = createStoryBuilderController({ initialStory: frameStory });
+    const viewer = createFrameViewer();
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events: createEventBus(),
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+    controller.selectedChapterId.set("chapter-1");
+
+    controller.setMotionPointFocus("kf-1", { x: 1900, y: 500 });
+
+    const point = get(controller.story).chapters[0].cameraTrack?.keyframes[0];
+    // A focal pin may sit at the image edge. Applying the old rectangular
+    // frame constraint here snapped it back inward and made dragging appear
+    // not to update at all for wide camera frames.
+    expect(point?.viewBox).toEqual({ x: 1700, y: 400, w: 400, h: 200 });
+    expect(point?.focus).toEqual({ x: 1900, y: 500 });
+    expect(get(controller.selectedMotionPointId)).toBe("kf-1");
+    detach();
+  });
+
   it("holds every stored frame to the presentation aspect, whatever was asked for", () => {
     const controller = createStoryBuilderController({ initialStory: frameStory });
     const viewer = createFrameViewer();
@@ -1365,9 +1501,9 @@ describe("story builder chapter frame", () => {
     detach();
   });
 
-  it("starts a new camera point as a frame nested in the last one, and takes hold of it", () => {
+  it("starts a new camera point at the current viewport centre and stores its zoom", () => {
     const controller = createStoryBuilderController({ initialStory: frameStory });
-    const viewer = createFrameViewer();
+    const viewer = createFrameViewer({ x: 800, y: 300, w: 600, h: 300 });
     const events = createEventBus();
     const detach = controller.attach({
       mount: document.createElement("div"),
@@ -1383,24 +1519,51 @@ describe("story builder chapter frame", () => {
     const keyframes = get(controller.story).chapters[0].cameraTrack!.keyframes;
     expect(keyframes).toHaveLength(2);
     const added = keyframes[1];
-    // Nested inside point 1: same centre, four fifths of the size.
-    expect(added.viewBox).toEqual({ x: 340, y: 220, w: 320, h: 160 });
-    expect(added.focus).toEqual({ x: 500, y: 300 });
+    expect(added.viewBox).toEqual({ x: 800, y: 300, w: 600, h: 300 });
+    expect(added.focus).toEqual({ x: 1100, y: 450 });
     expect(get(controller.selectedMotionPointId)).toBe(added.id);
-    expect(lastSelection(viewer)).toBe(`keyframe:${added.id}`);
+    expect(lastSelection(viewer)).toBeNull();
 
     controller.deleteMotionPoint(added.id);
     expect(get(controller.selectedMotionPointId)).toBeNull();
     detach();
   });
 
-  it("only ever reads the camera for a new chapter's default frame", () => {
+  it("updates a selected pin from the current viewport and takes zoom control from a preset", () => {
+    const controller = createStoryBuilderController({
+      initialStory: {
+        ...frameStory,
+        chapters: frameStory.chapters.map((chapter) => ({
+          ...chapter,
+          cameraTrack: { ...chapter.cameraTrack, preset: "ken-burns" as const },
+        })),
+      },
+    });
+    const viewer = createFrameViewer({ x: 800, y: 300, w: 600, h: 300 });
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events: createEventBus(),
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+    controller.selectedChapterId.set("chapter-1");
+
+    controller.updateMotionPointFromViewport("kf-1");
+
+    const track = get(controller.story).chapters[0].cameraTrack;
+    expect(track?.preset).toBe("custom");
+    expect(track?.keyframes[0].viewBox).toEqual({ x: 800, y: 300, w: 600, h: 300 });
+    expect(track?.keyframes[0].focus).toEqual({ x: 1100, y: 450 });
+    expect(get(controller.selectedMotionPointId)).toBe("kf-1");
+    detach();
+  });
+
+  it("reads the camera only when capturing a new chapter or motion point", () => {
     /*
      * The acceptance check for the frame being an object: with the viewport
      * parked on a sentinel box, nothing that edits a chapter or keyframe
-     * framing may store that sentinel — only a freshly added chapter, which
-     * starts from what is on screen because there is nothing else to start
-     * from, is allowed to.
+     * framing may store that sentinel. New chapters and new motion points are
+     * the two deliberate captures of what is currently on screen.
      */
     // Inside the canvas, so a capture of it survives the content constraint.
     const sentinel = { x: 1234, y: 321, w: 640, h: 480 };
@@ -1432,6 +1595,11 @@ describe("story builder chapter frame", () => {
 
     controller.activeChapterTask.set("motion");
     controller.addMotionPoint();
+    expect(carriesSentinel()).toBe(true);
+    const addedPoint = get(controller.story).chapters[0].cameraTrack!.keyframes.at(-1)!;
+    controller.deleteMotionPoint(addedPoint.id);
+    expect(carriesSentinel()).toBe(false);
+
     controller.setMotionPointViewBox("kf-1", { x: 10, y: 10, w: 200, h: 100 });
     controller.applyMotionPreset("ken-burns");
     controller.updateMotionPathType("linear");
@@ -1440,7 +1608,7 @@ describe("story builder chapter frame", () => {
     controller.setChapterPosition({ x: 50, y: 50, w: 400, h: 200 });
     expect(carriesSentinel()).toBe(false);
 
-    // The one permitted reading: a brand-new chapter starts from the view.
+    // A brand-new chapter also starts from the view.
     controller.addChapter();
     expect(carriesSentinel()).toBe(true);
     detach();

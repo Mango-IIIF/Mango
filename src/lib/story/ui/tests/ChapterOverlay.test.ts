@@ -5,7 +5,6 @@ import { writable } from "svelte/store";
 import type { ChapterAdvance, StoryState } from "../../../core/types/story";
 import type { ChapterTaskId } from "../../chapterTasks";
 import ChapterOverlay from "../ChapterOverlay.svelte";
-import { ANNOTATION_TOOLS } from "../../../features/annotations/annotationTools";
 import { createStoryStoreForTest } from "./testHelpers";
 
 const createTarget = (): HTMLDivElement => {
@@ -15,7 +14,7 @@ const createTarget = (): HTMLDivElement => {
 };
 
 describe("ChapterOverlay", () => {
-  it("renders its annotation palette from the shared tool list", async () => {
+  it("keeps annotation tools and inventory out of the inspector workspace", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -23,11 +22,18 @@ describe("ChapterOverlay", () => {
           manifest: "https://example.org/image-manifest.json",
           canvasIndex: 0,
           viewBox: { x: 0, y: 0, w: 100, h: 100 },
+          drawingAnnotations: [
+            {
+              id: "drawing-1",
+              type: "rectangle",
+              rect: { x: 10, y: 10, w: 20, h: 20 },
+              label: { en: "First detail" },
+            },
+          ],
         },
       ],
     });
     const target = createTarget();
-    const onSetAnnotationTool = vi.fn();
     const instance = mount(ChapterOverlay, {
       target,
       props: {
@@ -36,18 +42,14 @@ describe("ChapterOverlay", () => {
         docked: true,
         chapterId: "chapter-image",
         activeChapterTask: writable<ChapterTaskId | null>("focus"),
-        onSetAnnotationTool,
       },
     });
     await tick();
 
-    const palette = target.querySelector(".chapter-overlay__annotation-tools");
-    const buttons = Array.from(palette?.querySelectorAll("button") ?? []);
-    // One button per shared tool: the builder no longer keeps its own list.
-    expect(buttons).toHaveLength(ANNOTATION_TOOLS.length);
-
-    buttons[0].click();
-    expect(onSetAnnotationTool).toHaveBeenCalledWith(ANNOTATION_TOOLS[0].id);
+    expect(target.querySelector(".chapter-overlay__annotation-tools")).toBeNull();
+    expect(target.querySelector(".story-wide-annotations")).toBeNull();
+    expect(target.querySelector('[data-testid="inspector-summary-focus"]')).toBeTruthy();
+    expect(target.textContent).toContain("1 annotation");
 
     unmount(instance);
     target.remove();
@@ -171,6 +173,13 @@ describe("ChapterOverlay", () => {
     ) as HTMLElement;
     expect(section.textContent).toContain("Frame");
     expect(section.textContent).not.toContain("Content (EN)");
+    const frameToggle = target.querySelector(
+      '[data-testid="inspector-toggle-position"]',
+    ) as HTMLButtonElement;
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("false");
+    frameToggle.click();
+    await tick();
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("true");
 
     const xInput = target.querySelector(
       '[data-testid="chapter-position-x"]',
@@ -232,6 +241,72 @@ describe("ChapterOverlay", () => {
     await tick();
     expect(onSetChapterPosition).not.toHaveBeenCalled();
     expect(hInput.value).toBe("400");
+
+    unmount(instance);
+    target.remove();
+  });
+
+  it("closes Frame again whenever its tool is no longer active", async () => {
+    const store = createStoryStoreForTest({
+      chapters: [
+        {
+          id: "chapter-1",
+          manifest: "https://example.org/manifest.json",
+          canvasIndex: 0,
+          viewBox: { x: 0, y: 0, w: 100, h: 100 },
+        },
+      ],
+    });
+    const target = createTarget();
+    const activeChapterTask = writable<ChapterTaskId | null>(null);
+    const onChapterTaskChange = vi.fn((task: ChapterTaskId | null) =>
+      activeChapterTask.set(task),
+    );
+    const instance = mount(ChapterOverlay, {
+      target,
+      props: {
+        story: store.story,
+        open: true,
+        chapterId: "chapter-1",
+        activeChapterTask,
+        onChapterTaskChange,
+      },
+    });
+    await tick();
+
+    const frameToggle = target.querySelector(
+      '[data-testid="inspector-toggle-position"]',
+    ) as HTMLButtonElement;
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("false");
+
+    (
+      target.querySelector(
+        '[data-testid="inspector-activate-position"]',
+      ) as HTMLButtonElement
+    ).click();
+    await tick();
+    expect(onChapterTaskChange).toHaveBeenLastCalledWith("position");
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("true");
+
+    activeChapterTask.set(null);
+    await tick();
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("false");
+
+    frameToggle.click();
+    await tick();
+    expect(frameToggle.getAttribute("aria-expanded")).toBe("true");
+    activeChapterTask.set("focus");
+    await tick();
+    expect(
+      target.querySelector('[data-testid="inspector-toggle-position"]'),
+    ).toBeNull();
+    activeChapterTask.set(null);
+    await tick();
+    expect(
+      target
+        .querySelector('[data-testid="inspector-toggle-position"]')
+        ?.getAttribute("aria-expanded"),
+    ).toBe("false");
 
     unmount(instance);
     target.remove();
@@ -356,6 +431,17 @@ describe("ChapterOverlay", () => {
     const audioCard = audioTarget.querySelector(
       '[data-task-id="position"]',
     ) as HTMLElement;
+    expect(
+      audioCard
+        .querySelector('[data-testid="inspector-toggle-position"]')
+        ?.getAttribute("aria-expanded"),
+    ).toBe("false");
+    (
+      audioCard.querySelector(
+        '[data-testid="inspector-toggle-position"]',
+      ) as HTMLButtonElement
+    ).click();
+    await tick();
     expect(audioCard.textContent).toContain(
       "available for image and PDF chapters only.",
     );
@@ -527,8 +613,9 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("creates the first chapter after the manifest canvases are ready", () => {
+  it("loads the first source and creates its chapter in one action", () => {
     const target = createTarget();
+    const onLoadManifest = vi.fn();
     const onCreateChapter = vi.fn();
     const instance = mount(ChapterOverlay, {
       target,
@@ -538,18 +625,19 @@ describe("ChapterOverlay", () => {
         docked: true,
         chapterId: null,
         currentManifest: "https://example.org/manifest.json",
-        canvasCount: 2,
+        onLoadManifest,
         onCreateChapter,
       },
     });
 
-    const onboarding = target.textContent?.replace(/\s+/g, " ") ?? "";
-    expect(onboarding).toContain("Step 2 of 2");
-    expect(onboarding).toContain("Image placement can be adjusted afterwards");
-    const create = target.querySelector(
-      '[data-testid="chapter-create-first"]',
+    expect(target.querySelector('[data-testid="chapter-canvas-select"]')).toBeNull();
+    const load = target.querySelector(
+      '[data-testid="chapter-manifest-reload"]',
     ) as HTMLButtonElement;
-    create.click();
+    load.click();
+    expect(onLoadManifest).toHaveBeenCalledWith(
+      "https://example.org/manifest.json",
+    );
     expect(onCreateChapter).toHaveBeenCalledOnce();
 
     unmount(instance);
@@ -569,7 +657,6 @@ describe("ChapterOverlay", () => {
     });
     const target = createTarget();
     let reloadPayload: { manifest: string; canvasIndex: number } | null = null;
-    let selectedCanvas = -1;
 
     const instance = mount(ChapterOverlay, {
       target,
@@ -577,8 +664,6 @@ describe("ChapterOverlay", () => {
         story: store.story,
         open: true,
         chapterId: "chapter-1",
-        canvasIndex: 2,
-        canvasCount: 3,
         language: "en",
         onUpdateManifest: (chapterId: string, manifest: string) =>
           store.setChapterManifest({ chapterId, manifest }),
@@ -588,9 +673,6 @@ describe("ChapterOverlay", () => {
           canvasIndex: number,
         ) => {
           reloadPayload = { manifest, canvasIndex };
-        },
-        onSelectCanvas: (canvasIndex: number) => {
-          selectedCanvas = canvasIndex;
         },
       },
     });
@@ -603,14 +685,7 @@ describe("ChapterOverlay", () => {
     const input = target.querySelector(
       '[data-testid="chapter-manifest"]',
     ) as HTMLInputElement;
-    const canvasSelect = target.querySelector(
-      '[data-testid="chapter-canvas-select"]',
-    ) as HTMLSelectElement;
-    expect(canvasSelect.options).toHaveLength(3);
-    expect(canvasSelect.value).toBe("2");
-    canvasSelect.value = "1";
-    canvasSelect.dispatchEvent(new Event("change"));
-    expect(selectedCanvas).toBe(1);
+    expect(target.querySelector('[data-testid="chapter-canvas-select"]')).toBeNull();
     input.value = "https://example.org/updated.json";
     input.dispatchEvent(new Event("input"));
     await tick();
@@ -618,6 +693,7 @@ describe("ChapterOverlay", () => {
     const reload = target.querySelector(
       '[data-testid="chapter-manifest-reload"]',
     ) as HTMLButtonElement;
+    expect(target.querySelector('[data-testid="chapter-apply-source"]')).toBeNull();
     reload.click();
 
     await tick();
@@ -636,7 +712,7 @@ describe("ChapterOverlay", () => {
     target.remove();
   });
 
-  it("edits selected Mango annotation translations and appearance in the sidebar", async () => {
+  it("does not duplicate selected annotation options in the sidebar", async () => {
     const store = createStoryStoreForTest({
       chapters: [
         {
@@ -656,10 +732,6 @@ describe("ChapterOverlay", () => {
       ],
     });
     const target = createTarget();
-    const selectedDrawingAnnotationId = writable<string | null>("rectangle-1");
-    const onSetDrawingAnnotationLabel = vi.fn();
-    const onSetDrawingAnnotationStyle = vi.fn();
-
     const instance = mount(ChapterOverlay, {
       target,
       props: {
@@ -668,38 +740,14 @@ describe("ChapterOverlay", () => {
         chapterId: "chapter-1",
         language: "en",
         languages: ["en", "cy"],
-        selectedDrawingAnnotationId,
-        onSetDrawingAnnotationLabel,
-        onSetDrawingAnnotationStyle,
         activeChapterTask: writable<ChapterTaskId | null>("focus"),
       },
     });
     await tick();
 
-    (
-      target.querySelector('[data-testid="drawing-language-cy"]') as HTMLButtonElement
-    ).click();
-    await tick();
-    const translationInput = target.querySelector<HTMLTextAreaElement>(
-      ".chapter-overlay__translation-field textarea",
-    )!;
-    translationInput.value = "Nodyn";
-    translationInput.dispatchEvent(new Event("input"));
-    expect(onSetDrawingAnnotationLabel).toHaveBeenCalledWith(
-      "rectangle-1",
-      "cy",
-      "Nodyn",
-    );
-
-    const solidButton = Array.from(
-      target.querySelectorAll<HTMLButtonElement>(
-        ".chapter-overlay__segmented-control button",
-      ),
-    ).find((button) => button.textContent?.trim() === "Solid")!;
-    solidButton.click();
-    expect(onSetDrawingAnnotationStyle).toHaveBeenCalledWith("rectangle-1", {
-      fillMode: "solid",
-    });
+    expect(target.querySelector('[data-testid="drawing-language-cy"]')).toBeNull();
+    expect(target.querySelector(".chapter-overlay__annotation-editor")).toBeNull();
+    expect(target.querySelector('[data-testid="inspector-summary-focus"]')).toBeTruthy();
 
     unmount(instance);
     target.remove();
@@ -744,6 +792,16 @@ describe("ChapterOverlay", () => {
     ) as HTMLElement;
     expect(visibleTask.textContent).toContain("Chapter transition time");
     expect(visibleTask.textContent).not.toContain("Advance timing");
+    const transitionToggle = visibleTask.querySelector(
+      '[data-testid="inspector-toggle-transition-timing"]',
+    ) as HTMLButtonElement;
+    expect(transitionToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(
+      visibleTask.querySelector('#inspector-section-transition-timing')?.hasAttribute('hidden'),
+    ).toBe(true);
+    transitionToggle.click();
+    await tick();
+    expect(transitionToggle.getAttribute("aria-expanded")).toBe("true");
 
     const delayInput = visibleTask.querySelector(
       '[data-testid="chapter-transition-delay"]',

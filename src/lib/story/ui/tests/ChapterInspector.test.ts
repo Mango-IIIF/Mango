@@ -80,7 +80,7 @@ describe("Chapter inspector", () => {
     expect(section("source")?.textContent).toContain("Source");
     expect(target.querySelector('[data-testid="chapter-manifest"]')).toBeTruthy();
     expect(section("layers")?.textContent).toContain("Layers");
-    expect(section("comparison")?.textContent).toContain("Comparison");
+    expect(section("comparison")).toBeNull();
 
     cleanup();
   });
@@ -97,7 +97,7 @@ describe("Chapter inspector", () => {
 
     // Closed: a summary and an Edit control, no tools.
     const annotations = section("focus")!;
-    expect(annotations.textContent).toContain("0 drawing annotations");
+    expect(annotations.textContent).toContain("0 annotations");
     expect(annotations.querySelector(".chapter-overlay__annotation-tools")).toBeNull();
 
     (
@@ -106,10 +106,13 @@ describe("Chapter inspector", () => {
     await tick();
     expect(onChapterTaskChange).toHaveBeenCalledWith("focus");
     expect(section("focus")?.classList.contains("inspector-section--active")).toBe(true);
-    expect(section("focus")?.querySelector(".chapter-overlay__annotation-tools")).toBeTruthy();
-    expect(section("focus")?.textContent).toContain("Save annotation");
-    // The other sections stay put around it.
-    expect(section("details")).toBeTruthy();
+    expect(section("focus")?.querySelector(".chapter-overlay__annotation-tools")).toBeNull();
+    expect(section("focus")?.textContent).toContain("0 annotations");
+    expect(section("focus")?.textContent).toContain("Done");
+    // Annotation editing becomes a focused inspector instead of squeezing its
+    // properties beneath unrelated chapter sections.
+    expect(section("details")).toBeNull();
+    expect(group("about")).toBeNull();
 
     // A tool opened from elsewhere — the annotation list, a keyboard shortcut —
     // pulls the inspector to its group.
@@ -127,15 +130,69 @@ describe("Chapter inspector", () => {
     cleanup();
   });
 
-  it("keeps unavailable sections visible with a reason and next action", async () => {
+  it("summarizes existing annotations before the editor is opened", async () => {
+    const { section, cleanup } = mountInspector(
+      {},
+      {
+        chapters: [
+          {
+            id: "chapter-one",
+            manifest: "https://example.org/manifest",
+            canvasIndex: 0,
+            viewBox: { x: 0, y: 0, w: 100, h: 100 },
+            drawingAnnotations: [
+              {
+                id: "existing-annotation",
+                type: "rectangle",
+                rect: { x: 10, y: 10, w: 30, h: 20 },
+                label: { en: "Existing note" },
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    const annotations = section("focus")!;
+    expect(annotations.textContent).toContain("1 annotations");
+    expect(annotations.textContent).toContain("Open");
+    expect(annotations.textContent).not.toContain("Draw to add or edit");
+    expect(annotations.querySelector(".story-wide-annotations__delete")).toBeNull();
+    expect(annotations.querySelector(".story-wide-annotations__select")).toBeNull();
+
+    cleanup();
+  });
+
+  it("shows Layers guidance only when expanded and keeps Comparison hidden", async () => {
     const { group, section, cleanup } = mountInspector();
     group("source").click();
     await tick();
 
-    const comparison = section("comparison")!;
-    expect(comparison.textContent).toContain("at least two loaded sources");
-    expect(comparison.textContent).toContain("Load another compatible source");
-    expect(comparison.querySelector('[data-testid="inspector-activate-comparison"]')).toBeNull();
+    const sections = [
+      {
+        id: "layers",
+        title: "Layers",
+        reason: "This source does not currently expose multiple image layers.",
+        action: "Choose a layered Manifest in Source.",
+      },
+    ] as const;
+
+    for (const item of sections) {
+      const target = section(item.id)!;
+      const toggle = target.querySelector(
+        `[data-testid="inspector-toggle-${item.id}"]`,
+      ) as HTMLButtonElement;
+
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+      expect(target.textContent?.trim()).toBe(item.title);
+
+      toggle.click();
+      await tick();
+      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+      expect(target.textContent).toContain(item.reason);
+      expect(target.textContent).toContain(item.action);
+    }
+    expect(section("comparison")).toBeNull();
     cleanup();
   });
 

@@ -5,12 +5,9 @@ import { writable } from 'svelte/store';
 import StoryBuilderOverlay from '../StoryBuilderOverlay.svelte';
 
 describe('motion authoring surfaces', () => {
-  it('forwards trajectory, dwell, and easing controls through the inspector surface', async () => {
+  it('keeps motion options in the wide workspace instead of duplicating them in the inspector', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
-    const onUpdateMotionPathType = vi.fn();
-    const onUpdateMotionInitialDwell = vi.fn();
-    const onUpdateMotionEasing = vi.fn();
     const story = writable({
       chapters: [
         {
@@ -62,9 +59,6 @@ describe('motion authoring surfaces', () => {
         annotationLanguage: writable('en'),
         positioningLanguage: writable(null),
         motionPreviewing: writable(false),
-        onUpdateMotionPathType,
-        onUpdateMotionInitialDwell,
-        onUpdateMotionEasing,
       } as never,
     });
     await tick();
@@ -73,26 +67,21 @@ describe('motion authoring surfaces', () => {
       [...target.querySelectorAll('button')].find(
         (entry) => entry.textContent === label,
       ) as HTMLButtonElement;
-    button('Curved Spline').click();
-    button('1.0s').click();
-    button('Ease out').click();
-
-    expect(onUpdateMotionPathType).toHaveBeenCalledWith('spline');
-    expect(onUpdateMotionInitialDwell).toHaveBeenCalledWith(1000);
-    expect(onUpdateMotionEasing).toHaveBeenCalledWith('ease-out');
+    expect(button('Curved Spline')).toBeUndefined();
+    expect(button('1.0s')).toBeUndefined();
+    expect(button('Ease out')).toBeUndefined();
+    expect(target.querySelector('[data-testid="inspector-summary-motion"]')).toBeTruthy();
     unmount(instance);
     target.remove();
   });
 
-  it('draws no pins of its own: camera points are frames on the stage', async () => {
-    /*
-     * Keyframes used to be projected onto this overlay as pins, and placed
-     * through a click-to-position mode that read the viewport for the box.
-     * They are now frames drawn on the stage by the frame layer, so the
-     * overlay has nothing to show for motion and no positioning mode.
-     */
+  it('shows camera points as numbered pins only while Motion is active', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
+    const activeChapterTask = writable<null | 'motion'>('motion');
+    const selectedMotionPointId = writable<string | null>('two');
+    const onGoToMotionPoint = vi.fn();
+    const onMoveMotionPoint = vi.fn();
     const story = writable({
       chapters: [
         {
@@ -123,7 +112,10 @@ describe('motion authoring surfaces', () => {
         currentManifest: writable('https://example.org/manifest'),
         viewBox: writable({ x: 0, y: 0, w: 100, h: 100 }),
         selectedChapterId: writable('chapter'),
-        activeChapterTask: writable('motion'),
+        activeChapterTask,
+        selectedMotionPointId,
+        onGoToMotionPoint,
+        onMoveMotionPoint,
         validationErrors: writable([]),
         uiMode: writable('chapterEdit'),
         mediaType: writable('image'),
@@ -138,9 +130,43 @@ describe('motion authoring surfaces', () => {
     });
     await tick();
 
+    const pins = target.querySelectorAll<HTMLButtonElement>('.story-builder-motion-marker');
+    expect(pins).toHaveLength(2);
+    expect(pins[0].textContent?.trim()).toBe('1');
+    expect(pins[1].textContent?.trim()).toBe('2');
+    expect(pins[1].classList.contains('story-builder-motion-marker--selected')).toBe(true);
+
+    pins[0].click();
+    expect(onGoToMotionPoint).toHaveBeenCalledWith('one');
+
+    const overlay = target.querySelector('.story-builder-overlay-root') as HTMLDivElement;
+    overlay.getBoundingClientRect = vi.fn(() => ({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 100,
+      width: 200,
+      height: 100,
+      toJSON: () => ({}),
+    }));
+    const pointer = (type: string, clientX: number, clientY: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY });
+      Object.defineProperty(event, 'pointerId', { value: 7 });
+      return event;
+    };
+    pins[1].dispatchEvent(pointer('pointerdown', 100, 50));
+    pins[1].dispatchEvent(pointer('pointermove', 150, 25));
+    pins[1].dispatchEvent(pointer('pointerup', 150, 25));
+
+    expect(onMoveMotionPoint).toHaveBeenCalledWith('two', { x: 75, y: 25 });
+    pins[1].click();
+    expect(onGoToMotionPoint).toHaveBeenCalledTimes(1);
+
+    activeChapterTask.set(null);
+    await tick();
     expect(target.querySelectorAll('.story-builder-motion-marker')).toHaveLength(0);
-    expect(target.querySelector('.story-builder-motion-point-surface')).toBeNull();
-    expect(target.querySelector('.story-builder-motion-placement')).toBeNull();
     unmount(instance);
     target.remove();
   });

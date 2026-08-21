@@ -60,10 +60,24 @@ describe("StoryBuilderWideAuthoring", () => {
     const onAssignMediaSegment = vi.fn();
     const onPreviewMediaSegment = vi.fn();
     const onStopPreviewMediaSegment = vi.fn();
-    const onDeleteDrawingAnnotation = vi.fn();
-    const onDeleteTextAnnotation = vi.fn();
-    const onEditDrawingAnnotation = vi.fn();
-    const onEditTextAnnotation = vi.fn();
+    const selectedPointId = writable<string | null>(null);
+    const motionPreviewing = writable(false);
+    const selectedAnnotationId = writable<string | null>(null);
+    const annotationTool = writable("select" as const);
+    const onSetAnnotationTool = vi.fn();
+    const onSetAnnotationLabel = vi.fn();
+    const onSetAnnotationStyle = vi.fn();
+    const onEditAnnotation = vi.fn((annotationId: string) =>
+      selectedAnnotationId.set(annotationId),
+    );
+    const onFinishAnnotationEdit = vi.fn(() =>
+      selectedAnnotationId.set(null),
+    );
+    const onUpdatePointFromView = vi.fn();
+    const onUpdateMotionPathType = vi.fn();
+    const onUpdateMotionInitialDwell = vi.fn();
+    const onUpdateMotionEasing = vi.fn();
+    const onSkipNarration = vi.fn();
     const instance = mount(StoryBuilderWideAuthoring, {
       target,
       props: {
@@ -74,17 +88,33 @@ describe("StoryBuilderWideAuthoring", () => {
         mediaSources,
         mediaMarks,
         avMarksValid: writable(true),
+        languages: ["en", "cy"],
+        selectedPointId,
         onAddPoint: vi.fn(),
         onGoToPoint: vi.fn(),
+        onUpdatePointFromView,
+        motionPreviewing,
+        onUpdateMotionPathType,
+        onUpdateMotionInitialDwell,
+        onUpdateMotionEasing,
+        onUpdateMotionDuration: vi.fn(),
+        onApplyMotionPreset: vi.fn(),
+        onPreviewMotion: vi.fn(),
+        onStopMotionPreview: vi.fn(),
+        annotationTool,
+        selectedAnnotationId,
+        onSetAnnotationTool,
+        onSetAnnotationLabel,
+        onSetAnnotationStyle,
+        onDeleteAnnotation: vi.fn(),
+        onEditAnnotation,
+        onFinishAnnotationEdit,
         onSetNarrationTrack: vi.fn(),
         onAssignNarrationSegment: vi.fn(),
+        onSkipNarration,
         onAssignMediaSegment,
         onPreviewMediaSegment,
         onStopPreviewMediaSegment,
-        onDeleteDrawingAnnotation,
-        onDeleteTextAnnotation,
-        onEditDrawingAnnotation,
-        onEditTextAnnotation,
       },
     });
 
@@ -97,6 +127,47 @@ describe("StoryBuilderWideAuthoring", () => {
     expect(target.querySelector(".story-wide-narration")).toBeNull();
     expect(target.textContent).toContain("1.00× zoom");
     expect(target.textContent).toContain("2.00× zoom");
+    const updatePoint = [...target.querySelectorAll<HTMLButtonElement>("button")].find(
+      (button) => button.textContent?.includes("Update pin from current view"),
+    )!;
+    expect(updatePoint.disabled).toBe(true);
+    selectedPointId.set("one");
+    await tick();
+    expect(updatePoint.disabled).toBe(false);
+    updatePoint.click();
+    expect(onUpdatePointFromView).toHaveBeenCalledWith("one");
+
+    const tab = (label: string) =>
+      [...target.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
+        (button) => button.textContent?.trim() === label,
+      )!;
+    expect(tab("Pins").getAttribute("aria-selected")).toBe("true");
+    tab("Options").click();
+    await tick();
+    expect(target.querySelector("#motion-pins-panel")).toBeNull();
+    expect(target.querySelector("#motion-options-panel .motion-panel--wide")).toBeTruthy();
+    const motionOption = (label: string) =>
+      [...target.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent?.trim() === label,
+      )!;
+    motionOption("Curved Spline").click();
+    motionOption("1.0s").click();
+    motionOption("Ease out").click();
+    expect(onUpdateMotionPathType).toHaveBeenCalledWith("spline");
+    expect(onUpdateMotionInitialDwell).toHaveBeenCalledWith(1000);
+    expect(onUpdateMotionEasing).toHaveBeenCalledWith("ease-out");
+    motionPreviewing.set(true);
+    await tick();
+    expect(target.querySelector(".story-wide-authoring")).toBeNull();
+    expect(target.querySelector('[data-testid="story-wide-done"]')).toBeNull();
+    expect(target.querySelector(".story-wide-authoring--empty")).toBeTruthy();
+    motionPreviewing.set(false);
+    await tick();
+    expect(target.querySelector("#motion-options-panel")).toBeTruthy();
+    tab("Pins").click();
+    await tick();
+    expect(target.querySelector("#motion-pins-panel")).toBeTruthy();
+    expect(target.querySelector("#motion-options-panel")).toBeNull();
 
     activeTask.set("audio-timing");
     await tick();
@@ -116,6 +187,42 @@ describe("StoryBuilderWideAuthoring", () => {
       ).map((input) => input.value),
     ).toEqual(["1.00", "4.00"]);
     expect(target.textContent).toContain("Preview");
+    const noNarration = target.querySelector(
+      '[data-testid="chapter-narration-none"]',
+    ) as HTMLButtonElement;
+    noNarration.click();
+    await tick();
+    expect(onSkipNarration).toHaveBeenCalledWith("en");
+    expect(
+      target.querySelector('[data-testid="chapter-narration-editor"]')
+        ?.getAttribute("aria-disabled"),
+    ).toBe("true");
+    expect(
+      target.querySelector<HTMLInputElement>(
+        ".story-wide-narration__track input",
+      )?.disabled,
+    ).toBe(true);
+    expect(
+      target.querySelector('[data-testid="chapter-narration-waveform"]')
+        ?.getAttribute("aria-disabled"),
+    ).toBe("true");
+    (
+      target.querySelector(
+        '[data-testid="chapter-narration-use"]',
+      ) as HTMLButtonElement
+    ).click();
+    await tick();
+    expect(
+      target.querySelector<HTMLInputElement>(
+        ".story-wide-narration__track input",
+      )?.disabled,
+    ).toBe(false);
+    expect(
+      target.querySelector('.story-wide-modal__panel')?.getAttribute('role'),
+    ).toBe('dialog');
+    expect(
+      target.querySelector('.story-wide-modal__panel')?.getAttribute('aria-modal'),
+    ).toBe('true');
 
     // The media-timing footer remains available while an audio source is resolving.
     mediaSources.set([]);
@@ -127,6 +234,7 @@ describe("StoryBuilderWideAuthoring", () => {
     expect(
       target.querySelector('[data-testid="chapter-media-waveform"]'),
     ).toBeTruthy();
+    expect(target.querySelector('.story-wide-modal__panel')).toBeTruthy();
     expect(target.textContent).not.toContain("manifest audio");
     expect(target.textContent).not.toContain(
       "Drag or resize the waveform region",
@@ -180,52 +288,103 @@ describe("StoryBuilderWideAuthoring", () => {
     expect(
       target.querySelector('[data-testid="chapter-media-waveform"]'),
     ).toBeTruthy();
+    const videoPreview = target.querySelector<HTMLVideoElement>(
+      '[data-testid="chapter-media-video-preview"]',
+    );
+    expect(videoPreview).toBeTruthy();
+    expect(videoPreview?.getAttribute('src')).toBe(
+      'https://example.org/source.mp4',
+    );
+    expect(target.querySelector('.story-wide-modal--video')).toBeTruthy();
+    const playVideo = vi.fn().mockResolvedValue(undefined);
+    const pauseVideo = vi.fn();
+    Object.defineProperty(videoPreview!, 'play', { value: playVideo });
+    Object.defineProperty(videoPreview!, 'pause', { value: pauseVideo });
+    videoPreview!.currentTime = 12;
+    videoPreview!.dispatchEvent(new Event('timeupdate'));
+    (
+      target.querySelectorAll<HTMLButtonElement>('.story-wide-media__current')[0]
+    ).click();
+    await tick();
+    expect(onAssignMediaSegment).toHaveBeenLastCalledWith(12, 25);
+    const stagePreviewCalls = onPreviewMediaSegment.mock.calls.length;
+    const stopStageCalls = onStopPreviewMediaSegment.mock.calls.length;
+    const previewVideo = Array.from(target.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Preview segment'),
+    ) as HTMLButtonElement;
+    previewVideo.click();
+    await tick();
+    expect(playVideo).toHaveBeenCalledOnce();
+    expect(onPreviewMediaSegment).toHaveBeenCalledTimes(stagePreviewCalls);
+    expect(onStopPreviewMediaSegment.mock.calls.length).toBeGreaterThan(
+      stopStageCalls,
+    );
     expect(target.querySelector(".story-wide-media__track")).toBeNull();
     expect(target.querySelector(".story-wide-media__sliders")).toBeNull();
 
     activeTask.set("focus");
     await tick();
-    expect(target.querySelector(".story-wide-annotations")).toBeTruthy();
-    expect(target.textContent).toContain("Rectangle");
-    expect(target.textContent).not.toContain("A text annotation");
-    expect(
-      target.querySelector(".story-wide-annotations__tool-grid"),
-    ).toBeNull();
-    expect(
-      target.querySelectorAll(".story-wide-annotations__group"),
-    ).toHaveLength(0);
-    expect(
-      target.querySelectorAll(".story-wide-annotations__item"),
-    ).toHaveLength(1);
-
-    const editButtons = target.querySelectorAll<HTMLButtonElement>(
-      ".story-wide-annotations__select",
-    );
-    editButtons[0].click();
-    expect(onEditTextAnnotation).not.toHaveBeenCalled();
-    expect(onEditDrawingAnnotation).toHaveBeenCalledWith("rectangle-one");
-
-    const deleteButtons = target.querySelectorAll<HTMLButtonElement>(
-      ".story-wide-annotations__delete",
-    );
-    deleteButtons[0].click();
-    expect(onDeleteTextAnnotation).not.toHaveBeenCalled();
-    expect(onDeleteDrawingAnnotation).toHaveBeenCalledWith("rectangle-one");
-
-    story.update((state) => ({
-      ...state,
-      chapters: state.chapters.map((chapter) => ({
-        ...chapter,
-        annotations: {},
-        drawingAnnotations: [],
-      })),
-    }));
+    expect(target.querySelector(".story-wide-authoring--annotations")).toBeTruthy();
+    expect(target.querySelector('[data-testid="story-wide-done"]')).toBeTruthy();
+    expect(target.querySelectorAll('[role="tab"]')).toHaveLength(0);
+    expect(target.querySelector(".story-wide-authoring__annotation-intro")?.textContent)
+      .toContain("Add annotation");
+    expect(target.querySelectorAll(".story-wide-authoring__annotation-tool")).toHaveLength(6);
+    (
+      [...target.querySelectorAll<HTMLButtonElement>(
+        ".story-wide-authoring__annotation-tools button",
+      )].find((button) => button.textContent?.trim() === "Rectangle")!
+    ).click();
+    expect(onSetAnnotationTool).toHaveBeenCalledWith("rectangle");
+    (
+      target.querySelector(".story-wide-annotations__select") as HTMLButtonElement
+    ).click();
     await tick();
+    expect(onEditAnnotation).toHaveBeenCalledWith("rectangle-one");
+    expect(target.querySelector("#annotation-options-panel")).toBeTruthy();
     expect(
-      target.querySelector("#story-wide-annotations-title")?.textContent,
-    ).toContain("0");
-    expect(target.textContent).not.toContain("No annotations yet");
-    expect(target.querySelector(".story-wide-annotations__items")).toBeNull();
+      target.querySelector(".story-wide-authoring__annotation-context")
+        ?.textContent,
+    ).toContain("Edit annotation");
+    expect(
+      target.querySelector(".story-wide-authoring__annotation-context")
+        ?.textContent,
+    ).toContain("Rectangle");
+    const appearance = target.querySelector(".annotation-options__appearance")!;
+    expect(
+      appearance.querySelectorAll(".annotation-options__field--nested"),
+    ).toHaveLength(2);
+    expect(appearance.textContent).toContain("Background");
+    expect(appearance.textContent).toContain("Stroke");
+    (
+      target.querySelector('[data-testid="drawing-language-cy"]') as HTMLButtonElement
+    ).click();
+    await tick();
+    const translation = target.querySelector<HTMLTextAreaElement>(
+      ".annotation-options__translation textarea",
+    )!;
+    expect(translation.rows).toBe(2);
+    translation.value = "Nodyn";
+    translation.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(onSetAnnotationLabel).toHaveBeenCalledWith(
+      "rectangle-one",
+      "cy",
+      "Nodyn",
+    );
+    const solid = [...target.querySelectorAll<HTMLButtonElement>(
+      ".annotation-options__segments button",
+    )].find((button) => button.textContent?.trim() === "Solid")!;
+    solid.click();
+    expect(onSetAnnotationStyle).toHaveBeenCalledWith("rectangle-one", {
+      fillMode: "solid",
+    });
+    (
+      target.querySelector('[data-testid="annotation-edit-done"]') as HTMLButtonElement
+    ).click();
+    await tick();
+    expect(onFinishAnnotationEdit).toHaveBeenCalledOnce();
+    expect(target.querySelector("#annotation-list-panel")).toBeTruthy();
+    expect(target.querySelector("#annotation-options-panel")).toBeNull();
 
     activeTask.set("details");
     await tick();

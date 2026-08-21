@@ -79,14 +79,7 @@
     },
     "source": {
       "reloadManifest": "Recargar el manifiesto",
-      "loadManifest": "Cargar el manifiesto",
-      "stepLoad": "Paso 1 de 2 · Cargue un manifiesto IIIF.",
-      "canvas": "Lienzo",
-      "canvasPosition": "Lienzo {current} de {total}",
-      "chooseCanvasHint": "Elija un lienzo y guarde la fuente para aplicarlo a este capítulo.",
-      "stepCreate": "Paso 2 de 2 · Elija un lienzo y cree el primer capítulo. La posición de la imagen puede ajustarse después desde las herramientas del capítulo.",
-      "createFirst": "Crear el primer capítulo",
-      "loading": "Cargando el manifiesto y sus lienzos…"
+      "loadManifest": "Cargar el manifiesto"
     },
     "transition": {
       "title": "Tiempo de transición entre capítulos",
@@ -205,6 +198,9 @@
       "button": "Narrador de audio",
       "title": "Narración",
       "description": "Elija la pista de narración y arrastre o redimensione la región del capítulo.",
+      "mode": "Modo de narración del capítulo",
+      "useNarration": "Usar narración",
+      "noNarration": "Sin narración",
       "language": "Idioma de la narración",
       "audioUrl": "URL del audio de narración",
       "preview": "Previsualizar la narración",
@@ -229,20 +225,24 @@
     },
     "position": {
       "title": "Encuadre",
-      "hint": "Ajuste el encuadre en el escenario: arrástrelo para moverlo y use sus tiradores para cambiar su tamaño. Escriba aquí una región en píxeles del lienzo si ya la tiene.",
+      "hint": "Desplace y amplíe la obra bajo el marco fijo de la historia. Para una edición IIIF precisa, también puede escribir aquí la región del lienzo.",
       "empty": "Aún no hay encuadre. Escriba una región en píxeles del lienzo para crearlo.",
       "x": "X",
       "y": "Y",
       "width": "Ancho",
       "height": "Alto",
       "goTo": "Ir al encuadre",
-      "aspectLocked": "Bloqueado a {aspect}: el ancho y el alto cambian juntos, así que todos los lectores ven exactamente esta región."
+      "aspectLocked": "Marco de historia {aspect}. La vista previa y los lectores conservan esta forma exacta; el ancho y el alto cambian juntos.",
+      "stageLabel": "Marco de historia · {aspect}"
     },
     "annotations": {
       "chapter": "Anotaciones del capítulo",
+      "annotationsTab": "Anotaciones",
+      "optionsTab": "Opciones",
       "drawing": "Anotaciones de dibujo",
+      "add": "Añadir anotación",
       "tools": "Herramientas de dibujo de anotaciones",
-      "drawingHint": "Añada un punto, una forma o una línea directamente sobre la obra. Seleccione una anotación en el pie para editarla aquí.",
+      "drawingHint": "Elija Seleccionar / Mover para editar una anotación existente, o elija una forma para añadir otra.",
       "edit": "Editar la anotación",
       "editDrawing": "Editar la anotación de {type} {index}",
       "deleteDrawing": "Eliminar la anotación de {type} {index}",
@@ -260,7 +260,7 @@
         "medium": "Medio",
         "thick": "Grueso"
       },
-      "emptySelection": "Dibuje una anotación o seleccione una en el pie para editar su texto y su apariencia.",
+      "emptySelection": "Seleccione una anotación de la lista o de la obra para editar su texto y apariencia.",
       "empty": "No hay anotaciones en este capítulo.",
       "motivation": "Motivación",
       "motivationAuto": "Automática (según la forma)",
@@ -318,12 +318,16 @@
       "durationSeconds": "Duración (segundos)",
       "zoomValue": "Zoom {zoom}×",
       "timeline": "Línea de tiempo del movimiento del capítulo",
+      "pinsTab": "Pines",
+      "optionsTab": "Opciones",
       "goToPoint": "Ir al punto de cámara {number}",
       "point": "Punto {number}",
       "deletePoint": "Eliminar el punto de cámara",
       "deletePointNumber": "Eliminar el punto de cámara {number}",
-      "emptyPoints": "Aún no hay puntos de cámara. Añada un punto y arrastre su encuadre hasta su posición en el escenario.",
-      "addPoint": "Añadir punto de cámara"
+      "emptyPoints": "Aún no hay puntos de cámara. Añada un punto; aparecerá en el centro de la vista actual.",
+      "addPoint": "Añadir punto de cámara",
+      "updatePoint": "Actualizar pin desde la vista actual",
+      "selectPointToUpdate": "Seleccione un pin para actualizar su posición y zoom."
     },
     "settings": {
       "title": "Ajustes de la historia",
@@ -359,7 +363,7 @@
       "previewChapterHint": "Reproduzca este capítulo por separado, tal como lo presenta la historia.",
       "stopChapterPreview": "Detener la previsualización",
       "chapterPreviewPlaying": "Reproduciendo este capítulo. Haga clic para detener.",
-      "sourceHint": "Añada la fuente de su historia, elija su lienzo inicial y cree el primer capítulo. Después podrá ajustar la posición de la imagen desde las herramientas del capítulo.",
+      "sourceHint": "Añada la fuente de su historia para crear el primer capítulo. Use los controles del visor para cambiar de lienzo; después podrá ajustar la posición de la imagen.",
       "noChapter": "Ningún capítulo seleccionado",
       "noChapterHint": "Capture un capítulo o seleccione uno en la línea de tiempo para editar su contenido.",
       "confirmPosition": "Confirmar la posición"
@@ -388,7 +392,9 @@
       "hideChapters": "Ocultar capítulos",
       "showChapters": "Mostrar capítulos",
       "hideTools": "Ocultar herramientas del capítulo",
-      "showTools": "Mostrar herramientas del capítulo"
+      "showTools": "Mostrar herramientas del capítulo",
+      "hideAnnotationInspector": "Ocultar inspector de anotaciones",
+      "showAnnotationInspector": "Mostrar inspector de anotaciones"
     },
     "frame": {
       "label": "Encuadre del capítulo",
@@ -405,9 +411,10 @@
       },
       "edit": "Editar",
       "draw": "Dibujar",
+      "open": "Abrir",
       "done": "Hecho",
       "onStage": "En el escenario",
-      "annotationsSummary": "{count} anotaciones dibujadas. Dibuje para añadirlas o editarlas en el escenario.",
+      "annotationsSummary": "{count} anotaciones. Use el espacio de trabajo del escenario para añadirlas, seleccionarlas y editarlas.",
       "motionNone": "Sin movimiento de cámara. Edite para añadir puntos de cámara en el escenario.",
       "motionSummary": "{count} puntos de cámara · {style} · {seconds}s",
       "narrationNone": "Sin segmento de narración para {language}.",

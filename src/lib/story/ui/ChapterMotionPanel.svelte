@@ -14,6 +14,7 @@
   export let onApplyPreset: (preset: NonNullable<ChapterCameraTrack['preset']>) => void;
   export let onPreview: () => void;
   export let onStopPreview: () => void;
+  export let wide = false;
 
   $: durationSeconds = (track?.durationMs ?? 5000) / 1000;
   $: points = [...(track?.keyframes ?? [])].sort((a, b) => a.timeMs - b.timeMs);
@@ -76,7 +77,7 @@
   };
 </script>
 
-<div class="motion-panel">
+<div class="motion-panel" class:motion-panel--wide={wide}>
   <div class="motion-panel__intro">
     <div>
       <strong>{$t('storyBuilder.motion.title')}</strong>
@@ -102,7 +103,8 @@
     </p>
   {/if}
 
-  <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
+  <div class="motion-panel__options">
+  <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section motion-panel__section--style">
     <div class="motion-panel__section-label">{$t('storyBuilder.motion.style')}</div>
     <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.presets')}>
       {#each ['ken-burns', 'hero-reveal', 'arc-sweep', 'zoom-in', 'zoom-out', 'pan', 'drift-zoom', 'static', 'custom'] as preset}
@@ -201,6 +203,7 @@
       />
     </label>
   </section>
+  </div>
 </div>
 
 <style>
@@ -266,6 +269,20 @@
     padding-top: 12px;
     border-top: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
   }
+  .motion-panel__options {
+    display: grid;
+    gap: 12px;
+  }
+  .motion-panel--wide .motion-panel__options {
+    grid-template-columns: minmax(260px, 2fr) repeat(4, minmax(120px, 1fr));
+    align-items: start;
+  }
+  .motion-panel--wide .motion-panel__section + .motion-panel__section {
+    padding-top: 0;
+    padding-left: 12px;
+    border-top: 0;
+    border-left: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+  }
   .motion-panel__section-label {
     color: var(--viewer-muted, #9aa6b2);
     font-size: 10px;
@@ -328,5 +345,17 @@
     padding: 8px;
     background: var(--viewer-panel, #121922);
     color: inherit;
+  }
+  @media (max-width: 960px) {
+    .motion-panel--wide .motion-panel__options {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .motion-panel--wide .motion-panel__section--style {
+      grid-column: 1 / -1;
+    }
+    .motion-panel--wide .motion-panel__section + .motion-panel__section {
+      padding-left: 0;
+      border-left: 0;
+    }
   }
 </style>

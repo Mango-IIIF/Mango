@@ -43,11 +43,95 @@ const waitForStage = async (page: Page) => {
     .toBeGreaterThan(0);
 };
 
+const selectChapterSix = async (page: Page) => {
+  const viewer = page.locator('mango-viewer');
+  const chaptersToggle = viewer.locator('[data-testid="builder-toggle-chapters"]');
+  if ((await chaptersToggle.getAttribute('aria-expanded')) !== 'true') {
+    await chaptersToggle.click();
+  }
+  await viewer
+    .getByRole('button')
+    .filter({ hasText: 'Chapter 6' })
+    .first()
+    .click();
+  await expect
+    .poll(() =>
+      viewer.evaluate((element: any) => {
+        const saved = element.getStory?.()?.chapters?.[5]?.viewBox;
+        const current = element.getViewBox?.();
+        if (!saved || !current) return Number.POSITIVE_INFINITY;
+        return Math.max(
+          Math.abs(saved.x + saved.w / 2 - (current.x + current.w / 2)),
+          Math.abs(saved.y + saved.h / 2 - (current.y + current.h / 2)),
+        );
+      }),
+    )
+    // A fluid authoring viewport may expose more picture on one axis than the
+    // saved output frame, but it must stay centred on the authored region.
+    .toBeLessThanOrEqual(2);
+};
+
+test("loads a new story source without a canvas-selection step", async ({
+  page,
+}) => {
+  await page.goto("/story-edit.html");
+  const viewer = page.locator("mango-viewer");
+  await expect(viewer.getByTestId("story-source-setup")).toBeVisible();
+  await expect(viewer.getByTestId("chapter-canvas-select")).toHaveCount(0);
+
+  await viewer
+    .getByTestId("chapter-manifest")
+    .fill("/test-story/local-iiif/manifest.json");
+  await viewer.getByTestId("chapter-manifest-reload").click();
+
+  await expect(viewer.getByTestId("narration-overlay")).toBeHidden({
+    timeout: 15_000,
+  });
+  await expect(
+    viewer.locator('[data-testid^="chapter-row-"]').first(),
+  ).toBeVisible();
+  await expect(viewer.getByTestId("story-stage-label")).toHaveCount(0);
+  const storyStage = await viewer.getByTestId("story-stage").boundingBox();
+  const surface = await viewer.getByTestId("story-stage-surface").boundingBox();
+  expect(storyStage && surface).toBeTruthy();
+  if (!storyStage || !surface) return;
+  expect(Math.abs(surface.x - storyStage.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(surface.y - storyStage.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(surface.width - storyStage.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(surface.height - storyStage.height)).toBeLessThanOrEqual(1);
+});
+
+test("fills desktop, tablet, and phone workspaces while keeping the authored region centred", async ({
+  page,
+}) => {
+  for (const viewport of [
+    { width: 1600, height: 900 },
+    { width: 1280, height: 800 },
+    { width: 1024, height: 768 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await waitForStage(page);
+    await selectChapterSix(page);
+    const viewer = page.locator("mango-viewer");
+
+    const storyStage = viewer.locator('[data-testid="story-stage"]');
+    const surface = viewer.locator('[data-testid="story-stage-surface"]');
+    const storyStageBox = await storyStage.boundingBox();
+    const surfaceBox = await surface.boundingBox();
+    expect(storyStageBox).not.toBeNull();
+    expect(surfaceBox).not.toBeNull();
+    expect(Math.abs(surfaceBox!.width - storyStageBox!.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(surfaceBox!.height - storyStageBox!.height)).toBeLessThanOrEqual(1);
+  }
+});
+
 test("keeps the current view in step with the stage after a window resize", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await waitForStage(page);
+  await selectChapterSix(page);
   const viewer = page.locator("mango-viewer");
   await viewer.evaluate((element: any) => {
     (window as any).__viewBoxEvents = [];
@@ -59,8 +143,8 @@ test("keeps the current view in step with the stage after a window resize", asyn
     });
   });
 
-  // A different window is the one layout change no floating chrome can
-  // absorb: the stage itself has to take the new shape.
+  // The full-workspace stage follows the window, and OSD reports that new
+  // viewport shape rather than retaining a hidden fixed-ratio surface.
   await page.setViewportSize({ width: 1100, height: 900 });
 
   await expect
@@ -76,8 +160,6 @@ test("keeps the current view in step with the stage after a window resize", asyn
   const emitted: number[] = await viewer.evaluate(
     () => (window as any).__viewBoxEvents,
   );
-  // The change was announced, and what was announced last is the stage as
-  // it is now — not the shape it had before the resize.
   expect(emitted.length).toBeGreaterThan(0);
   expect(Math.abs(emitted[emitted.length - 1] - stage.aspect) / stage.aspect).toBeLessThan(
     0.01,
@@ -119,8 +201,12 @@ test("leaves the stage the same size whatever chrome the author opens", async ({
   const closeTool = async (task: string) => {
     // Every open tool has Done on the stage; the frame tool also sends the
     // panels aside, so that is the one to use there.
-    if (task === "position") {
+    if (task === "position" || task === "focus" || task === "motion") {
       await viewer.locator('[data-testid="story-wide-done"]').click();
+      return;
+    }
+    if (task === 'audio-timing' || task === 'media-timing') {
+      await viewer.locator('.story-wide-modal__done').click();
       return;
     }
     await viewer.locator(`[data-testid="inspector-done-${task}"]`).click();
@@ -129,8 +215,9 @@ test("leaves the stage the same size whatever chrome the author opens", async ({
   for (const task of ["position", "focus", "motion", "audio-timing"]) {
     await openTool(task);
     if (task === "position") {
-      // The frame tool lives on the stage itself: handles, the panels aside.
-      await expect(viewer.locator(".story-frame--editable")).toHaveCount(1);
+      // The stage boundary is the output frame; there is no second draggable
+      // chapter rectangle competing with it.
+      await expect(viewer.locator(".story-frame--chapter")).toHaveCount(0);
       await expect(viewer.locator(".viewer__grid--builder-left-collapsed")).toHaveCount(1);
     } else {
       // The tool's own panel has appeared...
@@ -140,6 +227,11 @@ test("leaves the stage the same size whatever chrome the author opens", async ({
     await expectUnchanged(`opening ${task}`);
     await closeTool(task);
     await expectUnchanged(`closing ${task}`);
+    if (task === "position") {
+      await expect(
+        viewer.locator('[data-testid="inspector-toggle-position"]'),
+      ).toHaveAttribute("aria-expanded", "false");
+    }
   }
 
   // Switching inspector groups is chrome too.
@@ -157,7 +249,7 @@ test("leaves the stage the same size whatever chrome the author opens", async ({
   }
 });
 
-test("floats the narration editor over the stage and keeps its controls in reach", async ({
+test("opens narration in a full-stage modal and keeps its controls in reach", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 700 });
@@ -169,33 +261,48 @@ test("floats the narration editor over the stage and keeps its controls in reach
   await viewer.locator('[data-testid="inspector-activate-audio-timing"]').click();
   const footer = viewer.locator(".stage__bottom");
   const narration = footer.locator(".story-wide-narration");
+  const dialog = footer.locator('.story-wide-modal__panel');
+  const sidebars = viewer.locator('.panel-stack--left, .panel-stack--right');
+  const sidebarToggles = viewer.locator('.builder-panel-toggle');
   await expect(narration).toBeVisible();
+  await expect(dialog).toHaveAttribute('role', 'dialog');
+  await expect(dialog).toHaveAttribute('aria-modal', 'true');
+  await expect(sidebars.first()).toHaveCSS('visibility', 'hidden');
+  await expect(sidebars.last()).toHaveCSS('visibility', 'hidden');
+  await expect(sidebarToggles.first()).toHaveCSS('visibility', 'hidden');
+  await expect(sidebarToggles.last()).toHaveCSS('visibility', 'hidden');
 
-  // Floating: positioned over the stage, not a row of it.
+  // Modal: the footer fills the stage as an overlay, not a row of it.
   const position = await footer.evaluate((element) => getComputedStyle(element).position);
   expect(position).toBe("absolute");
   const stageAfter = await measureStage(page);
   expect(Math.round(stageAfter.height)).toBe(Math.round(stageBefore.height));
 
-  // The author can still make it taller, and it never buries the toolbar or
-  // runs past the stage.
-  await narration.evaluate((element: HTMLElement) => {
-    element.style.height = "380px";
-  });
   const footerBox = await footer.boundingBox();
-  const toolbar = viewer.locator(".stage__toolbar--below");
-  const toolbarBox = await toolbar.boundingBox();
   const stageBox = await viewer.locator(".stage--story-builder").boundingBox();
-  expect(footerBox && toolbarBox && stageBox).toBeTruthy();
-  if (!footerBox || !toolbarBox || !stageBox) return;
-  expect(footerBox.y + footerBox.height).toBeLessThanOrEqual(toolbarBox.y + 1);
-  expect(footerBox.y).toBeGreaterThanOrEqual(stageBox.y);
+  const dialogBox = await dialog.boundingBox();
+  expect(footerBox && stageBox && dialogBox).toBeTruthy();
+  if (!footerBox || !stageBox || !dialogBox) return;
+  expect(Math.round(footerBox.x)).toBe(Math.round(stageBox.x));
+  expect(Math.round(footerBox.y)).toBe(Math.round(stageBox.y));
+  expect(Math.round(footerBox.width)).toBe(Math.round(stageBox.width));
+  expect(Math.round(footerBox.height)).toBe(Math.round(stageBox.height));
+  expect(dialogBox.width).toBeGreaterThan(stageBox.width * 0.6);
+  expect(dialogBox.y).toBeGreaterThanOrEqual(stageBox.y);
+  expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
+    stageBox.y + stageBox.height + 1,
+  );
   await expect(
     narration.getByRole("button", { name: "Apply to chapter" }),
   ).toBeVisible();
+  await footer.locator('.story-wide-modal__done').click();
+  await expect(sidebars.first()).toHaveCSS('visibility', 'visible');
+  await expect(sidebars.last()).toHaveCSS('visibility', 'visible');
+  await expect(sidebarToggles.first()).toHaveCSS('visibility', 'visible');
+  await expect(sidebarToggles.last()).toHaveCSS('visibility', 'visible');
 });
 
-test("leaves an audio chapter's stage the same size when media timing opens", async ({
+test("keeps audio and video timing inside the modal without resizing the stage", async ({
   page,
 }) => {
   /*
@@ -225,8 +332,131 @@ test("leaves an audio chapter's stage the same size when media timing opens", as
 
   await mediaTiming.click();
   await expect(viewer.locator(".stage__bottom")).toBeVisible();
+  await expect(viewer.locator('.story-wide-modal__panel')).toHaveAttribute(
+    'role',
+    'dialog',
+  );
+  await expect(viewer.locator('.panel-stack--left')).toHaveCSS(
+    'visibility',
+    'hidden',
+  );
+  await expect(viewer.locator('.panel-stack--right')).toHaveCSS(
+    'visibility',
+    'hidden',
+  );
+  await expect(viewer.locator('.builder-panel-toggle').first()).toHaveCSS(
+    'visibility',
+    'hidden',
+  );
+  await expect(viewer.locator('.builder-panel-toggle').last()).toHaveCSS(
+    'visibility',
+    'hidden',
+  );
   await expect.poll(measure, { message: "media area after opening media timing" }).toEqual(before);
 
-  await viewer.locator('[data-testid="inspector-done-media-timing"]').click();
+  await viewer.locator('.story-wide-modal__done').click();
+  await expect(viewer.locator('.panel-stack--left')).toHaveCSS(
+    'visibility',
+    'visible',
+  );
+  await expect(viewer.locator('.panel-stack--right')).toHaveCSS(
+    'visibility',
+    'visible',
+  );
+  await expect(viewer.locator('.builder-panel-toggle').first()).toHaveCSS(
+    'visibility',
+    'visible',
+  );
+  await expect(viewer.locator('.builder-panel-toggle').last()).toHaveCSS(
+    'visibility',
+    'visible',
+  );
   await expect.poll(measure, { message: "media area after closing media timing" }).toEqual(before);
+
+  // Video chapters move the player into the timing modal instead of leaving a
+  // second, blurred player in the normal canvas workspace.
+  const videoRow = viewer.locator('[data-testid="chapter-row-chapter_13"]');
+  await expect(videoRow).toBeVisible({ timeout: 30_000 });
+  await videoRow.locator('button').first().click();
+  await viewer.locator('[data-testid="inspector-group-timing"]').click();
+  const videoTiming = viewer.locator(
+    '[data-testid="inspector-activate-media-timing"]',
+  );
+  await expect(videoTiming).toBeVisible({ timeout: 30_000 });
+  await videoTiming.click();
+
+  const videoPreview = viewer.locator(
+    '[data-testid="chapter-media-video-preview"]',
+  );
+  await expect(videoPreview).toBeVisible();
+  await expect(videoPreview).toHaveAttribute('src', /\S+/);
+  await expect(viewer.locator('.panel-stack--left')).toHaveCSS(
+    'visibility',
+    'hidden',
+  );
+  await expect(viewer.locator('.panel-stack--right')).toHaveCSS(
+    'visibility',
+    'hidden',
+  );
+  await expect(viewer.locator('.builder-panel-toggle').first()).toHaveCSS(
+    'visibility',
+    'hidden',
+  );
+  await expect(viewer.locator('.builder-panel-toggle').last()).toHaveCSS(
+    'visibility',
+    'hidden',
+  );
+  await expect(viewer.locator('.stage__primary')).toHaveCSS(
+    'visibility',
+    'hidden',
+  );
+});
+
+test("hides both sidebars while annotations are being created", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 543, height: 591 });
+  await waitForStage(page);
+  const viewer = page.locator('mango-viewer');
+  const chaptersToggle = viewer.locator('[data-testid="builder-toggle-chapters"]');
+  if ((await chaptersToggle.getAttribute('aria-expanded')) !== 'true') {
+    await chaptersToggle.click();
+  }
+  await viewer.getByRole('button').filter({ hasText: 'Chapter 6' }).first().click();
+  const toolsToggle = viewer.locator('[data-testid="builder-toggle-tools"]');
+  if ((await toolsToggle.getAttribute('aria-expanded')) !== 'true') {
+    await toolsToggle.click();
+  }
+  await viewer.locator('[data-testid="inspector-activate-focus"]').click();
+
+  const chapters = viewer.locator('.panel-stack--left');
+  const inspector = viewer.locator('.panel-stack--right');
+  const stage = viewer.locator('.stage--story-builder');
+  await expect(chapters).toHaveCSS('visibility', 'hidden');
+  await expect(inspector).toHaveCSS('visibility', 'hidden');
+  await expect(chaptersToggle).toHaveCSS('visibility', 'hidden');
+  await expect(toolsToggle).toHaveCSS('visibility', 'hidden');
+  await expect(
+    viewer.locator('.story-wide-authoring--annotations'),
+  ).toBeVisible();
+
+  const done = viewer.locator('[data-testid="story-wide-done"]');
+  const doneBox = await done.boundingBox();
+  const stageBox = await stage.boundingBox();
+  expect(doneBox && stageBox).toBeTruthy();
+  if (!doneBox || !stageBox) return;
+  expect(doneBox.x + doneBox.width).toBeLessThanOrEqual(
+    stageBox.x + stageBox.width,
+  );
+
+  await done.click();
+  await expect(inspector).toHaveCSS('visibility', 'visible');
+  await expect(toolsToggle).toHaveCSS('visibility', 'visible');
+  await expect(stage).toHaveCSS('z-index', '0');
+  await expect(viewer.locator('.story-builder-overlay-root')).toHaveCSS(
+    'z-index',
+    '3',
+  );
+  await expect(chapters).toHaveCSS('z-index', '6');
+  await expect(inspector).toHaveCSS('z-index', '6');
 });

@@ -1,17 +1,10 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { Play, Square } from "@lucide/svelte";
-  import {
-    ANNOTATION_TOOLS,
-    annotationToolLabelKey,
-  } from "../../features/annotations/annotationTools";
   import { readable, type Readable } from "svelte/store";
   import {
-    CHAPTER_ANNOTATION_MOTIVATIONS,
     type AnnotationPlacement,
     type ChapterAdvance,
-    type ChapterAnnotationTool,
-    type ChapterDrawingAnnotation,
     type StoryState,
   } from "../../core/types/story";
   import type { ViewBox } from "../../core/types/viewer";
@@ -24,10 +17,8 @@
   } from "../annotationPlacement";
   import ChapterTimelineSection from "./ChapterTimelineSection.svelte";
   import ChapterTextForm from "./ChapterTextForm.svelte";
-  import LanguageTabs from "../../features/annotations/LanguageTabs.svelte";
   import ChapterPositionSection from "./ChapterPositionSection.svelte";
   import ChapterCameraConfig from "./ChapterCameraConfig.svelte";
-  import ChapterMotionPanel from "./ChapterMotionPanel.svelte";
   import InspectorSection from "./InspectorSection.svelte";
   import {
     evaluateChapterTasks,
@@ -49,6 +40,10 @@
     ((id: string, opacity: number) => void) | undefined = undefined;
 
   let manifestSupportsLayers = false;
+  /* Comparison authoring remains implemented but is not ready to expose in
+     Chapter tools yet. Keep this gate local so the section can be restored
+     without removing its task evaluation or UI implementation. */
+  const SHOW_COMPARISON_TOOL = false;
   $: manifestSupportsLayers =
     layers.length > 1 && layers.every((src) => src.type === "image");
 
@@ -68,8 +63,6 @@
   export let language = "en";
   export let languages: string[] = ["en"];
   export let currentManifest: string | null = null;
-  export let canvasIndex = 0;
-  export let canvasCount = 0;
   export let onClose: (() => void) | undefined;
   export let onSetMediaMarks:
     ((start: number | null, end: number | null) => void) | undefined;
@@ -81,23 +74,6 @@
     ((lang: string, start: number, end: number) => void) | undefined;
   export let onSkipNarration: ((lang: string) => void) | undefined;
   export let onSetAnnotationLanguage: ((lang: string) => void) | undefined;
-  export let annotationTool: Readable<ChapterAnnotationTool> =
-    readable("select");
-  export let selectedDrawingAnnotationId: Readable<string | null> = readable(null);
-  export let onSetAnnotationTool:
-    ((tool: ChapterAnnotationTool) => void) | undefined;
-  export let onSetDrawingAnnotationLabel:
-    ((annotationId: string, lang: string, value: string) => void) | undefined;
-  export let onSetDrawingAnnotationStyle:
-    ((
-      annotationId: string,
-      style: {
-        color?: string | null;
-        strokeWidth?: "thin" | "medium" | "thick";
-        fillMode?: ChapterDrawingAnnotation["fillMode"];
-        motivation?: ChapterDrawingAnnotation["motivation"] | null;
-      },
-    ) => void) | undefined;
   export let onUpdateManifest:
     ((chapterId: string, manifest: string) => void) | undefined;
   export let onLoadManifest: ((manifest: string) => void) | undefined;
@@ -105,7 +81,6 @@
   export let onReloadManifest:
     | ((chapterId: string, manifest: string, canvasIndex: number) => void)
     | undefined;
-  export let onSelectCanvas: ((canvasIndex: number) => void) | undefined;
   export let onUpdateChapterTitle:
     ((chapterId: string, lang: string, value: string) => void) | undefined;
   export let onUpdateChapterDescription:
@@ -133,26 +108,6 @@
   export let onSave: (() => void) | undefined;
   export let onCancel: (() => void) | undefined;
   /** Re-reads the chapter from the viewer after its source or canvas changed. */
-  export let onApplySource: (() => void) | undefined = undefined;
-  export let onUpdateMotionDuration:
-    ((durationMs: number) => void) | undefined = undefined;
-  export let onUpdateMotionPathType:
-    ((pathType: "linear" | "spline") => void) | undefined = undefined;
-  export let onUpdateMotionInitialDwell:
-    ((dwellMs: number) => void) | undefined = undefined;
-  export let onUpdateMotionEasing:
-    | ((easing: "linear" | "ease-in" | "ease-out" | "ease-in-out") => void)
-    | undefined = undefined;
-  export let motionPreviewing = false;
-  export let onApplyMotionPreset:
-    | ((
-        preset: NonNullable<
-          NonNullable<StoryState["chapters"][number]["cameraTrack"]>["preset"]
-        >,
-      ) => void)
-    | undefined = undefined;
-  export let onPreviewMotion: (() => void) | undefined = undefined;
-  export let onStopMotionPreview: (() => void) | undefined = undefined;
   export let onChapterTaskChange:
     ((task: ChapterTaskId | null) => void) | undefined = undefined;
 
@@ -175,7 +130,6 @@
   let delayDraft: number | undefined = undefined;
   let lastChapterId: string | null = null;
   let lastCurrentManifest: string | null = null;
-  let saveDisabled = false;
   let markInDraft = "";
   let markOutDraft = "";
   let lastMarksApplied: { markIn: number | null; markOut: number | null } = {
@@ -192,8 +146,6 @@
   let mediaTypeValue: MediaType | null = null;
   let taskEvaluations: ChapterTaskEvaluation[] = [];
   let chapterIndex = -1;
-  let saveAcknowledged = false;
-  let saveFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   let chapterHasSavedPosition = false;
 
   /*
@@ -206,9 +158,6 @@
   const positionSignature = (value: ViewBox | null | undefined): string =>
     value ? `${value.x}:${value.y}:${value.w}:${value.h}` : "";
 
-  const annotationTools = ANNOTATION_TOOLS;
-  const annotationPalette = ["#e07a3f", "#f6c343", "#39b57e", "#3aa0e0", "#a06eff", "#ef5f7a"];
-
   /*
    * One inspector, three groups, no back button. Everything about the
    * selected chapter is stacked under About, Timing and Source; the sections
@@ -216,9 +165,14 @@
    * — open their tool in place and the inspector follows the open tool into
    * its group, so a tool started from elsewhere (the annotation list, say) is
    * never out of sight.
-   */
+  */
   let inspectorGroup: InspectorGroup = "about";
-  let collapsedSections: Partial<Record<ChapterTaskId, boolean>> = {};
+  let collapsedSections: Partial<Record<ChapterTaskId, boolean>> = {
+    position: true,
+    "transition-timing": true,
+    layers: true,
+    comparison: true,
+  };
 
   const selectGroup = (group: InspectorGroup) => {
     inspectorGroup = group;
@@ -245,7 +199,6 @@
 
   const activateTool = (task: ChapterTaskId) => {
     if (evaluationFor(task)?.availability.state !== "available") return;
-    saveAcknowledged = false;
     collapsedSections = { ...collapsedSections, [task]: false };
     onChapterTaskChange?.(task);
   };
@@ -259,10 +212,20 @@
   $: {
     const task = $activeChapterTask;
     if (task && task !== followedTask) {
+      const previousTask = followedTask;
       followedTask = task;
       inspectorGroup = inspectorGroupForTask(task);
-      collapsedSections = { ...collapsedSections, [task]: false };
+      collapsedSections = {
+        ...collapsedSections,
+        ...(previousTask === "position" || task !== "position"
+          ? { position: true }
+          : {}),
+        [task]: false,
+      };
     } else if (!task) {
+      if (followedTask === "position") {
+        collapsedSections = { ...collapsedSections, position: true };
+      }
       followedTask = null;
     }
   }
@@ -270,6 +233,11 @@
   let inspectorChapterId: string | null = null;
   $: if (chapterId !== inspectorChapterId) {
     inspectorChapterId = chapterId;
+    collapsedSections = {
+      ...collapsedSections,
+      position: true,
+      "transition-timing": true,
+    };
     onChapterTaskChange?.(null);
   }
 
@@ -616,8 +584,6 @@
     $story.chapters.length > 0 || $story.presentationAspect
       ? resolvePresentationAspect($story)
       : null;
-  $: selectedDrawingAnnotation =
-    chapter?.drawingAnnotations?.find((item) => item.id === $selectedDrawingAnnotationId) ?? null;
   $: chapterHasSavedPosition = Boolean(chapter?.viewBox);
   $: {
     const positionSyncKey = `${chapterId ?? ""}:${positionSignature(chapter?.viewBox)}`;
@@ -817,7 +783,6 @@
     .map((entry) => coerceAnnotationPlacement(entry?.placement))
     .find((entry): entry is AnnotationPlacement => Boolean(entry));
   $: delayMs = delayDraft;
-  $: saveDisabled = !chapterId || !chapter;
 
   const handleManifestInput = (event: Event) => {
     const value = (event.target as HTMLInputElement).value;
@@ -873,17 +838,7 @@
     if (!chapterId || !chapter) return;
     commitMediaMarks();
     applyDrafts(chapterId);
-    saveAcknowledged = true;
-    if (saveFeedbackTimeout) clearTimeout(saveFeedbackTimeout);
-    saveFeedbackTimeout = setTimeout(() => {
-      saveAcknowledged = false;
-      saveFeedbackTimeout = null;
-    }, 1800);
     onSave?.();
-  };
-
-  const handleCancel = () => {
-    onCancel?.();
   };
 
   const handleRevertView = () => {
@@ -966,7 +921,6 @@
   }
 
   onDestroy(() => {
-    if (saveFeedbackTimeout) clearTimeout(saveFeedbackTimeout);
     clearNarrationPreviewListener();
   });
 
@@ -1022,6 +976,7 @@
 <div
   class="chapter-overlay"
   class:chapter-overlay--docked={docked}
+  class:chapter-overlay--annotation-task={$activeChapterTask === "focus"}
   data-testid="chapter-overlay"
   aria-hidden={!open}
   hidden={!open}
@@ -1070,7 +1025,7 @@
             : $t('storyBuilder.overlay.loadSource')}
         </div>
       </div>
-      {#if chapter}
+      {#if chapter && $activeChapterTask !== "focus"}
         <button
           class="chapter-overlay__preview-chapter"
           type="button"
@@ -1130,38 +1085,38 @@
             <ChapterCameraConfig
               chapterExists={false}
               chapterCanvasIndex={0}
-              {canvasIndex}
-              {canvasCount}
               {manifestDraft}
               sourceLoaded={Boolean(
                 currentManifest && currentManifest === manifestDraft.trim(),
               )}
               onManifestInput={handleManifestInput}
               onReloadManifest={() => handleReload()}
-              {onSelectCanvas}
               {onCreateChapter}
             />
           </div>
         </div>
       {:else}
-        <div class="chapter-inspector__groups" role="tablist" aria-label={$t('storyBuilder.inspector.groupsLabel')}>
-          {#each INSPECTOR_GROUPS as group (group)}
-            <button
-              class="chapter-inspector__group"
-              class:chapter-inspector__group--active={inspectorGroup === group}
-              type="button"
-              role="tab"
-              aria-selected={inspectorGroup === group}
-              data-testid={`inspector-group-${group}`}
-              on:click={() => selectGroup(group)}
-            >
-              {$t(`storyBuilder.inspector.groups.${group}`)}
-            </button>
-          {/each}
-        </div>
+        {#if $activeChapterTask !== "focus"}
+          <div class="chapter-inspector__groups" role="tablist" aria-label={$t('storyBuilder.inspector.groupsLabel')}>
+            {#each INSPECTOR_GROUPS as group (group)}
+              <button
+                class="chapter-inspector__group"
+                class:chapter-inspector__group--active={inspectorGroup === group}
+                type="button"
+                role="tab"
+                aria-selected={inspectorGroup === group}
+                data-testid={`inspector-group-${group}`}
+                on:click={() => selectGroup(group)}
+              >
+                {$t(`storyBuilder.inspector.groups.${group}`)}
+              </button>
+            {/each}
+          </div>
+        {/if}
 
         <div class="chapter-overlay__body chapter-inspector__sections" role="tabpanel">
           {#if inspectorGroup === "about"}
+            {#if $activeChapterTask !== "focus"}
             <InspectorSection
               id="details"
               title={$t('storyBuilder.tasks.items.details.title')}
@@ -1204,6 +1159,7 @@
                 />
               {/if}
             </InspectorSection>
+            {/if}
 
             <InspectorSection
               id="focus"
@@ -1213,187 +1169,15 @@
               collapsed={Boolean(collapsedSections.focus)}
               onToggle={() => toggleSection("focus")}
               active={$activeChapterTask === "focus"}
-              activateLabel={$t('storyBuilder.inspector.draw')}
+              activateLabel={$t('storyBuilder.inspector.open')}
               onActivate={() => activateTool("focus")}
               onDone={finishTool}
             >
-              {#if $activeChapterTask === "focus"}
-                <div class="chapter-overlay__section">
-                  <div class="chapter-overlay__section-title">
-                    {$t('storyBuilder.annotations.drawing')}
-                  </div>
-                  <p class="chapter-overlay__hint">
-                    {$t('storyBuilder.annotations.drawingHint')}
-                  </p>
-                  <div
-                    class="chapter-overlay__annotation-tools"
-                    aria-label={$t('storyBuilder.annotations.tools')}
-                  >
-                    {#each annotationTools as tool}
-                      <button
-                        type="button"
-                        class:chapter-overlay__annotation-tool--active={$annotationTool ===
-                          tool.id}
-                        aria-pressed={$annotationTool === tool.id}
-                        on:click={() => onSetAnnotationTool?.(tool.id)}
-                      >
-                        <svelte:component this={tool.icon} aria-hidden="true" />
-                        <span>{$t(annotationToolLabelKey(tool.id))}</span>
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-                {#if selectedDrawingAnnotation}
-                  <div class="chapter-overlay__section chapter-overlay__annotation-editor">
-                    <div class="chapter-overlay__section-title">{$t('storyBuilder.annotations.edit')}</div>
-
-                    <div class="chapter-overlay__field">
-                      <span>{$t('storyBuilder.annotations.translations')}</span>
-                      <LanguageTabs
-                        {languages}
-                        activeLanguage={activeLanguage}
-                        ariaLabel={$t('storyBuilder.annotations.translations')}
-                        testIdPrefix="drawing-language"
-                        onchange={handleLanguageChange}
-                      />
-                      <label class="chapter-overlay__translation-field">
-                        <small>{activeLanguage.toUpperCase()}</small>
-                        <textarea
-                          rows="3"
-                          value={selectedDrawingAnnotation.label?.[activeLanguage] ?? ""}
-                          placeholder={$t('storyBuilder.annotations.textPlaceholder', { language: activeLanguage.toUpperCase() })}
-                          on:input={(event) => onSetDrawingAnnotationLabel?.(
-                            selectedDrawingAnnotation!.id,
-                            activeLanguage,
-                            (event.currentTarget as HTMLInputElement).value,
-                          )}
-                        ></textarea>
-                      </label>
-                    </div>
-
-                    <div class="chapter-overlay__field">
-                      <span>{$t('storyBuilder.annotations.colour')}</span>
-                      <div class="chapter-overlay__annotation-palette">
-                        {#each annotationPalette as color}
-                          <button
-                            type="button"
-                            style={`--annotation-color:${color}`}
-                            class:chapter-overlay__annotation-swatch--active={(selectedDrawingAnnotation.color ?? "#e07a3f") === color}
-                            aria-label={$t('storyBuilder.annotations.setColour', { colour: color })}
-                            aria-pressed={(selectedDrawingAnnotation.color ?? "#e07a3f") === color}
-                            on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { color })}
-                          ></button>
-                        {/each}
-                        <input
-                          type="color"
-                          value={selectedDrawingAnnotation.color ?? "#e07a3f"}
-                          aria-label={$t('storyBuilder.annotations.customColour')}
-                          on:input={(event) => onSetDrawingAnnotationStyle?.(
-                            selectedDrawingAnnotation!.id,
-                            { color: (event.currentTarget as HTMLInputElement).value },
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    {#if selectedDrawingAnnotation.type === "rectangle" || selectedDrawingAnnotation.type === "polygon"}
-                      <div class="chapter-overlay__field">
-                        <span>{$t('storyBuilder.annotations.background')}</span>
-                        <div class="chapter-overlay__segmented-control">
-                          <button
-                            type="button"
-                            class:chapter-overlay__segmented-control--active={selectedDrawingAnnotation.fillMode !== "solid"}
-                            on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { fillMode: "transparent" })}
-                          >{$t('storyBuilder.annotations.transparent')}</button>
-                          <button
-                            type="button"
-                            class:chapter-overlay__segmented-control--active={selectedDrawingAnnotation.fillMode === "solid"}
-                            on:click={() => onSetDrawingAnnotationStyle?.(selectedDrawingAnnotation!.id, { fillMode: "solid" })}
-                          >{$t('storyBuilder.annotations.solid')}</button>
-                        </div>
-                      </div>
-                    {/if}
-
-                    <div class="chapter-overlay__field">
-                      <span>{$t('storyBuilder.annotations.stroke')}</span>
-                      <div class="chapter-overlay__segmented-control">
-                        {#each ["thin", "medium", "thick"] as width}
-                          <button
-                            type="button"
-                            class:chapter-overlay__segmented-control--active={(selectedDrawingAnnotation.strokeWidth ?? "medium") === width}
-                            on:click={() => onSetDrawingAnnotationStyle?.(
-                              selectedDrawingAnnotation!.id,
-                              { strokeWidth: width as "thin" | "medium" | "thick" },
-                            )}
-                          >{$t(`storyBuilder.annotations.strokeWidth.${width}`)}</button>
-                        {/each}
-                      </div>
-                    </div>
-
-                    <!--
-                      Optional on purpose. Leaving it unset keeps the behaviour every
-                      existing story relies on, where the export infers a motivation
-                      from whether the shape carries words. Choosing one says
-                      something the geometry cannot.
-                    -->
-                    <div class="chapter-overlay__field">
-                      <label for="drawing-motivation">
-                        {$t('storyBuilder.annotations.motivation')}
-                      </label>
-                      <select
-                        id="drawing-motivation"
-                        value={selectedDrawingAnnotation.motivation ?? ''}
-                        on:change={(event) => onSetDrawingAnnotationStyle?.(
-                          selectedDrawingAnnotation!.id,
-                          {
-                            motivation:
-                              (event.currentTarget.value ||
-                                null) as ChapterDrawingAnnotation["motivation"] | null,
-                          },
-                        )}
-                      >
-                        <option value="">
-                          {$t('storyBuilder.annotations.motivationAuto')}
-                        </option>
-                        {#each CHAPTER_ANNOTATION_MOTIVATIONS as motivation}
-                          <option value={motivation}>
-                            {$t(`storyBuilder.annotations.motivations.${motivation}`)}
-                          </option>
-                        {/each}
-                      </select>
-                    </div>
-                  </div>
-                {:else}
-                  <p class="chapter-overlay__hint">{$t('storyBuilder.annotations.emptySelection')}</p>
-                {/if}
-                <div class="chapter-inspector__tool-actions">
-                  <button
-                    class="chapter-overlay__button chapter-overlay__button--accent"
-                    type="button"
-                    data-testid="chapter-save"
-                    disabled={saveDisabled}
-                    on:click={handleSave}
-                  >
-                    {saveAcknowledged
-                      ? $t('storyBuilder.topBar.saved')
-                      : $t('storyBuilder.tasks.items.focus.save')}
-                  </button>
-                  <button
-                    class="chapter-overlay__button chapter-overlay__button--subtle"
-                    type="button"
-                    data-testid="chapter-cancel"
-                    on:click={handleCancel}
-                  >
-                    {$t('storyBuilder.chapters.cancel')}
-                  </button>
-                </div>
-              {:else}
-                <p class="chapter-overlay__hint" data-testid="inspector-summary-focus">
-                  {$t('storyBuilder.inspector.annotationsSummary', {
-                    count: chapter.drawingAnnotations?.length ?? 0,
-                  })}
-                </p>
-              {/if}
+              <p class="chapter-overlay__hint" data-testid="inspector-summary-focus">
+                {$t('storyBuilder.inspector.annotationsSummary', {
+                  count: chapter.drawingAnnotations?.length ?? 0,
+                })}
+              </p>
             </InspectorSection>
           {:else if inspectorGroup === "timing"}
             <InspectorSection
@@ -1508,24 +1292,9 @@
               onActivate={() => activateTool("motion")}
               onDone={finishTool}
             >
-              {#if $activeChapterTask === "motion"}
-                <ChapterMotionPanel
-                  track={chapter?.cameraTrack}
-                  previewing={motionPreviewing}
-                  onUpdateDuration={(durationMs) =>
-                    onUpdateMotionDuration?.(durationMs)}
-                  onUpdatePathType={(pathType) => onUpdateMotionPathType?.(pathType)}
-                  onUpdateDwell={(dwellMs) => onUpdateMotionInitialDwell?.(dwellMs)}
-                  onUpdateEasing={(easing) => onUpdateMotionEasing?.(easing)}
-                  onApplyPreset={(preset) => onApplyMotionPreset?.(preset)}
-                  onPreview={() => onPreviewMotion?.()}
-                  onStopPreview={() => onStopMotionPreview?.()}
-                />
-              {:else}
-                <p class="chapter-overlay__hint" data-testid="inspector-summary-motion">
-                  {motionSummary}
-                </p>
-              {/if}
+              <p class="chapter-overlay__hint" data-testid="inspector-summary-motion">
+                {motionSummary}
+              </p>
             </InspectorSection>
 
             <InspectorSection
@@ -1593,29 +1362,15 @@
                 embedded={true}
                 chapterExists={true}
                 chapterCanvasIndex={chapter.canvasIndex}
-                {canvasIndex}
-                {canvasCount}
                 {manifestDraft}
                 onManifestInput={handleManifestInput}
                 onReloadManifest={() => handleReload()}
-                {onSelectCanvas}
               />
-              <div class="chapter-inspector__tool-actions">
-                <button
-                  class="chapter-overlay__button chapter-overlay__button--accent"
-                  type="button"
-                  data-testid="chapter-apply-source"
-                  on:click={() => onApplySource?.()}
-                >
-                  {$t('storyBuilder.tasks.items.source.save')}
-                </button>
-              </div>
             </InspectorSection>
 
             <InspectorSection
               id="layers"
               title={$t('storyBuilder.tasks.items.layers.title')}
-              status={evaluations["layers"]?.status}
               availability={evaluations["layers"]?.availability ?? { state: "available" }}
               collapsed={Boolean(collapsedSections.layers)}
               onToggle={() => toggleSection("layers")}
@@ -1658,18 +1413,19 @@
               {/if}
             </InspectorSection>
 
-            <InspectorSection
-              id="comparison"
-              title={$t('storyBuilder.tasks.items.comparison.title')}
-              status={evaluations["comparison"]?.status}
-              availability={evaluations["comparison"]?.availability ?? { state: "available" }}
-              collapsed={Boolean(collapsedSections.comparison)}
-              onToggle={() => toggleSection("comparison")}
-            >
-              <p class="chapter-overlay__hint">
-                {$t('storyBuilder.comparison.hint')}
-              </p>
-            </InspectorSection>
+            {#if SHOW_COMPARISON_TOOL}
+              <InspectorSection
+                id="comparison"
+                title={$t('storyBuilder.tasks.items.comparison.title')}
+                availability={evaluations["comparison"]?.availability ?? { state: "available" }}
+                collapsed={Boolean(collapsedSections.comparison)}
+                onToggle={() => toggleSection("comparison")}
+              >
+                <p class="chapter-overlay__hint">
+                  {$t('storyBuilder.comparison.hint')}
+                </p>
+              </InspectorSection>
+            {/if}
           {/if}
         </div>
 
@@ -1756,6 +1512,23 @@
       background: var(--viewer-panel, #121922);
       border-bottom: 1px solid
         var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    }
+
+    /* Annotation editing is a focused workspace, not another dashboard view.
+       Keep its chapter identity but give the list, tools and properties the
+       vertical space otherwise spent on preview and inspector navigation. */
+    .chapter-overlay--annotation-task .chapter-overlay__header {
+      padding: 10px 14px;
+    }
+
+    .chapter-overlay--annotation-task .chapter-overlay__form {
+      gap: 8px;
+      padding: 8px 12px 0;
+    }
+
+    .chapter-overlay--annotation-task .chapter-overlay__body,
+    .chapter-overlay--annotation-task .inspector-section__body {
+      gap: 8px;
     }
 
     .chapter-overlay__eyebrow {
@@ -1936,6 +1709,17 @@
       gap: 8px;
     }
 
+    .chapter-overlay--annotation-task .chapter-inspector__tool-actions {
+      position: sticky;
+      bottom: 0;
+      z-index: 4;
+      margin: 2px -14px -14px;
+      padding: 10px 14px 12px;
+      border-top: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+      background: color-mix(in srgb, var(--viewer-panel, #121922) 96%, transparent);
+      box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.16);
+    }
+
     .chapter-inspector__tool-actions .chapter-overlay__button {
       flex: 1 1 120px;
     }
@@ -1974,6 +1758,10 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 7px;
       margin-top: 11px;
+    }
+    .chapter-overlay--annotation-task .chapter-overlay__annotation-tools {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 3px;
     }
     .chapter-overlay__annotation-tools button {
       min-width: 0;

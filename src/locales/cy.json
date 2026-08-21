@@ -79,14 +79,7 @@
     },
     "source": {
       "reloadManifest": "Ail-lwytho'r maniffest",
-      "loadManifest": "Llwytho'r maniffest",
-      "stepLoad": "Cam 1 o 2 · Llwythwch Faniffest IIIF.",
-      "canvas": "Cynfas",
-      "canvasPosition": "Cynfas {current} o {total}",
-      "chooseCanvasHint": "Dewiswch gynfas, yna cadwch y ffynhonnell i'w gymhwyso i'r bennod hon.",
-      "stepCreate": "Cam 2 o 2 · Dewiswch gynfas a chrëwch y bennod gyntaf. Gellir addasu lleoliad y ddelwedd wedyn o offer y bennod.",
-      "createFirst": "Creu'r bennod gyntaf",
-      "loading": "Wrthi'n llwytho'r maniffest a'i gynfasau…"
+      "loadManifest": "Llwytho'r maniffest"
     },
     "transition": {
       "title": "Amser pontio rhwng penodau",
@@ -205,6 +198,9 @@
       "button": "Adroddwr sain",
       "title": "Adroddiant",
       "description": "Dewiswch y trac adroddiant a llusgwch neu newidiwch faint rhanbarth y bennod.",
+      "mode": "Modd adroddiant y bennod",
+      "useNarration": "Defnyddio adroddiant",
+      "noNarration": "Dim adroddiant",
       "language": "Iaith yr adroddiant",
       "audioUrl": "URL sain yr adroddiant",
       "preview": "Rhagolwg o'r adroddiant",
@@ -229,20 +225,24 @@
     },
     "position": {
       "title": "Ffrâm",
-      "hint": "Addaswch y ffrâm ar y llwyfan: llusgwch hi i’w symud, a’i dolenni i newid ei maint. Teipiwch ranbarth yma mewn picseli’r cynfas os oes gennych un.",
+      "hint": "Symudwch a chwyddwch y gwaith celf o dan ffrâm sefydlog y stori. Ar gyfer awduro IIIF manwl, gallwch hefyd deipio rhanbarth y cynfas yma.",
       "empty": "Dim ffrâm eto. Teipiwch ranbarth mewn picseli'r cynfas i greu un.",
       "x": "X",
       "y": "Y",
       "width": "Lled",
       "height": "Uchder",
       "goTo": "Mynd i'r ffrâm",
-      "aspectLocked": "Wedi'i chloi i {aspect}: mae'r lled a'r uchder yn newid gyda'i gilydd, fel bod pob darllenydd yn gweld yn union y rhanbarth hwn."
+      "aspectLocked": "Ffrâm stori {aspect}. Mae'r rhagolwg a'r darllenwyr yn cadw'r union siâp hwn; mae'r lled a'r uchder yn newid gyda'i gilydd.",
+      "stageLabel": "Ffrâm stori · {aspect}"
     },
     "annotations": {
       "chapter": "Anodiadau'r bennod",
+      "annotationsTab": "Anodiadau",
+      "optionsTab": "Dewisiadau",
       "drawing": "Anodiadau lluniadu",
+      "add": "Ychwanegu anodiad",
       "tools": "Offer lluniadu anodiadau",
-      "drawingHint": "Ychwanegwch bwynt, siâp neu linell yn uniongyrchol at y gwaith celf. Dewiswch anodiad yn y troedyn i'w olygu yma.",
+      "drawingHint": "Dewiswch Dewis / Tremio i olygu anodiad presennol, neu dewiswch siâp i ychwanegu un.",
       "edit": "Golygu'r anodiad",
       "editDrawing": "Golygu anodiad {type} {index}",
       "deleteDrawing": "Dileu anodiad {type} {index}",
@@ -260,7 +260,7 @@
         "medium": "Canolig",
         "thick": "Trwchus"
       },
-      "emptySelection": "Lluniwch anodiad, neu dewiswch un o'r troedyn i olygu ei destun a'i olwg.",
+      "emptySelection": "Dewiswch anodiad o'r rhestr neu'r gwaith celf i olygu ei destun a'i olwg.",
       "empty": "Dim anodiadau yn y bennod hon.",
       "motivation": "Cymhelliad",
       "motivationAuto": "Awtomatig (o'r siâp)",
@@ -318,12 +318,16 @@
       "durationSeconds": "Hyd (eiliadau)",
       "zoomValue": "Chwyddo {zoom}×",
       "timeline": "Llinell amser symudiad y bennod",
+      "pinsTab": "Pinnau",
+      "optionsTab": "Dewisiadau",
       "goToPoint": "Mynd i bwynt camera {number}",
       "point": "Pwynt {number}",
       "deletePoint": "Dileu'r pwynt camera",
       "deletePointNumber": "Dileu pwynt camera {number}",
-      "emptyPoints": "Dim pwyntiau camera eto. Ychwanegwch bwynt, yna llusgwch ei ffrâm i'w lle ar y llwyfan.",
-      "addPoint": "Ychwanegu pwynt camera"
+      "emptyPoints": "Dim pwyntiau camera eto. Ychwanegwch bwynt; bydd yn ymddangos yng nghanol yr olygfa gyfredol.",
+      "addPoint": "Ychwanegu pwynt camera",
+      "updatePoint": "Diweddaru'r pin o'r olygfa gyfredol",
+      "selectPointToUpdate": "Dewiswch bin i ddiweddaru ei banio a'i chwyddo."
     },
     "settings": {
       "title": "Gosodiadau'r stori",
@@ -359,7 +363,7 @@
       "previewChapterHint": "Chwaraewch y bennod hon ar ei phen ei hun, yn union fel y mae'r stori'n ei chyflwyno.",
       "stopChapterPreview": "Atal y rhagolwg",
       "chapterPreviewPlaying": "Yn chwarae'r bennod hon. Cliciwch i atal.",
-      "sourceHint": "Ychwanegwch ffynhonnell eich stori, dewiswch ei chynfas cychwynnol, a chrëwch y bennod gyntaf. Gallwch addasu lleoliad y ddelwedd o offer y bennod wedyn.",
+      "sourceHint": "Ychwanegwch ffynhonnell eich stori i greu'r bennod gyntaf. Defnyddiwch reolyddion y gwyliwr i newid cynfas; gallwch addasu lleoliad y ddelwedd wedyn.",
       "noChapter": "Dim pennod wedi'i dewis",
       "noChapterHint": "Cipiwch bennod neu dewiswch un o'r llinell amser i olygu ei chynnwys.",
       "confirmPosition": "Cadarnhau'r Safle"
@@ -388,7 +392,9 @@
       "hideChapters": "Cuddio penodau",
       "showChapters": "Dangos penodau",
       "hideTools": "Cuddio offer y bennod",
-      "showTools": "Dangos offer y bennod"
+      "showTools": "Dangos offer y bennod",
+      "hideAnnotationInspector": "Cuddio'r arolygydd anodiadau",
+      "showAnnotationInspector": "Dangos yr arolygydd anodiadau"
     },
     "frame": {
       "label": "Ffrâm y bennod",
@@ -405,9 +411,10 @@
       },
       "edit": "Golygu",
       "draw": "Tynnu",
+      "open": "Agor",
       "done": "Wedi gorffen",
       "onStage": "Ar y llwyfan",
-      "annotationsSummary": "{count} anodiad wedi'u tynnu. Tynnwch i'w hychwanegu neu eu golygu ar y llwyfan.",
+      "annotationsSummary": "{count} anodiad. Defnyddiwch weithfan y llwyfan i'w hychwanegu, eu dewis a'u golygu.",
       "motionNone": "Dim symudiad camera. Golygwch i ychwanegu pwyntiau camera ar y llwyfan.",
       "motionSummary": "{count} pwynt camera · {style} · {seconds}e",
       "narrationNone": "Dim segment adrodd ar gyfer {language}.",

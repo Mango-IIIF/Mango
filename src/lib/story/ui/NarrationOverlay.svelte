@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Check, Link2, Volume2 } from '@lucide/svelte';
+  import { onMount } from 'svelte';
   import type { Readable } from 'svelte/store';
   import type { StoryState } from '../../core/types/story';
   import { deriveChapterAnnotationBase, isGeneratedDraftId, validatePublicIdentifier } from '../publicIdentifiers';
@@ -10,12 +11,14 @@
   export let docked = false;
   export let language = 'en';
   export let languages: string[] = ['en'];
-  export let onBack: (() => void) | undefined;
   export let onClose: (() => void) | undefined;
   export let onSetNarrationTrack: ((lang: string, src: string) => void) | undefined;
   export let onUpdateStoryTitle: ((lang: string, value: string) => void) | undefined;
   export let onUpdateStoryIdentifiers:
     ((id: string, annotationBase: string) => void) | undefined;
+  export let showSourceSetup = false;
+  export let currentManifest: string | null = null;
+  export let onLoadSource: ((manifest: string) => void) | undefined;
 
   let activeLanguage = language;
   let lastLanguageProp = language;
@@ -26,6 +29,21 @@
   let storyId = '';
   let annotationBase = '';
   let lastIdentifierSyncKey = '';
+  let manifestDraft = '';
+  let lastManifestSyncKey = '';
+  let panelRoot: HTMLDivElement | null = null;
+
+  /* The story picture has a fixed authored aspect, but a settings dialog is
+     editor chrome. Portal the modal to the full stage so compact screens do
+     not inherit the picture's short 4:3/16:9 height. */
+  onMount(() => {
+    if (docked || !panelRoot) return;
+    const stage = panelRoot.closest('.stage--story-builder');
+    const grid = stage?.closest('.viewer__grid');
+    grid?.classList.add('viewer__grid--settings-modal');
+    stage?.appendChild(panelRoot);
+    return () => grid?.classList.remove('viewer__grid--settings-modal');
+  });
 
   const getTrackSrc = (value: StoryState, lang: string): string => {
     return value.narration?.tracks?.[lang]?.src ?? '';
@@ -75,6 +93,18 @@
     $story.publication?.status === 'published' &&
     Boolean($story.publication.annotationBase) &&
     annotationBase.trim() !== $story.publication.annotationBase;
+  $: sourceLoaded = Boolean(
+    currentManifest && currentManifest === manifestDraft.trim(),
+  );
+
+  $: {
+    const nextManifest = currentManifest ?? '';
+    const key = `${open ? '1' : '0'}:${nextManifest}`;
+    if (key !== lastManifestSyncKey) {
+      lastManifestSyncKey = key;
+      manifestDraft = nextManifest;
+    }
+  }
 
   const saveIdentifiers = () => {
     if (identifiersLocked || storyIdErrors.length || annotationBaseErrors.length) return;
@@ -102,6 +132,15 @@
   const handleSaveUrl = () => {
     onSetNarrationTrack?.(activeLanguage, url);
   };
+
+  const handleManifestInput = (event: Event) => {
+    manifestDraft = (event.currentTarget as HTMLInputElement).value;
+  };
+
+  const handleLoadSource = () => {
+    if (!manifestDraft.trim()) return;
+    onLoadSource?.(manifestDraft);
+  };
 </script>
 
 <svelte:window
@@ -113,31 +152,35 @@
 />
 
 <div
+  bind:this={panelRoot}
   class="narration-panel"
   class:narration-panel--docked={docked}
+  class:story-settings-modal={!docked}
   data-testid="narration-overlay"
   aria-hidden={!open}
   hidden={!open}
 >
+  {#if !docked}
+    <button
+      class="narration-panel__scrim"
+      type="button"
+      aria-label={$t('storyBuilder.settings.close')}
+      on:click={() => onClose?.()}
+    ></button>
+  {/if}
   <div
     class="narration-panel__panel"
     role={docked ? 'region' : 'dialog'}
-    aria-modal="false"
+    aria-modal={docked ? undefined : 'true'}
     aria-labelledby="narration-overlay-title"
   >
     <div class="narration-overlay__header">
-      {#if !docked}
-        <button
-          class="narration-overlay__back"
-          type="button"
-          data-testid="narration-back"
-          on:click={() => onBack?.()}
-        >
-          {$t('common.back')}
-        </button>
-      {/if}
       <div>
-        <div class="narration-overlay__title" id="narration-overlay-title">{$t('storyBuilder.settings.title')}</div>
+        <div class="narration-overlay__title" id="narration-overlay-title">
+          {showSourceSetup
+            ? $t('storyBuilder.overlay.newStory')
+            : $t('storyBuilder.settings.title')}
+        </div>
         <div class="narration-overlay__subtitle">{$t('storyBuilder.settings.subtitle')}</div>
       </div>
       <button
@@ -152,57 +195,53 @@
     </div>
 
     <div class="narration-overlay__form">
-      <section class="narration-overlay__section">
-        <div class="narration-overlay__section-title">{$t('storyBuilder.chapter.language')}</div>
-        <div
-          class="narration-overlay__language-tabs"
-          role="tablist"
-          aria-label={$t('storyBuilder.narration.language')}
+      {#if showSourceSetup}
+        <section
+          class="narration-overlay__section narration-overlay__section--card narration-overlay__section--source"
+          data-testid="story-source-setup"
         >
-          {#each languages as lang}
-            <button
-              class="narration-overlay__language-tab"
-              class:narration-overlay__language-tab--active={lang === activeLanguage}
-              type="button"
-              role="tab"
-              aria-selected={lang === activeLanguage}
-              data-testid={lang === activeLanguage ? 'narration-language' : undefined}
-              on:click={() => (activeLanguage = lang)}
-            >
-              {lang.toUpperCase()}
-            </button>
-          {/each}
-        </div>
-      </section>
+          <div class="narration-overlay__source-heading">
+            <span class="narration-overlay__source-icon"><Link2 aria-hidden="true" /></span>
+            <span>
+              <strong>{$t('storyBuilder.overlay.loadSource')}</strong>
+              <small>{$t('storyBuilder.overlay.sourceHint')}</small>
+            </span>
+          </div>
 
-      <section class="narration-overlay__section narration-overlay__section--card">
-        <div class="narration-overlay__source-heading">
-          <span class="narration-overlay__source-icon narration-overlay__source-icon--title">T</span
-          >
-          <span>
-            <strong>{$t('storyBuilder.settings.storyTitle', { language: activeLanguage.toUpperCase() })}</strong>
-            <small>{$t('storyBuilder.settings.titleHint')}</small>
-          </span>
-        </div>
+          <label class="narration-overlay__label" for="story-source-manifest">
+            {$t('storyBuilder.chapter.manifestLabel')}
+            <span class="narration-overlay__source-row">
+              <input
+                id="story-source-manifest"
+                class="narration-overlay__input narration-overlay__input--standalone"
+                type="url"
+                data-testid="chapter-manifest"
+                bind:value={manifestDraft}
+                on:input={handleManifestInput}
+                placeholder="https://example.org/iiif/manifest.json"
+              />
+              <button
+                class="narration-overlay__button narration-overlay__button--source"
+                type="button"
+                data-testid="chapter-manifest-reload"
+                disabled={!manifestDraft.trim()}
+                on:click={handleLoadSource}
+              >
+                {sourceLoaded
+                  ? $t('storyBuilder.source.reloadManifest')
+                  : $t('storyBuilder.source.loadManifest')}
+              </button>
+            </span>
+          </label>
 
-        <label class="narration-overlay__label" for="story-title">
-          {$t('storyBuilder.content.titleLabel')}
-          <input
-            id="story-title"
-            class="narration-overlay__input narration-overlay__input--standalone"
-            type="text"
-            data-testid="story-title"
-            value={title}
-            on:input={handleTitleInput}
-            placeholder={$t('storyBuilder.settings.untitled')}
-          />
-        </label>
-        <p class="narration-overlay__hint">
-          {$t('storyBuilder.settings.savedLabel', { language: activeLanguage.toUpperCase() })}
-        </p>
-      </section>
+        </section>
+        <div class="narration-overlay__divider" aria-hidden="true"></div>
+      {/if}
 
-      <section class="narration-overlay__section narration-overlay__section--card">
+      <section
+        class="narration-overlay__section narration-overlay__section--card narration-overlay__section--identifiers"
+        data-testid="story-publishing-identifiers"
+      >
         <div class="narration-overlay__source-heading">
           <span class="narration-overlay__source-icon"><Link2 aria-hidden="true" /></span>
           <span>
@@ -267,54 +306,112 @@
         </button>
       </section>
 
-      <section class="narration-overlay__section narration-overlay__section--card">
-        <div class="narration-overlay__source-heading">
-          <span class="narration-overlay__source-icon"><Volume2 aria-hidden="true" /></span>
-          <span>
-            <strong>{$t('storyBuilder.settings.audioSource', { language: activeLanguage.toUpperCase() })}</strong>
-            <small>{$t('storyBuilder.settings.audioSourceHint')}</small>
-          </span>
-        </div>
+      <div class="narration-overlay__divider" aria-hidden="true"></div>
 
-        <label class="narration-overlay__label" for="narration-audio-url">
-          {$t('storyBuilder.settings.audioFileUrl')}
-          <span class="narration-overlay__input-shell">
-            <Link2 aria-hidden="true" />
-            <input
-              id="narration-audio-url"
-              class="narration-overlay__input"
-              type="url"
-              data-testid="narration-url"
-              value={url}
-              on:input={handleInput}
-              placeholder="https://example.org/audio.mp3"
-            />
-          </span>
-        </label>
-
-        <div class="narration-overlay__preview">
-          <div class="narration-overlay__preview-label">{$t('storyBuilder.settings.audioPreview')}</div>
-          <div class="narration-overlay__player-shell">
-            <audio class="narration-overlay__player" controls preload="metadata" src={url}></audio>
-          </div>
-          {#if !url}
-            <p class="narration-overlay__hint">{$t('storyBuilder.settings.audioPreviewHint')}</p>
-          {/if}
-        </div>
-
-        <div class="narration-overlay__row">
-          <button
-            class="narration-overlay__button narration-overlay__button--accent"
-            type="button"
-            data-testid="narration-assign"
-            disabled={!url.trim()}
-            on:click={handleSaveUrl}
+      <div class="narration-overlay__language-audio" data-testid="story-language-audio">
+        <section class="narration-overlay__section narration-overlay__section--language">
+          <div class="narration-overlay__section-title">{$t('storyBuilder.chapter.language')}</div>
+          <div
+            class="narration-overlay__language-tabs"
+            role="tablist"
+            aria-label={$t('storyBuilder.narration.language')}
           >
-            <Check aria-hidden="true" />
-            {$t('storyBuilder.settings.saveAudio')}
-          </button>
-        </div>
-      </section>
+            {#each languages as lang}
+              <button
+                class="narration-overlay__language-tab"
+                class:narration-overlay__language-tab--active={lang === activeLanguage}
+                type="button"
+                role="tab"
+                aria-selected={lang === activeLanguage}
+                data-testid={lang === activeLanguage ? 'narration-language' : undefined}
+                on:click={() => (activeLanguage = lang)}
+              >
+                {lang.toUpperCase()}
+              </button>
+            {/each}
+          </div>
+        </section>
+
+        <section
+          class="narration-overlay__section narration-overlay__section--card narration-overlay__section--title"
+        >
+          <div class="narration-overlay__source-heading">
+            <span class="narration-overlay__source-icon narration-overlay__source-icon--title">T</span
+            >
+            <span>
+              <strong>{$t('storyBuilder.settings.storyTitle', { language: activeLanguage.toUpperCase() })}</strong>
+              <small>{$t('storyBuilder.settings.titleHint')}</small>
+            </span>
+          </div>
+
+          <label class="narration-overlay__label" for="story-title">
+            {$t('storyBuilder.content.titleLabel')}
+            <input
+              id="story-title"
+              class="narration-overlay__input narration-overlay__input--standalone"
+              type="text"
+              data-testid="story-title"
+              value={title}
+              on:input={handleTitleInput}
+              placeholder={$t('storyBuilder.settings.untitled')}
+            />
+          </label>
+          <p class="narration-overlay__hint">
+            {$t('storyBuilder.settings.savedLabel', { language: activeLanguage.toUpperCase() })}
+          </p>
+        </section>
+
+        <section
+          class="narration-overlay__section narration-overlay__section--card narration-overlay__section--audio"
+        >
+          <div class="narration-overlay__source-heading">
+            <span class="narration-overlay__source-icon"><Volume2 aria-hidden="true" /></span>
+            <span>
+              <strong>{$t('storyBuilder.settings.audioSource', { language: activeLanguage.toUpperCase() })}</strong>
+              <small>{$t('storyBuilder.settings.audioSourceHint')}</small>
+            </span>
+          </div>
+
+          <label class="narration-overlay__label" for="narration-audio-url">
+            {$t('storyBuilder.settings.audioFileUrl')}
+            <span class="narration-overlay__input-shell">
+              <Link2 aria-hidden="true" />
+              <input
+                id="narration-audio-url"
+                class="narration-overlay__input"
+                type="url"
+                data-testid="narration-url"
+                value={url}
+                on:input={handleInput}
+                placeholder="https://example.org/audio.mp3"
+              />
+            </span>
+          </label>
+
+          <div class="narration-overlay__preview">
+            <div class="narration-overlay__preview-label">{$t('storyBuilder.settings.audioPreview')}</div>
+            <div class="narration-overlay__player-shell">
+              <audio class="narration-overlay__player" controls preload="metadata" src={url}></audio>
+            </div>
+            {#if !url}
+              <p class="narration-overlay__hint">{$t('storyBuilder.settings.audioPreviewHint')}</p>
+            {/if}
+          </div>
+
+          <div class="narration-overlay__row">
+            <button
+              class="narration-overlay__button narration-overlay__button--accent"
+              type="button"
+              data-testid="narration-assign"
+              disabled={!url.trim()}
+              on:click={handleSaveUrl}
+            >
+              <Check aria-hidden="true" />
+              {$t('storyBuilder.settings.saveAudio')}
+            </button>
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 </div>
@@ -323,10 +420,12 @@
   .narration-panel {
     position: absolute;
     inset: 0;
-    display: flex;
-    justify-content: flex-end;
-    pointer-events: none;
+    display: grid;
+    place-items: center;
+    padding: clamp(14px, 3cqw, 36px);
+    pointer-events: auto;
     z-index: 12;
+    box-sizing: border-box;
   }
 
   .narration-panel[hidden] {
@@ -338,7 +437,20 @@
     inset: auto;
     display: block;
     height: 100%;
+    padding: 0;
     pointer-events: auto;
+  }
+
+  .narration-panel__scrim {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    padding: 0;
+    background: color-mix(in srgb, var(--viewer-stage-tail, #050a10) 82%, transparent);
+    backdrop-filter: blur(10px);
+    cursor: default;
   }
 
   .narration-panel--docked .narration-panel__panel {
@@ -355,16 +467,16 @@
   .narration-panel__panel {
     position: relative;
     pointer-events: auto;
-    width: clamp(360px, 42cqw, 500px);
-    max-width: 92cqw;
-    height: 100%;
-    min-height: 100%;
-    align-self: stretch;
-    border-radius: 0;
-    border-left: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    z-index: 1;
+    width: min(1040px, 100%);
+    max-width: 100%;
+    height: min(760px, 100%);
+    min-height: 0;
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+    border-radius: 20px;
     background: var(--viewer-panel, #121922);
     color: var(--viewer-text, #e8edf4);
-    box-shadow: none;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
     overflow: auto;
     box-sizing: border-box;
   }
@@ -374,7 +486,7 @@
     top: 0;
     z-index: 3;
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto;
     align-items: center;
     gap: 12px;
     min-height: 72px;
@@ -397,16 +509,24 @@
     line-height: 1.35;
   }
 
-  .narration-overlay__back {
-    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
-    border-radius: 10px;
-    padding: 8px 10px;
-    background: var(--viewer-panel-strong, #1b242e);
-    color: var(--viewer-text, #e8edf4);
+  .story-settings-modal .narration-overlay__header {
+    min-height: 56px;
+    padding: 11px 16px;
+  }
+
+  .story-settings-modal .narration-overlay__title {
+    font-size: 15px;
+  }
+
+  .story-settings-modal .narration-overlay__subtitle {
+    margin-top: 2px;
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    cursor: pointer;
+    line-height: 1.25;
+  }
+
+  .story-settings-modal .narration-overlay__close {
+    width: 26px;
+    height: 26px;
   }
 
   .narration-overlay__close {
@@ -500,6 +620,23 @@
   .narration-overlay__input--standalone:focus {
     border-color: var(--accent, var(--story-builder-accent, #e07a3f));
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 18%, transparent);
+  }
+
+  .narration-overlay__source-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .narration-overlay__source-row .narration-overlay__input {
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .narration-overlay__button--source {
+    width: auto;
+    min-width: 150px;
   }
 
   .narration-overlay__input::placeholder {
@@ -616,6 +753,28 @@
     display: grid;
     gap: 22px;
     padding: 20px 18px 28px;
+  }
+
+  .narration-overlay__divider {
+    height: 1px;
+    background: var(--viewer-panel-border, rgba(255, 255, 255, 0.08));
+  }
+
+  .narration-overlay__language-audio {
+    display: grid;
+    gap: 22px;
+    min-width: 0;
+  }
+
+  @media (min-width: 900px) {
+    .story-settings-modal .narration-overlay__language-audio {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    .story-settings-modal .narration-overlay__section--language {
+      grid-column: 1 / -1;
+    }
   }
 
   .narration-overlay__section {
@@ -737,10 +896,22 @@
   }
 
   @media (max-width: 860px) {
+    .narration-panel {
+      padding: 0;
+    }
+
     .narration-panel__panel {
       width: 100%;
       max-width: 100%;
       border-radius: 0;
+    }
+
+    .narration-overlay__source-row {
+      grid-template-columns: 1fr;
+    }
+
+    .narration-overlay__button--source {
+      width: 100%;
     }
   }
 </style>

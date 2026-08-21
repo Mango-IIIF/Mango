@@ -111,10 +111,12 @@
       {/if}
     </div>
     {#if disabled && availability.state === 'disabled'}
-      <p class="inspector-section__unavailable">
-        {availability.reason}
-        {#if availability.action}<small>{availability.action}</small>{/if}
-      </p>
+      {#if !collapsed}
+        <p class="inspector-section__unavailable">
+          {availability.reason}
+          {#if availability.action}<small>{availability.action}</small>{/if}
+        </p>
+      {/if}
     {:else}
       <div class="inspector-section__body" id={bodyId} hidden={collapsed}>
         <slot />

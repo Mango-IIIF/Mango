@@ -79,14 +79,7 @@
     },
     "source": {
       "reloadManifest": "Recharger le manifeste",
-      "loadManifest": "Charger le manifeste",
-      "stepLoad": "Étape 1 sur 2 · Chargez un manifeste IIIF.",
-      "canvas": "Canevas",
-      "canvasPosition": "Canevas {current} sur {total}",
-      "chooseCanvasHint": "Choisissez un canevas, puis enregistrez la source pour l'appliquer à ce chapitre.",
-      "stepCreate": "Étape 2 sur 2 · Choisissez un canevas et créez le premier chapitre. Le placement de l'image pourra être ajusté ensuite depuis les outils du chapitre.",
-      "createFirst": "Créer le premier chapitre",
-      "loading": "Chargement du manifeste et de ses canevas…"
+      "loadManifest": "Charger le manifeste"
     },
     "transition": {
       "title": "Temps de transition entre chapitres",
@@ -205,6 +198,9 @@
       "button": "Narrateur audio",
       "title": "Narration",
       "description": "Choisissez la piste de narration, puis déplacez ou redimensionnez la région du chapitre.",
+      "mode": "Mode de narration du chapitre",
+      "useNarration": "Utiliser la narration",
+      "noNarration": "Sans narration",
       "language": "Langue de la narration",
       "audioUrl": "URL de l'audio de narration",
       "preview": "Prévisualiser la narration",
@@ -229,20 +225,24 @@
     },
     "position": {
       "title": "Cadre",
-      "hint": "Ajustez le cadre sur la scène : faites-le glisser pour le déplacer, ses poignées pour le redimensionner. Saisissez ici une région en pixels du canevas si vous en avez une.",
+      "hint": "Déplacez et zoomez l’œuvre sous le cadre fixe du récit. Pour une édition IIIF précise, vous pouvez aussi saisir ici la région du canevas.",
       "empty": "Aucun cadre pour l’instant. Saisissez une région en pixels du canevas pour en créer un.",
       "x": "X",
       "y": "Y",
       "width": "Largeur",
       "height": "Hauteur",
       "goTo": "Aller au cadre",
-      "aspectLocked": "Verrouillé à {aspect} : la largeur et la hauteur changent ensemble, si bien que chaque lecteur voit exactement cette région."
+      "aspectLocked": "Cadre du récit {aspect}. L’aperçu et les lecteurs conservent exactement cette forme ; la largeur et la hauteur changent ensemble.",
+      "stageLabel": "Cadre du récit · {aspect}"
     },
     "annotations": {
       "chapter": "Annotations du chapitre",
+      "annotationsTab": "Annotations",
+      "optionsTab": "Options",
       "drawing": "Annotations dessinées",
+      "add": "Ajouter une annotation",
       "tools": "Outils de dessin d'annotations",
-      "drawingHint": "Ajoutez un point, une forme ou une ligne directement sur l'œuvre. Sélectionnez une annotation dans le pied de page pour la modifier ici.",
+      "drawingHint": "Choisissez Sélectionner / Déplacer pour modifier une annotation existante, ou choisissez une forme pour en ajouter une.",
       "edit": "Modifier l'annotation",
       "editDrawing": "Modifier l'annotation {type} {index}",
       "deleteDrawing": "Supprimer l'annotation {type} {index}",
@@ -260,7 +260,7 @@
         "medium": "Moyen",
         "thick": "Épais"
       },
-      "emptySelection": "Dessinez une annotation, ou sélectionnez-en une dans le pied de page pour modifier son texte et son apparence.",
+      "emptySelection": "Sélectionnez une annotation dans la liste ou sur l'œuvre pour modifier son texte et son apparence.",
       "empty": "Aucune annotation dans ce chapitre.",
       "motivation": "Motivation",
       "motivationAuto": "Automatique (selon la forme)",
@@ -318,12 +318,16 @@
       "durationSeconds": "Durée (secondes)",
       "zoomValue": "Zoom {zoom}×",
       "timeline": "Chronologie du mouvement du chapitre",
+      "pinsTab": "Repères",
+      "optionsTab": "Options",
       "goToPoint": "Aller au point de caméra {number}",
       "point": "Point {number}",
       "deletePoint": "Supprimer le point de caméra",
       "deletePointNumber": "Supprimer le point de caméra {number}",
-      "emptyPoints": "Aucun point de caméra pour l’instant. Ajoutez un point, puis faites glisser son cadre à sa place sur la scène.",
-      "addPoint": "Ajouter un point de caméra"
+      "emptyPoints": "Aucun point de caméra pour l’instant. Ajoutez un point ; il apparaîtra au centre de la vue actuelle.",
+      "addPoint": "Ajouter un point de caméra",
+      "updatePoint": "Actualiser le repère depuis la vue actuelle",
+      "selectPointToUpdate": "Sélectionnez un repère pour actualiser son cadrage et son zoom."
     },
     "settings": {
       "title": "Paramètres de l'histoire",
@@ -359,7 +363,7 @@
       "previewChapterHint": "Lisez ce chapitre seul, exactement comme l'histoire le présente.",
       "stopChapterPreview": "Arrêter la prévisualisation",
       "chapterPreviewPlaying": "Lecture de ce chapitre. Cliquez pour arrêter.",
-      "sourceHint": "Ajoutez la source de votre histoire, choisissez son canevas de départ et créez le premier chapitre. Vous pourrez ensuite ajuster le placement de l'image depuis les outils du chapitre.",
+      "sourceHint": "Ajoutez la source de votre histoire pour créer le premier chapitre. Utilisez les commandes de la visionneuse pour changer de canevas, puis ajustez le placement de l'image si nécessaire.",
       "noChapter": "Aucun chapitre sélectionné",
       "noChapterHint": "Capturez un chapitre ou sélectionnez-en un dans la chronologie pour modifier son contenu.",
       "confirmPosition": "Confirmer la position"
@@ -388,7 +392,9 @@
       "hideChapters": "Masquer les chapitres",
       "showChapters": "Afficher les chapitres",
       "hideTools": "Masquer les outils du chapitre",
-      "showTools": "Afficher les outils du chapitre"
+      "showTools": "Afficher les outils du chapitre",
+      "hideAnnotationInspector": "Masquer l’inspecteur d’annotations",
+      "showAnnotationInspector": "Afficher l’inspecteur d’annotations"
     },
     "frame": {
       "label": "Cadre du chapitre",
@@ -405,9 +411,10 @@
       },
       "edit": "Modifier",
       "draw": "Dessiner",
+      "open": "Ouvrir",
       "done": "Terminé",
       "onStage": "Sur la scène",
-      "annotationsSummary": "{count} annotations dessinées. Dessinez pour les ajouter ou les modifier sur la scène.",
+      "annotationsSummary": "{count} annotations. Utilisez l’espace de travail de la scène pour les ajouter, les sélectionner et les modifier.",
       "motionNone": "Aucun mouvement de caméra. Modifiez pour ajouter des points de caméra sur la scène.",
       "motionSummary": "{count} points de caméra · {style} · {seconds}s",
       "narrationNone": "Aucun segment de narration pour {language}.",

@@ -52,11 +52,11 @@ export type ViewerApi = {
   setStoryAnnotations?: (annotations: ResolvedAnnotation[]) => void;
   setStoryAnnotationEditing?: (enabled: boolean) => void;
   setStoryAnnotationSelection?: (annotationId: string | null) => void;
+  /** Fixed width/height contract for the builder's authored output surface. */
+  setStoryPresentationAspect?: (aspect: number) => void;
   /**
-   * Frames the story builder wants drawn on the stage — the chapter frame and,
-   * while motion is being authored, its keyframes. Each is a canvas-pixel
-   * region the author can move and resize in place; commits come back through
-   * the `storyFrameChange` event.
+   * Camera-keyframe objects the story builder wants drawn on the stage.
+   * Chapter framing itself is the fixed stage camera, not a second rectangle.
    */
   setStoryFrames?: (frames: StoryFrame[]) => void;
   /** Which of the frames carries the handles. */

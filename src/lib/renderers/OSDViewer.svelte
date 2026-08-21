@@ -131,6 +131,7 @@
    * on every `open` so a canvas change with no framing request still fits home.
    */
   let callerFramedViewport = false;
+  let pendingViewBoxRequest: ViewBox | null = null;
 
   const markUserViewportActivity = (): void => {
     userDrivingViewport = true;
@@ -518,6 +519,7 @@
   };
 
   export const setViewBox = (box: ViewBox): void => {
+    pendingViewBoxRequest = { ...box };
     if (!viewer?.viewport || !viewer?.world?.getItemAt(0)) {
       return;
     }
@@ -534,6 +536,8 @@
       // The viewBox animation will retry on the next frame
       return;
     }
+
+    pendingViewBoxRequest = null;
 
     // CRITICAL FIX: Clamp viewBox to image bounds to prevent zoom-out issue
     // If the viewBox is wider/taller than the image, it causes fitBounds() to zoom way out
@@ -622,6 +626,7 @@
     // An explicit Home hands the viewport back: whatever framing a caller had
     // claimed is exactly what the reader is asking to drop.
     callerFramedViewport = false;
+    pendingViewBoxRequest = null;
     viewer.viewport.goHome?.(true);
     viewer.viewport.applyConstraints?.();
   };
@@ -920,6 +925,14 @@
           settleInitialHome();
         }
         handleViewportChange();
+        // A story chapter or search result can arrive before OSD has created
+        // its first world item. `setViewBox` records that request; opening the
+        // source is the first point at which image-space coordinates are safe
+        // to resolve. Applying it here also claims the viewport so the initial
+        // home-settling loop cannot overwrite the requested framing.
+        if (pendingViewBoxRequest) {
+          setViewBox(pendingViewBoxRequest);
+        }
       });
       viewer.addHandler('zoom', handleViewportChange);
       viewer.addHandler('pan', handleViewportChange);
