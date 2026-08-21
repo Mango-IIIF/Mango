@@ -384,6 +384,8 @@ describe("story builder narration defaults", () => {
       tool: "rectangle",
     });
 
+    expect(get(controller.chapterAnnotationTool)).toBe("select");
+    expect(viewer.setAnnotationTool).toHaveBeenLastCalledWith("select");
     expect(get(controller.story).chapters[0].annotations).toBeUndefined();
     expect(get(controller.story).chapters[0].drawingAnnotations).toEqual([
       expect.objectContaining({

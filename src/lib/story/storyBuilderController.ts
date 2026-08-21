@@ -657,7 +657,10 @@ export const createStoryBuilderController = (
     ]);
     selectedDrawingAnnotationId.set(drawing.id);
     viewer?.setStoryAnnotationSelection?.(drawing.id);
-    chapterAnnotationTool.set("select");
+    // Creation is a focused canvas interaction. Returning through the public
+    // setter restores both the footer and the viewer's select/edit mode once
+    // the new geometry has been committed.
+    setChapterAnnotationTool("select");
   };
 
   const deleteChapterDrawingAnnotation = (annotationId: string) => {

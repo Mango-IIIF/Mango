@@ -273,6 +273,8 @@
       </div>
     {/if}
   </section>
+{:else if chapter && $activeTask === "focus" && $annotationTool !== "select"}
+  <div class="story-wide-authoring--annotation-placing" aria-hidden="true"></div>
 {:else if chapter && $activeTask === "focus"}
   <section
     class="story-wide-authoring story-wide-authoring--annotations"

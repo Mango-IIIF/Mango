@@ -11,6 +11,14 @@
   let { open = false, payload = null, onclose = undefined }: Props = $props();
 
   let textareaRef = $state<HTMLTextAreaElement | null>(null);
+  let modalRoot = $state<HTMLDivElement | null>(null);
+
+  $effect(() => {
+    const grid = modalRoot?.closest('.viewer__grid');
+    if (!grid) return;
+    grid.classList.toggle('viewer__grid--export-modal', open);
+    return () => grid.classList.remove('viewer__grid--export-modal');
+  });
 
   const close = () => onclose?.();
 
@@ -60,7 +68,7 @@
   };
 </script>
 
-<div class="save-modal" hidden={!open} aria-hidden={!open}>
+<div bind:this={modalRoot} class="save-modal" hidden={!open} aria-hidden={!open}>
   {#if open}
     <div class="save-modal__scrim" role="presentation" onclick={close}></div>
     <div
