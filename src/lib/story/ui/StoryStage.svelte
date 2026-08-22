@@ -4,7 +4,7 @@
   interface Props {
     /** Width divided by height for the authored story output. */
     aspect?: number | null;
-    /** Fill the available editor workspace instead of previewing output shape. */
+    /** Fill the available workspace instead of previewing output shape. */
     fluid?: boolean;
     /** Optional editor-only name shown outside the picture. */
     label?: string;
@@ -106,8 +106,8 @@
     box-shadow: 0 0 0 1px var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
   }
 
-  /* Authoring needs the whole canvas. The fixed aspect remains available to
-     preview/readers, but must not letterbox the editor workspace itself. */
+  /* Interactive workspaces use the whole available canvas. Fixed-aspect
+     previews can leave this off when showing the authored output shape. */
   .story-stage--fluid .story-stage__surface {
     width: 100%;
     height: 100%;

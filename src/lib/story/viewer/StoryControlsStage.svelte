@@ -201,7 +201,10 @@
         class="story-shell__stage-frame"
         style={`opacity: ${stageOpacity}; transition: opacity ${stageFadeMs}ms ease-in-out;`}
       >
-        <StoryStage aspect={presentationAspect}>
+        <!-- The reader belongs to its embed, so its stage must fill the space the
+             host provides. The presentation aspect still normalises authored
+             camera frames; it must not create a second, letterboxed viewport. -->
+        <StoryStage aspect={presentationAspect} fluid={true}>
           {#if stage}
             {@render stage()}
           {/if}
