@@ -303,11 +303,7 @@
                 "zoom-in",
                 "zoom-out",
                 "pan",
-                "drift-zoom",
-                "custom",
-                "ken-burns",
-                "hero-reveal",
-                "arc-sweep"
+                "custom"
               ]
             },
             "pathType": { "enum": ["linear", "spline"] },

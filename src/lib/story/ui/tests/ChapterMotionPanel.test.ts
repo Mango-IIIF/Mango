@@ -35,7 +35,7 @@ describe('ChapterMotionPanel', () => {
       props: {
         track: {
           durationMs: 5000,
-          preset: 'ken-burns',
+          preset: 'custom',
           keyframes: [
             { id: 'one', timeMs: 0, viewBox: { x: 0, y: 0, w: 100, h: 100 } },
             {
@@ -136,7 +136,7 @@ describe('ChapterMotionPanel', () => {
     target.remove();
   });
 
-  it('explains point requirements and rejects a duration shorter than the dwell interval', async () => {
+  it('keeps the basic style list focused and rejects a duration shorter than the dwell interval', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
     const onUpdateDuration = vi.fn();
@@ -167,11 +167,10 @@ describe('ChapterMotionPanel', () => {
       },
     });
 
-    const arc = [...target.querySelectorAll('button')].find(
-      (button) => button.textContent === 'Arc sweep',
-    ) as HTMLButtonElement;
-    expect(arc.disabled).toBe(true);
-    expect(target.textContent).toContain('Arc sweep needs at least three camera points');
+    const styleButtons = [...target.querySelectorAll('.motion-panel__section--style button')].map(
+      (button) => button.textContent,
+    );
+    expect(styleButtons).toEqual(['Custom', 'Pan', 'Zoom in', 'Zoom out', 'Still']);
 
     const input = target.querySelector('[data-testid="motion-duration"]') as HTMLInputElement;
     input.value = '1';

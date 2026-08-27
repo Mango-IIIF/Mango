@@ -80,24 +80,17 @@ describe('enhanced motion tracking engine', () => {
     expect(splineSample?.viewBox?.y).not.toBe(linearSample?.viewBox?.y);
   });
 
-  it('generates ken-burns, hero-reveal, and arc-sweep motion presets', () => {
+  it('generates the five basic motion modes', () => {
     const baseView = { x: 0, y: 0, w: 1000, h: 500 };
 
-    const kenBurns = generateCameraPreset('ken-burns', baseView, 5000);
-    expect(kenBurns.preset).toBe('ken-burns');
-    expect(kenBurns.pathType).toBe('spline');
-    expect(kenBurns.keyframes[1].viewBox?.w).toBeLessThan(baseView.w);
-
-    const hero = generateCameraPreset('hero-reveal', baseView, 6000);
-    expect(hero.preset).toBe('hero-reveal');
-    expect(hero.keyframes[0].dwellMs).toBe(1500);
-
-    const arc = generateCameraPreset('arc-sweep', baseView, 4000);
-    expect(arc.preset).toBe('arc-sweep');
-    expect(arc.keyframes).toHaveLength(3);
+    for (const preset of ['custom', 'pan', 'zoom-in', 'zoom-out', 'static'] as const) {
+      const track = generateCameraPreset(preset, baseView, 5000);
+      expect(track.preset).toBe(preset);
+      expect(track.keyframes).toHaveLength(2);
+    }
   });
 
-  it('preserves existing user keyframe markers when applying motion presets', () => {
+  it('preserves existing user keyframes when applying a motion mode', () => {
     const baseView = { x: 0, y: 0, w: 1000, h: 500 };
     const customTrack = {
       durationMs: 6000,
@@ -119,13 +112,9 @@ describe('enhanced motion tracking engine', () => {
       ],
     };
 
-    const kenBurnsConfig = configureCameraTrackPreset(customTrack, 'ken-burns', baseView, 6000);
-    expect(kenBurnsConfig.keyframes).toHaveLength(3);
-    expect(kenBurnsConfig.keyframes[0].focus).toEqual({ x: 100, y: 100 });
-    expect(kenBurnsConfig.keyframes[1].focus).toEqual({ x: 500, y: 300 });
-    expect(kenBurnsConfig.keyframes[2].focus).toEqual({ x: 900, y: 100 });
-    expect(kenBurnsConfig.pathType).toBe('spline');
-    expect(kenBurnsConfig.preset).toBe('ken-burns');
+    const zoomConfig = configureCameraTrackPreset(customTrack, 'zoom-in', baseView, 6000);
+    expect(zoomConfig.keyframes).toEqual(customTrack.keyframes);
+    expect(zoomConfig.preset).toBe('zoom-in');
   });
 
   it('serializes and deserializes dwellMs, pathType, and presets in W3C Annotations', () => {
@@ -135,7 +124,7 @@ describe('enhanced motion tracking engine', () => {
       canvasIndex: 0,
       cameraTrack: {
         durationMs: 7000,
-        preset: 'ken-burns',
+        preset: 'pan',
         pathType: 'spline',
         easing: 'ease-in-out',
         keyframes: [
@@ -157,8 +146,32 @@ describe('enhanced motion tracking engine', () => {
     const body = createMangoViewerStateBody(chapter);
     const restored = parseMangoViewerStateBody(body);
     expect(restored?.cameraTrack?.pathType).toBe('spline');
-    expect(restored?.cameraTrack?.preset).toBe('ken-burns');
+    expect(restored?.cameraTrack?.preset).toBe('pan');
     expect(restored?.cameraTrack?.keyframes[0].dwellMs).toBe(1500);
+  });
+
+  it('loads removed preset names as Custom without changing their points', () => {
+    const chapter: Chapter = {
+      id: 'old-motion',
+      manifest: 'https://example.org/iiif/manifest.json',
+      canvasIndex: 0,
+      cameraTrack: {
+        durationMs: 3000,
+        preset: 'pan',
+        keyframes: [
+          { id: 'one', timeMs: 0, viewBox: { x: 0, y: 0, w: 100, h: 100 } },
+          { id: 'two', timeMs: 3000, viewBox: { x: 50, y: 20, w: 80, h: 80 } },
+        ],
+      },
+    };
+    const body = createMangoViewerStateBody(chapter) as unknown as {
+      mangoState: { cameraTrack: { preset: string } };
+    };
+    body.mangoState.cameraTrack.preset = 'hero-reveal';
+
+    const restored = parseMangoViewerStateBody(body as never);
+    expect(restored?.cameraTrack?.preset).toBe('custom');
+    expect(restored?.cameraTrack?.keyframes).toEqual(chapter.cameraTrack?.keyframes);
   });
 
   it('keeps legacy custom preset metadata when loading annotations', () => {

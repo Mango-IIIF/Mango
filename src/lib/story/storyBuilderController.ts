@@ -33,7 +33,6 @@ import { STAGE_CROSSFADE_MS } from "./viewer/chapterTransitionOrchestrator";
 import type { StageFade } from "./viewer/storyViewerController";
 import {
   configureCameraTrackPreset,
-  generateCameraPreset,
   retimeCameraKeyframes,
   sampleCameraTrack,
 } from "./cameraTrack";
@@ -1324,33 +1323,48 @@ export const createStoryBuilderController = (
     }
     pendingChapterApply = null;
 
-    if (chapter.layerOpacities) {
+    // Published playback enters a chapter at its first camera point. Use the
+    // same source of truth in builder preview; the chapter selector can be a
+    // larger union box after import and is not necessarily Motion Point 1.
+    const previewEntryViewBox = get(isPreviewing)
+      ? [...(chapter.cameraTrack?.keyframes ?? [])]
+          .sort((a, b) => a.timeMs - b.timeMs)
+          .find((point) => point.viewBox)?.viewBox
+      : undefined;
+    const entryChapter = previewEntryViewBox
+      ? { ...chapter, viewBox: previewEntryViewBox }
+      : chapter;
+
+    if (entryChapter.layerOpacities) {
       const fromOpacities = viewer.getLayerOpacities?.() ?? {};
       cancelLayersAnimation = animateLayerOpacities(
         viewer,
         fromOpacities,
-        chapter.layerOpacities,
+        entryChapter.layerOpacities,
       );
     }
 
-    if (chapter.viewBox) {
+    if (entryChapter.viewBox) {
       const currentViewBox = viewer.getViewBox?.() ?? null;
-      if (currentViewBox && !viewBoxMatches(currentViewBox, chapter.viewBox)) {
-        animateViewBox(chapter.viewBox);
-        if (chapter.model) {
-          applyChapterView({ ...chapter, viewBox: undefined });
+      if (
+        currentViewBox &&
+        !viewBoxMatches(currentViewBox, entryChapter.viewBox)
+      ) {
+        animateViewBox(entryChapter.viewBox);
+        if (entryChapter.model) {
+          applyChapterView({ ...entryChapter, viewBox: undefined });
         }
-        maybeStartPlayback(chapter);
+        maybeStartPlayback(entryChapter);
         return;
       }
     }
-    if (chapter.model) {
-      beginPendingModelApply(chapter);
-      maybeStartPlayback(chapter);
+    if (entryChapter.model) {
+      beginPendingModelApply(entryChapter);
+      maybeStartPlayback(entryChapter);
       return;
     }
-    beginPendingApply(chapter);
-    maybeStartPlayback(chapter);
+    beginPendingApply(entryChapter);
+    maybeStartPlayback(entryChapter);
   };
 
   const waitForManifest = (timeoutMs = 2000): Promise<boolean> => {
@@ -2481,7 +2495,7 @@ export const createStoryBuilderController = (
       return {
         ...chapter.cameraTrack,
         durationMs: safeDuration,
-        preset: chapter.cameraTrack?.preset ?? "ken-burns",
+        preset: chapter.cameraTrack?.preset ?? "custom",
         easing: chapter.cameraTrack?.easing ?? "ease-in-out",
         keyframes: retimeCameraKeyframes(
           chapter.cameraTrack?.keyframes ?? [],
@@ -2497,7 +2511,13 @@ export const createStoryBuilderController = (
       const track =
         chapter.cameraTrack ??
         (currentView
-          ? generateCameraPreset("ken-burns", currentView, 5000)
+          ? {
+              durationMs: 5000,
+              preset: "custom" as const,
+              pathType: "linear" as const,
+              easing: "ease-in-out" as const,
+              keyframes: [],
+            }
           : undefined);
       if (!track) return undefined;
       return {
@@ -2513,7 +2533,13 @@ export const createStoryBuilderController = (
       const track =
         chapter.cameraTrack ??
         (currentView
-          ? generateCameraPreset("ken-burns", currentView, 5000)
+          ? {
+              durationMs: 5000,
+              preset: "custom" as const,
+              pathType: "linear" as const,
+              easing: "ease-in-out" as const,
+              keyframes: [],
+            }
           : undefined);
       if (!track || !track.keyframes.length) return track;
       const keyframes = track.keyframes.map((point, index) => {

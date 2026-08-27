@@ -218,17 +218,17 @@ describe("story builder narration defaults", () => {
             viewBox: { x: 0, y: 0, w: 1000, h: 500 },
             cameraTrack: {
               durationMs: 5000,
-              preset: "ken-burns",
+              preset: "zoom-in",
               pathType: "spline",
               keyframes: [
                 {
-                  id: "ken-burns-start",
+                  id: "zoom-in-start",
                   timeMs: 0,
                   focus: { x: 500, y: 250 },
                   viewBox: { x: 0, y: 0, w: 1000, h: 500 },
                 },
                 {
-                  id: "ken-burns-end",
+                  id: "zoom-in-end",
                   timeMs: 5000,
                   focus: { x: 600, y: 250 },
                   viewBox: { x: 250, y: 75, w: 700, h: 350 },
@@ -241,10 +241,10 @@ describe("story builder narration defaults", () => {
     });
     controller.selectedChapterId.set("styled-motion");
     // The point's frame is dragged, same size, to a new centre.
-    controller.setMotionPointViewBox("ken-burns-end", { x: 450, y: 75, w: 700, h: 350 });
+    controller.setMotionPointViewBox("zoom-in-end", { x: 450, y: 75, w: 700, h: 350 });
 
     const track = get(controller.story).chapters[0].cameraTrack;
-    expect(track?.preset).toBe("ken-burns");
+    expect(track?.preset).toBe("zoom-in");
     expect(track?.keyframes[0].viewBox?.w).toBe(1000);
     expect(track?.keyframes[1].viewBox?.w).toBe(700);
     expect(track?.keyframes[1].focus).toEqual({ x: 800, y: 250 });
@@ -261,17 +261,17 @@ describe("story builder narration defaults", () => {
             viewBox: { x: 0, y: 0, w: 1000, h: 500 },
             cameraTrack: {
               durationMs: 5000,
-              preset: "ken-burns",
+              preset: "zoom-in",
               pathType: "spline",
               keyframes: [
                 {
-                  id: "ken-burns-start",
+                  id: "zoom-in-start",
                   timeMs: 0,
                   focus: { x: 500, y: 250 },
                   viewBox: { x: 0, y: 0, w: 1000, h: 500 },
                 },
                 {
-                  id: "ken-burns-end",
+                  id: "zoom-in-end",
                   timeMs: 5000,
                   focus: { x: 600, y: 250 },
                   viewBox: { x: 250, y: 75, w: 700, h: 350 },
@@ -285,7 +285,7 @@ describe("story builder narration defaults", () => {
     controller.selectedChapterId.set("styled-motion");
     // A named style sizes its own points; resizing one is a decision about
     // zoom the style cannot honour, so the track becomes custom and keeps it.
-    controller.setMotionPointViewBox("ken-burns-end", { x: 400, y: 150, w: 400, h: 200 });
+    controller.setMotionPointViewBox("zoom-in-end", { x: 400, y: 150, w: 400, h: 200 });
 
     const track = get(controller.story).chapters[0].cameraTrack;
     expect(track?.preset).toBe("custom");
@@ -688,7 +688,7 @@ describe("story builder narration defaults", () => {
     detach();
   });
 
-  it("sets an explicit chapter position and keeps preset motion in sync", () => {
+  it("sets an explicit chapter position without rewriting authored motion points", () => {
     const controller = createStoryBuilderController({
       initialStory: {
         chapters: [
@@ -727,10 +727,10 @@ describe("story builder narration defaults", () => {
     expect(chapter.viewBox).toEqual({ x: 40, y: 60, w: 800, h: 400 });
     expect(chapter.cameraTrack?.preset).toBe("zoom-in");
     expect(chapter.cameraTrack?.keyframes[0].viewBox).toEqual({
-      x: 100,
-      y: 50,
-      w: 800,
-      h: 400,
+      x: 0,
+      y: 0,
+      w: 1000,
+      h: 500,
     });
 
     controller.setChapterPosition({ x: 0, y: 0, w: 0, h: 400 });
@@ -1400,6 +1400,67 @@ describe("story builder chapter frame", () => {
     detach();
   });
 
+  it("starts chapter preview at Motion Point 1 rather than the imported selector union", () => {
+    const selectorUnion = { x: 168, y: 199, w: 4064, h: 4404 };
+    const firstMotionPoint = { x: 168, y: 956, w: 4064, h: 3647 };
+    const controller = createStoryBuilderController({
+      initialStory: {
+        ...frameStory,
+        chapters: [
+          {
+            ...frameStory.chapters[0],
+            viewBox: selectorUnion,
+            cameraTrack: {
+              durationMs: 12_290,
+              preset: "custom" as const,
+              easing: "ease-out" as const,
+              keyframes: [
+                { id: "a", timeMs: 0, viewBox: firstMotionPoint },
+                {
+                  id: "b",
+                  timeMs: 6145,
+                  viewBox: { x: 543, y: 199, w: 1173, h: 1053 },
+                },
+                {
+                  id: "c",
+                  timeMs: 12_290,
+                  viewBox: { x: 801, y: 1458, w: 1097, h: 984 },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    const viewer = createFrameViewer(selectorUnion);
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events: createEventBus(),
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+    controller.selectedChapterId.set("chapter-1");
+    const previousRaf = globalThis.requestAnimationFrame;
+    const previousCancelRaf = globalThis.cancelAnimationFrame;
+    globalThis.requestAnimationFrame = vi.fn(() => 1);
+    globalThis.cancelAnimationFrame = vi.fn();
+
+    controller.previewChapter("chapter-1");
+
+    const applied = viewer.setViewBox.mock.lastCall?.[0];
+    expect(applied?.x).toBeCloseTo(firstMotionPoint.x, 9);
+    expect(applied?.y).toBeCloseTo(firstMotionPoint.y, 9);
+    expect(applied?.w).toBeCloseTo(firstMotionPoint.w, 9);
+    expect(applied?.h).toBeCloseTo(firstMotionPoint.h, 9);
+    controller.stopPreview();
+    if (previousRaf) globalThis.requestAnimationFrame = previousRaf;
+    else
+      delete (globalThis as Partial<typeof globalThis>).requestAnimationFrame;
+    if (previousCancelRaf) globalThis.cancelAnimationFrame = previousCancelRaf;
+    else delete (globalThis as Partial<typeof globalThis>).cancelAnimationFrame;
+    detach();
+  });
+
   it("accepts a legacy chapter-frame commit without restoring the removed overlay", () => {
     const controller = createStoryBuilderController({ initialStory: frameStory });
     const viewer = createFrameViewer();
@@ -1537,7 +1598,7 @@ describe("story builder chapter frame", () => {
         ...frameStory,
         chapters: frameStory.chapters.map((chapter) => ({
           ...chapter,
-          cameraTrack: { ...chapter.cameraTrack, preset: "ken-burns" as const },
+          cameraTrack: { ...chapter.cameraTrack, preset: "zoom-in" as const },
         })),
       },
     });
@@ -1603,7 +1664,7 @@ describe("story builder chapter frame", () => {
     expect(carriesSentinel()).toBe(false);
 
     controller.setMotionPointViewBox("kf-1", { x: 10, y: 10, w: 200, h: 100 });
-    controller.applyMotionPreset("ken-burns");
+    controller.applyMotionPreset("pan");
     controller.updateMotionPathType("linear");
     controller.updateMotionInitialDwell(500);
     controller.applyMotionPreset("custom");
