@@ -147,11 +147,7 @@ export type ChapterCameraTrack = {
     | "zoom-in"
     | "zoom-out"
     | "pan"
-    | "drift-zoom"
-    | "custom"
-    | "ken-burns"
-    | "hero-reveal"
-    | "arc-sweep";
+    | "custom";
   pathType?: "linear" | "spline";
   easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
 };

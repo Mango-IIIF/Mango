@@ -163,28 +163,21 @@
     pointerId: number;
     startClientX: number;
     startClientY: number;
+    startX: number;
+    startY: number;
+    boundsWidth: number;
+    boundsHeight: number;
+    viewBox: ViewBox;
     x: number;
     y: number;
     moved: boolean;
   } | null = null;
   let suppressMotionClickFor: string | null = null;
 
-  const motionPositionFromPointer = (
-    event: PointerEvent,
-  ): { x: number; y: number } | null => {
-    const bounds = overlayRoot?.getBoundingClientRect();
-    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return null;
-    return {
-      x: Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width)),
-      y: Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height)),
-    };
-  };
-
-  const handleMotionPointerDown = (
-    event: PointerEvent,
-    marker: (typeof motionMarkers)[number],
-  ) => {
+  const handleMotionPointerDown = (event: PointerEvent, marker: (typeof motionMarkers)[number]) => {
     if (event.button !== 0) return;
+    const bounds = overlayRoot?.getBoundingClientRect();
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0 || !currentViewBox) return;
     event.preventDefault();
     event.stopPropagation();
     (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
@@ -193,6 +186,11 @@
       pointerId: event.pointerId,
       startClientX: event.clientX,
       startClientY: event.clientY,
+      startX: marker.x,
+      startY: marker.y,
+      boundsWidth: bounds.width,
+      boundsHeight: bounds.height,
+      viewBox: { ...currentViewBox },
       x: marker.x,
       y: marker.y,
       moved: false,
@@ -203,15 +201,30 @@
     if (!motionDrag || motionDrag.pointerId !== event.pointerId) return;
     event.preventDefault();
     event.stopPropagation();
-    const position = motionPositionFromPointer(event);
-    if (!position) return;
-    const moved =
-      motionDrag.moved ||
-      Math.hypot(
-        event.clientX - motionDrag.startClientX,
-        event.clientY - motionDrag.startClientY,
-      ) >= 3;
-    motionDrag = { ...motionDrag, ...position, moved };
+    const distance = Math.hypot(
+      event.clientX - motionDrag.startClientX,
+      event.clientY - motionDrag.startClientY,
+    );
+    const moved = motionDrag.moved || distance >= 6;
+    if (!moved) return;
+    motionDrag = {
+      ...motionDrag,
+      x: Math.min(
+        1,
+        Math.max(
+          0,
+          motionDrag.startX + (event.clientX - motionDrag.startClientX) / motionDrag.boundsWidth,
+        ),
+      ),
+      y: Math.min(
+        1,
+        Math.max(
+          0,
+          motionDrag.startY + (event.clientY - motionDrag.startClientY) / motionDrag.boundsHeight,
+        ),
+      ),
+      moved,
+    };
   };
 
   const finishMotionDrag = (event: PointerEvent, commit: boolean) => {
@@ -219,19 +232,27 @@
     event.preventDefault();
     event.stopPropagation();
     const drag = motionDrag;
-    const position = motionPositionFromPointer(event) ?? { x: drag.x, y: drag.y };
     const moved =
       drag.moved ||
-      Math.hypot(
-        event.clientX - drag.startClientX,
-        event.clientY - drag.startClientY,
-      ) >= 3;
+      Math.hypot(event.clientX - drag.startClientX, event.clientY - drag.startClientY) >= 6;
+    const position = moved
+      ? {
+          x: Math.min(
+            1,
+            Math.max(0, drag.startX + (event.clientX - drag.startClientX) / drag.boundsWidth),
+          ),
+          y: Math.min(
+            1,
+            Math.max(0, drag.startY + (event.clientY - drag.startClientY) / drag.boundsHeight),
+          ),
+        }
+      : { x: drag.x, y: drag.y };
     motionDrag = null;
-    if (!commit || !moved || !currentViewBox) return;
+    if (!commit || !moved) return;
     suppressMotionClickFor = drag.id;
     onMoveMotionPoint(drag.id, {
-      x: currentViewBox.x + position.x * currentViewBox.w,
-      y: currentViewBox.y + position.y * currentViewBox.h,
+      x: drag.viewBox.x + position.x * drag.viewBox.w,
+      y: drag.viewBox.y + position.y * drag.viewBox.h,
     });
   };
 
@@ -245,9 +266,9 @@
   };
 
   const markerX = (marker: (typeof motionMarkers)[number]): number =>
-    motionDrag?.id === marker.id ? motionDrag.x : marker.x;
+    motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.x : marker.x;
   const markerY = (marker: (typeof motionMarkers)[number]): number =>
-    motionDrag?.id === marker.id ? motionDrag.y : marker.y;
+    motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.y : marker.y;
   let placementRectValue: {
     x: number;
     y: number;
@@ -501,12 +522,18 @@
           <button
             class="story-builder-motion-marker"
             class:story-builder-motion-marker--selected={$selectedMotionPointId === marker.id}
-            class:story-builder-motion-marker--dragging={motionDrag?.id === marker.id}
+            class:story-builder-motion-marker--dragging={motionDrag?.id === marker.id &&
+              motionDrag.moved}
             type="button"
-            style={`--motion-x:${markerX(marker) * 100}%;--motion-y:${markerY(marker) * 100}%;--motion-offset-x:${motionDrag?.id === marker.id ? 0 : marker.offsetX}px;--motion-offset-y:${motionDrag?.id === marker.id ? 0 : marker.offsetY}px`}
-            aria-label={$t('storyBuilder.motion.goToPoint', { number: marker.index + 1 })}
+            style={`--motion-x:${markerX(marker) * 100}%;--motion-y:${markerY(marker) * 100}%;--motion-offset-x:${motionDrag?.id === marker.id && motionDrag.moved ? 0 : marker.offsetX}px;--motion-offset-y:${motionDrag?.id === marker.id && motionDrag.moved ? 0 : marker.offsetY}px`}
+            aria-label={$t('storyBuilder.motion.goToPoint', {
+              number: marker.index + 1,
+            })}
             aria-pressed={$selectedMotionPointId === marker.id}
-            title={$t('storyBuilder.motion.movePointTitle', { number: marker.index + 1, seconds: (marker.timeMs / 1000).toFixed(1) })}
+            title={$t('storyBuilder.motion.movePointTitle', {
+              number: marker.index + 1,
+              seconds: (marker.timeMs / 1000).toFixed(1),
+            })}
             on:pointerdown={(event) => handleMotionPointerDown(event, marker)}
             on:pointermove={handleMotionPointerMove}
             on:pointerup={(event) => finishMotionDrag(event, true)}

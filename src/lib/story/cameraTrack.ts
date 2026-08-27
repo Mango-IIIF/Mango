@@ -99,97 +99,21 @@ export const generateCameraPreset = (
     h: viewBox.h,
   };
   const deepZoom = inset(viewBox, 0.28);
-  const heroStart = inset(viewBox, 0.32);
-  const kenBurnsEnd = {
-    x: viewBox.x + viewBox.w * 0.18,
-    y: viewBox.y + viewBox.h * 0.1,
-    w: viewBox.w * 0.7,
-    h: viewBox.h * 0.7,
-  };
-
-  const dwellMs = initialDwellMs ?? (preset === 'hero-reveal' ? 1500 : undefined);
-
-  if (preset === 'hero-reveal') {
-    return {
-      preset: 'hero-reveal',
-      durationMs: Math.max(1, durationMs),
-      pathType: 'spline',
-      easing: 'ease-out',
-      keyframes: [
-        {
-          id: 'hero-start',
-          timeMs: 0,
-          ...(dwellMs ? { dwellMs } : {}),
-          focus: {
-            x: heroStart.x + heroStart.w / 2,
-            y: heroStart.y + heroStart.h / 2,
-          },
-          viewBox: heroStart,
-        },
-        {
-          id: 'hero-end',
-          timeMs: Math.max(1, durationMs),
-          focus: { x: viewBox.x + viewBox.w / 2, y: viewBox.y + viewBox.h / 2 },
-          viewBox,
-        },
-      ],
-    };
-  }
-
-  if (preset === 'arc-sweep') {
-    const halfDuration = Math.round(durationMs / 2);
-    const midView: ViewBox = {
-      x: viewBox.x + viewBox.w * 0.2,
-      y: viewBox.y - viewBox.h * 0.15,
-      w: viewBox.w * 0.8,
-      h: viewBox.h * 0.8,
-    };
-    return {
-      preset: 'arc-sweep',
-      durationMs: Math.max(1, durationMs),
-      pathType: 'spline',
-      easing: 'ease-in-out',
-      keyframes: [
-        {
-          id: 'arc-start',
-          timeMs: 0,
-          ...(dwellMs ? { dwellMs } : {}),
-          focus: { x: viewBox.x + viewBox.w / 2, y: viewBox.y + viewBox.h / 2 },
-          viewBox,
-        },
-        {
-          id: 'arc-mid',
-          timeMs: halfDuration,
-          focus: { x: midView.x + midView.w / 2, y: midView.y + midView.h / 2 },
-          viewBox: midView,
-        },
-        {
-          id: 'arc-end',
-          timeMs: Math.max(1, durationMs),
-          focus: { x: panEnd.x + panEnd.w / 2, y: panEnd.y + panEnd.h / 2 },
-          viewBox: panEnd,
-        },
-      ],
-    };
-  }
+  const dwellMs = initialDwellMs;
 
   const [start, end] =
-    preset === 'ken-burns'
-      ? [viewBox, kenBurnsEnd]
-      : preset === 'zoom-in'
-        ? [viewBox, deepZoom]
-        : preset === 'zoom-out'
-          ? [deepZoom, viewBox]
-          : preset === 'pan'
-            ? [viewBox, panEnd]
-            : preset === 'drift-zoom'
-              ? [viewBox, { ...deepZoom, x: deepZoom.x + viewBox.w * 0.1 }]
-              : [viewBox, viewBox];
+    preset === 'zoom-in'
+      ? [viewBox, deepZoom]
+      : preset === 'zoom-out'
+        ? [deepZoom, viewBox]
+        : preset === 'pan'
+          ? [viewBox, panEnd]
+          : [viewBox, viewBox];
 
   return {
     preset,
     durationMs: Math.max(1, durationMs),
-    pathType: preset === 'ken-burns' ? 'spline' : 'linear',
+    pathType: 'linear',
     easing: preset === 'pan' ? 'linear' : 'ease-in-out',
     keyframes: [
       {
@@ -238,21 +162,12 @@ export const configureCameraTrackPreset = (
   const points = track?.keyframes ?? [];
   const existingDwell = points[0]?.dwellMs;
   const generatedPointIds = new Set([
-    'ken-burns-start',
-    'ken-burns-end',
-    'hero-start',
-    'hero-end',
-    'arc-start',
-    'arc-mid',
-    'arc-end',
     'zoom-in-start',
     'zoom-in-end',
     'zoom-out-start',
     'zoom-out-end',
     'pan-start',
     'pan-end',
-    'drift-zoom-start',
-    'drift-zoom-end',
     'static-start',
     'static-end',
     'custom-start',
@@ -263,10 +178,8 @@ export const configureCameraTrackPreset = (
     points.length > 0 &&
     points.every((point) => generatedPointIds.has(point.id));
 
-  if (preset === 'static' || points.length < 2 || (generatedTrack && !options.preservePoints)) {
-    return generateCameraPreset(preset, currentView, duration, existingDwell);
-  }
-
+  // Custom means "use only the points I placed". It must never manufacture a
+  // two-point static track when the author has not placed enough points yet.
   if (preset === 'custom') {
     return {
       ...track,
@@ -276,73 +189,76 @@ export const configureCameraTrackPreset = (
     };
   }
 
-  // Once the author has placed points, Pin 1 is the camera's source of truth:
-  // preview must begin at that exact pan and zoom. Named styles can shape the
-  // zoom progression after it, but must not jump away from the captured start.
-  const firstView = generatedTrack ? currentView : (points[0]?.viewBox ?? currentView);
-
-  const keyframes = points.map((point, index) => {
-    const focus = point.focus ?? {
-      x: (point.viewBox?.x ?? currentView.x) + (point.viewBox?.w ?? currentView.w) / 2,
-      y: (point.viewBox?.y ?? currentView.y) + (point.viewBox?.h ?? currentView.h) / 2,
-    };
-
-    const ratio = points.length > 1 ? index / (points.length - 1) : 0;
-    const scale =
-      preset === 'ken-burns'
-        ? 1 - ratio * 0.3
-        : preset === 'hero-reveal'
-          ? 1 + ratio * (1 / 0.44 - 1)
-          : preset === 'zoom-in'
-            ? 1 - ratio * 0.56
-            : preset === 'zoom-out'
-              ? 1 + ratio * (1 / 0.44 - 1)
-              : preset === 'drift-zoom'
-                ? 1 - ratio * 0.28
-                : 1;
-
-    const w = firstView.w * scale;
-    const h = firstView.h * scale;
-
-    const dwellMs =
-      index === 0
-        ? (point.dwellMs ?? (preset === 'hero-reveal' ? 1500 : undefined))
-        : point.dwellMs;
-
-    return {
-      ...point,
-      focus,
-      ...(dwellMs ? { dwellMs } : {}),
-      viewBox:
-        index === 0 && point.viewBox && !generatedTrack
-          ? point.viewBox
-          : { x: focus.x - w / 2, y: focus.y - h / 2, w, h },
-    };
-  });
+  if (points.length < 2 || (generatedTrack && !options.preservePoints)) {
+    return generateCameraPreset(preset, currentView, duration, existingDwell);
+  }
 
   return {
+    ...track,
     durationMs: duration,
     preset,
-    pathType:
-      preset === 'ken-burns' || preset === 'arc-sweep' || preset === 'hero-reveal'
-        ? 'spline'
-        : (track?.pathType ?? 'linear'),
-    easing: preset === 'hero-reveal' ? 'ease-out' : preset === 'pan' ? 'linear' : 'ease-in-out',
-    keyframes: retimeCameraKeyframes(keyframes, duration),
+    pathType: track?.pathType ?? 'linear',
+    easing: preset === 'pan' ? 'linear' : (track?.easing ?? 'ease-in-out'),
+    keyframes: retimeCameraKeyframes(points, duration),
   };
 };
 
 /**
- * Samples the raw (un-eased) camera path at an absolute presentation time.
- * Segments are traversed with LINEAR time progress; global easing is applied
- * separately by {@link sampleCameraTrack} via a time-warp. Keeping the
- * per-segment progress linear is what removes the "dead stop" the camera used
- * to make at every interior keyframe (each segment previously eased 0→1, so
- * ease-in-out drove velocity to zero at both ends of every segment).
+ * Applies a movement rule to authored points for playback only. The stored
+ * view boxes remain untouched, so changing styles never destroys framing the
+ * author captured and Custom can always return to it.
  */
+const styleCameraKeyframes = (
+  track: ChapterCameraTrack,
+  points: ChapterCameraKeyframe[],
+): ChapterCameraKeyframe[] => {
+  const preset = track.preset ?? 'custom';
+  if (preset === 'custom' || points.length < 2) return points;
+
+  const firstView = points.find((point) => point.viewBox)?.viewBox;
+  if (!firstView) return points;
+
+  return points.map((point, index) => {
+    if (preset === 'static') {
+      return { ...point, viewBox: { ...firstView } };
+    }
+
+    const focus = point.focus ?? (point.viewBox
+      ? {
+          x: point.viewBox.x + point.viewBox.w / 2,
+          y: point.viewBox.y + point.viewBox.h / 2,
+        }
+      : {
+          x: firstView.x + firstView.w / 2,
+          y: firstView.y + firstView.h / 2,
+        });
+    const ratio = index / (points.length - 1);
+    const scale =
+      preset === 'zoom-in'
+        ? 1 - ratio * 0.56
+        : preset === 'zoom-out'
+          ? 1 + ratio * (1 / 0.44 - 1)
+          : 1;
+    const w = firstView.w * scale;
+    const h = firstView.h * scale;
+    return {
+      ...point,
+      focus,
+      viewBox: {
+        x: focus.x - w / 2,
+        y: focus.y - h / 2,
+        w,
+        h,
+      },
+    };
+  });
+};
+
+/** Samples one camera segment without changing the track's absolute clock. */
 const samplePositionAtTime = (
   points: ChapterCameraKeyframe[],
   pathType: ChapterCameraTrack['pathType'],
+  easing: ChapterCameraTrack['easing'],
   time: number,
 ): CameraTrackSample | null => {
   let toIndex = points.findIndex((point) => point.timeMs > time);
@@ -382,7 +298,8 @@ const samplePositionAtTime = (
 
   const effectiveStart = from.timeMs + dwell;
   const span = Math.max(1, to.timeMs - effectiveStart);
-  const progress = Math.max(0, Math.min(1, (time - effectiveStart) / span));
+  const linearProgress = Math.max(0, Math.min(1, (time - effectiveStart) / span));
+  const progress = ease(linearProgress, easing ?? 'ease-in-out');
 
   const layerIds = new Set([
     ...Object.keys(from.layerOpacities ?? {}),
@@ -423,25 +340,25 @@ const samplePositionAtTime = (
 /**
  * Deterministically samples an in-chapter camera path at a presentation time.
  *
- * Easing is applied once, across the whole track, by warping the presentation
- * time before locating the position. This produces a smooth acceleration at
- * the very start and deceleration at the very end of the chapter's motion while
- * keeping a continuous, non-zero velocity through interior keyframes — unlike
- * the previous per-segment easing, which decelerated to a full stop at every
- * intermediate camera point.
+ * Keyframe times are contracts: sampling at a point's `timeMs` must return
+ * that exact point. Easing therefore belongs to the segment between two
+ * points, never to the track's clock. Warping the whole timeline made an
+ * ease-out track reach every interior point early (the supplied chapter data,
+ * for example, reached its midpoint camera position at 29% of playback rather
+ * than 50%).
  */
 export const sampleCameraTrack = (
   track: ChapterCameraTrack,
   timeMs: number,
 ): CameraTrackSample | null => {
-  const points = [...track.keyframes].sort((a, b) => a.timeMs - b.timeMs);
+  const points = styleCameraKeyframes(
+    track,
+    [...track.keyframes].sort((a, b) => a.timeMs - b.timeMs),
+  );
   if (!points.length) return null;
 
   const duration = Math.max(1, track.durationMs);
   const time = Math.max(0, Math.min(duration, Number.isFinite(timeMs) ? timeMs : 0));
 
-  const easedProgress = ease(time / duration, track.easing ?? 'ease-in-out');
-  const warpedTime = easedProgress * duration;
-
-  return samplePositionAtTime(points, track.pathType, warpedTime);
+  return samplePositionAtTime(points, track.pathType, track.easing, time);
 };

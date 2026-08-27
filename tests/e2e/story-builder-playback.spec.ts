@@ -88,26 +88,28 @@ test("previews saved chapter motion without showing authoring frames", async ({
   await page.waitForTimeout(300);
   await motionTask.click();
 
-  /*
-   * A camera point is a frame on the stage, not a pin placed by clicking:
-   * each new point starts nested inside the last and is dragged into place.
-   * Two points nested one inside the other are already a zoom, which is all
-   * the preview below needs.
-   */
+  // Capture two deliberately different views. Camera points are represented
+  // by stable pins and timeline entries; rectangular keyframe overlays were
+  // removed from the motion workflow.
   const addPoint = page.getByRole("button", {
     name: "Add camera point",
     exact: true,
   });
   await addPoint.click();
-  await expect(page.locator(".story-frame--keyframe")).toHaveCount(1);
+  await expect(page.locator(".story-wide-authoring__point")).toHaveCount(1);
+  await page.locator("mango-viewer").evaluate((element: any) => {
+    const view = element.getViewBox();
+    element.setViewBox({
+      x: view.x + view.w * 0.15,
+      y: view.y + view.h * 0.1,
+      w: view.w * 0.7,
+      h: view.h * 0.7,
+    });
+  });
+  await page.waitForTimeout(300);
   await addPoint.click();
-  await expect(page.locator(".story-frame--keyframe")).toHaveCount(2);
-  // The point just added carries the handles.
-  await expect(
-    page.locator(".story-frame--keyframe.story-frame--selected"),
-  ).toHaveCount(1);
-
   await expect(page.locator(".story-wide-authoring__point")).toHaveCount(2);
+  await expect(page.locator(".story-builder-motion-marker--selected")).toHaveCount(1);
   await page.locator('[data-testid="inspector-done-motion"]').click();
   await expect(page.locator(".story-wide-authoring")).toHaveCount(0);
   // Out of the motion tool every editing object leaves the fixed output stage.

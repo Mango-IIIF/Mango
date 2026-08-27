@@ -156,13 +156,23 @@ describe('motion authoring surfaces', () => {
       Object.defineProperty(event, 'pointerId', { value: 7 });
       return event;
     };
+
+    // Normal mouse jitter must remain a click. Previously even a few pixels
+    // immediately moved the marker under the pointer and suppressed selection.
+    pins[0].dispatchEvent(pointer('pointerdown', 50, 50));
+    pins[0].dispatchEvent(pointer('pointermove', 53, 52));
+    pins[0].dispatchEvent(pointer('pointerup', 53, 52));
+    pins[0].click();
+    expect(onMoveMotionPoint).not.toHaveBeenCalled();
+    expect(onGoToMotionPoint).toHaveBeenCalledTimes(2);
+
     pins[1].dispatchEvent(pointer('pointerdown', 100, 50));
     pins[1].dispatchEvent(pointer('pointermove', 150, 25));
     pins[1].dispatchEvent(pointer('pointerup', 150, 25));
 
     expect(onMoveMotionPoint).toHaveBeenCalledWith('two', { x: 75, y: 25 });
     pins[1].click();
-    expect(onGoToMotionPoint).toHaveBeenCalledTimes(1);
+    expect(onGoToMotionPoint).toHaveBeenCalledTimes(2);
 
     activeChapterTask.set(null);
     await tick();

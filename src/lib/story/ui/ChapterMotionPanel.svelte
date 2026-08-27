@@ -20,15 +20,20 @@
   $: points = [...(track?.keyframes ?? [])].sort((a, b) => a.timeMs - b.timeMs);
   $: currentDwell = points[0]?.dwellMs ?? 0;
   $: firstSegmentMs = points.length >= 2 ? Math.max(1, points[1].timeMs - points[0].timeMs) : 0;
-  $: arcNeedsPoint = track?.preset === 'custom' && points.length > 0 && points.length < 3;
   $: requirementMessage =
     points.length === 0
       ? $t('storyBuilder.motion.requireTwo')
       : points.length === 1
         ? $t('storyBuilder.motion.requireOneMore')
-        : arcNeedsPoint
-          ? $t('storyBuilder.motion.requireArcPoint')
-          : '';
+        : '';
+
+  const basicPresets: Array<NonNullable<ChapterCameraTrack['preset']>> = [
+    'custom',
+    'pan',
+    'zoom-in',
+    'zoom-out',
+    'static',
+  ];
 
   let feedback = '';
 
@@ -52,10 +57,6 @@
   };
 
   const choosePreset = (preset: NonNullable<ChapterCameraTrack['preset']>) => {
-    if (preset === 'arc-sweep' && arcNeedsPoint) {
-      feedback = $t('storyBuilder.motion.arcError');
-      return;
-    }
     feedback = '';
     onApplyPreset(preset);
   };
@@ -104,105 +105,139 @@
   {/if}
 
   <div class="motion-panel__options">
-  <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section motion-panel__section--style">
-    <div class="motion-panel__section-label">{$t('storyBuilder.motion.style')}</div>
-    <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.presets')}>
-      {#each ['ken-burns', 'hero-reveal', 'arc-sweep', 'zoom-in', 'zoom-out', 'pan', 'drift-zoom', 'static', 'custom'] as preset}
-        <button
-          type="button"
-          disabled={preset === 'arc-sweep' && arcNeedsPoint}
-          aria-pressed={track?.preset === preset}
-          class:motion-panel__preset--active={track?.preset === preset}
-          on:click={() => choosePreset(preset as NonNullable<ChapterCameraTrack['preset']>)}
-          >{$t(`storyBuilder.motion.preset.${preset}`)}</button
-        >
-      {/each}
-    </div>
-  </section>
-
-  <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
-    <div class="motion-panel__section-label">{$t('storyBuilder.motion.path')}</div>
-    <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.path')}>
-      <button
-        type="button"
-        disabled={points.length < 2}
-        aria-pressed={track?.pathType === 'spline'}
-        class:motion-panel__preset--active={Boolean(track) &&
-          (track?.pathType ?? 'linear') === 'spline'}
-        on:click={() => choosePathType('spline')}>{$t('storyBuilder.motion.curved')}</button
+    <section
+      class="chapter-overlay__section chapter-overlay__section--card motion-panel__section motion-panel__section--style"
+    >
+      <div class="motion-panel__section-label">
+        {$t('storyBuilder.motion.style')}
+      </div>
+      <div
+        class="motion-panel__presets"
+        role="group"
+        aria-label={$t('storyBuilder.motion.presets')}
       >
-      <button
-        type="button"
-        disabled={points.length < 2}
-        aria-pressed={track?.pathType === 'linear'}
-        class:motion-panel__preset--active={Boolean(track) &&
-          (track?.pathType ?? 'linear') === 'linear'}
-        on:click={() => choosePathType('linear')}>{$t('storyBuilder.motion.straight')}</button
+        {#each basicPresets as preset}
+          <button
+            type="button"
+            aria-pressed={track?.preset === preset}
+            class:motion-panel__preset--active={track?.preset === preset}
+            on:click={() => choosePreset(preset)}
+            >{$t(`storyBuilder.motion.preset.${preset}`)}</button
+          >
+        {/each}
+      </div>
+    </section>
+
+    <details class="motion-panel__fine-tuning">
+      <summary>{$t('storyBuilder.motion.fineTuning')}</summary>
+
+      <section
+        class="chapter-overlay__section chapter-overlay__section--card motion-panel__section"
       >
-    </div>
-  </section>
+        <div class="motion-panel__section-label">
+          {$t('storyBuilder.motion.path')}
+        </div>
+        <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.path')}>
+          <button
+            type="button"
+            disabled={points.length < 2}
+            aria-pressed={track?.pathType === 'spline'}
+            class:motion-panel__preset--active={Boolean(track) &&
+              (track?.pathType ?? 'linear') === 'spline'}
+            on:click={() => choosePathType('spline')}>{$t('storyBuilder.motion.curved')}</button
+          >
+          <button
+            type="button"
+            disabled={points.length < 2}
+            aria-pressed={track?.pathType === 'linear'}
+            class:motion-panel__preset--active={Boolean(track) &&
+              (track?.pathType ?? 'linear') === 'linear'}
+            on:click={() => choosePathType('linear')}>{$t('storyBuilder.motion.straight')}</button
+          >
+        </div>
+      </section>
 
-  <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
-    <div class="motion-panel__heading">
-      <span class="motion-panel__icon"><Clock3 aria-hidden="true" /></span>
-      <span>
-        <strong>{$t('storyBuilder.motion.dwell')}</strong>
-        <small>{$t('storyBuilder.motion.dwellHint')}</small>
-      </span>
-    </div>
-    <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.dwell')}>
-      {#each [0, 1000, 1500, 2000, 3000] as dwell}
-        <button
-          type="button"
-          disabled={points.length < 2 || (dwell > 0 && dwell >= firstSegmentMs)}
-          aria-pressed={points.length >= 2 && currentDwell === dwell}
-          class:motion-panel__preset--active={points.length >= 2 && currentDwell === dwell}
-          on:click={() => chooseDwell(dwell)}>{dwell === 0 ? $t('storyBuilder.motion.noDwell') : $t('storyBuilder.motion.seconds', { seconds: (dwell / 1000).toFixed(1) })}</button
+      <section
+        class="chapter-overlay__section chapter-overlay__section--card motion-panel__section"
+      >
+        <div class="motion-panel__heading">
+          <span class="motion-panel__icon"><Clock3 aria-hidden="true" /></span>
+          <span>
+            <strong>{$t('storyBuilder.motion.dwell')}</strong>
+            <small>{$t('storyBuilder.motion.dwellHint')}</small>
+          </span>
+        </div>
+        <div
+          class="motion-panel__presets"
+          role="group"
+          aria-label={$t('storyBuilder.motion.dwell')}
         >
-      {/each}
-    </div>
-  </section>
+          {#each [0, 1000, 1500, 2000, 3000] as dwell}
+            <button
+              type="button"
+              disabled={points.length < 2 || (dwell > 0 && dwell >= firstSegmentMs)}
+              aria-pressed={points.length >= 2 && currentDwell === dwell}
+              class:motion-panel__preset--active={points.length >= 2 && currentDwell === dwell}
+              on:click={() => chooseDwell(dwell)}
+              >{dwell === 0
+                ? $t('storyBuilder.motion.noDwell')
+                : $t('storyBuilder.motion.seconds', {
+                    seconds: (dwell / 1000).toFixed(1),
+                  })}</button
+            >
+          {/each}
+        </div>
+      </section>
 
-  <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
-    <div class="motion-panel__section-label">{$t('storyBuilder.motion.easing')}</div>
-    <div class="motion-panel__presets" role="group" aria-label={$t('storyBuilder.motion.easing')}>
-      {#each ['linear', 'ease-in', 'ease-out', 'ease-in-out'] as easing}
-        <button
-          type="button"
-          disabled={points.length < 2}
-          aria-pressed={Boolean(track) && (track?.easing ?? 'ease-in-out') === easing}
-          class:motion-panel__preset--active={Boolean(track) &&
-            (track?.easing ?? 'ease-in-out') === easing}
-          on:click={() => {
-            feedback = '';
-            onUpdateEasing(easing as NonNullable<ChapterCameraTrack['easing']>);
-          }}>{$t(`storyBuilder.motion.easingOptions.${easing}`)}</button
+      <section
+        class="chapter-overlay__section chapter-overlay__section--card motion-panel__section"
+      >
+        <div class="motion-panel__section-label">
+          {$t('storyBuilder.motion.easing')}
+        </div>
+        <div
+          class="motion-panel__presets"
+          role="group"
+          aria-label={$t('storyBuilder.motion.easing')}
         >
-      {/each}
-    </div>
-  </section>
+          {#each ['linear', 'ease-in', 'ease-out', 'ease-in-out'] as easing}
+            <button
+              type="button"
+              disabled={points.length < 2}
+              aria-pressed={Boolean(track) && (track?.easing ?? 'ease-in-out') === easing}
+              class:motion-panel__preset--active={Boolean(track) &&
+                (track?.easing ?? 'ease-in-out') === easing}
+              on:click={() => {
+                feedback = '';
+                onUpdateEasing(easing as NonNullable<ChapterCameraTrack['easing']>);
+              }}>{$t(`storyBuilder.motion.easingOptions.${easing}`)}</button
+            >
+          {/each}
+        </div>
+      </section>
+    </details>
 
-  <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
-    <div class="motion-panel__heading">
-      <span class="motion-panel__icon"><Clock3 aria-hidden="true" /></span>
-      <span>
-        <strong>{$t('storyBuilder.motion.duration')}</strong>
-        <small>{$t('storyBuilder.motion.durationHint')}</small>
-      </span>
-    </div>
-    <label class="chapter-overlay__label">
-      {$t('storyBuilder.motion.durationSeconds')}
-      <input
-        class="chapter-overlay__input"
-        type="number"
-        min="0.1"
-        step="0.1"
-        data-testid="motion-duration"
-        value={durationSeconds}
-        on:change={commitDuration}
-      />
-    </label>
-  </section>
+    <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
+      <div class="motion-panel__heading">
+        <span class="motion-panel__icon"><Clock3 aria-hidden="true" /></span>
+        <span>
+          <strong>{$t('storyBuilder.motion.duration')}</strong>
+          <small>{$t('storyBuilder.motion.durationHint')}</small>
+        </span>
+      </div>
+      <label class="chapter-overlay__label">
+        {$t('storyBuilder.motion.durationSeconds')}
+        <input
+          class="chapter-overlay__input"
+          type="number"
+          min="0.1"
+          step="0.1"
+          data-testid="motion-duration"
+          value={durationSeconds}
+          on:change={commitDuration}
+        />
+      </label>
+    </section>
   </div>
 </div>
 
@@ -228,6 +263,24 @@
     color: var(--viewer-muted, #9aa6b2);
     font-size: 11px;
     line-height: 1.4;
+  }
+  .motion-panel__fine-tuning {
+    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--viewer-panel, #121922) 76%, transparent);
+  }
+  .motion-panel__fine-tuning > summary {
+    padding: 10px 12px;
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .motion-panel__fine-tuning[open] > summary {
+    border-bottom: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
+  }
+  .motion-panel__fine-tuning > .motion-panel__section {
+    margin: 10px;
   }
   .motion-panel__preview {
     display: inline-flex;

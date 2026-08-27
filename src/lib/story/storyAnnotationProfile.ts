@@ -333,12 +333,10 @@ const parseCameraTrack = (
     preset === "zoom-in" ||
     preset === "zoom-out" ||
     preset === "pan" ||
-    preset === "drift-zoom" ||
-    preset === "custom" ||
-    preset === "ken-burns" ||
-    preset === "hero-reveal" ||
-    preset === "arc-sweep"
+    preset === "custom"
       ? { preset }
+      : typeof preset === "string"
+        ? { preset: "custom" as const }
       : {}),
     ...(pathType === "linear" || pathType === "spline" ? { pathType } : {}),
     ...(easing === "linear" ||
