@@ -280,7 +280,23 @@ test("authors stable diagonal motion with independent pin position and zoom", as
   await expect(viewer.locator(".stage__toolbar--below")).toHaveCSS("display", "none");
   await expect(viewer.locator(".story-wide-authoring")).toHaveCount(0);
   const previewPinsToggle = viewer.getByTestId("motion-preview-pins-toggle");
+  const stopPreview = viewer.getByTestId("motion-preview-next-to-done");
+  const done = viewer.getByTestId("story-wide-done");
   await expect(previewPinsToggle).toBeVisible();
+  await expect(viewer.locator(".stage__bottom .plugin-panel__title")).toHaveCSS("display", "none");
+  const [previewBarBox, pinsButtonBox, stopButtonBox, doneButtonBox] = await Promise.all([
+    viewer.locator(".stage__bottom").boundingBox(),
+    previewPinsToggle.boundingBox(),
+    stopPreview.boundingBox(),
+    done.boundingBox(),
+  ]);
+  expect(previewBarBox && pinsButtonBox && stopButtonBox && doneButtonBox).toBeTruthy();
+  if (!previewBarBox || !pinsButtonBox || !stopButtonBox || !doneButtonBox) return;
+  expect(previewBarBox.height).toBeLessThanOrEqual(50);
+  expect(Math.max(pinsButtonBox.height, stopButtonBox.height, doneButtonBox.height) -
+    Math.min(pinsButtonBox.height, stopButtonBox.height, doneButtonBox.height)).toBeLessThanOrEqual(1);
+  expect(stopButtonBox.x - (pinsButtonBox.x + pinsButtonBox.width)).toBeGreaterThanOrEqual(7);
+  expect(doneButtonBox.x - (stopButtonBox.x + stopButtonBox.width)).toBeGreaterThanOrEqual(7);
   await expect(viewer.locator(".story-builder-motion-marker")).toHaveCount(0);
   await previewPinsToggle.click();
   // Pins outside the moving viewport are naturally clipped; every pin that

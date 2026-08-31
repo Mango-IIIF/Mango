@@ -3939,10 +3939,14 @@
     .stage__bottom:has(:global(.story-wide-preview-controls)) {
     display: block !important;
     width: auto;
+    height: 48px;
+    min-height: 48px;
+    padding: 6px;
     overflow: visible;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
+    border: 1px solid var(--viewer-panel-border);
+    border-radius: 12px;
+    background: var(--viewer-stage-bottom-bg, rgba(12, 16, 22, 0.86));
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
   }
 
   :global(.viewer--story-preview) .viewer__grid > .stage {
