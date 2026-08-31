@@ -284,6 +284,9 @@
       "customHint": "Le mode personnalisé conserve le cadre de chaque point tel que vous l’avez dessiné. La prévisualisation démarre au point 1.",
       "presetHint": "Les points définissent le cadrage ; le style de mouvement contrôle le zoom. Redimensionner un point passe en Personnalisé. La prévisualisation démarre au point 1.",
       "preview": "Prévisualiser",
+      "stopPreview": "Arrêter l’aperçu",
+      "showPreviewPins": "Afficher les repères",
+      "hidePreviewPins": "Masquer les repères",
       "style": "Style de mouvement",
       "presets": "Préréglages de mouvement",
       "preset": {
@@ -308,7 +311,7 @@
         "ease-in-out": "Accélération/décélération"
       },
       "duration": "Durée du mouvement du chapitre",
-      "durationHint": "Toutes les positions sont réparties automatiquement sur cette durée.",
+      "durationHint": "Les positions sont réparties sur ce temps de mouvement. La pause initiale est ajoutée avant.",
       "durationSeconds": "Durée (secondes)",
       "zoomValue": "Zoom {zoom}×",
       "timeline": "Chronologie du mouvement du chapitre",

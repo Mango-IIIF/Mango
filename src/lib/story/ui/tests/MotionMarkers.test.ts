@@ -80,6 +80,8 @@ describe('motion authoring surfaces', () => {
     document.body.appendChild(target);
     const activeChapterTask = writable<null | 'motion'>('motion');
     const selectedMotionPointId = writable<string | null>('two');
+    const motionPreviewing = writable(false);
+    const motionPreviewPinsVisible = writable(false);
     const onSelectMotionPoint = vi.fn();
     const onMoveMotionPoint = vi.fn();
     const story = writable({
@@ -125,7 +127,8 @@ describe('motion authoring surfaces', () => {
         saveModalPayload: writable(null),
         annotationLanguage: writable('en'),
         positioningLanguage: writable(null),
-        motionPreviewing: writable(false),
+        motionPreviewing,
+        motionPreviewPinsVisible,
       } as never,
     });
     await tick();
@@ -185,6 +188,17 @@ describe('motion authoring surfaces', () => {
     expect(onMoveMotionPoint).toHaveBeenCalledWith('two', { x: 75, y: 25 });
     pins[1].click();
     expect(onSelectMotionPoint).toHaveBeenCalledTimes(4);
+
+    motionPreviewing.set(true);
+    await tick();
+    expect(target.querySelectorAll('.story-builder-motion-marker')).toHaveLength(0);
+    motionPreviewPinsVisible.set(true);
+    await tick();
+    const previewPins = target.querySelectorAll<HTMLButtonElement>(
+      '.story-builder-motion-marker',
+    );
+    expect(previewPins).toHaveLength(2);
+    expect([...previewPins].every((pin) => pin.disabled)).toBe(true);
 
     activeChapterTask.set(null);
     await tick();

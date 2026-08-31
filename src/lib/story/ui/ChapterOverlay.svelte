@@ -10,6 +10,7 @@
   import type { ViewBox } from "../../core/types/viewer";
   import type { MediaType, MediaSource } from "../../iiif/mediaResolver";
   import type { MediaMarksState } from "../mediaMarks";
+  import { animatableCameraDurationMs } from "../cameraTrack";
   import {
     coerceAnnotationPlacement,
     cloneAnnotationPlacement,
@@ -888,7 +889,7 @@
     const count = track?.keyframes.length ?? 0;
     if (count === 0) return $t('storyBuilder.inspector.motionNone');
     const style = $t(`storyBuilder.motion.preset.${track?.preset ?? "custom"}`);
-    const seconds = Math.round((track?.durationMs ?? 0) / 100) / 10;
+    const seconds = Math.round(animatableCameraDurationMs(track) / 100) / 10;
     return $t('storyBuilder.inspector.motionSummary', { count, style, seconds });
   })();
   $: narrationSummary = (() => {

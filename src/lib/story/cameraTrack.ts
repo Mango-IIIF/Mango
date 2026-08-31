@@ -9,46 +9,6 @@ export type CameraTrackSample = Pick<
   'viewBox' | 'model' | 'layerOpacities'
 >;
 
-const cameraPointFocus = (
-  point: ChapterCameraKeyframe,
-): { x: number; y: number } | null => {
-  if (point.focus) return point.focus;
-  if (!point.viewBox) return null;
-  return {
-    x: point.viewBox.x + point.viewBox.w / 2,
-    y: point.viewBox.y + point.viewBox.h / 2,
-  };
-};
-
-/**
- * Measures both pan and zoom so automatically timed points move at a broadly
- * consistent visual speed. Raw canvas distance alone makes zoom-only tracks
- * take no time, while equal time per point makes a long pan suddenly race.
- */
-const cameraSegmentWeight = (
-  from: ChapterCameraKeyframe,
-  to: ChapterCameraKeyframe,
-): number => {
-  const fromFocus = cameraPointFocus(from);
-  const toFocus = cameraPointFocus(to);
-  const panDistance =
-    fromFocus && toFocus
-      ? Math.hypot(toFocus.x - fromFocus.x, toFocus.y - fromFocus.y)
-      : 0;
-
-  let zoomDistance = 0;
-  if (from.viewBox && to.viewBox && from.viewBox.w > 0 && to.viewBox.w > 0) {
-    const averageDiagonal =
-      (Math.hypot(from.viewBox.w, from.viewBox.h) +
-        Math.hypot(to.viewBox.w, to.viewBox.h)) /
-      2;
-    zoomDistance =
-      Math.abs(Math.log(to.viewBox.w / from.viewBox.w)) * averageDiagonal;
-  }
-
-  return Math.hypot(panDistance, zoomDistance);
-};
-
 export const retimeCameraKeyframes = (
   keyframes: ChapterCameraKeyframe[],
   durationMs: number,
@@ -59,46 +19,34 @@ export const retimeCameraKeyframes = (
   }
 
   const segmentCount = keyframes.length - 1;
-  const requestedDwells = keyframes
+  const dwells = keyframes
     .slice(0, -1)
     .map((point) =>
       Math.max(0, Number.isFinite(point.dwellMs) ? (point.dwellMs ?? 0) : 0),
     );
-  const requestedDwellTotal = requestedDwells.reduce(
-    (sum, dwell) => sum + dwell,
-    0,
-  );
-  // Always reserve at least a millisecond per leg. Malformed imported dwell
-  // values are reduced proportionally instead of eliminating the movement.
-  const maximumDwellTotal = Math.max(0, duration - segmentCount);
-  const dwellScale =
-    requestedDwellTotal > maximumDwellTotal && requestedDwellTotal > 0
-      ? maximumDwellTotal / requestedDwellTotal
-      : 1;
-  const dwells = requestedDwells.map((dwell) => dwell * dwellScale);
-  const dwellTotal = dwells.reduce((sum, dwell) => sum + dwell, 0);
-  const travelDuration = Math.max(0, duration - dwellTotal);
-
-  const rawWeights = keyframes
-    .slice(0, -1)
-    .map((point, index) => cameraSegmentWeight(point, keyframes[index + 1]));
-  const hasMotion = rawWeights.some((weight) => weight > 0.000001);
-  const weights = hasMotion
-    ? rawWeights.map((weight) => Math.max(0.000001, weight))
-    : rawWeights.map(() => 1);
-  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  const travelPerSegment = duration / segmentCount;
 
   let elapsed = 0;
   return keyframes.map((point, index) => {
     if (index === 0) return { ...point, timeMs: 0 };
-    elapsed +=
-      dwells[index - 1] + travelDuration * (weights[index - 1] / totalWeight);
+    elapsed += dwells[index - 1] + travelPerSegment;
     return {
       ...point,
-      timeMs: index === keyframes.length - 1 ? duration : Math.round(elapsed),
+      timeMs: Math.round(elapsed),
     };
   });
 };
+
+const cameraDwellDurationMs = (track: ChapterCameraTrack): number =>
+  track.keyframes.slice(0, -1).reduce(
+    (total, point) =>
+      total +
+      Math.max(
+        0,
+        Number.isFinite(point.dwellMs) ? (point.dwellMs ?? 0) : 0,
+      ),
+    0,
+  );
 
 export const catmullRom = (
   p0: number,
@@ -347,7 +295,7 @@ export const generateCameraPreset = (
       },
       {
         id: `${preset}-end`,
-        timeMs: Math.max(1, durationMs),
+        timeMs: Math.max(1, durationMs) + (dwellMs ?? 0),
         focus: { x: end.x + end.w / 2, y: end.y + end.h / 2 },
         viewBox: end,
       },
@@ -370,7 +318,9 @@ export const animatableCameraDurationMs = (
 ): number => {
   if (!track || (track.keyframes?.length ?? 0) < 2) return 0;
   const durationMs = track.durationMs;
-  return Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 0;
+  return Number.isFinite(durationMs) && durationMs > 0
+    ? durationMs + cameraDwellDurationMs(track)
+    : 0;
 };
 
 export const configureCameraTrackPreset = (
@@ -479,23 +429,23 @@ const styleCameraKeyframes = (
 };
 
 /**
- * Returns authored points on the exact clock playback will use. Named styles
- * can change the effective zoom, so their timing must be balanced after that
- * style is applied and then copied back to the non-destructive authored data.
+ * Returns authored points on the exact clock playback will use. Dwell is
+ * added before movement and every movement leg receives an equal share of the
+ * duration, so deleting, replacing, or moving a point cannot unpredictably
+ * reshuffle all of the other timestamps.
  */
 export const balanceCameraTrackKeyframes = (
   track: ChapterCameraTrack,
 ): ChapterCameraKeyframe[] => {
   const authored = [...track.keyframes].sort((a, b) => a.timeMs - b.timeMs);
-  const styled = styleCameraKeyframes(track, authored);
-  const balanced = retimeCameraKeyframes(styled, track.durationMs);
+  const balanced = retimeCameraKeyframes(authored, track.durationMs);
   return authored.map((point, index) => ({
     ...point,
     timeMs: balanced[index]?.timeMs ?? point.timeMs,
   }));
 };
 
-/** Samples one camera segment on the automatically balanced track clock. */
+/** Samples one camera segment on the automatically spaced track clock. */
 const samplePositionAtTime = (
   points: ChapterCameraKeyframe[],
   pathType: ChapterCameraTrack['pathType'],
@@ -598,11 +548,10 @@ const samplePositionAtTime = (
 /**
  * Deterministically samples an in-chapter camera path at a presentation time.
  *
- * Motion-point timing is automatic in the authoring UI. Playback therefore
- * balances the available travel time by pan/zoom distance and reserves dwell
- * separately. This avoids compressing a move into the few milliseconds left
- * in an equally-spaced segment or making a long final pan race several times
- * faster than the preceding legs.
+ * Motion-point timing is automatic in the authoring UI. Playback adds all
+ * dwell time before movement, then divides the movement duration equally
+ * between legs. This keeps the timeline predictable and ensures a hold can
+ * never overlap a later point's displayed arrival time.
  */
 export const sampleCameraTrack = (
   track: ChapterCameraTrack,
@@ -614,7 +563,7 @@ export const sampleCameraTrack = (
   );
   if (!points.length) return null;
 
-  const duration = Math.max(1, track.durationMs);
+  const duration = Math.max(1, animatableCameraDurationMs(track));
   const time = Math.max(
     0,
     Math.min(duration, Number.isFinite(timeMs) ? timeMs : 0),

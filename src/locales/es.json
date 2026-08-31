@@ -284,6 +284,9 @@
       "customHint": "El modo personalizado conserva el encuadre de cada punto tal como lo dibujó. La previsualización empieza en el punto 1.",
       "presetHint": "Los puntos fijan el enfoque; el estilo de movimiento controla el zoom. Cambiar el tamaño de un punto pasa a Personalizado. La previsualización empieza en el punto 1.",
       "preview": "Previsualizar",
+      "stopPreview": "Detener previsualización",
+      "showPreviewPins": "Mostrar pines",
+      "hidePreviewPins": "Ocultar pines",
       "style": "Estilo de movimiento",
       "presets": "Ajustes de movimiento",
       "preset": {
@@ -308,7 +311,7 @@
         "ease-in-out": "Entrada/salida suaves"
       },
       "duration": "Duración del movimiento del capítulo",
-      "durationHint": "Todas las posiciones se distribuyen automáticamente a lo largo de esta duración.",
+      "durationHint": "Las posiciones se distribuyen durante este tiempo de movimiento. La pausa inicial se añade antes.",
       "durationSeconds": "Duración (segundos)",
       "zoomValue": "Zoom {zoom}×",
       "timeline": "Línea de tiempo del movimiento del capítulo",

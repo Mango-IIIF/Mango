@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { Clock3, Play, Square } from '@lucide/svelte';
+  import { Clock3 } from '@lucide/svelte';
   import type { ChapterCameraTrack } from '../../core/types/story';
   import { t } from '../../core/i18n';
   import { balanceCameraTrackKeyframes } from '../cameraTrack';
 
   export let track: ChapterCameraTrack | undefined;
-  export let previewing = false;
   export let onUpdateDuration: (durationMs: number) => void;
   export let onUpdatePathType: (pathType: 'linear' | 'spline') => void = () => {};
   export let onUpdateDwell: (dwellMs: number) => void = () => {};
@@ -13,12 +12,9 @@
     easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out',
   ) => void = () => {};
   export let onApplyPreset: (preset: NonNullable<ChapterCameraTrack['preset']>) => void;
-  export let onPreview: () => void;
-  export let onStopPreview: () => void;
   export let wide = false;
 
   $: durationSeconds = (track?.durationMs ?? 5000) / 1000;
-  $: durationMs = Math.max(1, track?.durationMs ?? 5000);
   $: points = track ? balanceCameraTrackKeyframes(track) : [];
   $: currentDwell = points[0]?.dwellMs ?? 0;
   $: requirementMessage =
@@ -47,11 +43,6 @@
       return;
     }
     const durationMs = seconds * 1000;
-    if (currentDwell > 0 && currentDwell >= durationMs) {
-      feedback = $t('storyBuilder.motion.durationDwellError', { seconds: currentDwell / 1000 });
-      input.value = String(durationSeconds);
-      return;
-    }
     feedback = '';
     onUpdateDuration(durationMs);
   };
@@ -69,10 +60,6 @@
 
   const chooseDwell = (dwellMs: number) => {
     if (points.length < 2) return;
-    if (dwellMs > 0 && dwellMs >= durationMs) {
-      feedback = $t('storyBuilder.motion.dwellError');
-      return;
-    }
     feedback = '';
     onUpdateDwell(dwellMs);
   };
@@ -88,14 +75,6 @@
           : $t('storyBuilder.motion.presetHint')}
       </span>
     </div>
-    <button
-      class="motion-panel__preview"
-      type="button"
-      disabled={points.length < 2}
-      on:click={() => (previewing ? onStopPreview() : onPreview())}
-    >
-      {#if previewing}<Square aria-hidden="true" /> {$t('storyBuilder.media.stop')}{:else}<Play aria-hidden="true" /> {$t('storyBuilder.motion.preview')}{/if}
-    </button>
   </div>
 
   {#if feedback || requirementMessage}
@@ -173,10 +152,10 @@
           role="group"
           aria-label={$t('storyBuilder.motion.dwell')}
         >
-          {#each [0, 1000, 1500, 2000, 3000] as dwell}
+          {#each [0, 1000, 1500, 2000, 3000, 5000] as dwell}
             <button
               type="button"
-              disabled={points.length < 2 || (dwell > 0 && dwell >= durationMs)}
+              disabled={points.length < 2}
               aria-pressed={points.length >= 2 && currentDwell === dwell}
               class:motion-panel__preset--active={points.length >= 2 && currentDwell === dwell}
               on:click={() => chooseDwell(dwell)}
@@ -286,22 +265,6 @@
     gap: 12px;
     padding: 10px;
   }
-  .motion-panel__preview {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 0;
-    border-radius: 9px;
-    padding: 9px 11px;
-    background: var(--accent, var(--story-builder-accent, #e07a3f));
-    color: white;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .motion-panel__preview:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
   .motion-panel__feedback {
     margin: 0;
     border: 1px solid color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 38%, transparent);
@@ -311,10 +274,6 @@
     color: var(--viewer-muted, #9aa6b2);
     font-size: 11px;
     line-height: 1.45;
-  }
-  .motion-panel__preview :global(svg) {
-    width: 14px;
-    height: 14px;
   }
   .motion-panel__section {
     padding: 0;

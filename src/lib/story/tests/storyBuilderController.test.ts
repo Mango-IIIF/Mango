@@ -1598,6 +1598,55 @@ describe("story builder chapter frame", () => {
     detach();
   });
 
+  it("keeps dwell-aware timing consistent when a point is deleted and replaced", () => {
+    const points = [100, 300, 600, 1000, 1400].map((x, index) => ({
+      id: `kf-${index + 1}`,
+      timeMs: index * 2500,
+      focus: { x, y: 300 },
+      viewBox: { x: x - 200, y: 200, w: 400, h: 200 },
+    }));
+    const controller = createStoryBuilderController({
+      initialStory: {
+        ...frameStory,
+        chapters: frameStory.chapters.map((chapter) => ({
+          ...chapter,
+          cameraTrack: {
+            durationMs: 10_000,
+            preset: "custom" as const,
+            keyframes: points,
+          },
+        })),
+      },
+    });
+    const viewer = createFrameViewer({ x: 1500, y: 300, w: 400, h: 200 });
+    const detach = controller.attach({
+      mount: document.createElement("div"),
+      events: createEventBus(),
+      viewer,
+      config: {},
+    } as unknown as PluginContext);
+    controller.selectedChapterId.set("chapter-1");
+
+    controller.updateMotionInitialDwell(5000);
+    controller.updateMotionDuration(15_000);
+    controller.deleteMotionPoint("kf-2");
+    controller.addMotionPoint();
+
+    const keyframes = get(controller.story).chapters[0].cameraTrack!.keyframes;
+    expect(keyframes).toHaveLength(5);
+    expect(keyframes[0].dwellMs).toBe(5000);
+    expect(keyframes.map((point) => point.timeMs)).toEqual([
+      0, 8750, 12_500, 16_250, 20_000,
+    ]);
+    controller.setMotionPointFocus("kf-3", { x: 1800, y: 500 });
+    expect(
+      get(controller.story).chapters[0].cameraTrack!.keyframes.map(
+        (point) => point.timeMs,
+      ),
+    ).toEqual([0, 8750, 12_500, 16_250, 20_000]);
+    detach();
+  });
+
   it("copies the current zoom without moving the selected pin and takes zoom control from a preset", () => {
     const controller = createStoryBuilderController({
       initialStory: {

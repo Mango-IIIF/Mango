@@ -3933,6 +3933,18 @@
     display: none !important;
   }
 
+  /* Motion preview keeps only its compact Stop / pin visibility / Done
+     controls. The authoring footer itself remains removed. */
+  :global(.viewer--story-preview)
+    .stage__bottom:has(:global(.story-wide-preview-controls)) {
+    display: block !important;
+    width: auto;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
   :global(.viewer--story-preview) .viewer__grid > .stage {
     grid-column: 1 !important;
     grid-row: 1 / -1 !important;

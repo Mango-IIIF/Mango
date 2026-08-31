@@ -284,6 +284,9 @@
       "customHint": "Custom keeps each point’s frame as you drew it. Preview starts at Point 1.",
       "presetHint": "Points set the focus; the movement style controls zoom. Resizing a point switches to Custom. Preview starts at Point 1.",
       "preview": "Preview",
+      "stopPreview": "Stop preview",
+      "showPreviewPins": "Show pins",
+      "hidePreviewPins": "Hide pins",
       "style": "Movement style",
       "presets": "Motion presets",
       "preset": {
@@ -308,7 +311,7 @@
         "ease-in-out": "Ease in/out"
       },
       "duration": "Chapter motion duration",
-      "durationHint": "All positions are spaced automatically across this duration.",
+      "durationHint": "Positions are spaced across this movement time. The start hold is added before it.",
       "durationSeconds": "Duration (seconds)",
       "zoomValue": "{zoom}× zoom",
       "timeline": "Chapter motion timeline",

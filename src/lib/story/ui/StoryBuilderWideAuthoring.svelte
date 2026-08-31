@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Crosshair, MapPin, Plus, Shapes, Trash2 } from "@lucide/svelte";
+  import { Check, Crosshair, Eye, EyeOff, MapPin, Play, Plus, Shapes, Square, Trash2 } from "@lucide/svelte";
   import { readable, type Readable } from "svelte/store";
   import {
     type ChapterAnnotationTool,
@@ -20,7 +20,7 @@
   import StoryBuilderWideAnnotations from "./StoryBuilderWideAnnotations.svelte";
   import StoryBuilderWideAnnotationOptions from "./StoryBuilderWideAnnotationOptions.svelte";
   import { t } from '../../core/i18n';
-  import { balanceCameraTrackKeyframes } from '../cameraTrack';
+  import { animatableCameraDurationMs, balanceCameraTrackKeyframes } from '../cameraTrack';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
@@ -46,6 +46,8 @@
   export let onGoToPoint: (keyframeId: string) => void;
   export let onUpdatePointFromView: (keyframeId: string) => void = () => {};
   export let motionPreviewing: Readable<boolean> = readable(false);
+  export let motionPreviewPinsVisible: Readable<boolean> = readable(false);
+  export let onSetMotionPreviewPinsVisible: (visible: boolean) => void = () => {};
   export let onUpdateMotionDuration: (durationMs: number) => void = () => {};
   export let onUpdateMotionPathType: (pathType: "linear" | "spline") => void = () => {};
   export let onUpdateMotionInitialDwell: (dwellMs: number) => void = () => {};
@@ -95,10 +97,13 @@
       (annotation) => annotation.id === $selectedAnnotationId,
     ) ?? null;
   $: track = chapter?.cameraTrack;
-  $: durationMs = Math.max(
+  $: movementDurationMs = Math.max(
     1,
     track?.durationMs ?? chapter?.presentationDurationMs ?? 5000,
   );
+  $: timelineDurationMs = track
+    ? Math.max(1, animatableCameraDurationMs(track))
+    : movementDurationMs;
   $: points = track ? balanceCameraTrackKeyframes(track) : [];
   $: selectedPointIndex = points.findIndex((point) => point.id === $selectedPointId);
   $: mediaTimingIsVideo =
@@ -107,7 +112,7 @@
   const pointPosition = (
     point: ChapterCameraTrack["keyframes"][number],
   ): string =>
-    `${Math.max(0, Math.min(100, (point.timeMs / durationMs) * 100))}%`;
+    `${Math.max(0, Math.min(100, (point.timeMs / timelineDurationMs) * 100))}%`;
 
   const formatTime = (timeMs: number): string => {
     const seconds = timeMs / 1000;
@@ -127,19 +132,49 @@
   };
 </script>
 
-{#if chapter && ($activeTask === "position" || $activeTask === "motion") && !($activeTask === "motion" && $motionPreviewing)}
-  <!-- Direct-manipulation tools keep an exit on the stage when panels move aside. -->
-  <button
-    class="story-wide-done"
-    type="button"
-    data-testid="story-wide-done"
-    aria-label={$t('storyBuilder.inspector.done')}
-    title={$t('storyBuilder.inspector.done')}
-    on:click={() => onDone?.()}
-  >
-    <Check aria-hidden="true" />
-    <span>{$t('storyBuilder.inspector.done')}</span>
-  </button>
+{#if chapter && ($activeTask === "position" || $activeTask === "motion")}
+  <!-- Direct-manipulation tools keep their primary controls on the stage. -->
+  <div class="story-wide-actions" class:story-wide-actions--previewing={$motionPreviewing}>
+    {#if $activeTask === "motion"}
+      {#if $motionPreviewing}
+        <button
+          class="story-wide-action story-wide-action--secondary"
+          type="button"
+          data-testid="motion-preview-pins-toggle"
+          aria-pressed={$motionPreviewPinsVisible}
+          title={$motionPreviewPinsVisible
+            ? $t('storyBuilder.motion.hidePreviewPins')
+            : $t('storyBuilder.motion.showPreviewPins')}
+          on:click={() => onSetMotionPreviewPinsVisible(!$motionPreviewPinsVisible)}
+        >
+          {#if $motionPreviewPinsVisible}<EyeOff aria-hidden="true" /> {$t('storyBuilder.motion.hidePreviewPins')}{:else}<Eye aria-hidden="true" /> {$t('storyBuilder.motion.showPreviewPins')}{/if}
+        </button>
+      {/if}
+      <button
+        class="story-wide-action story-wide-action--secondary"
+        type="button"
+        data-testid="motion-preview-next-to-done"
+        disabled={points.length < 2}
+        on:click={() => ($motionPreviewing ? onStopMotionPreview() : onPreviewMotion())}
+      >
+        {#if $motionPreviewing}<Square aria-hidden="true" /> {$t('storyBuilder.motion.stopPreview')}{:else}<Play aria-hidden="true" /> {$t('storyBuilder.motion.preview')}{/if}
+      </button>
+    {/if}
+    <button
+      class="story-wide-action story-wide-done"
+      type="button"
+      data-testid="story-wide-done"
+      aria-label={$t('storyBuilder.inspector.done')}
+      title={$t('storyBuilder.inspector.done')}
+      on:click={() => {
+        if ($motionPreviewing) onStopMotionPreview();
+        onDone?.();
+      }}
+    >
+      <Check aria-hidden="true" />
+      <span>{$t('storyBuilder.inspector.done')}</span>
+    </button>
+  </div>
 {/if}
 
 {#if chapter && $activeTask === "motion" && !$motionPreviewing}
@@ -182,7 +217,7 @@
         <div class="story-wide-authoring__scale" aria-hidden="true">
           {#each [0, 0.25, 0.5, 0.75, 1] as ratio}
             <span style={`left:${ratio * 100}%`}
-              >{formatTime(durationMs * ratio)}</span
+              >{formatTime(timelineDurationMs * ratio)}</span
             >
           {/each}
         </div>
@@ -281,14 +316,11 @@
         <ChapterMotionPanel
           {track}
           wide
-          previewing={$motionPreviewing}
           onUpdateDuration={onUpdateMotionDuration}
           onUpdatePathType={onUpdateMotionPathType}
           onUpdateDwell={onUpdateMotionInitialDwell}
           onUpdateEasing={onUpdateMotionEasing}
           onApplyPreset={onApplyMotionPreset}
-          onPreview={onPreviewMotion}
-          onStopPreview={onStopMotionPreview}
         />
       </div>
     {/if}
@@ -462,6 +494,8 @@
 {:else if chapter && $activeTask === "position"}
   <!-- Direct manipulation lives on the stage; its footer is just the way out. -->
   <div class="story-wide-authoring--bare" aria-hidden="true"></div>
+{:else if chapter && $activeTask === "motion" && $motionPreviewing}
+  <div class="story-wide-preview-controls" aria-hidden="true"></div>
 {:else}
   <div class="story-wide-authoring--empty" aria-hidden="true"></div>
 {/if}
@@ -506,11 +540,16 @@
   :global(.stage__bottom:has(.story-wide-authoring--bare) .plugin-panel__title) {
     display: none;
   }
-  .story-wide-done {
+  .story-wide-actions {
     position: absolute;
     z-index: 2;
     inset-block-start: 10px;
     inset-inline-end: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .story-wide-action {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -525,12 +564,25 @@
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   }
-  .story-wide-done:hover {
+  .story-wide-action--secondary {
+    background: color-mix(in srgb, var(--story-builder-surface, #111827) 92%, transparent);
+    color: var(--story-builder-text, #f8fafc);
+  }
+  .story-wide-action:hover:not(:disabled) {
     background: var(--story-builder-accent-hover, #ff9d5c);
   }
-  .story-wide-done :global(svg) {
+  .story-wide-action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .story-wide-action :global(svg) {
     width: 13px;
     height: 13px;
+  }
+  .story-wide-preview-controls {
+    width: min(100%, 520px);
+    height: 44px;
+    pointer-events: none;
   }
   .story-wide-modal {
     position: absolute;

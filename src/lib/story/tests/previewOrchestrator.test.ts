@@ -165,6 +165,28 @@ describe('story preview orchestration', () => {
         narrated,
       ),
     ).toBe(8000);
+
+    // Dwell is additional hold time before the configured movement duration.
+    expect(
+      getPreviewChapterDuration(
+        {
+          ...base,
+          cameraTrack: {
+            durationMs: 8000,
+            keyframes: [
+              {
+                id: 'a',
+                timeMs: 0,
+                dwellMs: 2000,
+                viewBox: { x: 0, y: 0, w: 10, h: 10 },
+              },
+              { id: 'b', timeMs: 10_000, viewBox: { x: 5, y: 0, w: 10, h: 10 } },
+            ],
+          },
+        },
+        narrated,
+      ),
+    ).toBe(10_000);
   });
 
   it('uses a visible default duration for silent chapters', () => {

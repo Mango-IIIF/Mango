@@ -62,6 +62,7 @@ describe("StoryBuilderWideAuthoring", () => {
     const onStopPreviewMediaSegment = vi.fn();
     const selectedPointId = writable<string | null>(null);
     const motionPreviewing = writable(false);
+    const motionPreviewPinsVisible = writable(false);
     const selectedAnnotationId = writable<string | null>(null);
     const annotationTool = writable("select" as const);
     const onSetAnnotationTool = vi.fn((tool) => annotationTool.set(tool));
@@ -78,6 +79,11 @@ describe("StoryBuilderWideAuthoring", () => {
     const onUpdateMotionPathType = vi.fn();
     const onUpdateMotionInitialDwell = vi.fn();
     const onUpdateMotionEasing = vi.fn();
+    const onSetMotionPreviewPinsVisible = vi.fn((visible: boolean) =>
+      motionPreviewPinsVisible.set(visible),
+    );
+    const onPreviewMotion = vi.fn();
+    const onStopMotionPreview = vi.fn();
     const onSkipNarration = vi.fn();
     const instance = mount(StoryBuilderWideAuthoring, {
       target,
@@ -96,13 +102,15 @@ describe("StoryBuilderWideAuthoring", () => {
         onGoToPoint: vi.fn(),
         onUpdatePointFromView,
         motionPreviewing,
+        motionPreviewPinsVisible,
+        onSetMotionPreviewPinsVisible,
         onUpdateMotionPathType,
         onUpdateMotionInitialDwell,
         onUpdateMotionEasing,
         onUpdateMotionDuration: vi.fn(),
         onApplyMotionPreset: vi.fn(),
-        onPreviewMotion: vi.fn(),
-        onStopMotionPreview: vi.fn(),
+        onPreviewMotion,
+        onStopMotionPreview,
         annotationTool,
         selectedAnnotationId,
         onSetAnnotationTool,
@@ -127,6 +135,16 @@ describe("StoryBuilderWideAuthoring", () => {
     await tick();
     expect(target.querySelector(".story-wide-authoring")).toBeTruthy();
     expect(target.querySelector(".story-wide-narration")).toBeNull();
+    const previewNextToDone = target.querySelector<HTMLButtonElement>(
+      '[data-testid="motion-preview-next-to-done"]',
+    )!;
+    expect(previewNextToDone.nextElementSibling?.getAttribute('data-testid')).toBe(
+      'story-wide-done',
+    );
+    expect(target.querySelector('[data-testid="motion-preview-pins-toggle"]')).toBeNull();
+    expect(target.querySelector('[data-testid="story-wide-done"]')).toBeTruthy();
+    previewNextToDone.click();
+    expect(onPreviewMotion).toHaveBeenCalledOnce();
     expect(target.textContent).toContain("1.00× zoom");
     expect(target.textContent).toContain("2.00× zoom");
     const updatePoint = [...target.querySelectorAll<HTMLButtonElement>("button")].find(
@@ -170,8 +188,16 @@ describe("StoryBuilderWideAuthoring", () => {
     motionPreviewing.set(true);
     await tick();
     expect(target.querySelector(".story-wide-authoring")).toBeNull();
-    expect(target.querySelector('[data-testid="story-wide-done"]')).toBeNull();
-    expect(target.querySelector(".story-wide-authoring--empty")).toBeTruthy();
+    expect(target.querySelector('[data-testid="story-wide-done"]')).toBeTruthy();
+    expect(target.querySelector(".story-wide-preview-controls")).toBeTruthy();
+    const pinToggle = target.querySelector<HTMLButtonElement>(
+      '[data-testid="motion-preview-pins-toggle"]',
+    )!;
+    pinToggle.click();
+    expect(onSetMotionPreviewPinsVisible).toHaveBeenCalledWith(true);
+    expect(previewNextToDone.textContent).toContain('Stop preview');
+    previewNextToDone.click();
+    expect(onStopMotionPreview).toHaveBeenCalledOnce();
     motionPreviewing.set(false);
     await tick();
     expect(target.querySelector("#motion-options-panel")).toBeTruthy();

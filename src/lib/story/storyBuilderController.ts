@@ -32,6 +32,7 @@ import { createStoryPreviewOrchestrator } from "./previewOrchestrator";
 import { STAGE_CROSSFADE_MS } from "./viewer/chapterTransitionOrchestrator";
 import type { StageFade } from "./viewer/storyViewerController";
 import {
+  animatableCameraDurationMs,
   configureCameraTrackPreset,
   retimeCameraKeyframes,
   sampleCameraTrack,
@@ -190,6 +191,8 @@ export type StoryBuilderController = {
     preset: NonNullable<Chapter["cameraTrack"]>["preset"],
   ) => void;
   motionPreviewing: Readable<boolean>;
+  motionPreviewPinsVisible: Readable<boolean>;
+  setMotionPreviewPinsVisible: (visible: boolean) => void;
   previewMotion: () => void;
   stopMotionPreview: () => void;
   updateChapterTitle: (lang: string, value: string) => void;
@@ -396,6 +399,7 @@ export const createStoryBuilderController = (
   const positioningLanguage = writable<string | null>(null);
   const selectedMotionPointId = writable<string | null>(null);
   const motionPreviewing = writable(false);
+  const motionPreviewPinsVisible = writable(false);
   const drawerOpen = derived(
     uiMode,
     (mode) => mode !== "idle" && mode !== "annotationPositioning",
@@ -2659,6 +2663,10 @@ export const createStoryBuilderController = (
     startMotionTrackPlayback(chapter);
   };
 
+  const setMotionPreviewPinsVisible = (visible: boolean) => {
+    motionPreviewPinsVisible.set(visible);
+  };
+
   const startMotionTrackPlayback = (chapter: Chapter) => {
     if (
       !chapter.cameraTrack ||
@@ -2673,6 +2681,7 @@ export const createStoryBuilderController = (
       cancelAnimation = null;
     }
     const track = chapter.cameraTrack;
+    const playbackDurationMs = animatableCameraDurationMs(track);
     const reduceMotion = globalThis.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -2687,16 +2696,16 @@ export const createStoryBuilderController = (
       }
     };
     if (reduceMotion || typeof requestAnimationFrame !== "function") {
-      applySample(track.durationMs);
+      applySample(playbackDurationMs);
       return;
     }
     applySample(0);
     motionPreviewing.set(true);
     const startedAt = performance.now();
     const frame = (time: number) => {
-      const elapsed = Math.min(track.durationMs, time - startedAt);
+      const elapsed = Math.min(playbackDurationMs, time - startedAt);
       applySample(elapsed);
-      if (elapsed < track.durationMs)
+      if (elapsed < playbackDurationMs)
         motionPreviewFrame = requestAnimationFrame(frame);
       else {
         motionPreviewFrame = null;
@@ -3041,6 +3050,8 @@ export const createStoryBuilderController = (
     goToMotionPoint,
     applyMotionPreset,
     motionPreviewing,
+    motionPreviewPinsVisible,
+    setMotionPreviewPinsVisible,
     previewMotion,
     stopMotionPreview,
     updateChapterTitle,

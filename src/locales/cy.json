@@ -284,6 +284,9 @@
       "customHint": "Mae'r modd personol yn cadw ffrâm pob pwynt fel y'i tynnwyd gennych. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
       "presetHint": "Mae'r pwyntiau'n gosod y ffocws; mae'r arddull symud yn rheoli'r chwyddo. Mae newid maint pwynt yn newid i Personol. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
       "preview": "Rhagolwg",
+      "stopPreview": "Stopio’r rhagolwg",
+      "showPreviewPins": "Dangos pinnau",
+      "hidePreviewPins": "Cuddio pinnau",
       "style": "Arddull symud",
       "presets": "Rhagosodiadau symud",
       "preset": {
@@ -308,7 +311,7 @@
         "ease-in-out": "Esmwytho i mewn/allan"
       },
       "duration": "Hyd symudiad y bennod",
-      "durationHint": "Caiff pob safle ei wasgaru'n awtomatig ar draws yr hyd hwn.",
+      "durationHint": "Caiff safleoedd eu rhannu ar draws yr amser symud hwn. Ychwanegir y saib cychwynnol cyn hynny.",
       "durationSeconds": "Hyd (eiliadau)",
       "zoomValue": "Chwyddo {zoom}×",
       "timeline": "Llinell amser symudiad y bennod",

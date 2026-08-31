@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  animatableCameraDurationMs,
   configureCameraTrackPreset,
   generateCameraPreset,
   retimeCameraKeyframes,
@@ -33,7 +34,7 @@ describe('in-chapter camera track sampling', () => {
     );
   });
 
-  it('reaches every interior keyframe at its automatically balanced time with easing', () => {
+  it('reaches every interior keyframe at its automatically spaced time with easing', () => {
     const easedTrack = {
       durationMs: 12_290,
       easing: 'ease-out' as const,
@@ -57,7 +58,7 @@ describe('in-chapter camera track sampling', () => {
       easedTrack.keyframes,
       easedTrack.durationMs,
     );
-    expect(balanced[1].timeMs).not.toBe(6145);
+    expect(balanced[1].timeMs).toBe(6145);
     expect(sampleCameraTrack(easedTrack, balanced[1].timeMs)?.viewBox).toEqual(
       easedTrack.keyframes[1].viewBox,
     );
@@ -181,7 +182,7 @@ describe('in-chapter camera track sampling', () => {
     ).toEqual([0, 4000, 8000]);
   });
 
-  it('smooths and distance-balances the supplied five-point chapter track', () => {
+  it('smooths and consistently spaces the supplied five-point chapter track', () => {
     const suppliedTrack = {
       durationMs: 5000,
       preset: 'custom' as const,
@@ -251,21 +252,11 @@ describe('in-chapter camera track sampling', () => {
       suppliedTrack.keyframes,
       suppliedTrack.durationMs,
     );
-    const travelDurations = balanced
-      .slice(1)
-      .map(
-        (point, index) =>
-          point.timeMs -
-          balanced[index].timeMs -
-          (balanced[index].dwellMs ?? 0),
-      );
-
-    // The hold is no longer subtracted from an equal 1.25s slot, which used
-    // to leave just 250ms for the opening move. The much longer final pan is
-    // also given substantially more time than the shorter opening legs.
-    expect(travelDurations[0]).toBeGreaterThan(500);
-    expect(travelDurations[3]).toBeGreaterThan(travelDurations[0] * 2);
-    expect(balanced.at(-1)?.timeMs).toBe(5000);
+    // The one-second hold is added before five seconds of movement, which is
+    // divided consistently across the four movement legs.
+    expect(balanced.map((point) => point.timeMs)).toEqual([
+      0, 2250, 3500, 4750, 6000,
+    ]);
 
     // Zoom reverses at point two. Its velocity must approach and leave that
     // point continuously rather than changing by the full linear slope in a
@@ -357,8 +348,8 @@ describe('in-chapter camera track sampling', () => {
     expect(custom.keyframes).toEqual([]);
   });
 
-  it('always reaches an exact keyframe even when imported dwell data is invalid', () => {
-    const invalidDwellTrack = {
+  it('adds dwell before movement without consuming the movement duration', () => {
+    const dwellingTrack = {
       ...track,
       durationMs: 1000,
       keyframes: [
@@ -366,8 +357,12 @@ describe('in-chapter camera track sampling', () => {
         { ...track.keyframes[1], timeMs: 1000 },
       ],
     };
-    expect(sampleCameraTrack(invalidDwellTrack, 1000)?.viewBox).toEqual(
-      invalidDwellTrack.keyframes[1].viewBox,
+    expect(animatableCameraDurationMs(dwellingTrack)).toBe(4000);
+    expect(sampleCameraTrack(dwellingTrack, 2999)?.viewBox).toEqual(
+      dwellingTrack.keyframes[0].viewBox,
+    );
+    expect(sampleCameraTrack(dwellingTrack, 4000)?.viewBox).toEqual(
+      dwellingTrack.keyframes[1].viewBox,
     );
   });
 });

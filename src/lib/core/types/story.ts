@@ -140,6 +140,7 @@ export type StoryFrame = {
 };
 
 export type ChapterCameraTrack = {
+  /** Movement time only. Keyframe dwell is added before its following leg. */
   durationMs: number;
   keyframes: ChapterCameraKeyframe[];
   preset?:

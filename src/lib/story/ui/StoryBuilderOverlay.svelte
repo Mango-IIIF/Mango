@@ -82,6 +82,7 @@
   export let onSaveChapterSettings: () => void;
   export let onCancelChapterSettings: () => void = () => {};
   export let motionPreviewing: Readable<boolean>;
+  export let motionPreviewPinsVisible: Readable<boolean> = readable(false);
   let chapterId: string | null = null;
   let manifestValue: string | null = null;
   let currentMode: UIMode = 'idle';
@@ -518,7 +519,7 @@
       />
     {/if}
 
-    {#if chapterId && $activeChapterTask === 'motion' && !$motionPreviewing && currentMode !== 'annotationPositioning' && currentMode !== 'narrationPanel' && motionMarkers.length > 0}
+    {#if chapterId && $activeChapterTask === 'motion' && (!$motionPreviewing || $motionPreviewPinsVisible) && currentMode !== 'annotationPositioning' && currentMode !== 'narrationPanel' && motionMarkers.length > 0}
       <div class="story-builder-motion-markers" aria-label={$t('storyBuilder.motion.cameraPoints')}>
         {#each motionMarkers as marker (marker.id)}
           <button
@@ -527,6 +528,7 @@
             class:story-builder-motion-marker--dragging={motionDrag?.id === marker.id &&
               motionDrag.moved}
             type="button"
+            disabled={$motionPreviewing}
             style={`--motion-x:${(motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.x : marker.x) * 100}%;--motion-y:${(motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.y : marker.y) * 100}%;--motion-layer:${$selectedMotionPointId === marker.id ? 2 : 1}`}
             aria-label={$t('storyBuilder.motion.movePointTitle', {
               number: marker.index + 1,

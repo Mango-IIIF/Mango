@@ -3,6 +3,7 @@
   import { readable, type Readable } from 'svelte/store';
   import type { Chapter, StoryState } from '../../core/types/story';
   import { resolveChapterTiming } from '../timing';
+  import { animatableCameraDurationMs } from '../cameraTrack';
   import { t } from '../../core/i18n';
   import { fetchManifest, manifestsStore } from '../../core/state/manifests';
   import { resolveCanvasThumbnail } from '../../viewer/iiif/thumbnails';
@@ -59,7 +60,7 @@
     if (narrationDuration > 0 || mediaDuration > 0 || chapter.cameraTrack) {
       return Math.max(
         narrationDuration + mediaDuration,
-        (chapter.cameraTrack?.durationMs ?? 0) / 1000,
+        animatableCameraDurationMs(chapter.cameraTrack) / 1000,
       );
     }
 
