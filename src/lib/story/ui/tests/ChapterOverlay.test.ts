@@ -693,6 +693,9 @@ describe("ChapterOverlay", () => {
     const reload = target.querySelector(
       '[data-testid="chapter-manifest-reload"]',
     ) as HTMLButtonElement;
+    expect(
+      target.querySelector(".chapter-camera-config__manifest-row"),
+    ).toBeTruthy();
     expect(target.querySelector('[data-testid="chapter-apply-source"]')).toBeNull();
     reload.click();
 

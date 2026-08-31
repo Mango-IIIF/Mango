@@ -2,6 +2,7 @@
   import { Clock3, Play, Square } from '@lucide/svelte';
   import type { ChapterCameraTrack } from '../../core/types/story';
   import { t } from '../../core/i18n';
+  import { balanceCameraTrackKeyframes } from '../cameraTrack';
 
   export let track: ChapterCameraTrack | undefined;
   export let previewing = false;
@@ -17,9 +18,9 @@
   export let wide = false;
 
   $: durationSeconds = (track?.durationMs ?? 5000) / 1000;
-  $: points = [...(track?.keyframes ?? [])].sort((a, b) => a.timeMs - b.timeMs);
+  $: durationMs = Math.max(1, track?.durationMs ?? 5000);
+  $: points = track ? balanceCameraTrackKeyframes(track) : [];
   $: currentDwell = points[0]?.dwellMs ?? 0;
-  $: firstSegmentMs = points.length >= 2 ? Math.max(1, points[1].timeMs - points[0].timeMs) : 0;
   $: requirementMessage =
     points.length === 0
       ? $t('storyBuilder.motion.requireTwo')
@@ -46,8 +47,7 @@
       return;
     }
     const durationMs = seconds * 1000;
-    const nextFirstSegmentMs = points.length >= 2 ? durationMs / (points.length - 1) : durationMs;
-    if (currentDwell > 0 && currentDwell >= nextFirstSegmentMs) {
+    if (currentDwell > 0 && currentDwell >= durationMs) {
       feedback = $t('storyBuilder.motion.durationDwellError', { seconds: currentDwell / 1000 });
       input.value = String(durationSeconds);
       return;
@@ -69,7 +69,7 @@
 
   const chooseDwell = (dwellMs: number) => {
     if (points.length < 2) return;
-    if (dwellMs > 0 && dwellMs >= firstSegmentMs) {
+    if (dwellMs > 0 && dwellMs >= durationMs) {
       feedback = $t('storyBuilder.motion.dwellError');
       return;
     }
@@ -176,7 +176,7 @@
           {#each [0, 1000, 1500, 2000, 3000] as dwell}
             <button
               type="button"
-              disabled={points.length < 2 || (dwell > 0 && dwell >= firstSegmentMs)}
+              disabled={points.length < 2 || (dwell > 0 && dwell >= durationMs)}
               aria-pressed={points.length >= 2 && currentDwell === dwell}
               class:motion-panel__preset--active={points.length >= 2 && currentDwell === dwell}
               on:click={() => chooseDwell(dwell)}

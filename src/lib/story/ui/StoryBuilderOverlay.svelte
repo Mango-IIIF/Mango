@@ -262,10 +262,6 @@
     onSelectMotionPoint(markerId);
   };
 
-  const markerX = (marker: (typeof motionMarkers)[number]): number =>
-    motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.x : marker.x;
-  const markerY = (marker: (typeof motionMarkers)[number]): number =>
-    motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.y : marker.y;
   let placementRectValue: {
     x: number;
     y: number;
@@ -531,7 +527,7 @@
             class:story-builder-motion-marker--dragging={motionDrag?.id === marker.id &&
               motionDrag.moved}
             type="button"
-            style={`--motion-x:${markerX(marker) * 100}%;--motion-y:${markerY(marker) * 100}%;--motion-layer:${$selectedMotionPointId === marker.id ? 2 : 1}`}
+            style={`--motion-x:${(motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.x : marker.x) * 100}%;--motion-y:${(motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.y : marker.y) * 100}%;--motion-layer:${$selectedMotionPointId === marker.id ? 2 : 1}`}
             aria-label={$t('storyBuilder.motion.movePointTitle', {
               number: marker.index + 1,
               seconds: (marker.timeMs / 1000).toFixed(1),

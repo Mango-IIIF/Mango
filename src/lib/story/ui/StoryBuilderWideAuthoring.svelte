@@ -20,6 +20,7 @@
   import StoryBuilderWideAnnotations from "./StoryBuilderWideAnnotations.svelte";
   import StoryBuilderWideAnnotationOptions from "./StoryBuilderWideAnnotationOptions.svelte";
   import { t } from '../../core/i18n';
+  import { balanceCameraTrackKeyframes } from '../cameraTrack';
 
   export let story: Readable<StoryState>;
   export let selectedChapterId: Readable<string | null>;
@@ -98,7 +99,7 @@
     1,
     track?.durationMs ?? chapter?.presentationDurationMs ?? 5000,
   );
-  $: points = [...(track?.keyframes ?? [])].sort((a, b) => a.timeMs - b.timeMs);
+  $: points = track ? balanceCameraTrackKeyframes(track) : [];
   $: selectedPointIndex = points.findIndex((point) => point.id === $selectedPointId);
   $: mediaTimingIsVideo =
     $mediaType === "video" || $mediaSources.some((entry) => entry.type === "video");

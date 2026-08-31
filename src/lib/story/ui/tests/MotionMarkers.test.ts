@@ -176,6 +176,10 @@ describe('motion authoring surfaces', () => {
     overlay.addEventListener('pointerup', consumeEvent);
     pins[1].dispatchEvent(pointer('pointerdown', 100, 50));
     overlay.dispatchEvent(pointer('pointermove', 150, 25));
+    await tick();
+    expect(pins[1].style.getPropertyValue('--motion-x')).toBe('75%');
+    expect(pins[1].style.getPropertyValue('--motion-y')).toBe('25%');
+    expect(onMoveMotionPoint).not.toHaveBeenCalled();
     overlay.dispatchEvent(pointer('pointerup', 150, 25));
 
     expect(onMoveMotionPoint).toHaveBeenCalledWith('two', { x: 75, y: 25 });

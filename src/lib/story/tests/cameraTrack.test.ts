@@ -25,11 +25,15 @@ describe('in-chapter camera track sampling', () => {
   });
 
   it('clamps sampling to exact endpoints', () => {
-    expect(sampleCameraTrack(track, -100)?.viewBox).toEqual(track.keyframes[0].viewBox);
-    expect(sampleCameraTrack(track, 9000)?.viewBox).toEqual(track.keyframes[1].viewBox);
+    expect(sampleCameraTrack(track, -100)?.viewBox).toEqual(
+      track.keyframes[0].viewBox,
+    );
+    expect(sampleCameraTrack(track, 9000)?.viewBox).toEqual(
+      track.keyframes[1].viewBox,
+    );
   });
 
-  it('reaches every interior keyframe at its declared time with easing', () => {
+  it('reaches every interior keyframe at its automatically balanced time with easing', () => {
     const easedTrack = {
       durationMs: 12_290,
       easing: 'ease-out' as const,
@@ -49,8 +53,14 @@ describe('in-chapter camera track sampling', () => {
       ],
     };
 
-    // Global time-warping used to put this sample halfway between b and c.
-    expect(sampleCameraTrack(easedTrack, 6145)?.viewBox).toEqual(easedTrack.keyframes[1].viewBox);
+    const balanced = retimeCameraKeyframes(
+      easedTrack.keyframes,
+      easedTrack.durationMs,
+    );
+    expect(balanced[1].timeMs).not.toBe(6145);
+    expect(sampleCameraTrack(easedTrack, balanced[1].timeMs)?.viewBox).toEqual(
+      easedTrack.keyframes[1].viewBox,
+    );
   });
 
   it('is independent of chapter entry transition data', () => {
@@ -58,10 +68,16 @@ describe('in-chapter camera track sampling', () => {
   });
 
   it('generates editable points for a basic zoom mode', () => {
-    const preset = generateCameraPreset('zoom-in', track.keyframes[0].viewBox!, 6000);
+    const preset = generateCameraPreset(
+      'zoom-in',
+      track.keyframes[0].viewBox!,
+      6000,
+    );
     expect(preset.preset).toBe('zoom-in');
     expect(preset.keyframes).toHaveLength(2);
-    expect(preset.keyframes[1].viewBox!.w).toBeLessThan(preset.keyframes[0].viewBox!.w);
+    expect(preset.keyframes[1].viewBox!.w).toBeLessThan(
+      preset.keyframes[0].viewBox!.w,
+    );
     expect(preset.keyframes[1].timeMs).toBe(6000);
   });
 
@@ -120,7 +136,9 @@ describe('in-chapter camera track sampling', () => {
     expect(styled.keyframes[0].viewBox).toEqual(capturedStart);
     expect(sampleCameraTrack(styled, 0)?.viewBox).toEqual(capturedStart);
     expect(styled.keyframes[1].viewBox).toEqual(placed.keyframes[1].viewBox);
-    expect(sampleCameraTrack(styled, 5000)?.viewBox!.w).toBeGreaterThan(capturedStart.w);
+    expect(sampleCameraTrack(styled, 5000)?.viewBox!.w).toBeGreaterThan(
+      capturedStart.w,
+    );
   });
 
   it('uses the stable chapter frame for named-style zoom when focal points move', () => {
@@ -132,9 +150,15 @@ describe('in-chapter camera track sampling', () => {
         index === 1 ? { ...point, focus: { x: 800, y: 250 } } : point,
       ),
     };
-    const configured = configureCameraTrackPreset(repositioned, 'zoom-in', baseView, 5000, {
-      preservePoints: true,
-    });
+    const configured = configureCameraTrackPreset(
+      repositioned,
+      'zoom-in',
+      baseView,
+      5000,
+      {
+        preservePoints: true,
+      },
+    );
 
     expect(configured.keyframes[0].viewBox?.w).toBe(1000);
     expect(configured.keyframes[1].viewBox?.w).toBeCloseTo(440);
@@ -152,9 +176,111 @@ describe('in-chapter camera track sampling', () => {
       { id: 'two', timeMs: 0, focus: { x: 20, y: 20 } },
       { id: 'three', timeMs: 0, focus: { x: 30, y: 30 } },
     ];
-    expect(retimeCameraKeyframes(points, 8000).map((point) => point.timeMs)).toEqual([
-      0, 4000, 8000,
-    ]);
+    expect(
+      retimeCameraKeyframes(points, 8000).map((point) => point.timeMs),
+    ).toEqual([0, 4000, 8000]);
+  });
+
+  it('smooths and distance-balances the supplied five-point chapter track', () => {
+    const suppliedTrack = {
+      durationMs: 5000,
+      preset: 'custom' as const,
+      easing: 'linear' as const,
+      pathType: 'linear' as const,
+      keyframes: [
+        {
+          id: 'one',
+          timeMs: 0,
+          dwellMs: 1000,
+          focus: { x: 232.61666677053688, y: 7217.0098732922725 },
+          viewBox: {
+            x: -625.302206660063,
+            y: 6573.570718219323,
+            w: 1715.8377468611998,
+            h: 1286.8783101458998,
+          },
+        },
+        {
+          id: 'two',
+          timeMs: 1250,
+          focus: { x: 1403.3454545454545, y: 7038.181324084683 },
+          viewBox: {
+            x: 167.94227680539075,
+            y: 6111.628940779636,
+            w: 2470.8063554801274,
+            h: 1853.1047666100956,
+          },
+        },
+        {
+          id: 'three',
+          timeMs: 2500,
+          focus: { x: 2937.705137624591, y: 7342.345685263708 },
+          viewBox: {
+            x: 2079.786264193991,
+            y: 6698.9065301907585,
+            w: 1715.8377468611998,
+            h: 1286.8783101458998,
+          },
+        },
+        {
+          id: 'four',
+          timeMs: 3750,
+          focus: { x: 4605.198077214771, y: 6798.5450571940655 },
+          viewBox: {
+            x: 3122.714263926695,
+            y: 5686.682197228009,
+            w: 2964.967626576152,
+            h: 2223.725719932114,
+          },
+        },
+        {
+          id: 'five',
+          timeMs: 5000,
+          focus: { x: 8990.893972228136, y: 6470.79957067083 },
+          viewBox: {
+            x: 7755.4907944880715,
+            y: 5544.247187365781,
+            w: 2470.806355480128,
+            h: 1853.104766610096,
+          },
+        },
+      ],
+    };
+
+    const balanced = retimeCameraKeyframes(
+      suppliedTrack.keyframes,
+      suppliedTrack.durationMs,
+    );
+    const travelDurations = balanced
+      .slice(1)
+      .map(
+        (point, index) =>
+          point.timeMs -
+          balanced[index].timeMs -
+          (balanced[index].dwellMs ?? 0),
+      );
+
+    // The hold is no longer subtracted from an equal 1.25s slot, which used
+    // to leave just 250ms for the opening move. The much longer final pan is
+    // also given substantially more time than the shorter opening legs.
+    expect(travelDurations[0]).toBeGreaterThan(500);
+    expect(travelDurations[3]).toBeGreaterThan(travelDurations[0] * 2);
+    expect(balanced.at(-1)?.timeMs).toBe(5000);
+
+    // Zoom reverses at point two. Its velocity must approach and leave that
+    // point continuously rather than changing by the full linear slope in a
+    // single rendered frame.
+    const pointTime = balanced[1].timeMs;
+    const before =
+      sampleCameraTrack(suppliedTrack, pointTime - 10)?.viewBox?.w ?? 0;
+    const at = sampleCameraTrack(suppliedTrack, pointTime)?.viewBox?.w ?? 0;
+    const after =
+      sampleCameraTrack(suppliedTrack, pointTime + 10)?.viewBox?.w ?? 0;
+    const incomingVelocity = (at - before) / 10;
+    const outgoingVelocity = (after - at) / 10;
+    // The former pair of linear slopes jumped by about 1.2 canvas units/ms.
+    expect(Math.abs(incomingVelocity - outgoingVelocity)).toBeLessThan(0.05);
+    expect(at).toBeCloseTo(suppliedTrack.keyframes[1].viewBox.w);
   });
 
   it('regenerates generated presets and makes Still genuinely stationary', () => {
@@ -164,7 +290,9 @@ describe('in-chapter camera track sampling', () => {
     const still = configureCameraTrackPreset(pan, 'static', view, 5000);
     expect(still.keyframes).toHaveLength(2);
     expect(still.keyframes[0].viewBox).toEqual(still.keyframes[1].viewBox);
-    expect(sampleCameraTrack(still, 2500)?.viewBox).toEqual(still.keyframes[0].viewBox);
+    expect(sampleCameraTrack(still, 2500)?.viewBox).toEqual(
+      still.keyframes[0].viewBox,
+    );
   });
 
   it('gives each basic authoring style a distinct camera rule', () => {
@@ -196,17 +324,25 @@ describe('in-chapter camera track sampling', () => {
 
     // Style selection does not mutate either authored frame.
     for (const styled of [custom, pan, zoomIn, zoomOut, still]) {
-      expect(styled.keyframes.map((point) => point.viewBox?.w)).toEqual([500, 200]);
+      expect(styled.keyframes.map((point) => point.viewBox?.w)).toEqual([
+        500, 200,
+      ]);
     }
 
     expect(sampleCameraTrack(custom, 6000)?.viewBox?.w).toBe(200);
     expect(sampleCameraTrack(pan, 6000)?.viewBox?.w).toBe(500);
     expect(sampleCameraTrack(zoomIn, 6000)?.viewBox?.w).toBeCloseTo(220);
-    expect(sampleCameraTrack(zoomOut, 6000)?.viewBox?.w).toBeCloseTo(500 / 0.44);
-    expect(sampleCameraTrack(still, 6000)?.viewBox).toEqual(placed.keyframes[0].viewBox);
+    expect(sampleCameraTrack(zoomOut, 6000)?.viewBox?.w).toBeCloseTo(
+      500 / 0.44,
+    );
+    expect(sampleCameraTrack(still, 6000)?.viewBox).toEqual(
+      placed.keyframes[0].viewBox,
+    );
 
     const restored = configureCameraTrackPreset(pan, 'custom', view, 6000);
-    expect(restored.keyframes.map((point) => point.viewBox?.w)).toEqual([500, 200]);
+    expect(restored.keyframes.map((point) => point.viewBox?.w)).toEqual([
+      500, 200,
+    ]);
   });
 
   it('does not invent camera points when an empty track is set to Custom', () => {

@@ -31,7 +31,7 @@
     {#if !embedded}
       <div class="chapter-overlay__section-title">{$t('storyBuilder.chapter.manifestLabel')}</div>
     {/if}
-    <div class="chapter-overlay__row">
+    <div class="chapter-overlay__row chapter-camera-config__manifest-row">
       <input
         class="chapter-overlay__input"
         type="url"
@@ -54,3 +54,13 @@
       </button>
     </div>
 </svelte:element>
+
+<style>
+  .chapter-overlay__row.chapter-camera-config__manifest-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chapter-camera-config__manifest-row .chapter-overlay__button {
+    justify-self: start;
+  }
+</style>

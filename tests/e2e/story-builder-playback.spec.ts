@@ -194,6 +194,13 @@ test("authors stable diagonal motion with independent pin position and zoom", as
     overlayBox.y + overlayBox.height * 0.75,
     { steps: 8 },
   );
+  // The marker must visibly follow while the button is still held; checking
+  // only after mouse-up would miss the original release-only rendering bug.
+  const heldMarkerBox = await marker.boundingBox();
+  expect(heldMarkerBox).toBeTruthy();
+  if (!heldMarkerBox) return;
+  expect(heldMarkerBox.x).toBeLessThan(beforeHover.x - overlayBox.width * 0.15);
+  expect(heldMarkerBox.y).toBeGreaterThan(beforeHover.y + overlayBox.height * 0.15);
   await page.mouse.up();
 
   const firstBeforeZoom = await viewer.evaluate((element: any) =>

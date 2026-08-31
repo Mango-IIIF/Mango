@@ -2397,7 +2397,7 @@ export const createStoryBuilderController = (
       const nextTrack: NonNullable<Chapter["cameraTrack"]> = {
         ...track,
         preset,
-        keyframes,
+        keyframes: retimeCameraKeyframes(keyframes, track.durationMs),
       };
       return preset !== "custom" && chapter.viewBox
         ? configureCameraTrackPreset(
@@ -2449,7 +2449,7 @@ export const createStoryBuilderController = (
       if (!keyframes.some((entry) => entry.id === keyframeId)) return track;
       const nextTrack: NonNullable<Chapter["cameraTrack"]> = {
         ...track,
-        keyframes,
+        keyframes: retimeCameraKeyframes(keyframes, track.durationMs),
       };
       return (track.preset ?? "custom") !== "custom" && chapter.viewBox
         ? configureCameraTrackPreset(
@@ -2494,8 +2494,11 @@ export const createStoryBuilderController = (
       return {
         ...track,
         preset: "custom",
-        keyframes: track.keyframes.map((entry) =>
-          entry.id === keyframeId ? { ...entry, focus, viewBox } : entry,
+        keyframes: retimeCameraKeyframes(
+          track.keyframes.map((entry) =>
+            entry.id === keyframeId ? { ...entry, focus, viewBox } : entry,
+          ),
+          track.durationMs,
         ),
       };
     });
@@ -2582,7 +2585,7 @@ export const createStoryBuilderController = (
       });
       return {
         ...track,
-        keyframes,
+        keyframes: retimeCameraKeyframes(keyframes, track.durationMs),
       };
     });
   };
