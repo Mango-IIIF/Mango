@@ -1,4 +1,4 @@
-import { mount, unmount } from 'svelte';
+import { mount, tick, unmount } from 'svelte';
 import { writable } from 'svelte/store';
 import { describe, expect, it, vi } from 'vitest';
 import type { SaveState } from '../../storySerializer';
@@ -31,6 +31,7 @@ describe('StoryBuilderTopBar', () => {
           ],
         }),
         isPreviewing: writable(false),
+        motionPreviewing: writable(false),
         saveState: writable<SaveState>({ status: 'idle' }),
         saveConfigured: writable(true),
         dirty: writable(true),
@@ -67,6 +68,7 @@ describe('StoryBuilderTopBar', () => {
       props: {
         story: writable({ chapters: [] }),
         isPreviewing: writable(false),
+        motionPreviewing: writable(false),
         saveState: writable<SaveState>({ status: 'idle' }),
         saveConfigured: writable(false),
         dirty: writable(false),
@@ -80,5 +82,51 @@ describe('StoryBuilderTopBar', () => {
 
     unmount(instance);
     target.remove();
+  });
+
+  it('uses the clean preview shell and exit action during a motion preview', async () => {
+    const viewerRoot = document.createElement('div');
+    viewerRoot.className = 'viewer';
+    const target = document.createElement('div');
+    viewerRoot.appendChild(target);
+    document.body.appendChild(viewerRoot);
+    const motionPreviewing = writable(true);
+    const onStopMotionPreview = vi.fn();
+    const instance = mount(StoryBuilderTopBar, {
+      target,
+      props: {
+        story: writable({
+          chapters: [
+            {
+              id: 'chapter-1',
+              manifest: 'https://example.org/manifest',
+              canvasIndex: 0,
+            },
+          ],
+        }),
+        isPreviewing: writable(false),
+        motionPreviewing,
+        saveState: writable<SaveState>({ status: 'idle' }),
+        saveConfigured: writable(false),
+        dirty: writable(false),
+        canUndo: writable(false),
+        canRedo: writable(false),
+        onStopMotionPreview,
+      },
+    });
+    await tick();
+
+    expect(viewerRoot.classList.contains('viewer--story-preview')).toBe(true);
+    const exit = [...target.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Exit preview'),
+    );
+    exit?.click();
+    expect(onStopMotionPreview).toHaveBeenCalledOnce();
+
+    motionPreviewing.set(false);
+    await tick();
+    expect(viewerRoot.classList.contains('viewer--story-preview')).toBe(false);
+    unmount(instance);
+    viewerRoot.remove();
   });
 });

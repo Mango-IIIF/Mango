@@ -316,14 +316,18 @@
       "optionsTab": "オプション",
       "fineTuning": "詳細調整",
       "goToPoint": "カメラポイント {number} へ移動",
-      "movePointTitle": "ポイント {number}（{seconds} 秒）。クリックで表示、ドラッグで位置変更。",
+      "movePointTitle": "ポイント {number}（{seconds} 秒）。クリックで選択、ドラッグで位置変更。",
       "point": "カメラポイント {number}",
       "deletePoint": "ポイントを削除",
       "deletePointNumber": "カメラポイント {number} を削除",
-      "emptyPoints": "カメラポイントがまだありません。ポイントを追加すると、現在のビューの中央に表示されます。",
+      "emptyPoints": "カメラポイントはまだありません。追加すると、現在の位置とズームが保存されます。",
       "addPoint": "カメラポイントを追加",
       "updatePoint": "現在のビューからピンを更新",
-      "selectPointToUpdate": "パンとズームを更新するピンを選択してください。"
+      "captureGuideTitle": "位置とズームを個別に設定",
+      "captureGuideHint": "ピンをドラッグして位置を決めます。次に画像をズームし、その倍率を選択中のポイントへ保存します。ピンの位置は変わりません。",
+      "saveZoom": "現在のズームを保存",
+      "saveZoomForPoint": "現在のズームをポイント {number} に保存",
+      "selectPointToUpdate": "ズームを保存する前にピンを選択してください。"
     },
     "settings": {
       "title": "タイトル",

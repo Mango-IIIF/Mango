@@ -1293,8 +1293,14 @@ describe("story builder chapter frame", () => {
     expect(lastFrames(viewer)).toEqual([]);
     expect(lastSelection(viewer)).toBeNull();
 
+    viewer.setViewBox.mockClear();
+    controller.selectMotionPoint("kf-1");
+    expect(get(controller.selectedMotionPointId)).toBe("kf-1");
+    expect(viewer.setViewBox).not.toHaveBeenCalled();
+
     controller.goToMotionPoint("kf-1");
     expect(get(controller.selectedMotionPointId)).toBe("kf-1");
+    expect(viewer.setViewBox).toHaveBeenCalledWith({ x: 300, y: 200, w: 400, h: 200 });
     expect(lastFrames(viewer)).toEqual([]);
     expect(lastSelection(viewer)).toBeNull();
 
@@ -1592,7 +1598,7 @@ describe("story builder chapter frame", () => {
     detach();
   });
 
-  it("updates a selected pin from the current viewport and takes zoom control from a preset", () => {
+  it("copies the current zoom without moving the selected pin and takes zoom control from a preset", () => {
     const controller = createStoryBuilderController({
       initialStory: {
         ...frameStory,
@@ -1615,8 +1621,8 @@ describe("story builder chapter frame", () => {
 
     const track = get(controller.story).chapters[0].cameraTrack;
     expect(track?.preset).toBe("custom");
-    expect(track?.keyframes[0].viewBox).toEqual({ x: 800, y: 300, w: 600, h: 300 });
-    expect(track?.keyframes[0].focus).toEqual({ x: 1100, y: 450 });
+    expect(track?.keyframes[0].viewBox).toEqual({ x: 200, y: 150, w: 600, h: 300 });
+    expect(track?.keyframes[0].focus).toEqual({ x: 500, y: 300 });
     expect(get(controller.selectedMotionPointId)).toBe("kf-1");
     detach();
   });

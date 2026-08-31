@@ -9,6 +9,7 @@
 
   export let story: Readable<StoryState>;
   export let isPreviewing: Readable<boolean>;
+  export let motionPreviewing: Readable<boolean>;
   export let saveState: Readable<SaveState>;
   export let saveConfigured: Readable<boolean>;
   export let dirty: Readable<boolean>;
@@ -20,15 +21,17 @@
   export let onNarration: (() => void) | undefined;
   export let onPreview: (() => void) | undefined;
   export let onStopPreview: (() => void) | undefined;
+  export let onStopMotionPreview: (() => void) | undefined;
   export let onSave: (() => void) | undefined;
   export let onExport: (() => void) | undefined;
 
   let root: HTMLDivElement | null = null;
   let viewerRoot: HTMLElement | null = null;
+  $: previewActive = $isPreviewing || $motionPreviewing;
 
   $: if (root) {
     viewerRoot = root.closest('.viewer');
-    viewerRoot?.classList.toggle('viewer--story-preview', $isPreviewing);
+    viewerRoot?.classList.toggle('viewer--story-preview', previewActive);
   }
 
   onDestroy(() => viewerRoot?.classList.remove('viewer--story-preview'));
@@ -49,6 +52,12 @@
     $story.title?.en ||
     Object.values($story.title ?? {}).find((value) => value.trim()) ||
     $t('storyBuilder.settings.untitled');
+
+  const handlePreview = () => {
+    if ($motionPreviewing) onStopMotionPreview?.();
+    else if ($isPreviewing) onStopPreview?.();
+    else onPreview?.();
+  };
 </script>
 
 <div class="story-topbar" data-testid="story-builder-topbar" bind:this={root}>
@@ -77,12 +86,12 @@
   <button
     class="story-topbar__button story-topbar__button--preview"
     type="button"
-    aria-label={$isPreviewing ? $t('storyBuilder.topBar.exitPreview') : $t('storyBuilder.topBar.preview')}
-    title={$isPreviewing ? $t('storyBuilder.topBar.exitPreview') : $t('storyBuilder.topBar.preview')}
+    aria-label={previewActive ? $t('storyBuilder.topBar.exitPreview') : $t('storyBuilder.topBar.preview')}
+    title={previewActive ? $t('storyBuilder.topBar.exitPreview') : $t('storyBuilder.topBar.preview')}
     disabled={$story.chapters.length === 0}
-    on:click={() => ($isPreviewing ? onStopPreview?.() : onPreview?.())}
+    on:click={handlePreview}
   >
-    {#if $isPreviewing}
+    {#if previewActive}
       <Square aria-hidden="true" />
       <span>{$t('storyBuilder.topBar.exitPreview')}</span>
     {:else}

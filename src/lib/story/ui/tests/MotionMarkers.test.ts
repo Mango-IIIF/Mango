@@ -80,7 +80,7 @@ describe('motion authoring surfaces', () => {
     document.body.appendChild(target);
     const activeChapterTask = writable<null | 'motion'>('motion');
     const selectedMotionPointId = writable<string | null>('two');
-    const onGoToMotionPoint = vi.fn();
+    const onSelectMotionPoint = vi.fn();
     const onMoveMotionPoint = vi.fn();
     const story = writable({
       chapters: [
@@ -114,7 +114,7 @@ describe('motion authoring surfaces', () => {
         selectedChapterId: writable('chapter'),
         activeChapterTask,
         selectedMotionPointId,
-        onGoToMotionPoint,
+        onSelectMotionPoint,
         onMoveMotionPoint,
         validationErrors: writable([]),
         uiMode: writable('chapterEdit'),
@@ -135,9 +135,11 @@ describe('motion authoring surfaces', () => {
     expect(pins[0].textContent?.trim()).toBe('1');
     expect(pins[1].textContent?.trim()).toBe('2');
     expect(pins[1].classList.contains('story-builder-motion-marker--selected')).toBe(true);
+    expect(pins[0].hasAttribute('title')).toBe(false);
+    expect(pins[0].getAttribute('style')).not.toContain('motion-offset');
 
     pins[0].click();
-    expect(onGoToMotionPoint).toHaveBeenCalledWith('one');
+    expect(onSelectMotionPoint).toHaveBeenCalledWith('one');
 
     const overlay = target.querySelector('.story-builder-overlay-root') as HTMLDivElement;
     overlay.getBoundingClientRect = vi.fn(() => ({
@@ -160,19 +162,25 @@ describe('motion authoring surfaces', () => {
     // Normal mouse jitter must remain a click. Previously even a few pixels
     // immediately moved the marker under the pointer and suppressed selection.
     pins[0].dispatchEvent(pointer('pointerdown', 50, 50));
-    pins[0].dispatchEvent(pointer('pointermove', 53, 52));
-    pins[0].dispatchEvent(pointer('pointerup', 53, 52));
+    window.dispatchEvent(pointer('pointermove', 53, 52));
+    window.dispatchEvent(pointer('pointerup', 53, 52));
     pins[0].click();
     expect(onMoveMotionPoint).not.toHaveBeenCalled();
-    expect(onGoToMotionPoint).toHaveBeenCalledTimes(2);
+    expect(onSelectMotionPoint).toHaveBeenCalledTimes(3);
 
+    // Trackpad/WebKit gestures can deliver move and up to the window after
+    // pointer capture is lost. OpenSeadragon may also consume those events in
+    // the bubble phase, so the window capture listener must commit first.
+    const consumeEvent = (event: Event) => event.stopPropagation();
+    overlay.addEventListener('pointermove', consumeEvent);
+    overlay.addEventListener('pointerup', consumeEvent);
     pins[1].dispatchEvent(pointer('pointerdown', 100, 50));
-    pins[1].dispatchEvent(pointer('pointermove', 150, 25));
-    pins[1].dispatchEvent(pointer('pointerup', 150, 25));
+    overlay.dispatchEvent(pointer('pointermove', 150, 25));
+    overlay.dispatchEvent(pointer('pointerup', 150, 25));
 
     expect(onMoveMotionPoint).toHaveBeenCalledWith('two', { x: 75, y: 25 });
     pins[1].click();
-    expect(onGoToMotionPoint).toHaveBeenCalledTimes(2);
+    expect(onSelectMotionPoint).toHaveBeenCalledTimes(4);
 
     activeChapterTask.set(null);
     await tick();

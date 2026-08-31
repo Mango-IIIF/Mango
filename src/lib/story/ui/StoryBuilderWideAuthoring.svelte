@@ -99,6 +99,7 @@
     track?.durationMs ?? chapter?.presentationDurationMs ?? 5000,
   );
   $: points = [...(track?.keyframes ?? [])].sort((a, b) => a.timeMs - b.timeMs);
+  $: selectedPointIndex = points.findIndex((point) => point.id === $selectedPointId);
   $: mediaTimingIsVideo =
     $mediaType === "video" || $mediaSources.some((entry) => entry.type === "video");
 
@@ -210,15 +211,6 @@
                   </small>
                 </span>
               </button>
-              <button
-                class="story-wide-authoring__point-delete"
-                type="button"
-                title={$t('storyBuilder.motion.deletePoint')}
-                aria-label={$t('storyBuilder.motion.deletePointNumber', { number: index + 1 })}
-                on:click={() => onDeletePoint(point.id)}
-              >
-                <Trash2 aria-hidden="true" />
-              </button>
             </div>
           {/each}
         </div>
@@ -228,6 +220,11 @@
             {$t('storyBuilder.motion.emptyPoints')}
           </p>
         {/if}
+
+        <div class="story-wide-authoring__capture-guide">
+          <strong>{$t('storyBuilder.motion.captureGuideTitle')}</strong>
+          <span>{$t('storyBuilder.motion.captureGuideHint')}</span>
+        </div>
 
         <div class="story-wide-authoring__actions">
           <button
@@ -239,17 +236,39 @@
           </button>
           <button
             class="story-wide-authoring__action story-wide-authoring__action--update"
+            data-testid="motion-save-zoom"
             type="button"
             disabled={!$selectedPointId}
             title={$selectedPointId
-              ? $t('storyBuilder.motion.updatePoint')
+              ? $t('storyBuilder.motion.saveZoomForPoint', {
+                  number: selectedPointIndex + 1,
+                })
               : $t('storyBuilder.motion.selectPointToUpdate')}
             on:click={() =>
               $selectedPointId && onUpdatePointFromView($selectedPointId)}
           >
-            <Crosshair aria-hidden="true" /> {$t('storyBuilder.motion.updatePoint')}
+            <Crosshair aria-hidden="true" />
+            {$selectedPointId
+              ? $t('storyBuilder.motion.saveZoomForPoint', {
+                  number: selectedPointIndex + 1,
+                })
+              : $t('storyBuilder.motion.saveZoom')}
           </button>
         </div>
+
+        {#if selectedPointIndex >= 0}
+          <button
+            class="story-wide-authoring__delete-selected"
+            type="button"
+            data-testid="motion-delete-selected"
+            on:click={() => onDeletePoint(points[selectedPointIndex].id)}
+          >
+            <Trash2 aria-hidden="true" />
+            {$t('storyBuilder.motion.deletePointNumber', {
+              number: selectedPointIndex + 1,
+            })}
+          </button>
+        {/if}
       </div>
     {:else}
       <div
@@ -844,7 +863,7 @@
   .story-wide-authoring__timeline {
     position: relative;
     display: grid;
-    grid-template-rows: 20px 68px auto;
+    grid-template-rows: 20px 68px auto auto;
     align-content: start;
     min-width: 0;
     padding: 0 10px;
@@ -915,30 +934,6 @@
     color: inherit;
     cursor: pointer;
   }
-  .story-wide-authoring__point-delete {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
-    border-radius: 5px;
-    background: var(--viewer-panel, #121922);
-    color: var(--viewer-muted, #9aa6b2);
-    cursor: pointer;
-    opacity: 0.65;
-    transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-  }
-  .story-wide-authoring__point-delete:hover {
-    opacity: 1;
-    color: var(--viewer-danger, #ef4444);
-    border-color: color-mix(in srgb, var(--viewer-danger, #ffb8b8) 50%, transparent);
-  }
-  .story-wide-authoring__point-delete :global(svg) {
-    width: 10px;
-    height: 10px;
-  }
   .story-wide-authoring__pin {
     position: relative;
     display: grid;
@@ -1002,6 +997,46 @@
     justify-content: center;
     gap: 7px;
   }
+  .story-wide-authoring__capture-guide {
+    justify-self: center;
+    display: grid;
+    gap: 2px;
+    max-width: 720px;
+    margin: 0 12px 7px;
+    text-align: center;
+  }
+  .story-wide-authoring__capture-guide strong {
+    font-size: 11px;
+  }
+  .story-wide-authoring__capture-guide span {
+    color: var(--viewer-muted, #9aa6b2);
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .story-wide-authoring__delete-selected {
+    position: absolute;
+    right: 10px;
+    bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px solid color-mix(in srgb, var(--viewer-danger, #ef4444) 45%, transparent);
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--viewer-danger, #ef4444) 9%, transparent);
+    color: var(--viewer-danger, #ffb8b8);
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .story-wide-authoring__delete-selected:hover {
+    border-color: var(--viewer-danger, #ef4444);
+    background: color-mix(in srgb, var(--viewer-danger, #ef4444) 16%, transparent);
+  }
+  .story-wide-authoring__delete-selected :global(svg) {
+    width: 13px;
+    height: 13px;
+  }
   .story-wide-authoring__action {
     display: inline-flex;
     align-items: center;
@@ -1027,6 +1062,11 @@
   @media (max-width: 720px) {
     .story-wide-authoring {
       gap: 14px;
+    }
+    .story-wide-authoring__delete-selected {
+      position: static;
+      justify-self: end;
+      margin-top: 4px;
     }
   }
 </style>

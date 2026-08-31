@@ -74,6 +74,7 @@ describe("StoryBuilderWideAuthoring", () => {
       selectedAnnotationId.set(null),
     );
     const onUpdatePointFromView = vi.fn();
+    const onDeletePoint = vi.fn();
     const onUpdateMotionPathType = vi.fn();
     const onUpdateMotionInitialDwell = vi.fn();
     const onUpdateMotionEasing = vi.fn();
@@ -91,6 +92,7 @@ describe("StoryBuilderWideAuthoring", () => {
         languages: ["en", "cy"],
         selectedPointId,
         onAddPoint: vi.fn(),
+        onDeletePoint,
         onGoToPoint: vi.fn(),
         onUpdatePointFromView,
         motionPreviewing,
@@ -128,12 +130,20 @@ describe("StoryBuilderWideAuthoring", () => {
     expect(target.textContent).toContain("1.00× zoom");
     expect(target.textContent).toContain("2.00× zoom");
     const updatePoint = [...target.querySelectorAll<HTMLButtonElement>("button")].find(
-      (button) => button.textContent?.includes("Update pin from current view"),
+      (button) => button.textContent?.includes("Save current zoom"),
     )!;
     expect(updatePoint.disabled).toBe(true);
+    expect(target.querySelector('[data-testid="motion-delete-selected"]')).toBeNull();
     selectedPointId.set("one");
     await tick();
     expect(updatePoint.disabled).toBe(false);
+    const deleteSelected = target.querySelector<HTMLButtonElement>(
+      '[data-testid="motion-delete-selected"]',
+    )!;
+    expect(deleteSelected.textContent).toContain("Delete camera point 1");
+    expect(target.querySelector(".story-wide-authoring__point-delete")).toBeNull();
+    deleteSelected.click();
+    expect(onDeletePoint).toHaveBeenCalledWith("one");
     updatePoint.click();
     expect(onUpdatePointFromView).toHaveBeenCalledWith("one");
 
@@ -146,6 +156,7 @@ describe("StoryBuilderWideAuthoring", () => {
     await tick();
     expect(target.querySelector("#motion-pins-panel")).toBeNull();
     expect(target.querySelector("#motion-options-panel .motion-panel--wide")).toBeTruthy();
+    expect(target.querySelector(".motion-panel__fine-tuning-grid")).toBeTruthy();
     const motionOption = (label: string) =>
       [...target.querySelectorAll<HTMLButtonElement>("button")].find(
         (button) => button.textContent?.trim() === label,

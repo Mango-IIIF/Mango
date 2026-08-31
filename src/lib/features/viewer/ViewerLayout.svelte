@@ -3927,6 +3927,12 @@
     display: none !important;
   }
 
+  /* Preview is a clean reader view. The top-bar Exit control remains. */
+  :global(.viewer--story-preview) .stage__bottom,
+  :global(.viewer--story-preview) :global(.stage__toolbar--below) {
+    display: none !important;
+  }
+
   :global(.viewer--story-preview) .viewer__grid > .stage {
     grid-column: 1 !important;
     grid-row: 1 / -1 !important;

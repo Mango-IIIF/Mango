@@ -131,6 +131,7 @@
     <details class="motion-panel__fine-tuning">
       <summary>{$t('storyBuilder.motion.fineTuning')}</summary>
 
+      <div class="motion-panel__fine-tuning-grid">
       <section
         class="chapter-overlay__section chapter-overlay__section--card motion-panel__section"
       >
@@ -215,9 +216,10 @@
           {/each}
         </div>
       </section>
+      </div>
     </details>
 
-    <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
+    <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section motion-panel__section--duration">
       <div class="motion-panel__heading">
         <span class="motion-panel__icon"><Clock3 aria-hidden="true" /></span>
         <span>
@@ -279,8 +281,10 @@
   .motion-panel__fine-tuning[open] > summary {
     border-bottom: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
   }
-  .motion-panel__fine-tuning > .motion-panel__section {
-    margin: 10px;
+  .motion-panel__fine-tuning-grid {
+    display: grid;
+    gap: 12px;
+    padding: 10px;
   }
   .motion-panel__preview {
     display: inline-flex;
@@ -327,8 +331,24 @@
     gap: 12px;
   }
   .motion-panel--wide .motion-panel__options {
-    grid-template-columns: minmax(260px, 2fr) repeat(4, minmax(120px, 1fr));
+    grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+    grid-template-areas:
+      "style duration"
+      "fine fine";
     align-items: start;
+  }
+  .motion-panel--wide .motion-panel__section--style {
+    grid-area: style;
+  }
+  .motion-panel--wide .motion-panel__section--duration {
+    grid-area: duration;
+  }
+  .motion-panel--wide .motion-panel__fine-tuning {
+    grid-area: fine;
+    min-width: 0;
+  }
+  .motion-panel--wide .motion-panel__fine-tuning-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .motion-panel--wide .motion-panel__section + .motion-panel__section {
     padding-top: 0;
@@ -402,6 +422,10 @@
   @media (max-width: 960px) {
     .motion-panel--wide .motion-panel__options {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        "style style"
+        "duration duration"
+        "fine fine";
     }
     .motion-panel--wide .motion-panel__section--style {
       grid-column: 1 / -1;
@@ -409,6 +433,9 @@
     .motion-panel--wide .motion-panel__section + .motion-panel__section {
       padding-left: 0;
       border-left: 0;
+    }
+    .motion-panel--wide .motion-panel__fine-tuning-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>

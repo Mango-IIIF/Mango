@@ -172,7 +172,9 @@ export type StoryBuilderController = {
   setMotionPointViewBox: (keyframeId: string, viewBox: ViewBox) => void;
   /** Moves a camera point's pin while preserving its framing/zoom. */
   setMotionPointFocus: (keyframeId: string, focus: { x: number; y: number }) => void;
-  /** Replaces a camera point's pan and zoom with the live viewer viewport. */
+  /** Selects a point without moving the live camera. */
+  selectMotionPoint: (keyframeId: string) => void;
+  /** Copies the live zoom to a point while preserving its pin/focus. */
   updateMotionPointFromViewport: (keyframeId: string) => void;
   /** The camera point whose frame carries the handles on the stage. */
   selectedMotionPointId: Writable<string | null>;
@@ -2461,11 +2463,42 @@ export const createStoryBuilderController = (
     });
   };
 
+  const selectMotionPoint = (keyframeId: string) => {
+    const chapterId = get(selectedChapterId);
+    const exists = get(storyStore)
+      .chapters.find((chapter) => chapter.id === chapterId)
+      ?.cameraTrack?.keyframes.some((entry) => entry.id === keyframeId);
+    if (exists) selectedMotionPointId.set(keyframeId);
+  };
+
   const updateMotionPointFromViewport = (keyframeId: string) => {
     const currentViewport = viewer?.getViewBox?.() ?? get(viewBox);
     if (!currentViewport) return;
     selectedMotionPointId.set(keyframeId);
-    setMotionPointViewBox(keyframeId, currentViewport);
+    updateCameraTrack((chapter) => {
+      const track = chapter.cameraTrack;
+      const point = track?.keyframes.find((entry) => entry.id === keyframeId);
+      if (!track || !point) return track;
+
+      /* Position and zoom are independent controls. Saving the current zoom
+         must not replace a dragged pin with the live viewport centre. */
+      const focus = point.focus ?? (point.viewBox ? centreOf(point.viewBox) : null);
+      if (!focus) return track;
+      const zoomBox = normaliseViewBox(currentViewport, frameAspect());
+      const viewBox = {
+        x: focus.x - zoomBox.w / 2,
+        y: focus.y - zoomBox.h / 2,
+        w: zoomBox.w,
+        h: zoomBox.h,
+      };
+      return {
+        ...track,
+        preset: "custom",
+        keyframes: track.keyframes.map((entry) =>
+          entry.id === keyframeId ? { ...entry, focus, viewBox } : entry,
+        ),
+      };
+    });
   };
 
   const deleteMotionPoint = (keyframeId: string) => {
@@ -2994,6 +3027,7 @@ export const createStoryBuilderController = (
     addMotionPoint,
     setMotionPointViewBox,
     setMotionPointFocus,
+    selectMotionPoint,
     updateMotionPointFromViewport,
     selectedMotionPointId,
     deleteMotionPoint,

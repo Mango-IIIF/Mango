@@ -316,14 +316,18 @@
       "optionsTab": "Opciones",
       "fineTuning": "Ajustes avanzados",
       "goToPoint": "Ir al punto de cámara {number}",
-      "movePointTitle": "Punto {number} a los {seconds} s. Haz clic para verlo; arrastra para cambiar su posición.",
+      "movePointTitle": "Punto {number} a los {seconds} s. Haz clic para seleccionarlo; arrastra para cambiar su posición.",
       "point": "Punto {number}",
       "deletePoint": "Eliminar el punto de cámara",
       "deletePointNumber": "Eliminar el punto de cámara {number}",
-      "emptyPoints": "Aún no hay puntos de cámara. Añada un punto; aparecerá en el centro de la vista actual.",
+      "emptyPoints": "Aún no hay puntos de cámara. Añada uno para guardar la posición y el zoom actuales.",
       "addPoint": "Añadir punto de cámara",
       "updatePoint": "Actualizar pin desde la vista actual",
-      "selectPointToUpdate": "Seleccione un pin para actualizar su posición y zoom."
+      "captureGuideTitle": "Configure la posición y el zoom por separado",
+      "captureGuideHint": "Arrastre un pin para fijar su posición. Después amplíe la imagen y guarde ese zoom en el punto seleccionado; el pin permanecerá en su lugar.",
+      "saveZoom": "Guardar zoom actual",
+      "saveZoomForPoint": "Guardar zoom actual en el punto {number}",
+      "selectPointToUpdate": "Seleccione un pin antes de guardar su zoom."
     },
     "settings": {
       "title": "Ajustes de la historia",
