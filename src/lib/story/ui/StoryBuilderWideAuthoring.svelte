@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Crosshair, Eye, EyeOff, MapPin, Play, Plus, Shapes, Square, Trash2 } from "@lucide/svelte";
+  import { Check, Crosshair, Eye, EyeOff, Play, Plus, Shapes, Square, Trash2 } from "@lucide/svelte";
   import { readable, type Readable } from "svelte/store";
   import {
     type ChapterAnnotationTool,
@@ -236,9 +236,9 @@
                 aria-pressed={$selectedPointId === point.id}
                 on:click={() => onGoToPoint(point.id)}
               >
-                <span class="story-wide-authoring__pin"
-                  ><MapPin aria-hidden="true" /><b>{index + 1}</b></span
-                >
+                <span class="story-wide-authoring__pin" aria-hidden="true">
+                  <b>{index + 1}</b>
+                </span>
                 <span class="story-wide-authoring__point-label">
                   <strong>{$t('storyBuilder.motion.point', { number: index + 1 })}</strong>
                   <small>
@@ -992,10 +992,14 @@
     display: grid;
     place-items: center;
     width: 28px;
-    height: 34px;
+    height: 28px;
     margin: 0 auto;
-    color: white;
+    border: 2px solid white;
+    border-radius: 50% 50% 50% 0;
+    background: var(--accent, var(--story-builder-accent, #e07a3f));
+    box-sizing: border-box;
     filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.65));
+    transform: rotate(-45deg);
   }
   .story-wide-authoring__point:first-child .story-wide-authoring__pin {
     margin-left: 0;
@@ -1004,18 +1008,9 @@
     .story-wide-authoring__pin {
     margin-right: 0;
   }
-  .story-wide-authoring__pin :global(svg) {
-    position: absolute;
-    width: 28px;
-    height: 34px;
-    fill: var(--accent, var(--story-builder-accent, #e07a3f));
-    stroke: white;
-    stroke-width: 1.7;
-  }
-  .story-wide-authoring__point-item--selected .story-wide-authoring__pin :global(svg) {
-    fill: white;
-    stroke: var(--accent, var(--story-builder-accent, #e07a3f));
-    stroke-width: 2.2;
+  .story-wide-authoring__point-item--selected .story-wide-authoring__pin {
+    border-color: var(--accent, var(--story-builder-accent, #e07a3f));
+    background: white;
   }
   .story-wide-authoring__point-item--selected .story-wide-authoring__pin b {
     color: var(--accent, var(--story-builder-accent, #e07a3f));
@@ -1023,8 +1018,10 @@
   .story-wide-authoring__pin b {
     position: relative;
     z-index: 1;
-    margin-top: -6px;
-    font-size: 10px;
+    color: white;
+    font-size: 11px;
+    line-height: 1;
+    transform: rotate(45deg);
   }
   .story-wide-authoring__point-label {
     display: grid;

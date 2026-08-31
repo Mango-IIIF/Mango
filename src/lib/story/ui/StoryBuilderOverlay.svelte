@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Readable, Writable } from 'svelte/store';
   import { readable } from 'svelte/store';
-  import { MapPin } from '@lucide/svelte';
   import type { StoryState } from '../../core/types/story';
   import StoryNarrationOverlay from './NarrationOverlay.svelte';
   import StoryChapterOverlay from './ChapterOverlay.svelte';
@@ -538,8 +537,9 @@
             on:pointerdown={(event) => handleMotionPointerDown(event, marker)}
             on:click={(event) => handleMotionClick(event, marker.id)}
           >
-            <MapPin aria-hidden="true" />
-            <span>{marker.index + 1}</span>
+            <span class="story-builder-motion-marker__pin" aria-hidden="true">
+              <span class="story-builder-motion-marker__number">{marker.index + 1}</span>
+            </span>
           </button>
         {/each}
       </div>
@@ -651,21 +651,33 @@
     touch-action: none;
   }
 
-  .story-builder-motion-marker :global(svg) {
+  .story-builder-motion-marker__pin {
     position: absolute;
     left: 9px;
-    top: 5px;
+    top: 7px;
     width: 38px;
-    height: 44px;
-    fill: var(--accent, var(--story-builder-accent, #e07a3f));
-    stroke: white;
-    stroke-width: 1.8;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 2px solid white;
+    border-radius: 50% 50% 50% 0;
+    background: var(--accent, var(--story-builder-accent, #e07a3f));
+    box-sizing: border-box;
+    transform: rotate(-45deg);
   }
 
-  .story-builder-motion-marker span {
-    position: relative;
-    z-index: 1;
-    margin-top: -7px;
+  .story-builder-motion-marker__number {
+    width: 23px;
+    height: 23px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: white;
+    color: var(--accent, var(--story-builder-accent, #e07a3f));
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+    transform: rotate(45deg);
   }
 
   .story-builder-motion-marker:hover,

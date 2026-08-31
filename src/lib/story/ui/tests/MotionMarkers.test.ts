@@ -137,6 +137,13 @@ describe('motion authoring surfaces', () => {
     expect(pins).toHaveLength(2);
     expect(pins[0].textContent?.trim()).toBe('1');
     expect(pins[1].textContent?.trim()).toBe('2');
+    expect(
+      [...pins].map((pin) =>
+        pin
+          .querySelector('.story-builder-motion-marker__number')
+          ?.textContent?.trim(),
+      ),
+    ).toEqual(['1', '2']);
     expect(pins[1].classList.contains('story-builder-motion-marker--selected')).toBe(true);
     expect(pins[0].hasAttribute('title')).toBe(false);
     expect(pins[0].getAttribute('style')).not.toContain('motion-offset');
