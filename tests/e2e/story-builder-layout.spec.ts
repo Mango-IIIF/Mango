@@ -71,6 +71,25 @@ const selectChapterSix = async (page: Page) => {
     .toBeLessThanOrEqual(2);
 };
 
+test("places Reload manifest below the source URL", async ({ page }) => {
+  await waitForStage(page);
+  const viewer = page.locator("mango-viewer");
+  await viewer.locator('[data-testid="inspector-group-source"]').click();
+
+  const input = viewer.getByTestId("chapter-manifest");
+  const reload = viewer.getByTestId("chapter-manifest-reload");
+  await expect(input).toBeVisible();
+  await expect(reload).toBeVisible();
+  const [inputBox, reloadBox] = await Promise.all([
+    input.boundingBox(),
+    reload.boundingBox(),
+  ]);
+  expect(inputBox && reloadBox).toBeTruthy();
+  if (!inputBox || !reloadBox) return;
+  expect(reloadBox.y).toBeGreaterThanOrEqual(inputBox.y + inputBox.height + 7);
+  expect(Math.abs(reloadBox.x - inputBox.x)).toBeLessThanOrEqual(1);
+});
+
 test("loads a new story source without a canvas-selection step", async ({
   page,
 }) => {

@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Readable, Writable } from 'svelte/store';
   import { readable } from 'svelte/store';
-  import { MapPin } from '@lucide/svelte';
   import type { StoryState } from '../../core/types/story';
   import StoryNarrationOverlay from './NarrationOverlay.svelte';
   import StoryChapterOverlay from './ChapterOverlay.svelte';
@@ -30,7 +29,7 @@
   export let selectedChapterId: Writable<string | null>;
   export let activeChapterTask: Readable<ChapterTaskId | null>;
   export let selectedMotionPointId: Readable<string | null> = readable(null);
-  export let onGoToMotionPoint: (keyframeId: string) => void = () => {};
+  export let onSelectMotionPoint: (keyframeId: string) => void = () => {};
   export let onMoveMotionPoint: (
     keyframeId: string,
     focus: { x: number; y: number },
@@ -82,6 +81,7 @@
   export let onSaveChapterSettings: () => void;
   export let onCancelChapterSettings: () => void = () => {};
   export let motionPreviewing: Readable<boolean>;
+  export let motionPreviewPinsVisible: Readable<boolean> = readable(false);
   let chapterId: string | null = null;
   let manifestValue: string | null = null;
   let currentMode: UIMode = 'idle';
@@ -126,8 +126,6 @@
     x: number;
     y: number;
     timeMs: number;
-    offsetX: number;
-    offsetY: number;
   }> = [];
   $: {
     const activeChapter = $story.chapters.find((entry) => entry.id === chapterId);
@@ -144,18 +142,12 @@
             : [];
         })
       : [];
-    const locations = new Map<string, typeof projected>();
-    for (const marker of projected) {
-      const key = `${Math.round(marker.x * 50)}:${Math.round(marker.y * 50)}`;
-      locations.set(key, [...(locations.get(key) ?? []), marker]);
-    }
-    motionMarkers = projected.map((marker) => {
-      const key = `${Math.round(marker.x * 50)}:${Math.round(marker.y * 50)}`;
-      const group = locations.get(key) ?? [marker];
-      const position = group.findIndex((entry) => entry.id === marker.id);
-      const spread = group.length > 1 ? (position - (group.length - 1) / 2) * 30 : 0;
-      return { ...marker, offsetX: spread, offsetY: group.length > 1 ? -8 : 0 };
-    });
+    /*
+     * Never spread nearby markers in screen space. The old rounded grouping
+     * changed as the viewport moved and made pins jump out from under a mouse.
+     * Exactly overlapping points remain selectable from the timeline.
+     */
+    motionMarkers = projected;
   }
 
   let motionDrag: {
@@ -175,12 +167,12 @@
   let suppressMotionClickFor: string | null = null;
 
   const handleMotionPointerDown = (event: PointerEvent, marker: (typeof motionMarkers)[number]) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 && (event.buttons & 1) === 0) return;
     const bounds = overlayRoot?.getBoundingClientRect();
     if (!bounds || bounds.width <= 0 || bounds.height <= 0 || !currentViewBox) return;
     event.preventDefault();
     event.stopPropagation();
-    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+    onSelectMotionPoint(marker.id);
     motionDrag = {
       id: marker.id,
       pointerId: event.pointerId,
@@ -250,6 +242,11 @@
     motionDrag = null;
     if (!commit || !moved) return;
     suppressMotionClickFor = drag.id;
+    /* A drag ending away from the pin may not produce a click. Do not leave
+       that missing click suppressing the author's next keyboard activation. */
+    setTimeout(() => {
+      if (suppressMotionClickFor === drag.id) suppressMotionClickFor = null;
+    }, 0);
     onMoveMotionPoint(drag.id, {
       x: drag.viewBox.x + position.x * drag.viewBox.w,
       y: drag.viewBox.y + position.y * drag.viewBox.h,
@@ -262,13 +259,9 @@
       suppressMotionClickFor = null;
       return;
     }
-    onGoToMotionPoint(markerId);
+    onSelectMotionPoint(markerId);
   };
 
-  const markerX = (marker: (typeof motionMarkers)[number]): number =>
-    motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.x : marker.x;
-  const markerY = (marker: (typeof motionMarkers)[number]): number =>
-    motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.y : marker.y;
   let placementRectValue: {
     x: number;
     y: number;
@@ -437,6 +430,15 @@
 
 </script>
 
+<!-- Track the active gesture at the window, not on the moving pin. Trackpads
+     and WebKit can route move/up away from an element after tap-and-drag or
+     pointer-capture loss; a window listener still completes that gesture. -->
+<svelte:window
+  on:pointermove|capture={handleMotionPointerMove}
+  on:pointerup|capture={(event) => finishMotionDrag(event, true)}
+  on:pointercancel|capture={(event) => finishMotionDrag(event, false)}
+/>
+
 {#if surface === 'inspector'}
   <div
     class="story-builder-inspector-root"
@@ -516,7 +518,7 @@
       />
     {/if}
 
-    {#if chapterId && $activeChapterTask === 'motion' && !$motionPreviewing && currentMode !== 'annotationPositioning' && currentMode !== 'narrationPanel' && motionMarkers.length > 0}
+    {#if chapterId && $activeChapterTask === 'motion' && (!$motionPreviewing || $motionPreviewPinsVisible) && currentMode !== 'annotationPositioning' && currentMode !== 'narrationPanel' && motionMarkers.length > 0}
       <div class="story-builder-motion-markers" aria-label={$t('storyBuilder.motion.cameraPoints')}>
         {#each motionMarkers as marker (marker.id)}
           <button
@@ -525,23 +527,19 @@
             class:story-builder-motion-marker--dragging={motionDrag?.id === marker.id &&
               motionDrag.moved}
             type="button"
-            style={`--motion-x:${markerX(marker) * 100}%;--motion-y:${markerY(marker) * 100}%;--motion-offset-x:${motionDrag?.id === marker.id && motionDrag.moved ? 0 : marker.offsetX}px;--motion-offset-y:${motionDrag?.id === marker.id && motionDrag.moved ? 0 : marker.offsetY}px`}
-            aria-label={$t('storyBuilder.motion.goToPoint', {
-              number: marker.index + 1,
-            })}
-            aria-pressed={$selectedMotionPointId === marker.id}
-            title={$t('storyBuilder.motion.movePointTitle', {
+            disabled={$motionPreviewing}
+            style={`--motion-x:${(motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.x : marker.x) * 100}%;--motion-y:${(motionDrag?.id === marker.id && motionDrag.moved ? motionDrag.y : marker.y) * 100}%;--motion-layer:${$selectedMotionPointId === marker.id ? 2 : 1}`}
+            aria-label={$t('storyBuilder.motion.movePointTitle', {
               number: marker.index + 1,
               seconds: (marker.timeMs / 1000).toFixed(1),
             })}
+            aria-pressed={$selectedMotionPointId === marker.id}
             on:pointerdown={(event) => handleMotionPointerDown(event, marker)}
-            on:pointermove={handleMotionPointerMove}
-            on:pointerup={(event) => finishMotionDrag(event, true)}
-            on:pointercancel={(event) => finishMotionDrag(event, false)}
             on:click={(event) => handleMotionClick(event, marker.id)}
           >
-            <MapPin aria-hidden="true" />
-            <span>{marker.index + 1}</span>
+            <span class="story-builder-motion-marker__pin" aria-hidden="true">
+              <span class="story-builder-motion-marker__number">{marker.index + 1}</span>
+            </span>
           </button>
         {/each}
       </div>
@@ -635,11 +633,12 @@
     position: absolute;
     left: var(--motion-x);
     top: var(--motion-y);
-    width: 38px;
-    height: 44px;
+    z-index: var(--motion-layer);
+    width: 56px;
+    height: 60px;
     display: grid;
     place-items: center;
-    transform: translate(calc(-50% + var(--motion-offset-x)), calc(-88% + var(--motion-offset-y)));
+    transform: translate(-50%, -73.333%);
     border: 0;
     border-radius: 50%;
     background: transparent;
@@ -652,27 +651,38 @@
     touch-action: none;
   }
 
-  .story-builder-motion-marker :global(svg) {
+  .story-builder-motion-marker__pin {
     position: absolute;
-    inset: 0;
+    left: 9px;
+    top: 7px;
     width: 38px;
-    height: 44px;
-    fill: var(--accent, var(--story-builder-accent, #e07a3f));
-    stroke: white;
-    stroke-width: 1.8;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 2px solid white;
+    border-radius: 50% 50% 50% 0;
+    background: var(--accent, var(--story-builder-accent, #e07a3f));
+    box-sizing: border-box;
+    transform: rotate(-45deg);
   }
 
-  .story-builder-motion-marker span {
-    position: relative;
-    z-index: 1;
-    margin-top: -7px;
+  .story-builder-motion-marker__number {
+    width: 23px;
+    height: 23px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: white;
+    color: var(--accent, var(--story-builder-accent, #e07a3f));
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+    transform: rotate(45deg);
   }
 
   .story-builder-motion-marker:hover,
   .story-builder-motion-marker:focus-visible,
   .story-builder-motion-marker--selected {
-    transform: translate(calc(-50% + var(--motion-offset-x)), calc(-88% + var(--motion-offset-y)))
-      scale(1.14);
     outline: 2px solid color-mix(in srgb, var(--accent, var(--story-builder-accent, #e07a3f)) 45%, white);
     outline-offset: 2px;
   }

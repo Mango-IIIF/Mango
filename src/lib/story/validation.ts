@@ -2,6 +2,7 @@ import type { Chapter, StoryState } from '../core/types/story';
 import { isAnnotationPlacement } from './annotationPlacement';
 import { validatePublicationIdentifiers } from './publicIdentifiers';
 import { translate } from '../core/i18n';
+import { animatableCameraDurationMs } from './cameraTrack';
 
 const hasSingleCapture = (chapter: Chapter): boolean => {
   const captureCount = [chapter.viewBox, chapter.media, chapter.model].filter(Boolean)
@@ -69,7 +70,10 @@ const validateChapter = (chapter: Chapter, index: number): string[] => {
         errors.push(error('cameraPointIds'));
       }
       pointIds.add(point.id);
-      if (point.timeMs < 0 || point.timeMs > chapter.cameraTrack.durationMs) {
+      if (
+        point.timeMs < 0 ||
+        point.timeMs > animatableCameraDurationMs(chapter.cameraTrack)
+      ) {
         errors.push(error('cameraPointOutside'));
       }
       if (!point.focus && !point.viewBox && !point.model && !point.layerOpacities) {

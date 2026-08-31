@@ -1,7 +1,13 @@
-import type { ChapterCameraKeyframe, ChapterCameraTrack } from '../core/types/story';
+import type {
+  ChapterCameraKeyframe,
+  ChapterCameraTrack,
+} from '../core/types/story';
 import type { ViewBox } from '../core/types/viewer';
 
-export type CameraTrackSample = Pick<ChapterCameraKeyframe, 'viewBox' | 'model' | 'layerOpacities'>;
+export type CameraTrackSample = Pick<
+  ChapterCameraKeyframe,
+  'viewBox' | 'model' | 'layerOpacities'
+>;
 
 export const retimeCameraKeyframes = (
   keyframes: ChapterCameraKeyframe[],
@@ -11,13 +17,44 @@ export const retimeCameraKeyframes = (
   if (keyframes.length <= 1) {
     return keyframes.map((point) => ({ ...point, timeMs: 0 }));
   }
-  return keyframes.map((point, index) => ({
-    ...point,
-    timeMs: Math.round((index / (keyframes.length - 1)) * duration),
-  }));
+
+  const segmentCount = keyframes.length - 1;
+  const dwells = keyframes
+    .slice(0, -1)
+    .map((point) =>
+      Math.max(0, Number.isFinite(point.dwellMs) ? (point.dwellMs ?? 0) : 0),
+    );
+  const travelPerSegment = duration / segmentCount;
+
+  let elapsed = 0;
+  return keyframes.map((point, index) => {
+    if (index === 0) return { ...point, timeMs: 0 };
+    elapsed += dwells[index - 1] + travelPerSegment;
+    return {
+      ...point,
+      timeMs: Math.round(elapsed),
+    };
+  });
 };
 
-export const catmullRom = (p0: number, p1: number, p2: number, p3: number, t: number): number => {
+const cameraDwellDurationMs = (track: ChapterCameraTrack): number =>
+  track.keyframes.slice(0, -1).reduce(
+    (total, point) =>
+      total +
+      Math.max(
+        0,
+        Number.isFinite(point.dwellMs) ? (point.dwellMs ?? 0) : 0,
+      ),
+    0,
+  );
+
+export const catmullRom = (
+  p0: number,
+  p1: number,
+  p2: number,
+  p3: number,
+  t: number,
+): number => {
   const t2 = t * t;
   const t3 = t2 * t;
   return (
@@ -29,16 +66,141 @@ export const catmullRom = (p0: number, p1: number, p2: number, p3: number, t: nu
   );
 };
 
-const lerp = (from: number, to: number, progress: number): number => from + (to - from) * progress;
+const lerp = (from: number, to: number, progress: number): number =>
+  from + (to - from) * progress;
 
-const interpolateViewBox = (from: ViewBox, to: ViewBox, progress: number): ViewBox => ({
-  x: lerp(from.x, to.x, progress),
-  y: lerp(from.y, to.y, progress),
-  w: lerp(from.w, to.w, progress),
-  h: lerp(from.h, to.h, progress),
-});
+type ViewBoxDimension = 'w' | 'h';
 
-const clampMonotonic = (val: number, bound1: number, bound2: number, flex = 0.15): number => {
+const secant = (
+  points: ChapterCameraKeyframe[],
+  index: number,
+  dimension: ViewBoxDimension,
+): number => {
+  const from = points[index];
+  const to = points[index + 1];
+  if (!from?.viewBox || !to?.viewBox) return 0;
+  return (
+    (to.viewBox[dimension] - from.viewBox[dimension]) /
+    Math.max(1, to.timeMs - from.timeMs)
+  );
+};
+
+/** Shape-preserving PCHIP slope: continuous at points without zoom overshoot. */
+const monotoneSlope = (
+  points: ChapterCameraKeyframe[],
+  index: number,
+  dimension: ViewBoxDimension,
+): number => {
+  const lastIndex = points.length - 1;
+  if (lastIndex === 1) return secant(points, 0, dimension);
+
+  if (index === 0 || index === lastIndex) {
+    const reverse = index === lastIndex;
+    const firstSegment = reverse ? lastIndex - 1 : 0;
+    const adjacentSegment = reverse ? lastIndex - 2 : 1;
+    const h0 = Math.max(
+      1,
+      points[firstSegment + 1].timeMs - points[firstSegment].timeMs,
+    );
+    const h1 = Math.max(
+      1,
+      points[adjacentSegment + 1].timeMs - points[adjacentSegment].timeMs,
+    );
+    const d0 = secant(points, firstSegment, dimension);
+    const d1 = secant(points, adjacentSegment, dimension);
+    let slope = ((2 * h0 + h1) * d0 - h0 * d1) / (h0 + h1);
+    if (Math.sign(slope) !== Math.sign(d0)) slope = 0;
+    else if (
+      Math.sign(d0) !== Math.sign(d1) &&
+      Math.abs(slope) > Math.abs(3 * d0)
+    ) {
+      slope = 3 * d0;
+    }
+    return slope;
+  }
+
+  const previous = secant(points, index - 1, dimension);
+  const next = secant(points, index, dimension);
+  if (previous === 0 || next === 0 || Math.sign(previous) !== Math.sign(next))
+    return 0;
+  const previousSpan = Math.max(
+    1,
+    points[index].timeMs - points[index - 1].timeMs,
+  );
+  const nextSpan = Math.max(1, points[index + 1].timeMs - points[index].timeMs);
+  const weight1 = 2 * nextSpan + previousSpan;
+  const weight2 = nextSpan + 2 * previousSpan;
+  return (weight1 + weight2) / (weight1 / previous + weight2 / next);
+};
+
+const interpolateSmoothDimension = (
+  points: ChapterCameraKeyframe[],
+  fromIndex: number,
+  dimension: ViewBoxDimension,
+  progress: number,
+): number => {
+  const from = points[fromIndex];
+  const to = points[fromIndex + 1];
+  if (!from?.viewBox || !to?.viewBox) return 1;
+  if (!points.every((point) => point.viewBox)) {
+    return lerp(from.viewBox[dimension], to.viewBox[dimension], progress);
+  }
+
+  const span = Math.max(1, to.timeMs - from.timeMs);
+  const t2 = progress * progress;
+  const t3 = t2 * progress;
+  const fromValue = from.viewBox[dimension];
+  const toValue = to.viewBox[dimension];
+  return (
+    (2 * t3 - 3 * t2 + 1) * fromValue +
+    (t3 - 2 * t2 + progress) *
+      span *
+      monotoneSlope(points, fromIndex, dimension) +
+    (-2 * t3 + 3 * t2) * toValue +
+    (t3 - t2) * span * monotoneSlope(points, fromIndex + 1, dimension)
+  );
+};
+
+/**
+ * Straight refers to the focal path, not to abrupt changes in zoom velocity.
+ * Keep the centre on its straight segment while blending the frame size with
+ * continuous, non-overshooting derivatives across adjacent points.
+ */
+const interpolateLinearCameraViewBox = (
+  points: ChapterCameraKeyframe[],
+  fromIndex: number,
+  progress: number,
+): ViewBox => {
+  const from = points[fromIndex].viewBox!;
+  const to = points[fromIndex + 1].viewBox!;
+  const fromCentreX = from.x + from.w / 2;
+  const fromCentreY = from.y + from.h / 2;
+  const toCentreX = to.x + to.w / 2;
+  const toCentreY = to.y + to.h / 2;
+  const w = Math.max(
+    1,
+    interpolateSmoothDimension(points, fromIndex, 'w', progress),
+  );
+  const h = Math.max(
+    1,
+    interpolateSmoothDimension(points, fromIndex, 'h', progress),
+  );
+  const centreX = lerp(fromCentreX, toCentreX, progress);
+  const centreY = lerp(fromCentreY, toCentreY, progress);
+  return {
+    x: centreX - w / 2,
+    y: centreY - h / 2,
+    w,
+    h,
+  };
+};
+
+const clampMonotonic = (
+  val: number,
+  bound1: number,
+  bound2: number,
+  flex = 0.15,
+): number => {
   const minVal = Math.min(bound1, bound2);
   const maxVal = Math.max(bound1, bound2);
   const margin = Math.abs(bound2 - bound1) * flex;
@@ -78,6 +240,14 @@ const ease = (value: number, easing: ChapterCameraTrack['easing']): number => {
   if (easing === 'ease-in') return value * value;
   if (easing === 'ease-out') return 1 - (1 - value) * (1 - value);
   return value < 0.5 ? 2 * value * value : 1 - Math.pow(-2 * value + 2, 2) / 2;
+};
+
+/** Accelerate out of a hold without changing the remainder of a linear leg. */
+const featherLinearStart = (value: number, feather = 0.15): number => {
+  if (value >= feather) return value;
+  const local = value / feather;
+  // f(0)=0, f'(0)=0, f(1)=1 and f'(1)=1, so this joins linear motion cleanly.
+  return feather * (-local * local * local + 2 * local * local);
 };
 
 export const generateCameraPreset = (
@@ -125,7 +295,7 @@ export const generateCameraPreset = (
       },
       {
         id: `${preset}-end`,
-        timeMs: Math.max(1, durationMs),
+        timeMs: Math.max(1, durationMs) + (dwellMs ?? 0),
         focus: { x: end.x + end.w / 2, y: end.y + end.h / 2 },
         viewBox: end,
       },
@@ -148,7 +318,9 @@ export const animatableCameraDurationMs = (
 ): number => {
   if (!track || (track.keyframes?.length ?? 0) < 2) return 0;
   const durationMs = track.durationMs;
-  return Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 0;
+  return Number.isFinite(durationMs) && durationMs > 0
+    ? durationMs + cameraDwellDurationMs(track)
+    : 0;
 };
 
 export const configureCameraTrackPreset = (
@@ -223,15 +395,17 @@ const styleCameraKeyframes = (
       return { ...point, viewBox: { ...firstView } };
     }
 
-    const focus = point.focus ?? (point.viewBox
-      ? {
-          x: point.viewBox.x + point.viewBox.w / 2,
-          y: point.viewBox.y + point.viewBox.h / 2,
-        }
-      : {
-          x: firstView.x + firstView.w / 2,
-          y: firstView.y + firstView.h / 2,
-        });
+    const focus =
+      point.focus ??
+      (point.viewBox
+        ? {
+            x: point.viewBox.x + point.viewBox.w / 2,
+            y: point.viewBox.y + point.viewBox.h / 2,
+          }
+        : {
+            x: firstView.x + firstView.w / 2,
+            y: firstView.y + firstView.h / 2,
+          });
     const ratio = index / (points.length - 1);
     const scale =
       preset === 'zoom-in'
@@ -254,7 +428,24 @@ const styleCameraKeyframes = (
   });
 };
 
-/** Samples one camera segment without changing the track's absolute clock. */
+/**
+ * Returns authored points on the exact clock playback will use. Dwell is
+ * added before movement and every movement leg receives an equal share of the
+ * duration, so deleting, replacing, or moving a point cannot unpredictably
+ * reshuffle all of the other timestamps.
+ */
+export const balanceCameraTrackKeyframes = (
+  track: ChapterCameraTrack,
+): ChapterCameraKeyframe[] => {
+  const authored = [...track.keyframes].sort((a, b) => a.timeMs - b.timeMs);
+  const balanced = retimeCameraKeyframes(authored, track.durationMs);
+  return authored.map((point, index) => ({
+    ...point,
+    timeMs: balanced[index]?.timeMs ?? point.timeMs,
+  }));
+};
+
+/** Samples one camera segment on the automatically spaced track clock. */
 const samplePositionAtTime = (
   points: ChapterCameraKeyframe[],
   pathType: ChapterCameraTrack['pathType'],
@@ -298,8 +489,15 @@ const samplePositionAtTime = (
 
   const effectiveStart = from.timeMs + dwell;
   const span = Math.max(1, to.timeMs - effectiveStart);
-  const linearProgress = Math.max(0, Math.min(1, (time - effectiveStart) / span));
-  const progress = ease(linearProgress, easing ?? 'ease-in-out');
+  const linearProgress = Math.max(
+    0,
+    Math.min(1, (time - effectiveStart) / span),
+  );
+  const easedProgress = ease(linearProgress, easing ?? 'ease-in-out');
+  const progress =
+    easing === 'linear' && dwell > 0
+      ? featherLinearStart(easedProgress)
+      : easedProgress;
 
   const layerIds = new Set([
     ...Object.keys(from.layerOpacities ?? {}),
@@ -308,7 +506,11 @@ const samplePositionAtTime = (
   const layerOpacities = Object.fromEntries(
     [...layerIds].map((id) => [
       id,
-      lerp(from.layerOpacities?.[id] ?? 0, to.layerOpacities?.[id] ?? 0, progress),
+      lerp(
+        from.layerOpacities?.[id] ?? 0,
+        to.layerOpacities?.[id] ?? 0,
+        progress,
+      ),
     ]),
   );
 
@@ -326,12 +528,18 @@ const samplePositionAtTime = (
 
       viewBoxResult = interpolateCatmullRomViewBox(p0, p1, p2, p3, progress);
     } else {
-      viewBoxResult = interpolateViewBox(from.viewBox, to.viewBox, progress);
+      viewBoxResult = interpolateLinearCameraViewBox(
+        points,
+        fromIndex,
+        progress,
+      );
     }
   }
 
   return {
-    ...(viewBoxResult ? { viewBox: viewBoxResult } : { viewBox: to.viewBox ?? from.viewBox }),
+    ...(viewBoxResult
+      ? { viewBox: viewBoxResult }
+      : { viewBox: to.viewBox ?? from.viewBox }),
     model: progress >= 1 ? (to.model ?? from.model) : (from.model ?? to.model),
     ...(layerIds.size ? { layerOpacities } : {}),
   };
@@ -340,12 +548,10 @@ const samplePositionAtTime = (
 /**
  * Deterministically samples an in-chapter camera path at a presentation time.
  *
- * Keyframe times are contracts: sampling at a point's `timeMs` must return
- * that exact point. Easing therefore belongs to the segment between two
- * points, never to the track's clock. Warping the whole timeline made an
- * ease-out track reach every interior point early (the supplied chapter data,
- * for example, reached its midpoint camera position at 29% of playback rather
- * than 50%).
+ * Motion-point timing is automatic in the authoring UI. Playback adds all
+ * dwell time before movement, then divides the movement duration equally
+ * between legs. This keeps the timeline predictable and ensures a hold can
+ * never overlap a later point's displayed arrival time.
  */
 export const sampleCameraTrack = (
   track: ChapterCameraTrack,
@@ -353,12 +559,15 @@ export const sampleCameraTrack = (
 ): CameraTrackSample | null => {
   const points = styleCameraKeyframes(
     track,
-    [...track.keyframes].sort((a, b) => a.timeMs - b.timeMs),
+    balanceCameraTrackKeyframes(track),
   );
   if (!points.length) return null;
 
-  const duration = Math.max(1, track.durationMs);
-  const time = Math.max(0, Math.min(duration, Number.isFinite(timeMs) ? timeMs : 0));
+  const duration = Math.max(1, animatableCameraDurationMs(track));
+  const time = Math.max(
+    0,
+    Math.min(duration, Number.isFinite(timeMs) ? timeMs : 0),
+  );
 
   return samplePositionAtTime(points, track.pathType, track.easing, time);
 };

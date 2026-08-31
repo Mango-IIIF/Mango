@@ -25,11 +25,10 @@ describe('ChapterMotionPanel', () => {
     target.remove();
   });
 
-  it('offers presets and preview when a path has two points', () => {
+  it('offers presets while preview remains in the stage action group', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
     const onApplyPreset = vi.fn();
-    const onPreview = vi.fn();
     const instance = mount(ChapterMotionPanel, {
       target,
       props: {
@@ -47,7 +46,7 @@ describe('ChapterMotionPanel', () => {
         },
         onUpdateDuration: vi.fn(),
         onApplyPreset,
-        onPreview,
+        onPreview: vi.fn(),
         onStopPreview: vi.fn(),
       },
     });
@@ -56,12 +55,11 @@ describe('ChapterMotionPanel', () => {
     ) as HTMLButtonElement;
     zoomIn.click();
     expect(onApplyPreset).toHaveBeenCalledWith('zoom-in');
-    const preview = [...target.querySelectorAll('button')].find((button) =>
-      button.textContent?.includes('Preview'),
-    ) as HTMLButtonElement;
-    expect(preview.disabled).toBe(false);
-    preview.click();
-    expect(onPreview).toHaveBeenCalledOnce();
+    expect(
+      [...target.querySelectorAll('button')].some((button) =>
+        button.textContent?.includes('Preview'),
+      ),
+    ).toBe(false);
     unmount(instance);
     target.remove();
   });
@@ -136,7 +134,7 @@ describe('ChapterMotionPanel', () => {
     target.remove();
   });
 
-  it('keeps the basic style list focused and rejects a duration shorter than the dwell interval', async () => {
+  it('keeps movement duration independent from the dwell interval', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
     const onUpdateDuration = vi.fn();
@@ -176,9 +174,9 @@ describe('ChapterMotionPanel', () => {
     input.value = '1';
     input.dispatchEvent(new Event('change', { bubbles: true }));
     await tick();
-    expect(onUpdateDuration).not.toHaveBeenCalled();
-    expect(input.value).toBe('5');
-    expect(target.textContent).toContain('Duration must leave time to move');
+    expect(onUpdateDuration).toHaveBeenCalledWith(1000);
+    expect(input.value).toBe('1');
+    expect(target.textContent).not.toContain('Duration must leave time to move');
     unmount(instance);
     target.remove();
   });

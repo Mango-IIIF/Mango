@@ -3927,6 +3927,28 @@
     display: none !important;
   }
 
+  /* Preview is a clean reader view. The top-bar Exit control remains. */
+  :global(.viewer--story-preview) .stage__bottom,
+  :global(.viewer--story-preview) :global(.stage__toolbar--below) {
+    display: none !important;
+  }
+
+  /* Motion preview keeps only its compact Stop / pin visibility / Done
+     controls. The authoring footer itself remains removed. */
+  :global(.viewer--story-preview)
+    .stage__bottom:has(:global(.story-wide-preview-controls)) {
+    display: block !important;
+    width: auto;
+    height: 48px;
+    min-height: 48px;
+    padding: 6px;
+    overflow: visible;
+    border: 1px solid var(--viewer-panel-border);
+    border-radius: 12px;
+    background: var(--viewer-stage-bottom-bg, rgba(12, 16, 22, 0.86));
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  }
+
   :global(.viewer--story-preview) .viewer__grid > .stage {
     grid-column: 1 !important;
     grid-row: 1 / -1 !important;

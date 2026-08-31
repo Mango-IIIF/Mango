@@ -77,7 +77,7 @@ describe('enhanced motion tracking engine', () => {
     expect(splineSample?.viewBox).toBeDefined();
     expect(linearSample?.viewBox).toBeDefined();
     // Spline curve provides smooth non-linear interpolation distinct from straight-line LERP
-    expect(splineSample?.viewBox?.y).not.toBe(linearSample?.viewBox?.y);
+    expect(splineSample?.viewBox?.x).not.toBe(linearSample?.viewBox?.x);
   });
 
   it('generates the five basic motion modes', () => {

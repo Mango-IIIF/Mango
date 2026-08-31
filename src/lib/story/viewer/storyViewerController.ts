@@ -217,7 +217,7 @@ export const createStoryViewerRuntime = (
     const chapter = story?.chapters?.[cameraChapterIndex];
     if (!chapter?.cameraTrack) return;
     const timeMs = prefersReducedMotion
-      ? chapter.cameraTrack.durationMs
+      ? animatableCameraDurationMs(chapter.cameraTrack)
       : currentTimeSec * 1000;
     const sample = sampleCameraTrack(chapter.cameraTrack, timeMs);
     if (!sample) return;

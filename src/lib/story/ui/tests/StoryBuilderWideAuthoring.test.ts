@@ -62,6 +62,7 @@ describe("StoryBuilderWideAuthoring", () => {
     const onStopPreviewMediaSegment = vi.fn();
     const selectedPointId = writable<string | null>(null);
     const motionPreviewing = writable(false);
+    const motionPreviewPinsVisible = writable(false);
     const selectedAnnotationId = writable<string | null>(null);
     const annotationTool = writable("select" as const);
     const onSetAnnotationTool = vi.fn((tool) => annotationTool.set(tool));
@@ -74,9 +75,15 @@ describe("StoryBuilderWideAuthoring", () => {
       selectedAnnotationId.set(null),
     );
     const onUpdatePointFromView = vi.fn();
+    const onDeletePoint = vi.fn();
     const onUpdateMotionPathType = vi.fn();
     const onUpdateMotionInitialDwell = vi.fn();
     const onUpdateMotionEasing = vi.fn();
+    const onSetMotionPreviewPinsVisible = vi.fn((visible: boolean) =>
+      motionPreviewPinsVisible.set(visible),
+    );
+    const onPreviewMotion = vi.fn();
+    const onStopMotionPreview = vi.fn();
     const onSkipNarration = vi.fn();
     const instance = mount(StoryBuilderWideAuthoring, {
       target,
@@ -91,16 +98,19 @@ describe("StoryBuilderWideAuthoring", () => {
         languages: ["en", "cy"],
         selectedPointId,
         onAddPoint: vi.fn(),
+        onDeletePoint,
         onGoToPoint: vi.fn(),
         onUpdatePointFromView,
         motionPreviewing,
+        motionPreviewPinsVisible,
+        onSetMotionPreviewPinsVisible,
         onUpdateMotionPathType,
         onUpdateMotionInitialDwell,
         onUpdateMotionEasing,
         onUpdateMotionDuration: vi.fn(),
         onApplyMotionPreset: vi.fn(),
-        onPreviewMotion: vi.fn(),
-        onStopMotionPreview: vi.fn(),
+        onPreviewMotion,
+        onStopMotionPreview,
         annotationTool,
         selectedAnnotationId,
         onSetAnnotationTool,
@@ -125,15 +135,33 @@ describe("StoryBuilderWideAuthoring", () => {
     await tick();
     expect(target.querySelector(".story-wide-authoring")).toBeTruthy();
     expect(target.querySelector(".story-wide-narration")).toBeNull();
+    const previewNextToDone = target.querySelector<HTMLButtonElement>(
+      '[data-testid="motion-preview-next-to-done"]',
+    )!;
+    expect(previewNextToDone.nextElementSibling?.getAttribute('data-testid')).toBe(
+      'story-wide-done',
+    );
+    expect(target.querySelector('[data-testid="motion-preview-pins-toggle"]')).toBeNull();
+    expect(target.querySelector('[data-testid="story-wide-done"]')).toBeTruthy();
+    previewNextToDone.click();
+    expect(onPreviewMotion).toHaveBeenCalledOnce();
     expect(target.textContent).toContain("1.00× zoom");
     expect(target.textContent).toContain("2.00× zoom");
     const updatePoint = [...target.querySelectorAll<HTMLButtonElement>("button")].find(
-      (button) => button.textContent?.includes("Update pin from current view"),
+      (button) => button.textContent?.includes("Save current zoom"),
     )!;
     expect(updatePoint.disabled).toBe(true);
+    expect(target.querySelector('[data-testid="motion-delete-selected"]')).toBeNull();
     selectedPointId.set("one");
     await tick();
     expect(updatePoint.disabled).toBe(false);
+    const deleteSelected = target.querySelector<HTMLButtonElement>(
+      '[data-testid="motion-delete-selected"]',
+    )!;
+    expect(deleteSelected.textContent).toContain("Delete camera point 1");
+    expect(target.querySelector(".story-wide-authoring__point-delete")).toBeNull();
+    deleteSelected.click();
+    expect(onDeletePoint).toHaveBeenCalledWith("one");
     updatePoint.click();
     expect(onUpdatePointFromView).toHaveBeenCalledWith("one");
 
@@ -146,6 +174,7 @@ describe("StoryBuilderWideAuthoring", () => {
     await tick();
     expect(target.querySelector("#motion-pins-panel")).toBeNull();
     expect(target.querySelector("#motion-options-panel .motion-panel--wide")).toBeTruthy();
+    expect(target.querySelector(".motion-panel__fine-tuning-grid")).toBeTruthy();
     const motionOption = (label: string) =>
       [...target.querySelectorAll<HTMLButtonElement>("button")].find(
         (button) => button.textContent?.trim() === label,
@@ -159,8 +188,16 @@ describe("StoryBuilderWideAuthoring", () => {
     motionPreviewing.set(true);
     await tick();
     expect(target.querySelector(".story-wide-authoring")).toBeNull();
-    expect(target.querySelector('[data-testid="story-wide-done"]')).toBeNull();
-    expect(target.querySelector(".story-wide-authoring--empty")).toBeTruthy();
+    expect(target.querySelector('[data-testid="story-wide-done"]')).toBeTruthy();
+    expect(target.querySelector(".story-wide-preview-controls")).toBeTruthy();
+    const pinToggle = target.querySelector<HTMLButtonElement>(
+      '[data-testid="motion-preview-pins-toggle"]',
+    )!;
+    pinToggle.click();
+    expect(onSetMotionPreviewPinsVisible).toHaveBeenCalledWith(true);
+    expect(previewNextToDone.textContent).toContain('Stop preview');
+    previewNextToDone.click();
+    expect(onStopMotionPreview).toHaveBeenCalledOnce();
     motionPreviewing.set(false);
     await tick();
     expect(target.querySelector("#motion-options-panel")).toBeTruthy();

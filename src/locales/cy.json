@@ -284,6 +284,9 @@
       "customHint": "Mae'r modd personol yn cadw ffrâm pob pwynt fel y'i tynnwyd gennych. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
       "presetHint": "Mae'r pwyntiau'n gosod y ffocws; mae'r arddull symud yn rheoli'r chwyddo. Mae newid maint pwynt yn newid i Personol. Mae'r rhagolwg yn dechrau ar Bwynt 1.",
       "preview": "Rhagolwg",
+      "stopPreview": "Stopio’r rhagolwg",
+      "showPreviewPins": "Dangos pinnau",
+      "hidePreviewPins": "Cuddio pinnau",
       "style": "Arddull symud",
       "presets": "Rhagosodiadau symud",
       "preset": {
@@ -308,7 +311,7 @@
         "ease-in-out": "Esmwytho i mewn/allan"
       },
       "duration": "Hyd symudiad y bennod",
-      "durationHint": "Caiff pob safle ei wasgaru'n awtomatig ar draws yr hyd hwn.",
+      "durationHint": "Caiff safleoedd eu rhannu ar draws yr amser symud hwn. Ychwanegir y saib cychwynnol cyn hynny.",
       "durationSeconds": "Hyd (eiliadau)",
       "zoomValue": "Chwyddo {zoom}×",
       "timeline": "Llinell amser symudiad y bennod",
@@ -316,14 +319,18 @@
       "optionsTab": "Dewisiadau",
       "fineTuning": "Mân-diwnio",
       "goToPoint": "Mynd i bwynt camera {number}",
-      "movePointTitle": "Pwynt {number} ar {seconds}e. Cliciwch i’w weld; llusgwch i’w ail-leoli.",
+      "movePointTitle": "Pwynt {number} ar {seconds}e. Cliciwch i’w ddewis; llusgwch i’w ail-leoli.",
       "point": "Pwynt {number}",
       "deletePoint": "Dileu'r pwynt camera",
       "deletePointNumber": "Dileu pwynt camera {number}",
-      "emptyPoints": "Dim pwyntiau camera eto. Ychwanegwch bwynt; bydd yn ymddangos yng nghanol yr olygfa gyfredol.",
+      "emptyPoints": "Dim pwyntiau camera eto. Ychwanegwch un i gadw'r safle a'r chwyddo presennol.",
       "addPoint": "Ychwanegu pwynt camera",
       "updatePoint": "Diweddaru'r pin o'r olygfa gyfredol",
-      "selectPointToUpdate": "Dewiswch bin i ddiweddaru ei banio a'i chwyddo."
+      "captureGuideTitle": "Gosodwch y safle a'r chwyddo ar wahân",
+      "captureGuideHint": "Llusgwch bin i osod ei safle. Yna chwyddwch y ddelwedd a chadwch y chwyddo i'r pwynt a ddewiswyd; bydd y pin yn aros yn ei le.",
+      "saveZoom": "Cadw'r chwyddo presennol",
+      "saveZoomForPoint": "Cadw'r chwyddo presennol i Bwynt {number}",
+      "selectPointToUpdate": "Dewiswch bin cyn cadw ei chwyddo."
     },
     "settings": {
       "title": "Gosodiadau'r stori",

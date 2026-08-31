@@ -284,6 +284,9 @@
       "customHint": "Custom keeps each point’s frame as you drew it. Preview starts at Point 1.",
       "presetHint": "Points set the focus; the movement style controls zoom. Resizing a point switches to Custom. Preview starts at Point 1.",
       "preview": "Preview",
+      "stopPreview": "Stop preview",
+      "showPreviewPins": "Show pins",
+      "hidePreviewPins": "Hide pins",
       "style": "Movement style",
       "presets": "Motion presets",
       "preset": {
@@ -308,7 +311,7 @@
         "ease-in-out": "Ease in/out"
       },
       "duration": "Chapter motion duration",
-      "durationHint": "All positions are spaced automatically across this duration.",
+      "durationHint": "Positions are spaced across this movement time. The start hold is added before it.",
       "durationSeconds": "Duration (seconds)",
       "zoomValue": "{zoom}× zoom",
       "timeline": "Chapter motion timeline",
@@ -316,14 +319,18 @@
       "optionsTab": "Options",
       "fineTuning": "Fine tuning",
       "goToPoint": "Go to camera point {number}",
-      "movePointTitle": "Point {number} at {seconds}s. Click to view; drag to reposition.",
+      "movePointTitle": "Point {number} at {seconds}s. Click to select; drag to reposition.",
       "point": "Point {number}",
       "deletePoint": "Delete camera point",
       "deletePointNumber": "Delete camera point {number}",
-      "emptyPoints": "No camera points yet. Add a point; it will appear at the centre of the current view.",
+      "emptyPoints": "No camera points yet. Add a point to capture the current position and zoom.",
       "addPoint": "Add camera point",
       "updatePoint": "Update pin from current view",
-      "selectPointToUpdate": "Select a pin to update its pan and zoom."
+      "captureGuideTitle": "Set position and zoom separately",
+      "captureGuideHint": "Drag a pin to set its position. Then zoom the artwork and save that zoom to the selected point; the pin will stay where you placed it.",
+      "saveZoom": "Save current zoom",
+      "saveZoomForPoint": "Save current zoom to Point {number}",
+      "selectPointToUpdate": "Select a pin before saving its zoom."
     },
     "settings": {
       "title": "Story settings",

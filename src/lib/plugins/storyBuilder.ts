@@ -88,6 +88,7 @@ export const createStoryBuilderPlugins = (
         props: {
           story: controller.story,
           isPreviewing: controller.isPreviewing,
+          motionPreviewing: controller.motionPreviewing,
           saveState: controller.saveState,
           saveConfigured: controller.saveConfigured,
           dirty: controller.dirty,
@@ -99,6 +100,7 @@ export const createStoryBuilderPlugins = (
           onNarration: controller.openNarration,
           onPreview: controller.startPreview,
           onStopPreview: controller.stopPreview,
+          onStopMotionPreview: controller.stopMotionPreview,
           onSave: () => {
             const validation = controller.saveExport();
             if (validation.ok) {
@@ -137,7 +139,7 @@ export const createStoryBuilderPlugins = (
         selectedChapterId: controller.selectedChapterId,
         activeChapterTask: controller.activeChapterTask,
         selectedMotionPointId: controller.selectedMotionPointId,
-        onGoToMotionPoint: controller.goToMotionPoint,
+        onSelectMotionPoint: controller.selectMotionPoint,
         onMoveMotionPoint: controller.setMotionPointFocus,
         onChapterTaskChange: controller.activeChapterTask.set,
         validationErrors: controller.validationErrors,
@@ -188,6 +190,7 @@ export const createStoryBuilderPlugins = (
         layerOpacities: controller.layerOpacities,
         onUpdateLayerOpacity: controller.updateLayerOpacity,
         motionPreviewing: controller.motionPreviewing,
+        motionPreviewPinsVisible: controller.motionPreviewPinsVisible,
         positioningLanguage: controller.positioningLanguage,
         onStartAnnotationPositioning: controller.startAnnotationPositioning,
         onConfirmAnnotationPositioning: controller.confirmAnnotationPositioning,
@@ -241,6 +244,8 @@ export const createStoryBuilderPlugins = (
           onGoToPoint: controller.goToMotionPoint,
           onUpdatePointFromView: controller.updateMotionPointFromViewport,
           motionPreviewing: controller.motionPreviewing,
+          motionPreviewPinsVisible: controller.motionPreviewPinsVisible,
+          onSetMotionPreviewPinsVisible: controller.setMotionPreviewPinsVisible,
           onUpdateMotionDuration: controller.updateMotionDuration,
           onUpdateMotionPathType: controller.updateMotionPathType,
           onUpdateMotionInitialDwell: controller.updateMotionInitialDwell,

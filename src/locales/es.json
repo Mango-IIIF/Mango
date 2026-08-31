@@ -284,6 +284,9 @@
       "customHint": "El modo personalizado conserva el encuadre de cada punto tal como lo dibujó. La previsualización empieza en el punto 1.",
       "presetHint": "Los puntos fijan el enfoque; el estilo de movimiento controla el zoom. Cambiar el tamaño de un punto pasa a Personalizado. La previsualización empieza en el punto 1.",
       "preview": "Previsualizar",
+      "stopPreview": "Detener previsualización",
+      "showPreviewPins": "Mostrar pines",
+      "hidePreviewPins": "Ocultar pines",
       "style": "Estilo de movimiento",
       "presets": "Ajustes de movimiento",
       "preset": {
@@ -308,7 +311,7 @@
         "ease-in-out": "Entrada/salida suaves"
       },
       "duration": "Duración del movimiento del capítulo",
-      "durationHint": "Todas las posiciones se distribuyen automáticamente a lo largo de esta duración.",
+      "durationHint": "Las posiciones se distribuyen durante este tiempo de movimiento. La pausa inicial se añade antes.",
       "durationSeconds": "Duración (segundos)",
       "zoomValue": "Zoom {zoom}×",
       "timeline": "Línea de tiempo del movimiento del capítulo",
@@ -316,14 +319,18 @@
       "optionsTab": "Opciones",
       "fineTuning": "Ajustes avanzados",
       "goToPoint": "Ir al punto de cámara {number}",
-      "movePointTitle": "Punto {number} a los {seconds} s. Haz clic para verlo; arrastra para cambiar su posición.",
+      "movePointTitle": "Punto {number} a los {seconds} s. Haz clic para seleccionarlo; arrastra para cambiar su posición.",
       "point": "Punto {number}",
       "deletePoint": "Eliminar el punto de cámara",
       "deletePointNumber": "Eliminar el punto de cámara {number}",
-      "emptyPoints": "Aún no hay puntos de cámara. Añada un punto; aparecerá en el centro de la vista actual.",
+      "emptyPoints": "Aún no hay puntos de cámara. Añada uno para guardar la posición y el zoom actuales.",
       "addPoint": "Añadir punto de cámara",
       "updatePoint": "Actualizar pin desde la vista actual",
-      "selectPointToUpdate": "Seleccione un pin para actualizar su posición y zoom."
+      "captureGuideTitle": "Configure la posición y el zoom por separado",
+      "captureGuideHint": "Arrastre un pin para fijar su posición. Después amplíe la imagen y guarde ese zoom en el punto seleccionado; el pin permanecerá en su lugar.",
+      "saveZoom": "Guardar zoom actual",
+      "saveZoomForPoint": "Guardar zoom actual en el punto {number}",
+      "selectPointToUpdate": "Seleccione un pin antes de guardar su zoom."
     },
     "settings": {
       "title": "Ajustes de la historia",

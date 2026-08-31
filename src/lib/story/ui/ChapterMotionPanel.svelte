@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { Clock3, Play, Square } from '@lucide/svelte';
+  import { Clock3 } from '@lucide/svelte';
   import type { ChapterCameraTrack } from '../../core/types/story';
   import { t } from '../../core/i18n';
+  import { balanceCameraTrackKeyframes } from '../cameraTrack';
 
   export let track: ChapterCameraTrack | undefined;
-  export let previewing = false;
   export let onUpdateDuration: (durationMs: number) => void;
   export let onUpdatePathType: (pathType: 'linear' | 'spline') => void = () => {};
   export let onUpdateDwell: (dwellMs: number) => void = () => {};
@@ -12,14 +12,11 @@
     easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out',
   ) => void = () => {};
   export let onApplyPreset: (preset: NonNullable<ChapterCameraTrack['preset']>) => void;
-  export let onPreview: () => void;
-  export let onStopPreview: () => void;
   export let wide = false;
 
   $: durationSeconds = (track?.durationMs ?? 5000) / 1000;
-  $: points = [...(track?.keyframes ?? [])].sort((a, b) => a.timeMs - b.timeMs);
+  $: points = track ? balanceCameraTrackKeyframes(track) : [];
   $: currentDwell = points[0]?.dwellMs ?? 0;
-  $: firstSegmentMs = points.length >= 2 ? Math.max(1, points[1].timeMs - points[0].timeMs) : 0;
   $: requirementMessage =
     points.length === 0
       ? $t('storyBuilder.motion.requireTwo')
@@ -46,12 +43,6 @@
       return;
     }
     const durationMs = seconds * 1000;
-    const nextFirstSegmentMs = points.length >= 2 ? durationMs / (points.length - 1) : durationMs;
-    if (currentDwell > 0 && currentDwell >= nextFirstSegmentMs) {
-      feedback = $t('storyBuilder.motion.durationDwellError', { seconds: currentDwell / 1000 });
-      input.value = String(durationSeconds);
-      return;
-    }
     feedback = '';
     onUpdateDuration(durationMs);
   };
@@ -69,10 +60,6 @@
 
   const chooseDwell = (dwellMs: number) => {
     if (points.length < 2) return;
-    if (dwellMs > 0 && dwellMs >= firstSegmentMs) {
-      feedback = $t('storyBuilder.motion.dwellError');
-      return;
-    }
     feedback = '';
     onUpdateDwell(dwellMs);
   };
@@ -88,14 +75,6 @@
           : $t('storyBuilder.motion.presetHint')}
       </span>
     </div>
-    <button
-      class="motion-panel__preview"
-      type="button"
-      disabled={points.length < 2}
-      on:click={() => (previewing ? onStopPreview() : onPreview())}
-    >
-      {#if previewing}<Square aria-hidden="true" /> {$t('storyBuilder.media.stop')}{:else}<Play aria-hidden="true" /> {$t('storyBuilder.motion.preview')}{/if}
-    </button>
   </div>
 
   {#if feedback || requirementMessage}
@@ -131,6 +110,7 @@
     <details class="motion-panel__fine-tuning">
       <summary>{$t('storyBuilder.motion.fineTuning')}</summary>
 
+      <div class="motion-panel__fine-tuning-grid">
       <section
         class="chapter-overlay__section chapter-overlay__section--card motion-panel__section"
       >
@@ -172,10 +152,10 @@
           role="group"
           aria-label={$t('storyBuilder.motion.dwell')}
         >
-          {#each [0, 1000, 1500, 2000, 3000] as dwell}
+          {#each [0, 1000, 1500, 2000, 3000, 5000] as dwell}
             <button
               type="button"
-              disabled={points.length < 2 || (dwell > 0 && dwell >= firstSegmentMs)}
+              disabled={points.length < 2}
               aria-pressed={points.length >= 2 && currentDwell === dwell}
               class:motion-panel__preset--active={points.length >= 2 && currentDwell === dwell}
               on:click={() => chooseDwell(dwell)}
@@ -215,9 +195,10 @@
           {/each}
         </div>
       </section>
+      </div>
     </details>
 
-    <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section">
+    <section class="chapter-overlay__section chapter-overlay__section--card motion-panel__section motion-panel__section--duration">
       <div class="motion-panel__heading">
         <span class="motion-panel__icon"><Clock3 aria-hidden="true" /></span>
         <span>
@@ -279,24 +260,10 @@
   .motion-panel__fine-tuning[open] > summary {
     border-bottom: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.1));
   }
-  .motion-panel__fine-tuning > .motion-panel__section {
-    margin: 10px;
-  }
-  .motion-panel__preview {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 0;
-    border-radius: 9px;
-    padding: 9px 11px;
-    background: var(--accent, var(--story-builder-accent, #e07a3f));
-    color: white;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .motion-panel__preview:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+  .motion-panel__fine-tuning-grid {
+    display: grid;
+    gap: 12px;
+    padding: 10px;
   }
   .motion-panel__feedback {
     margin: 0;
@@ -307,10 +274,6 @@
     color: var(--viewer-muted, #9aa6b2);
     font-size: 11px;
     line-height: 1.45;
-  }
-  .motion-panel__preview :global(svg) {
-    width: 14px;
-    height: 14px;
   }
   .motion-panel__section {
     padding: 0;
@@ -327,8 +290,24 @@
     gap: 12px;
   }
   .motion-panel--wide .motion-panel__options {
-    grid-template-columns: minmax(260px, 2fr) repeat(4, minmax(120px, 1fr));
+    grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+    grid-template-areas:
+      "style duration"
+      "fine fine";
     align-items: start;
+  }
+  .motion-panel--wide .motion-panel__section--style {
+    grid-area: style;
+  }
+  .motion-panel--wide .motion-panel__section--duration {
+    grid-area: duration;
+  }
+  .motion-panel--wide .motion-panel__fine-tuning {
+    grid-area: fine;
+    min-width: 0;
+  }
+  .motion-panel--wide .motion-panel__fine-tuning-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .motion-panel--wide .motion-panel__section + .motion-panel__section {
     padding-top: 0;
@@ -402,6 +381,10 @@
   @media (max-width: 960px) {
     .motion-panel--wide .motion-panel__options {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        "style style"
+        "duration duration"
+        "fine fine";
     }
     .motion-panel--wide .motion-panel__section--style {
       grid-column: 1 / -1;
@@ -409,6 +392,9 @@
     .motion-panel--wide .motion-panel__section + .motion-panel__section {
       padding-left: 0;
       border-left: 0;
+    }
+    .motion-panel--wide .motion-panel__fine-tuning-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>

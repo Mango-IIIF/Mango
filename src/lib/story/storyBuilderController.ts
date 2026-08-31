@@ -32,6 +32,7 @@ import { createStoryPreviewOrchestrator } from "./previewOrchestrator";
 import { STAGE_CROSSFADE_MS } from "./viewer/chapterTransitionOrchestrator";
 import type { StageFade } from "./viewer/storyViewerController";
 import {
+  animatableCameraDurationMs,
   configureCameraTrackPreset,
   retimeCameraKeyframes,
   sampleCameraTrack,
@@ -172,7 +173,9 @@ export type StoryBuilderController = {
   setMotionPointViewBox: (keyframeId: string, viewBox: ViewBox) => void;
   /** Moves a camera point's pin while preserving its framing/zoom. */
   setMotionPointFocus: (keyframeId: string, focus: { x: number; y: number }) => void;
-  /** Replaces a camera point's pan and zoom with the live viewer viewport. */
+  /** Selects a point without moving the live camera. */
+  selectMotionPoint: (keyframeId: string) => void;
+  /** Copies the live zoom to a point while preserving its pin/focus. */
   updateMotionPointFromViewport: (keyframeId: string) => void;
   /** The camera point whose frame carries the handles on the stage. */
   selectedMotionPointId: Writable<string | null>;
@@ -188,6 +191,8 @@ export type StoryBuilderController = {
     preset: NonNullable<Chapter["cameraTrack"]>["preset"],
   ) => void;
   motionPreviewing: Readable<boolean>;
+  motionPreviewPinsVisible: Readable<boolean>;
+  setMotionPreviewPinsVisible: (visible: boolean) => void;
   previewMotion: () => void;
   stopMotionPreview: () => void;
   updateChapterTitle: (lang: string, value: string) => void;
@@ -394,6 +399,7 @@ export const createStoryBuilderController = (
   const positioningLanguage = writable<string | null>(null);
   const selectedMotionPointId = writable<string | null>(null);
   const motionPreviewing = writable(false);
+  const motionPreviewPinsVisible = writable(false);
   const drawerOpen = derived(
     uiMode,
     (mode) => mode !== "idle" && mode !== "annotationPositioning",
@@ -2395,7 +2401,7 @@ export const createStoryBuilderController = (
       const nextTrack: NonNullable<Chapter["cameraTrack"]> = {
         ...track,
         preset,
-        keyframes,
+        keyframes: retimeCameraKeyframes(keyframes, track.durationMs),
       };
       return preset !== "custom" && chapter.viewBox
         ? configureCameraTrackPreset(
@@ -2447,7 +2453,7 @@ export const createStoryBuilderController = (
       if (!keyframes.some((entry) => entry.id === keyframeId)) return track;
       const nextTrack: NonNullable<Chapter["cameraTrack"]> = {
         ...track,
-        keyframes,
+        keyframes: retimeCameraKeyframes(keyframes, track.durationMs),
       };
       return (track.preset ?? "custom") !== "custom" && chapter.viewBox
         ? configureCameraTrackPreset(
@@ -2461,11 +2467,45 @@ export const createStoryBuilderController = (
     });
   };
 
+  const selectMotionPoint = (keyframeId: string) => {
+    const chapterId = get(selectedChapterId);
+    const exists = get(storyStore)
+      .chapters.find((chapter) => chapter.id === chapterId)
+      ?.cameraTrack?.keyframes.some((entry) => entry.id === keyframeId);
+    if (exists) selectedMotionPointId.set(keyframeId);
+  };
+
   const updateMotionPointFromViewport = (keyframeId: string) => {
     const currentViewport = viewer?.getViewBox?.() ?? get(viewBox);
     if (!currentViewport) return;
     selectedMotionPointId.set(keyframeId);
-    setMotionPointViewBox(keyframeId, currentViewport);
+    updateCameraTrack((chapter) => {
+      const track = chapter.cameraTrack;
+      const point = track?.keyframes.find((entry) => entry.id === keyframeId);
+      if (!track || !point) return track;
+
+      /* Position and zoom are independent controls. Saving the current zoom
+         must not replace a dragged pin with the live viewport centre. */
+      const focus = point.focus ?? (point.viewBox ? centreOf(point.viewBox) : null);
+      if (!focus) return track;
+      const zoomBox = normaliseViewBox(currentViewport, frameAspect());
+      const viewBox = {
+        x: focus.x - zoomBox.w / 2,
+        y: focus.y - zoomBox.h / 2,
+        w: zoomBox.w,
+        h: zoomBox.h,
+      };
+      return {
+        ...track,
+        preset: "custom",
+        keyframes: retimeCameraKeyframes(
+          track.keyframes.map((entry) =>
+            entry.id === keyframeId ? { ...entry, focus, viewBox } : entry,
+          ),
+          track.durationMs,
+        ),
+      };
+    });
   };
 
   const deleteMotionPoint = (keyframeId: string) => {
@@ -2549,7 +2589,7 @@ export const createStoryBuilderController = (
       });
       return {
         ...track,
-        keyframes,
+        keyframes: retimeCameraKeyframes(keyframes, track.durationMs),
       };
     });
   };
@@ -2623,6 +2663,10 @@ export const createStoryBuilderController = (
     startMotionTrackPlayback(chapter);
   };
 
+  const setMotionPreviewPinsVisible = (visible: boolean) => {
+    motionPreviewPinsVisible.set(visible);
+  };
+
   const startMotionTrackPlayback = (chapter: Chapter) => {
     if (
       !chapter.cameraTrack ||
@@ -2637,6 +2681,7 @@ export const createStoryBuilderController = (
       cancelAnimation = null;
     }
     const track = chapter.cameraTrack;
+    const playbackDurationMs = animatableCameraDurationMs(track);
     const reduceMotion = globalThis.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -2651,16 +2696,16 @@ export const createStoryBuilderController = (
       }
     };
     if (reduceMotion || typeof requestAnimationFrame !== "function") {
-      applySample(track.durationMs);
+      applySample(playbackDurationMs);
       return;
     }
     applySample(0);
     motionPreviewing.set(true);
     const startedAt = performance.now();
     const frame = (time: number) => {
-      const elapsed = Math.min(track.durationMs, time - startedAt);
+      const elapsed = Math.min(playbackDurationMs, time - startedAt);
       applySample(elapsed);
-      if (elapsed < track.durationMs)
+      if (elapsed < playbackDurationMs)
         motionPreviewFrame = requestAnimationFrame(frame);
       else {
         motionPreviewFrame = null;
@@ -2994,6 +3039,7 @@ export const createStoryBuilderController = (
     addMotionPoint,
     setMotionPointViewBox,
     setMotionPointFocus,
+    selectMotionPoint,
     updateMotionPointFromViewport,
     selectedMotionPointId,
     deleteMotionPoint,
@@ -3004,6 +3050,8 @@ export const createStoryBuilderController = (
     goToMotionPoint,
     applyMotionPreset,
     motionPreviewing,
+    motionPreviewPinsVisible,
+    setMotionPreviewPinsVisible,
     previewMotion,
     stopMotionPreview,
     updateChapterTitle,

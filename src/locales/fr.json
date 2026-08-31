@@ -284,6 +284,9 @@
       "customHint": "Le mode personnalisé conserve le cadre de chaque point tel que vous l’avez dessiné. La prévisualisation démarre au point 1.",
       "presetHint": "Les points définissent le cadrage ; le style de mouvement contrôle le zoom. Redimensionner un point passe en Personnalisé. La prévisualisation démarre au point 1.",
       "preview": "Prévisualiser",
+      "stopPreview": "Arrêter l’aperçu",
+      "showPreviewPins": "Afficher les repères",
+      "hidePreviewPins": "Masquer les repères",
       "style": "Style de mouvement",
       "presets": "Préréglages de mouvement",
       "preset": {
@@ -308,7 +311,7 @@
         "ease-in-out": "Accélération/décélération"
       },
       "duration": "Durée du mouvement du chapitre",
-      "durationHint": "Toutes les positions sont réparties automatiquement sur cette durée.",
+      "durationHint": "Les positions sont réparties sur ce temps de mouvement. La pause initiale est ajoutée avant.",
       "durationSeconds": "Durée (secondes)",
       "zoomValue": "Zoom {zoom}×",
       "timeline": "Chronologie du mouvement du chapitre",
@@ -316,14 +319,18 @@
       "optionsTab": "Options",
       "fineTuning": "Réglages avancés",
       "goToPoint": "Aller au point de caméra {number}",
-      "movePointTitle": "Point {number} à {seconds} s. Cliquez pour l’afficher ; faites glisser pour le repositionner.",
+      "movePointTitle": "Point {number} à {seconds} s. Cliquez pour le sélectionner ; faites glisser pour le repositionner.",
       "point": "Point {number}",
       "deletePoint": "Supprimer le point de caméra",
       "deletePointNumber": "Supprimer le point de caméra {number}",
-      "emptyPoints": "Aucun point de caméra pour l’instant. Ajoutez un point ; il apparaîtra au centre de la vue actuelle.",
+      "emptyPoints": "Aucun point de caméra. Ajoutez-en un pour enregistrer la position et le zoom actuels.",
       "addPoint": "Ajouter un point de caméra",
       "updatePoint": "Actualiser le repère depuis la vue actuelle",
-      "selectPointToUpdate": "Sélectionnez un repère pour actualiser son cadrage et son zoom."
+      "captureGuideTitle": "Réglez séparément la position et le zoom",
+      "captureGuideHint": "Faites glisser un repère pour définir sa position. Zoomez ensuite sur l’image et enregistrez ce zoom pour le point sélectionné ; le repère restera en place.",
+      "saveZoom": "Enregistrer le zoom actuel",
+      "saveZoomForPoint": "Enregistrer le zoom actuel pour le point {number}",
+      "selectPointToUpdate": "Sélectionnez un repère avant d’enregistrer son zoom."
     },
     "settings": {
       "title": "Paramètres de l'histoire",
