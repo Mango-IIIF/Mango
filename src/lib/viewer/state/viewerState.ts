@@ -70,7 +70,7 @@ export const createViewerState = (
     plugins: writable(initial?.plugins ?? []),
     selectedCanvasIndex: writable(initial?.selectedCanvasIndex ?? 0),
     selectedMediaIndex: writable(0),
-    showThumbnails: writable(true),
+    showThumbnails: writable(false),
     showContents: writable(sidebarOpen && activePanel === 'contents'),
     showCollection: writable(false),
     showMetadata: writable(sidebarOpen && activePanel === 'metadata'),

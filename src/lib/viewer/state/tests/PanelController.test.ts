@@ -16,6 +16,22 @@ const leftPanelState = (state: ViewerStateStores) => ({
 });
 
 describe('PanelController', () => {
+  it('starts with the gallery closed and allows it to be opened', () => {
+    const state = createViewerState();
+    const controller = createPanelController({
+      state,
+      derived: createViewerDerived(state),
+      emitEvent: vi.fn(),
+      emitStateChange: vi.fn(),
+    });
+
+    expect(get(state.showThumbnails)).toBe(false);
+
+    controller.setPanelOpen('thumbnails', true);
+
+    expect(get(state.showThumbnails)).toBe(true);
+  });
+
   it('starts with every left panel closed when sidebar.open is false', () => {
     const state = createViewerState({ config: { sidebar: { open: false } } });
     const derived = createViewerDerived(state);
