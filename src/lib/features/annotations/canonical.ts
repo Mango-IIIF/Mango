@@ -175,6 +175,22 @@ export const shapeFromResolved = (
 /* ------------------------------------------------------------------------- */
 
 /**
+ * The web link a body points at, if it has one.
+ *
+ * A SpecificResource names its resource in `source` — the cookbook's
+ * tagging-external-resource recipe links a Wikidata entity this way — and an
+ * external body with no value is itself the resource. Only http(s) is kept: the
+ * value ends up in an `href`, and a `javascript:` IRI there would run.
+ */
+const linkFor = (
+  body: AnnotationProjection['bodies'][number],
+  resource: CanonicalResource | undefined,
+): string | undefined => {
+  const candidate = resource?.source?.id ?? (body.isExternal ? body.id : undefined);
+  return candidate && /^https?:\/\//i.test(candidate) ? candidate : undefined;
+};
+
+/**
  * Classifies a body for the list and the Canvas-content check.
  *
  * The canonical resource decides, not the projection: a projection reports text
@@ -188,10 +204,12 @@ const bodyFromProjection = (
 ): AnnotationBody => {
   const isImage =
     Boolean(resource?.type.includes('Image')) || Boolean(body.format?.startsWith('image/'));
+  const href = linkFor(body, resource);
   return {
     path: body.path,
     type: isImage ? 'image' : body.isHtml ? 'html' : body.isExternal ? 'unknown' : 'text',
     ...(isImage ? { src: body.id } : { value: body.text }),
+    ...(!isImage && href ? { href } : {}),
     format: body.format,
     language: body.language,
     textDirection: body.textDirection,

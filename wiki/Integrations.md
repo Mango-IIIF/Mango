@@ -16,7 +16,7 @@ Supported HTML attributes are:
 
 | Attribute     | Purpose                                                                        |
 | ------------- | ------------------------------------------------------------------------------ |
-| `manifest-id` | IIIF Manifest URL                                                              |
+| `manifest-id` | IIIF Manifest or Collection URL                                                |
 | `mode`        | `viewer`, `workspace`, `annotation-editor`, `story-viewer`, or `story-builder` |
 | `config`      | JSON-encoded viewer configuration                                              |
 | `story-url`   | URL of a Mango story or supported IIIF AnnotationPage                          |
@@ -209,6 +209,12 @@ integration contract across several host frameworks.
 | `@mango-iiif/iiif-viewer/annotation-editor` | Annotation workspace, editor layer, and conversion helpers                   |
 | `@mango-iiif/iiif-viewer/style.css`         | Styles for the class/native Svelte library build                             |
 
-Element-specific subpaths are also available for viewer, story viewer, story
-builder, and annotation editor registration. For most sites, importing
-`/element` once is simpler.
+`/element/viewer`, `/element/story-viewer`, `/element/story-builder`, and
+`/element/annotation-editor` are also exported. Each currently registers the
+same complete element as `/element`, so they do not yet reduce bundle size;
+importing `/element` once is simpler.
+
+The standalone CDN URL (`https://cdn.jsdelivr.net/npm/@mango-iiif/iiif-viewer`)
+serves `src/dist/mango-viewer-element.js`, a single ES module that registers
+the element and carries its own styles. Load it with `type="module"`; there is
+no classic-script (IIFE) build.

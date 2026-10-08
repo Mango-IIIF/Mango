@@ -572,7 +572,7 @@
   .stage__media {
     height: auto;
     min-width: 0;
-    border-radius: 18px;
+    border-radius: var(--viewer-chrome-radius, 0);
     overflow: hidden;
     background: var(--viewer-stage);
     position: relative;
@@ -612,7 +612,7 @@
     height: 100%;
     min-height: 0;
     padding: 16px;
-    border-radius: 18px;
+    border-radius: var(--viewer-chrome-radius, 0);
     background: rgba(255, 255, 255, 0.04);
     color: var(--viewer-muted);
     font-size: 12px;

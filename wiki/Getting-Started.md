@@ -5,13 +5,14 @@ on an existing website and as an npm dependency in an application.
 
 ## Before you begin
 
-You need a publicly reachable IIIF Presentation 2 or 3 Manifest URL. The
-manifest and everything it references must allow browser requests from the site
-where Mango is hosted. See [deployment and accessibility](Deployment-and-Accessibility)
+You need a publicly reachable IIIF Presentation 2 or 3 Manifest or Collection
+URL. The resource and everything it references must allow browser requests from
+the site where Mango is hosted. See [deployment and accessibility](Deployment-and-Accessibility)
 for CORS and production guidance.
 
-The viewer must also have an explicit height. Without one, the custom element is
-present but has no visible area.
+The viewer has a default height of 720px, capped by the small viewport so it
+fits on phones. Set a height with ordinary CSS or `--mango-viewer-height` to
+change it; the parent does not need an explicit height.
 
 ## Option 1: add Mango to an existing website
 
@@ -61,6 +62,13 @@ or a page that does not use a JavaScript build system.
 
 `@latest` is convenient while evaluating Mango. Pin an exact package version
 before deploying to production.
+
+### Show a Collection
+
+`manifest-id` also accepts a IIIF Collection URL. In `viewer` mode Mango opens
+the first Manifest in the Collection and adds a Collection panel to the sidebar
+for browsing the rest of the hierarchy. Set `showCollection: false` in `config`
+to hide the panel.
 
 ### Change the displayed item
 
@@ -124,7 +132,7 @@ The same custom element supports several experiences:
 
 | Mode                | Purpose                         | Primary input                   |
 | ------------------- | ------------------------------- | ------------------------------- |
-| `viewer`            | Browse a single IIIF Manifest   | `manifest-id`                   |
+| `viewer`            | Browse a Manifest or Collection | `manifest-id`                   |
 | `workspace`         | Arrange multiple viewer windows | viewer UI                       |
 | `annotation-editor` | Draw and export annotations     | `manifest-id`                   |
 | `story-viewer`      | Play a guided narrative         | `story-url` or `story`          |
@@ -160,7 +168,8 @@ Example story viewer:
 
 Check these in order:
 
-1. The viewer and its parent have a non-zero height.
+1. No site CSS sets the viewer's height to zero or `auto` inside a collapsed
+   container.
 2. The browser console does not show a CORS or Content Security Policy error.
 3. The Manifest URL returns JSON over HTTPS without requiring an interactive
    login.

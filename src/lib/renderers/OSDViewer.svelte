@@ -79,6 +79,9 @@
   };
 
   let container: HTMLDivElement | null = $state(null);
+  let tooltipElement: HTMLDivElement | null = $state(null);
+  /** Where the pointer went down, so the click that ends a drag can be told apart. */
+  let pressPoint: { x: number; y: number } | null = null;
   let viewer: OpenSeadragon.Viewer | null = $state(null);
   let OpenSeadragonClass: typeof OpenSeadragon | null = null;
   const tiledImageLayerIds = new WeakMap<OpenSeadragon.TiledImage, string>();
@@ -307,6 +310,23 @@
     onannotationclear?.();
   };
 
+  /** Pointer travel beyond which a press is a drag, not a click. */
+  const CLICK_SLOP_PX = 5;
+
+  /*
+   * The browser fires `click` at the end of a drag too, so panning the image
+   * used to clear the selection and take the tooltip with it. Only a press that
+   * stayed put is a click on empty canvas.
+   */
+  const handleCanvasClick = (event: MouseEvent) => {
+    const press = pressPoint;
+    pressPoint = null;
+    if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > CLICK_SLOP_PX) {
+      return;
+    }
+    handleClearSelection();
+  };
+
   const handleAnnotationKeydown = (event: KeyboardEvent, id: string) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -344,8 +364,28 @@
       return;
     }
     const containerWidth = container?.clientWidth ?? 0;
+    const containerHeight = container?.clientHeight ?? 0;
     const anchorX = target.bounds.x + target.bounds.width / 2;
-    const anchorY = target.bounds.y + target.bounds.height + 10;
+    /*
+     * Below the shape by default. Anything the stage floats over the foot of the
+     * image (the toolbar) reserves its height in a custom property; when the
+     * tooltip would run into it, it goes above the shape instead, and when there
+     * is no room there either — a shape framed to fill the stage — it rests just
+     * above the reserved area, over the shape's lower edge.
+     */
+    const gap = 10;
+    const edge = 8;
+    const tooltipHeight = tooltipElement?.offsetHeight || 36;
+    const bottomInset = container
+      ? parseFloat(getComputedStyle(container).getPropertyValue('--mango-viewer-overlay-bottom-inset')) || 0
+      : 0;
+    const below = target.bounds.y + target.bounds.height + gap;
+    const above = target.bounds.y - gap - tooltipHeight;
+    const bottomLimit = containerHeight - bottomInset - edge;
+    let anchorY = below;
+    if (containerHeight > 0 && below + tooltipHeight > bottomLimit) {
+      anchorY = above >= edge ? above : Math.max(edge, bottomLimit - tooltipHeight);
+    }
     const minX = 12;
     const maxX = containerWidth > 0 ? Math.max(minX, containerWidth - 12) : minX;
     const x = Math.min(Math.max(anchorX, minX), maxX);
@@ -1332,7 +1372,8 @@
   role="application"
   aria-label={$t('renderers.osd.label')}
   tabindex="0"
-  onclick={handleClearSelection}
+  onpointerdowncapture={(event) => (pressPoint = { x: event.clientX, y: event.clientY })}
+  onclick={handleCanvasClick}
   onkeydown={handleClearKeydown}
 >
   <div class="osd__viewport" bind:this={container}></div>
@@ -1445,6 +1486,7 @@
     {/each}
     {#if tooltip}
       <div
+        bind:this={tooltipElement}
         class="annotation-tooltip"
         style="left: {tooltip.x}px; top: {tooltip.y}px; max-width: {tooltip.maxWidth}px;"
         role="tooltip"

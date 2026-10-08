@@ -68,7 +68,6 @@
       "import": "./src/dist/story-builder.js",
       "types": "./src/dist/story-builder.d.ts"
     },
-    "./element.iife": "./src/dist/mango-viewer-element.iife.js",
     "./style.css": "./src/dist/iiif-viewer.css"
   },
   "workspaces": [

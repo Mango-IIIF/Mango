@@ -297,3 +297,35 @@ describe('body language and direction', () => {
     ]);
   });
 });
+
+describe('linked resource bodies', () => {
+  const resolve = (body: unknown) =>
+    resolveAnnotationJson(
+      { id: 'https://example.org/anno/link', type: 'Annotation', motivation: 'tagging', body, target: CANVAS },
+      { provenance: 'manifest', canvasId: CANVAS },
+    ).annotation?.bodies;
+
+  it('exposes the source of a SpecificResource written as a bare IRI', () => {
+    // The shape of the IIIF cookbook's tagging-external-resource recipe.
+    const bodies = resolve([
+      { type: 'SpecificResource', source: 'http://www.wikidata.org/entity/Q18624915' },
+      { type: 'TextualBody', value: 'Gänseliesel-Brunnen', language: 'de' },
+    ]);
+    expect(bodies?.[0].href).toBe('http://www.wikidata.org/entity/Q18624915');
+    expect(bodies?.[1].href).toBeUndefined();
+  });
+
+  it('exposes the source of a SpecificResource written as an object', () => {
+    const bodies = resolve({
+      type: 'SpecificResource',
+      purpose: 'identifying',
+      source: { id: 'http://www.wikidata.org/entity/Q23', type: 'Dataset' },
+    });
+    expect(bodies?.[0].href).toBe('http://www.wikidata.org/entity/Q23');
+  });
+
+  it('drops a link that is not http(s)', () => {
+    const bodies = resolve({ type: 'SpecificResource', source: 'javascript:alert(1)' });
+    expect(bodies?.[0].href).toBeUndefined();
+  });
+});

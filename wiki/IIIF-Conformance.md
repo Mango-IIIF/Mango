@@ -4,19 +4,19 @@ Mango is a client for IIIF resources. This page describes viewer compatibility,
 not server conformance. Support can differ between reading, rendering,
 authoring, and lossless round-tripping.
 
-The assessment below reflects the current repository as of 19 July 2026. Test
+The assessment below reflects the current repository as of 8 October 2026. Test
 your institution's representative resources before production deployment.
 
 ## Summary
 
-| Specification                         | Current support                             | Important limits                                                                                                                         |
-| ------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| IIIF Presentation API 2 and 3         | Partial, broad viewer support               | Collections, image Range navigation, `viewingDirection`, some behaviours, Choice semantics, and linked-resource handling are incomplete. |
-| IIIF Image API 2 and 3 services       | Consumed through OpenSeadragon              | Mango is not an Image API server and does not claim Image API server conformance.                                                        |
-| W3C Web Annotation / IIIF annotations | Partial, strong spatial and temporal subset | Complex bodies, styling, Choice/multiple-body semantics, and lossless round trips are limited.                                           |
-| IIIF Content Search 1 and 2           | Partial                                     | Search discovery and `q` requests work; result paging and autocomplete are not exposed as complete viewer workflows.                     |
-| IIIF Content State 1                  | Not conformant                              | `iiif-content` values are not yet processed through the available content-state parser at the main entry points.                         |
-| IIIF Authentication 1 and 2           | Unsupported                                 | No built-in interaction or token flow for gated resources.                                                                               |
+| Specification                         | Current support                             | Important limits                                                                                                                                               |
+| ------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IIIF Presentation API 2 and 3         | Partial, broad viewer support               | Collections outside `viewer` mode, image Range navigation, `viewingDirection`, some behaviours, Choice semantics, and linked-resource handling are incomplete. |
+| IIIF Image API 2 and 3 services       | Consumed through OpenSeadragon              | Mango is not an Image API server and does not claim Image API server conformance.                                                                              |
+| W3C Web Annotation / IIIF annotations | Partial, strong spatial and temporal subset | Complex bodies, styling, Choice/multiple-body semantics, and lossless round trips are limited.                                                                 |
+| IIIF Content Search 1 and 2           | Partial                                     | Search discovery and `q` requests work; result paging and autocomplete are not exposed as complete viewer workflows.                                           |
+| IIIF Content State 1                  | Not conformant                              | `iiif-content` values are not yet processed through the available content-state parser at the main entry points.                                               |
+| IIIF Authentication 1 and 2           | Unsupported                                 | No built-in interaction or token flow for gated resources.                                                                                                     |
 
 ## Presentation API 2 and 3
 
@@ -26,6 +26,8 @@ Presentation 2 and Presentation 3 structures.
 Currently supported viewer features include:
 
 - Manifest loading and multi-Canvas navigation;
+- Collection loading in `viewer` mode: the first Manifest opens and a Collection
+  panel browses the hierarchy (via `@mango-iiif/collection-navigator`);
 - image painting annotations and Image API services;
 - audio and video canvases;
 - PDF and 3D resources resolved from compatible bodies or renderings;
@@ -39,7 +41,8 @@ Currently supported viewer features include:
 
 Important limitations include:
 
-- no end-user Collection hierarchy browser;
+- Collection browsing only in `viewer` mode, not in workspace, story, or
+  annotation-editor modes;
 - no general image Range/table-of-contents UI;
 - no right-to-left page ordering from `viewingDirection`;
 - only selected `behavior`/Presentation 2 `viewingHint` values influence layout;

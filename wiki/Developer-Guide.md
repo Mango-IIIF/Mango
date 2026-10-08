@@ -113,8 +113,10 @@ Mango consumes focused packages from the `@mango-iiif` namespace:
 
 - `@mango-iiif/w3c-parser` — W3C annotation parsing and selectors;
 - `@mango-iiif/annotation` — OpenSeadragon annotation interaction and drawing;
-- `@mango-iiif/iiif-search-client` — Content Search discovery and parsing; and
-- `@mango-iiif/av` — audio/video playback, chapters, transcripts, and tracks.
+- `@mango-iiif/iiif-search-client` — Content Search discovery and parsing;
+- `@mango-iiif/av` — audio/video playback, chapters, transcripts, and tracks; and
+- `@mango-iiif/collection-navigator` — Collection parsing and the Collection
+  browsing panel.
 
 Treat these as public dependencies with their own versioned contracts. Avoid
 copying their implementation back into Mango.
@@ -130,9 +132,23 @@ npm run build:demo
 ```
 
 - `vite.config.lib.ts` builds the library and subpath entry points.
-- `vite.config.element.ts` builds the standalone custom-element module.
+- `vite.config.element.ts` builds the standalone custom-element module,
+  `mango-viewer-element.js`, which the CDN URL serves.
 - `tsconfig.build.json` emits public declarations.
-- `scripts/sync-demo.mjs` copies built assets used by the demo.
+- `build:dist` runs all three into `src/dist`, the only directory published.
+- `build:demo` runs `build:dist`, then `scripts/sync-demo.mjs` copies `src/dist`
+  into `apps/demo/dist` for the demo pages. `build` and `build:all` are aliases
+  for `build:demo`.
+- `npm pack` runs `build:dist` through the `prepack` script.
+
+To test a build as an integrator would, pack it and install the archive into a
+separate project:
+
+```bash
+npm pack
+cd ../some-test-app
+npm install ../Mango/mango-iiif-iiif-viewer-<version>.tgz svelte
+```
 
 The custom element uses an open Shadow Root. Its build captures the viewer CSS
 and installs it into registered Shadow Roots. The native Svelte/class build uses
@@ -147,6 +163,7 @@ npm test
 npm run test:e2e
 npm run build:types
 npm run lint
+npm run i18n:check
 npm run build:demo
 ```
 

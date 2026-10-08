@@ -2,6 +2,7 @@
   import { getViewerContext } from '../context';
   import { t } from '../../core/i18n';
   import { sanitizeHtml } from '../util/sanitiseHtml';
+  import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import PanelCloseButton from './PanelCloseButton.svelte';
 
   interface Props {
@@ -24,10 +25,74 @@
     controller.setAnnotationMode(mode);
   };
 
+  /*
+   * Selecting zooms to the annotation's region, or opens it in the editor.
+   * An annotation on the whole canvas has no region, so outside the editor a
+   * click would do nothing and the card should not look clickable.
+   */
+  const isPlaced = (annotation: ResolvedAnnotation) =>
+    Boolean(annotation.rect || annotation.point || annotation.polygon);
+
+  const isSelectable = (annotation: ResolvedAnnotation) =>
+    allowCreateMode || isPlaced(annotation) || Boolean(annotation.time);
+
   const selectAnnotation = (id: string) => {
     controller.handleAnnotationSelect({ id });
   };
 </script>
+
+{#snippet cardContent(annotation: ResolvedAnnotation)}
+  {#if annotation.motivation?.includes('tagging') || annotation.time}
+    <div class="annotation-list__header">
+      {#if annotation.motivation?.includes('tagging')}
+        <span class="annotation-list__badge">{$t('viewer.panels.annotations.tag')}</span>
+      {/if}
+      {#if annotation.time}
+        <span class="annotation-list__meta">
+          {$t('viewer.panels.annotations.secondsShort', { seconds: annotation.time.start })}
+        </span>
+      {/if}
+    </div>
+  {/if}
+  <div class="annotation-list__label">
+    {annotation.text || $t('viewer.panels.annotations.fallback')}
+  </div>
+  {#if annotation.bodies?.length}
+    <div class="annotation-list__bodies">
+      {#each annotation.bodies as body}
+        {#if body.type === 'image' && body.src}
+          <figure
+            class="annotation-body annotation-body--image {body.styleClass ?? ''}"
+            style={body.style}
+          >
+            <img
+              src={body.src}
+              alt={
+                annotation.text ||
+                $t('viewer.panels.annotations.fallback')
+              }
+              loading="lazy"
+            />
+          </figure>
+        {:else if body.type === 'html' && body.value}
+          <div
+            class="annotation-body annotation-body--html {body.styleClass ?? ''}"
+            style={body.style}
+          >
+            {@html sanitizeHtml(body.value)}
+          </div>
+        {:else if body.value}
+          <div
+            class="annotation-body annotation-body--text {body.styleClass ?? ''}"
+            style={body.style}
+          >
+            {body.value}
+          </div>
+        {/if}
+      {/each}
+    </div>
+  {/if}
+{/snippet}
 
 <section
   class="panel panel--editor"
@@ -94,64 +159,35 @@
     {:else}
       <ul class="annotation-list">
         {#each $overlayAnnotations as annotation}
-          <li>
-            <button
-              class="annotation-list__item {annotation.motivation?.includes('tagging') ? 'annotation-list__item--tag' : ''}"
-              class:annotation-list__item--active={annotation.id === $activeAnnotationId}
-              type="button"
-              onclick={() => selectAnnotation(annotation.id)}
-            >
-              {#if annotation.motivation?.includes('tagging') || annotation.time}
-                <div class="annotation-list__header">
-                  {#if annotation.motivation?.includes('tagging')}
-                    <span class="annotation-list__badge">{$t('viewer.panels.annotations.tag')}</span>
-                  {/if}
-                  {#if annotation.time}
-                    <span class="annotation-list__meta">
-                      {$t('viewer.panels.annotations.secondsShort', { seconds: annotation.time.start })}
-                    </span>
-                  {/if}
-                </div>
-              {/if}
-              <div class="annotation-list__label">
-                {annotation.text || $t('viewer.panels.annotations.fallback')}
+          <li
+            class="annotation-list__item {annotation.motivation?.includes('tagging') ? 'annotation-list__item--tag' : ''}"
+            class:annotation-list__item--placed={isPlaced(annotation)}
+            class:annotation-list__item--active={annotation.id === $activeAnnotationId}
+          >
+            {#if isSelectable(annotation)}
+              <button
+                class="annotation-list__select"
+                type="button"
+                onclick={() => selectAnnotation(annotation.id)}
+              >
+                {@render cardContent(annotation)}
+              </button>
+            {:else}
+              <div class="annotation-list__content">
+                {@render cardContent(annotation)}
               </div>
-              {#if annotation.bodies?.length}
-                <div class="annotation-list__bodies">
-                  {#each annotation.bodies as body}
-                    {#if body.type === 'image' && body.src}
-                      <figure
-                        class="annotation-body annotation-body--image {body.styleClass ?? ''}"
-                        style={body.style}
-                      >
-                        <img
-                          src={body.src}
-                          alt={
-                            annotation.text ||
-                            $t('viewer.panels.annotations.fallback')
-                          }
-                          loading="lazy"
-                        />
-                      </figure>
-                    {:else if body.type === 'html' && body.value}
-                      <div
-                        class="annotation-body annotation-body--html {body.styleClass ?? ''}"
-                        style={body.style}
-                      >
-                        {@html sanitizeHtml(body.value)}
-                      </div>
-                    {:else if body.value}
-                      <div
-                        class="annotation-body annotation-body--text {body.styleClass ?? ''}"
-                        style={body.style}
-                      >
-                        {body.value}
-                      </div>
-                    {/if}
-                  {/each}
-                </div>
-              {/if}
-            </button>
+            {/if}
+            <!-- In the card but outside the button: a link nested in a button
+                 is invalid and clicking it would also select the annotation. -->
+            {#if annotation.bodies?.some((body) => body.href)}
+              <ul class="annotation-list__links">
+                {#each annotation.bodies.filter((body) => body.href) as body}
+                  <li>
+                    <a href={body.href} target="_blank" rel="noopener noreferrer">{body.href}</a>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
           </li>
         {/each}
       </ul>
@@ -248,12 +284,27 @@
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.05);
     font-size: 12px;
+    border: 1px solid transparent;
+  }
+
+  .annotation-list__content {
+    display: grid;
+    gap: 6px;
+  }
+
+  .annotation-list__select {
+    display: grid;
+    gap: 6px;
     width: 100%;
+    margin: 0;
+    padding: 0;
     appearance: none;
+    background: none;
+    border: 0;
+    border-radius: 6px;
     color: inherit;
     font: inherit;
     text-align: left;
-    border: 1px solid transparent;
     cursor: pointer;
   }
 
@@ -262,12 +313,18 @@
     background: rgba(255, 79, 162, 0.08);
   }
 
+  /* Drawn on the canvas: matches the default layer colour of the shape. */
+  .annotation-list__item--placed {
+    border: 1px solid rgba(167, 139, 250, 0.4);
+    background: rgba(167, 139, 250, 0.1);
+  }
+
   .annotation-list__item--active {
     border-color: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 7%, transparent);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 2%, transparent);
   }
 
-  .annotation-list__item:focus-visible {
+  .annotation-list__select:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 6%, transparent);
     outline-offset: 2px;
   }
@@ -303,6 +360,21 @@
   .annotation-list__bodies {
     display: grid;
     gap: 6px;
+  }
+
+  .annotation-list__links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .annotation-list__links a {
+    color: var(--viewer-accent-2, #2ac7ff);
+    overflow-wrap: anywhere;
   }
 
   .annotation-body {

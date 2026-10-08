@@ -2833,7 +2833,7 @@
     justify-content: center;
     gap: 8px;
     border: 1px solid var(--viewer-panel-border);
-    border-radius: 10px;
+    border-radius: var(--viewer-chrome-radius);
     background: var(--viewer-panel);
     color: var(--viewer-text);
     width: 34px;
@@ -2870,7 +2870,7 @@
     padding: 0;
     border: 1px solid var(--viewer-panel-border);
     border-left: 0;
-    border-radius: 0 12px 12px 0;
+    border-radius: 0 var(--viewer-chrome-radius) var(--viewer-chrome-radius) 0;
     background: var(--viewer-panel-strong);
     color: var(--viewer-text);
     font: inherit;
@@ -2928,7 +2928,11 @@
     --viewer-gallery-close-bg: rgba(255, 255, 255, 0.1);
     --viewer-gallery-active-ring: rgba(42, 199, 255, 0.2);
     --viewer-close-button-size: 28px;
-    --viewer-close-button-radius: 10px;
+    /* Corner radius of the viewer's chrome: shell, rail, side panel and stage.
+       Sidebar buttons, the floating toolbar and panel content keep their own
+       rounding. */
+    --viewer-chrome-radius: 0;
+    --viewer-close-button-radius: var(--viewer-chrome-radius);
     --viewer-close-button-border: rgba(255, 255, 255, 0.18);
     --viewer-close-button-bg: rgba(255, 255, 255, 0.1);
     --viewer-close-button-hover-bg: rgba(255, 255, 255, 0.16);
@@ -3014,7 +3018,7 @@
     min-height: 0;
     overflow: hidden;
     padding: 20px;
-    border-radius: 24px;
+    border-radius: var(--viewer-chrome-radius);
     background: radial-gradient(120% 120% at 10% 0%, #1d2632 0%, #111720 55%, #0b0f14 100%);
     color: var(--viewer-text);
     font-family: sans-serif;
@@ -3060,6 +3064,17 @@
     padding: 14px;
   }
 
+  /* The header keeps the shell's inset; the sidebar and stage below it run to
+     the shell's edges. */
+  .viewer:not(.viewer--story-builder):not(.viewer--story-viewer) {
+    padding-inline: 0;
+    padding-bottom: 0;
+  }
+
+  .viewer:not(.viewer--story-builder):not(.viewer--story-viewer) > .viewer__top-row {
+    padding-inline: 20px;
+  }
+
   .viewer--story-builder .viewer__top-row {
     align-items: center;
   }
@@ -3087,7 +3102,7 @@
   }
 
   .viewer.viewer--story-viewer {
-    --story-shell-radius: 18px;
+    --story-shell-radius: var(--viewer-chrome-radius);
     grid-template-rows: auto minmax(0, 1fr);
     gap: 0;
     padding: 0;
@@ -3846,7 +3861,7 @@
 
   .viewer__grid--sidebar-right > .stage {
     order: 1;
-    margin-right: 18px;
+    margin-right: 0;
     margin-left: 0 !important;
   }
 
@@ -3858,14 +3873,14 @@
     order: 2;
     border-right: none;
     border-left: 1px solid var(--viewer-panel-border) !important;
-    border-radius: 18px 0 0 18px !important;
+    border-radius: var(--viewer-chrome-radius) 0 0 var(--viewer-chrome-radius) !important;
   }
 
   .viewer__grid--sidebar-right > .viewer__control-rail {
     order: 3;
     border-right: 1px solid var(--viewer-panel-border);
     border-left: none;
-    border-radius: 0 18px 18px 0;
+    border-radius: 0 var(--viewer-chrome-radius) var(--viewer-chrome-radius) 0;
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--right {
@@ -3964,7 +3979,7 @@
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left > .stage {
-    margin-left: 18px;
+    margin-left: 0;
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--right > .stage {
@@ -3981,7 +3996,7 @@
     padding: 24px 14px 18px;
     border: 1px solid var(--viewer-panel-border);
     border-right: none;
-    border-radius: 18px 0 0 18px;
+    border-radius: var(--viewer-chrome-radius) 0 0 var(--viewer-chrome-radius);
     background: var(--viewer-control-rail-bg);
     width: 100%;
     min-height: 0;
@@ -4011,7 +4026,7 @@
   .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--right
     :global(.panel-stack--left) {
     border-left: none;
-    border-radius: 0 18px 18px 0;
+    border-radius: 0 var(--viewer-chrome-radius) var(--viewer-chrome-radius) 0;
   }
 
   .panel-stack {
@@ -4057,20 +4072,24 @@
   }
 
   .stage__viewer-frame {
+    /* Space the floating toolbar covers at the foot of the image (14px offset
+       plus the bar). Overlays such as the annotation tooltip stay above it. */
+    --mango-viewer-overlay-bottom-inset: 76px;
+
     position: relative;
     grid-template-rows: minmax(0, 1fr);
     gap: 0;
     box-sizing: border-box;
     padding: 0;
     border: 0;
-    border-radius: 16px;
+    border-radius: var(--viewer-chrome-radius);
     background: transparent;
     overflow: hidden;
   }
 
   .stage__viewer-frame :global(.stage__media) {
     border: 0;
-    border-radius: 16px;
+    border-radius: var(--viewer-chrome-radius);
   }
 
   .stage__viewer-frame :global(.stage__toolbar--below) {
@@ -4123,19 +4142,19 @@
   }
 
   .stage--joined-sidebar-left .stage__viewer-frame :global(.stage__media) {
-    border-radius: 0 16px 16px 0;
+    border-radius: 0 var(--viewer-chrome-radius) var(--viewer-chrome-radius) 0;
   }
 
   .stage--joined-sidebar-right .stage__viewer-frame :global(.stage__media) {
-    border-radius: 16px 0 0 16px;
+    border-radius: var(--viewer-chrome-radius) 0 0 var(--viewer-chrome-radius);
   }
 
   .stage--joined-sidebar-left {
-    --mango-viewer-media-radius: 0 16px 16px 0;
+    --mango-viewer-media-radius: 0 var(--viewer-chrome-radius) var(--viewer-chrome-radius) 0;
   }
 
   .stage--joined-sidebar-right {
-    --mango-viewer-media-radius: 16px 0 0 16px;
+    --mango-viewer-media-radius: var(--viewer-chrome-radius) 0 0 var(--viewer-chrome-radius);
   }
 
   /*
@@ -4147,11 +4166,11 @@
    * gallery knows nothing about — so it stays here.
    */
   .stage--joined-sidebar-left :global(.stage-gallery-view) {
-    border-radius: 0 18px 18px 0;
+    border-radius: 0 var(--viewer-chrome-radius) var(--viewer-chrome-radius) 0;
   }
 
   .stage--joined-sidebar-right :global(.stage-gallery-view) {
-    border-radius: 18px 0 0 18px;
+    border-radius: var(--viewer-chrome-radius) 0 0 var(--viewer-chrome-radius);
   }
 
   .stage--story-builder :global(.stage__toolbar--below) {
@@ -4253,7 +4272,7 @@
     width: 100%;
     max-width: 100%;
     padding: 12px;
-    border-radius: 16px;
+    border-radius: var(--viewer-chrome-radius);
     background: var(--viewer-stage-bottom-bg, rgba(12, 16, 22, 0.72));
     border: 1px solid var(--viewer-panel-border);
   }
@@ -4281,13 +4300,17 @@
       height: 100%;
       overflow: hidden;
       padding: 12px;
-      border-radius: 16px;
+      border-radius: var(--viewer-chrome-radius);
       gap: 10px;
     }
 
     .viewer.viewer--story-viewer {
       gap: 0;
       padding: 0;
+    }
+
+    .viewer:not(.viewer--story-builder):not(.viewer--story-viewer) > .viewer__top-row {
+      padding-inline: 12px;
     }
 
     .viewer.viewer--story-builder {
@@ -4421,7 +4444,7 @@
       right: 0;
       left: auto;
       border: 1px solid var(--viewer-panel-border) !important;
-      border-radius: 18px !important;
+      border-radius: var(--viewer-chrome-radius) !important;
       box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
       animation-name: viewer-slidein-right;
     }
@@ -4446,7 +4469,7 @@
       justify-self: center;
       padding: 0;
       border: 0;
-      border-radius: 9px;
+      border-radius: var(--viewer-chrome-radius);
       background: var(--viewer-panel);
       display: grid;
       align-items: center;
@@ -4514,13 +4537,16 @@
     }
 
     .stage__viewer-frame {
+      /* The toolbar sits below the image here, not over it. */
+      --mango-viewer-overlay-bottom-inset: 0px;
+
       grid-template-rows: minmax(0, 1fr) auto;
-      border-radius: 14px;
+      border-radius: var(--viewer-chrome-radius);
       overflow: hidden;
     }
 
     .stage__viewer-frame :global(.stage__media) {
-      border-radius: 14px 14px 0 0;
+      border-radius: var(--viewer-chrome-radius) var(--viewer-chrome-radius) 0 0;
     }
 
     .stage__viewer-frame :global(.stage__toolbar--below) {
@@ -4529,7 +4555,7 @@
       margin: 0;
       padding: 6px;
       border: 0;
-      border-radius: 0 0 14px 14px;
+      border-radius: 0 0 var(--viewer-chrome-radius) var(--viewer-chrome-radius);
       /* Unfilled at this size too — see the desktop rule above. */
       background: transparent;
       box-shadow: none;
@@ -4720,7 +4746,7 @@
       justify-self: center;
       padding: 0;
       border: 0;
-      border-radius: 9px;
+      border-radius: var(--viewer-chrome-radius);
       overflow-x: auto;
       overflow-y: hidden;
       overscroll-behavior-x: contain;
@@ -4738,11 +4764,12 @@
        */
       grid-template-rows: minmax(min(96px, 26cqh), 1fr) auto;
       overflow: hidden;
+      --mango-viewer-overlay-bottom-inset: 0px;
     }
 
     .stage--viewer .stage__viewer-frame :global(.stage__media) {
       min-height: 0;
-      border-radius: 12px 12px 0 0;
+      border-radius: var(--viewer-chrome-radius) var(--viewer-chrome-radius) 0 0;
     }
 
     .stage--viewer .stage__viewer-frame :global(.stage__toolbar--below) {
@@ -4751,7 +4778,7 @@
       margin: 0;
       padding: 4px;
       border: 0;
-      border-radius: 0 0 12px 12px;
+      border-radius: 0 0 var(--viewer-chrome-radius) var(--viewer-chrome-radius);
       /* Unfilled at this size too — see the desktop rule above. */
       background: transparent;
       box-shadow: none;

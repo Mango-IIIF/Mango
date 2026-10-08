@@ -206,7 +206,7 @@
   .panel-stack--left {
     box-sizing: border-box;
     padding: 16px 16px 16px;
-    border-radius: 18px;
+    border-radius: var(--viewer-chrome-radius, 0);
     background: var(--story-sidebar-bg, var(--viewer-panel, #121922));
     color: var(--story-sidebar-text, var(--viewer-text, #e8edf4));
     border: 1px solid
@@ -223,7 +223,7 @@
 
   .panel-stack--left.panel-stack--redesigned {
     padding: 18px 24px 28px;
-    border-radius: 0 18px 18px 0;
+    border-radius: 0 var(--viewer-chrome-radius, 0) var(--viewer-chrome-radius, 0) 0;
     background: rgba(18, 25, 34, 0.72);
     box-shadow: none;
     transform-origin: left center;
@@ -303,7 +303,7 @@
     display: grid;
     gap: 12px;
     padding: 12px;
-    border-radius: 14px;
+    border-radius: var(--viewer-chrome-radius, 0);
     background: var(--story-sidebar-row-bg, color-mix(in srgb, var(--viewer-text, #e8edf4) 6%, transparent));
     border: 1px solid transparent;
     box-shadow: none;
@@ -369,7 +369,7 @@
     display: grid;
     gap: 10px;
     padding: 14px;
-    border-radius: 16px;
+    border-radius: var(--viewer-chrome-radius, 0);
     background: var(--viewer-panel);
     border: 1px solid var(--viewer-panel-border);
     font-size: 13px;

@@ -72,6 +72,7 @@ layers panel requires multiple renderable media sources.
 | `allowCreateMode` | `boolean` | Enables annotation creation tools in the normal viewer.                                  |
 | `showThumbnails`  | `boolean` | Allows the gallery/thumbnail navigation when multiple image canvases exist.              |
 | `showMetadata`    | `boolean` | Allows the metadata panel.                                                               |
+| `showCollection`  | `boolean` | Allows the Collection panel when `manifest-id` is a Collection (`viewer` mode only).     |
 | `showSearch`      | `boolean` | Allows search when a compatible service is available.                                    |
 | `showAnnotations` | `boolean` | Allows the annotations panel when annotations exist or creation is enabled.              |
 | `showTools`       | `boolean` | Allows image adjustment and rotation tools.                                              |

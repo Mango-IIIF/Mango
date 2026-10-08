@@ -1,0 +1,347 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "http://localhost:5173/test-story/wikidata-presidents/manifest.json",
+  "type": "Manifest",
+  "label": {
+    "en": [
+      "Mount Rushmore — Wikidata entity and tag annotations (test fixture)"
+    ]
+  },
+  "summary": {
+    "en": [
+      "Test fixture: 3 Wikidata-linked US presidents placed on the canvas, 3 Wikidata-linked US presidents with no region, and 4 unlinked tags."
+    ]
+  },
+  "requiredStatement": {
+    "label": {
+      "en": [
+        "Attribution"
+      ]
+    },
+    "value": {
+      "en": [
+        "Photo: Dean Franklin, via Wikimedia Commons (CC BY 2.0)"
+      ]
+    }
+  },
+  "rights": "http://creativecommons.org/licenses/by/2.0/",
+  "homepage": [
+    {
+      "id": "https://commons.wikimedia.org/wiki/File:Dean_Franklin_-_06.04.03_Mount_Rushmore_Monument_(by-sa)-3_new.jpg",
+      "type": "Text",
+      "label": {
+        "en": [
+          "Wikimedia Commons file page"
+        ]
+      },
+      "format": "text/html"
+    }
+  ],
+  "items": [
+    {
+      "id": "http://localhost:5173/test-story/wikidata-presidents/canvas/0",
+      "type": "Canvas",
+      "label": {
+        "en": [
+          "Mount Rushmore National Memorial"
+        ]
+      },
+      "width": 3072,
+      "height": 2048,
+      "items": [
+        {
+          "id": "http://localhost:5173/test-story/wikidata-presidents/canvas/0/page",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/canvas/0/page/painting",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Dean_Franklin_-_06.04.03_Mount_Rushmore_Monument_%28by-sa%29-3_new.jpg",
+                "type": "Image",
+                "format": "image/jpeg",
+                "width": 3072,
+                "height": 2048
+              },
+              "target": "http://localhost:5173/test-story/wikidata-presidents/canvas/0"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "http://localhost:5173/test-story/wikidata-presidents/canvas/0/annotations",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/washington",
+              "type": "Annotation",
+              "motivation": [
+                "identifying"
+              ],
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "purpose": "describing",
+                  "value": "George Washington",
+                  "language": "en",
+                  "format": "text/plain"
+                },
+                {
+                  "type": "SpecificResource",
+                  "purpose": "identifying",
+                  "source": {
+                    "id": "http://www.wikidata.org/entity/Q23",
+                    "type": "Dataset",
+                    "label": {
+                      "en": [
+                        "George Washington"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "target": {
+                "type": "SpecificResource",
+                "source": {
+                  "id": "http://localhost:5173/test-story/wikidata-presidents/canvas/0",
+                  "type": "Canvas"
+                },
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=570,255,600,585"
+                }
+              }
+            },
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/jefferson",
+              "type": "Annotation",
+              "motivation": [
+                "identifying"
+              ],
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "purpose": "describing",
+                  "value": "Thomas Jefferson",
+                  "language": "en",
+                  "format": "text/plain"
+                },
+                {
+                  "type": "SpecificResource",
+                  "purpose": "identifying",
+                  "source": {
+                    "id": "http://www.wikidata.org/entity/Q11812",
+                    "type": "Dataset",
+                    "label": {
+                      "en": [
+                        "Thomas Jefferson"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "target": {
+                "type": "SpecificResource",
+                "source": {
+                  "id": "http://localhost:5173/test-story/wikidata-presidents/canvas/0",
+                  "type": "Canvas"
+                },
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=1134,510,381,525"
+                }
+              }
+            },
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/lincoln",
+              "type": "Annotation",
+              "motivation": [
+                "identifying"
+              ],
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "purpose": "describing",
+                  "value": "Abraham Lincoln",
+                  "language": "en",
+                  "format": "text/plain"
+                },
+                {
+                  "type": "SpecificResource",
+                  "purpose": "identifying",
+                  "source": {
+                    "id": "http://www.wikidata.org/entity/Q91",
+                    "type": "Dataset",
+                    "label": {
+                      "en": [
+                        "Abraham Lincoln"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "target": {
+                "type": "SpecificResource",
+                "source": {
+                  "id": "http://localhost:5173/test-story/wikidata-presidents/canvas/0",
+                  "type": "Canvas"
+                },
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=2025,720,435,660"
+                }
+              }
+            },
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/theodore-roosevelt",
+              "type": "Annotation",
+              "motivation": [
+                "identifying"
+              ],
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "purpose": "describing",
+                  "value": "Theodore Roosevelt",
+                  "language": "en",
+                  "format": "text/plain"
+                },
+                {
+                  "type": "SpecificResource",
+                  "purpose": "identifying",
+                  "source": {
+                    "id": "http://www.wikidata.org/entity/Q33866",
+                    "type": "Dataset",
+                    "label": {
+                      "en": [
+                        "Theodore Roosevelt"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "target": "http://localhost:5173/test-story/wikidata-presidents/canvas/0"
+            },
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/franklin-roosevelt",
+              "type": "Annotation",
+              "motivation": [
+                "identifying"
+              ],
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "purpose": "describing",
+                  "value": "Franklin Delano Roosevelt",
+                  "language": "en",
+                  "format": "text/plain"
+                },
+                {
+                  "type": "SpecificResource",
+                  "purpose": "identifying",
+                  "source": {
+                    "id": "http://www.wikidata.org/entity/Q8007",
+                    "type": "Dataset",
+                    "label": {
+                      "en": [
+                        "Franklin Delano Roosevelt"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "target": "http://localhost:5173/test-story/wikidata-presidents/canvas/0"
+            },
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/kennedy",
+              "type": "Annotation",
+              "motivation": [
+                "identifying"
+              ],
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "purpose": "describing",
+                  "value": "John F. Kennedy",
+                  "language": "en",
+                  "format": "text/plain"
+                },
+                {
+                  "type": "SpecificResource",
+                  "purpose": "identifying",
+                  "source": {
+                    "id": "http://www.wikidata.org/entity/Q9696",
+                    "type": "Dataset",
+                    "label": {
+                      "en": [
+                        "John F. Kennedy"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "target": "http://localhost:5173/test-story/wikidata-presidents/canvas/0"
+            },
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/tag-monument",
+              "type": "Annotation",
+              "motivation": "tagging",
+              "body": {
+                "type": "TextualBody",
+                "purpose": "tagging",
+                "value": "monument",
+                "language": "en",
+                "format": "text/plain"
+              },
+              "target": "http://localhost:5173/test-story/wikidata-presidents/canvas/0"
+            },
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/tag-sculpture",
+              "type": "Annotation",
+              "motivation": "tagging",
+              "body": {
+                "type": "TextualBody",
+                "purpose": "tagging",
+                "value": "sculpture",
+                "language": "en",
+                "format": "text/plain"
+              },
+              "target": "http://localhost:5173/test-story/wikidata-presidents/canvas/0"
+            },
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/tag-granite",
+              "type": "Annotation",
+              "motivation": "tagging",
+              "body": {
+                "type": "TextualBody",
+                "purpose": "tagging",
+                "value": "granite",
+                "language": "en",
+                "format": "text/plain"
+              },
+              "target": "http://localhost:5173/test-story/wikidata-presidents/canvas/0"
+            },
+            {
+              "id": "http://localhost:5173/test-story/wikidata-presidents/annotation/tag-south-dakota",
+              "type": "Annotation",
+              "motivation": "tagging",
+              "body": {
+                "type": "TextualBody",
+                "purpose": "tagging",
+                "value": "South Dakota",
+                "language": "en",
+                "format": "text/plain"
+              },
+              "target": "http://localhost:5173/test-story/wikidata-presidents/canvas/0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

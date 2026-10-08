@@ -19,7 +19,8 @@ tracker or release notes.
 The most valuable interoperability improvements are:
 
 1. Complete Content State ingestion and shared viewer positions.
-2. Add Collection browsing and multi-volume navigation.
+2. Extend Collection browsing beyond `viewer` mode and add multi-volume
+   navigation.
 3. Support `viewingDirection` and a broader set of Presentation behaviours.
 4. Provide explicit `Choice` and multi-body selection UI.
 5. Add IIIF Authentication flows for restricted material.

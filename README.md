@@ -153,8 +153,23 @@ viewer.destroy();
 
 The package also exports a native Svelte 5 component. See
 [application integrations](https://github.com/Mango-IIIF/Mango/wiki/Integrations)
-for React 18/19, Vue 3, Svelte, custom-element properties, and package entry
-points.
+for React 18/19, Vue 3, Svelte, and custom-element properties.
+
+### Package entry points
+
+| Import                                      | Contents                                                                     |
+| ------------------------------------------- | ---------------------------------------------------------------------------- |
+| `@mango-iiif/iiif-viewer`                   | `Mango`, `ViewerComponent`, shared types, API, events, and plugin helpers    |
+| `@mango-iiif/iiif-viewer/element`           | Registers `<mango-viewer>`                                                   |
+| `@mango-iiif/iiif-viewer/style.css`         | Styles for the class and native Svelte builds (the element bundles its own)  |
+| `@mango-iiif/iiif-viewer/all`               | Main exports plus story viewer, story builder, and annotation editor exports |
+| `@mango-iiif/iiif-viewer/story-viewer`      | Story playback components and runtime helpers                                |
+| `@mango-iiif/iiif-viewer/story-builder`     | Story authoring components, state, validation, and helpers                   |
+| `@mango-iiif/iiif-viewer/annotation-editor` | Annotation workspace, editor layer, and conversion helpers                   |
+
+`/element/viewer`, `/element/story-viewer`, `/element/story-builder`, and
+`/element/annotation-editor` are also exported. Each currently registers the
+same complete element as `/element`.
 
 ## Viewer modes
 
@@ -162,7 +177,7 @@ The same custom element supports several collection and authoring experiences:
 
 | Mode                | Purpose                         | Primary input                   |
 | ------------------- | ------------------------------- | ------------------------------- |
-| `viewer`            | Browse a single IIIF Manifest   | `manifest-id`                   |
+| `viewer`            | Browse a Manifest or Collection | `manifest-id`                   |
 | `workspace`         | Arrange multiple viewer windows | viewer UI                       |
 | `annotation-editor` | Draw and export annotations     | `manifest-id`                   |
 | `story-viewer`      | Play a guided narrative         | `story-url` or `story`          |
@@ -231,9 +246,12 @@ complete user and contributor documentation:
 
 Mango provides broad but intentionally documented partial support for IIIF
 Presentation 2 and 3, Image API services, W3C Web Annotation, and Content Search
-1 and 2. Important current limitations include:
+1 and 2. A Collection URL can be passed as `manifest-id`: in `viewer` mode Mango
+opens the first Manifest and offers a Collection panel for browsing the
+hierarchy (disable it with `showCollection: false`). Important current
+limitations include:
 
-- no general Collection hierarchy browser;
+- Collection browsing is available in `viewer` mode only;
 - incomplete `viewingDirection`, Range, Choice, and multi-body workflows;
 - incomplete IIIF Content State handling; and
 - no built-in IIIF Authentication interaction/token flow.
@@ -256,12 +274,32 @@ Mango delegates focused responsibilities to other `@mango-iiif` packages:
   discovers and queries IIIF Content Search services.
 - [`@mango-iiif/av`](https://www.npmjs.com/package/@mango-iiif/av) provides
   audio/video playback, chapters, captions, transcripts, and related UI.
+- [`@mango-iiif/collection-navigator`](https://www.npmjs.com/package/@mango-iiif/collection-navigator)
+  parses IIIF Collections and provides the Collection browsing panel.
 
 ## Development
 
 ```bash
 npm ci
 npm run dev
+```
+
+`npm run dev` serves the demo pages in `apps/demo` at http://localhost:5173.
+
+### Building
+
+```bash
+npm run build:dist   # library, custom element, and type declarations in src/dist
+npm run build:demo   # build:dist, then copy src/dist into apps/demo/dist
+npm pack             # build:dist runs automatically, then writes the .tgz
+```
+
+`npm run build` is an alias for `npm run build:demo`. Only `src/dist` is
+published, so `npm pack` produces the same archive npm users install. To try a
+local build in another project, install the archive directly:
+
+```bash
+npm install /path/to/mango-iiif-iiif-viewer-<version>.tgz svelte
 ```
 
 Useful verification commands:
@@ -271,7 +309,7 @@ npm test
 npm run test:e2e
 npm run build:types
 npm run lint
-npm run build:demo
+npm run i18n:check
 npm pack --dry-run
 ```
 

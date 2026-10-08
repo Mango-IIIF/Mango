@@ -60,6 +60,8 @@ export type AnnotationBody = {
   textDirection?: string;
   purpose?: string;
   src?: string;
+  /** Web link to the resource a body points at, e.g. a Wikidata entity. */
+  href?: string;
   styleClass?: string;
   style?: string;
 };
