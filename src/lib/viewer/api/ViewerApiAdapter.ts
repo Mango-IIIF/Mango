@@ -3,6 +3,12 @@ import type { ModelPose, ModelPoseOptions } from "../../core/types/model";
 import type { ViewerApiTarget } from "../../core/types/viewer-api";
 import type { ContentSize, ViewBox, ViewerStateSnapshot } from "../../core/types/viewer";
 import type { MediaSource, MediaType } from "../../iiif/mediaResolver";
+import type { ResolvedAnnotation } from "../../iiif/annotationResolver";
+import type {
+  RendererExtension,
+  StagePoint,
+  StageSize,
+} from "../../core/types/renderer";
 
 /**
  * One forwarding contract for the Svelte component and custom-element entrypoints.
@@ -128,10 +134,46 @@ export class ViewerApiAdapter {
   addAnnotation(annotation: unknown): Promise<void> {
     return this.getTarget()?.addAnnotation?.(annotation) ?? Promise.resolve();
   }
+  getAnnotations(): ResolvedAnnotation[] {
+    return this.getTarget()?.getAnnotations?.() ?? [];
+  }
+  setAnnotations(annotations: unknown[]): Promise<void> {
+    return this.getTarget()?.setAnnotations?.(annotations) ?? Promise.resolve();
+  }
+  updateAnnotation(
+    annotationId: string,
+    patch: Partial<ResolvedAnnotation>,
+  ): Promise<void> {
+    return (
+      this.getTarget()?.updateAnnotation?.(annotationId, patch) ??
+      Promise.resolve()
+    );
+  }
   removeAnnotation(annotationId: string): Promise<void> {
     return (
       this.getTarget()?.removeAnnotation?.(annotationId) ?? Promise.resolve()
     );
+  }
+  selectAnnotation(annotationId: string, preventZoom?: boolean): void {
+    this.getTarget()?.selectAnnotation?.(annotationId, preventZoom);
+  }
+  clearAnnotationSelection(): void {
+    this.getTarget()?.clearAnnotationSelection?.();
+  }
+  getSelectedAnnotationId(): string | null {
+    return this.getTarget()?.getSelectedAnnotationId?.() ?? null;
+  }
+  getRendererExtension(): RendererExtension | null {
+    return this.getTarget()?.getRendererExtension?.() ?? null;
+  }
+  getStageSize(): StageSize {
+    return this.getTarget()?.getStageSize?.() ?? { width: 0, height: 0 };
+  }
+  canvasToScreen(point: StagePoint): StagePoint | null {
+    return this.getTarget()?.canvasToScreen?.(point) ?? null;
+  }
+  screenToCanvas(point: StagePoint): StagePoint | null {
+    return this.getTarget()?.screenToCanvas?.(point) ?? null;
   }
   updateLayerOpacity(id: string, opacity: number): void {
     this.getTarget()?.updateLayerOpacity?.(id, opacity);

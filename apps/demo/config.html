@@ -149,55 +149,6 @@
               </label>
             </fieldset>
 
-            <fieldset>
-              <legend>Annotation authoring</legend>
-              <label>
-                Languages (comma separated)
-                <input data-config-path="annotations.languages" data-value-type="list" value="en,cy" />
-              </label>
-            </fieldset>
-
-            <fieldset>
-              <legend>Story</legend>
-              <label class="config-check">
-                <input type="checkbox" data-config-path="story.enabled" /> Story enabled
-              </label>
-              <label class="config-check">
-                <input type="checkbox" data-config-path="story.showDebug" /> Show debug tools
-              </label>
-              <label>
-                Languages (comma separated)
-                <input data-config-path="story.languages" data-value-type="list" value="en" />
-              </label>
-              <label class="config-check">
-                <input type="checkbox" data-config-path="story.save.enabled" /> Enable save endpoint
-              </label>
-              <label>Save endpoint <input data-config-path="story.save.endpoint" value="" /></label>
-              <label>
-                Save method
-                <select data-config-path="story.save.method">
-                  <option value="POST">POST</option>
-                  <option value="PUT">PUT</option>
-                </select>
-              </label>
-              <label>
-                Save headers
-                <textarea data-config-path="story.save.headers" data-value-type="json">{}</textarea>
-              </label>
-              <label>
-                Timeout (ms)
-                <input type="number" min="0" data-config-path="story.save.timeoutMs" value="10000" />
-              </label>
-              <label>
-                Credentials
-                <select data-config-path="story.save.credentials">
-                  <option value="same-origin">Same origin</option>
-                  <option value="include">Include</option>
-                  <option value="omit">Omit</option>
-                </select>
-              </label>
-            </fieldset>
-
             <div class="config-actions">
               <button type="reset">Reset options</button>
             </div>

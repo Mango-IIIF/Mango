@@ -9,6 +9,12 @@ import type { ViewerApi } from './core/types/viewer-api';
 import type { ContentSize, ViewBox, ViewerStateSnapshot } from './core/types/viewer';
 import { registerPlugin } from './plugins/registry';
 import type { MediaType, MediaSource } from './iiif/mediaResolver';
+import type { ResolvedAnnotation } from './iiif/annotationResolver';
+import type {
+  RendererExtension,
+  StagePoint,
+  StageSize,
+} from './core/types/renderer';
 
 export type MangoOptions = {
   target: HTMLElement;
@@ -217,11 +223,81 @@ export class Mango implements ViewerApi {
     return instance?.addAnnotation?.(annotation) ?? Promise.resolve();
   }
 
+  getAnnotations(): ResolvedAnnotation[] {
+    const instance = this.instance as { getAnnotations?: () => ResolvedAnnotation[] };
+    return instance?.getAnnotations?.() ?? [];
+  }
+
+  setAnnotations(annotations: unknown[]): Promise<void> {
+    const instance = this.instance as {
+      setAnnotations?: (value: unknown[]) => Promise<void>;
+    };
+    return instance?.setAnnotations?.(annotations) ?? Promise.resolve();
+  }
+
+  updateAnnotation(
+    annotationId: string,
+    patch: Partial<ResolvedAnnotation>,
+  ): Promise<void> {
+    const instance = this.instance as {
+      updateAnnotation?: (
+        id: string,
+        value: Partial<ResolvedAnnotation>,
+      ) => Promise<void>;
+    };
+    return instance?.updateAnnotation?.(annotationId, patch) ?? Promise.resolve();
+  }
+
   removeAnnotation(annotationId: string): Promise<void> {
     const instance = this.instance as {
       removeAnnotation?: (value: string) => Promise<void>;
     };
     return instance?.removeAnnotation?.(annotationId) ?? Promise.resolve();
+  }
+
+  selectAnnotation(annotationId: string, preventZoom?: boolean): void {
+    const instance = this.instance as {
+      selectAnnotation?: (id: string, prevent?: boolean) => void;
+    };
+    instance?.selectAnnotation?.(annotationId, preventZoom);
+  }
+
+  clearAnnotationSelection(): void {
+    const instance = this.instance as { clearAnnotationSelection?: () => void };
+    instance?.clearAnnotationSelection?.();
+  }
+
+  getSelectedAnnotationId(): string | null {
+    const instance = this.instance as {
+      getSelectedAnnotationId?: () => string | null;
+    };
+    return instance?.getSelectedAnnotationId?.() ?? null;
+  }
+
+  getRendererExtension(): RendererExtension | null {
+    const instance = this.instance as {
+      getRendererExtension?: () => RendererExtension | null;
+    };
+    return instance?.getRendererExtension?.() ?? null;
+  }
+
+  getStageSize(): StageSize {
+    const instance = this.instance as { getStageSize?: () => StageSize };
+    return instance?.getStageSize?.() ?? { width: 0, height: 0 };
+  }
+
+  canvasToScreen(point: StagePoint): StagePoint | null {
+    const instance = this.instance as {
+      canvasToScreen?: (value: StagePoint) => StagePoint | null;
+    };
+    return instance?.canvasToScreen?.(point) ?? null;
+  }
+
+  screenToCanvas(point: StagePoint): StagePoint | null {
+    const instance = this.instance as {
+      screenToCanvas?: (value: StagePoint) => StagePoint | null;
+    };
+    return instance?.screenToCanvas?.(point) ?? null;
   }
 
   updateLayerOpacity(id: string, opacity: number): void {
@@ -270,7 +346,7 @@ export class Mango implements ViewerApi {
 
 export { ViewerComponent };
 export type { ViewerConfig } from './core/types/config';
-export type { ViewBox, ViewerStateSnapshot } from './core/types/viewer';
+export type { ViewerMode, ViewBox, ViewerStateSnapshot } from './core/types/viewer';
 export type {
   PluginCapabilities,
   PluginContext,
@@ -284,19 +360,11 @@ export { createHelloPanelPlugin } from './plugins/helloPanel';
 export { createAddAnnotationPlugin } from './plugins/addAnnotation';
 export type { ViewerEventBus, ViewerEventMap } from './core/types/events';
 export type { ViewerApi } from './core/types/viewer-api';
+export type {
+  ImageRendererExtension,
+  RendererExtension,
+  StagePoint,
+  StageSize,
+} from './core/types/renderer';
+export type { ResolvedAnnotation } from './iiif/annotationResolver';
 export type { ModelPose, ModelPoseOptions, ModelPoseTransition } from './core/types/model';
-export type {
-  AnnotationPlacement,
-  Chapter,
-  ChapterAdvance,
-  ChapterAnnotation,
-  ChapterMedia,
-  ChapterModel,
-  LanguageMap,
-  NarrationSegment,
-  NarrationTrack,
-} from './core/types/story';
-export type {
-  StoryAnnotation,
-  StoryAnnotationPage,
-} from './story/storySerializer';

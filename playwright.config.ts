@@ -56,7 +56,7 @@ export default defineConfig({
       ? [
           {
             name: 'mobile-webkit',
-            grep: /handheld viewer layout|responsive mode matrix|iPad fullscreen and story rail|embedded height and hostile host CSS|phone metadata expansion|iPhone SE touch rails|priority mobile interactions/,
+            grep: /viewer layout|embedded height|metadata expansion|touch rails|mobile interactions/,
             use: {
               ...devices['iPhone 13'],
             },
@@ -67,7 +67,7 @@ export default defineConfig({
   webServer: {
     command:
       'npm run build:demo && npx vite --config vite.config.demo.ts --host 127.0.0.1 --port 4173',
-    url: 'http://127.0.0.1:4173/annotation-editor-wellcome.html',
+    url: 'http://127.0.0.1:4173/viewer.html',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

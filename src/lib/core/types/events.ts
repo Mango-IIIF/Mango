@@ -1,10 +1,10 @@
 import type { JsonObject } from '@mango-iiif/w3c-parser';
 import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
-import type { ChapterAnnotationTool } from './story';
+import type { AnnotationTool } from '../../features/annotations/model';
 import type { MediaType } from '../../iiif/mediaResolver';
 import type { ModelPose } from './model';
 import type { ViewBox, ViewerStateSnapshot } from './viewer';
-import type { ExportEnvelope } from '../../story/storySerializer';
+import type { RendererExtension, StageSize } from './renderer';
 
 export type ModelViewChange = {
   source?: string;
@@ -25,7 +25,7 @@ export type ViewerEventMap = {
   addAnnotation: { annotation: unknown };
   updateAnnotation: { annotation: unknown };
   removeAnnotation: { annotationId: string };
-  annotationCreate: { annotation: unknown; tool?: ChapterAnnotationTool };
+  annotationCreate: { annotation: unknown; tool?: AnnotationTool };
   annotationUpdate: {
     annotationId: string;
     patch: Partial<ResolvedAnnotation>;
@@ -33,13 +33,6 @@ export type ViewerEventMap = {
   /** Edits on an annotation were committed as one save. */
   annotationSave: { annotationId: string; annotation: ResolvedAnnotation };
   annotationDelete: { annotationId: string };
-  /**
-   * A frame drawn on the stage was moved or resized and the gesture ended.
-   * The box is in canvas pixels and already holds the frame's locked aspect.
-   */
-  storyFrameChange: { frameId: string; viewBox: ViewBox };
-  /** The author took hold of a different frame on the stage. */
-  storyFrameSelect: { frameId: string | null };
   annotationHover: {
     id: string | null;
     annotation?: ResolvedAnnotation | null;
@@ -77,17 +70,8 @@ export type ViewerEventMap = {
     open: boolean;
   };
   stateChange: { snapshot: ViewerStateSnapshot };
-  /**
-   * Requests a stage opacity, so a mode driving chapter changes can hide the
-   * swap between two unrelated sources. Emitted by the story builder; the story
-   * viewer reaches its stage through its own runtime.
-   */
-  stageFade: { opacity: number; durationMs: number };
-  storyViewerError: { message: string; cause?: unknown };
-  /** The Story Builder Save action was requested with portable IIIF JSON. */
-  storySaveRequest: { story: ExportEnvelope };
-  /** The Story Builder Export action produced portable IIIF JSON. */
-  storyExport: { story: ExportEnvelope };
+  rendererReady: { renderer: RendererExtension };
+  stageResize: StageSize;
   pluginError: {
     pluginId: string;
     pluginLabel: string;

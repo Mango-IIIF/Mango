@@ -70,7 +70,6 @@
   });
 
   const layoutConfig: ViewerConfig = {
-    allowCreateMode: true,
     showThumbnails: false,
     showContents: false,
     showSearch: false,

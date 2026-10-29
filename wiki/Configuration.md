@@ -1,7 +1,7 @@
 # Viewer configuration
 
 Configuration controls which tools are offered, the initial view, language,
-theme, rendering libraries, and story-authoring behaviour.
+theme and rendering libraries.
 
 ## Supply configuration
 
@@ -69,12 +69,11 @@ layers panel requires multiple renderable media sources.
 | ----------------- | --------- | ---------------------------------------------------------------------------------------- |
 | `language`        | `string`  | Preferred UI and metadata language. Falls back to the browser language and then English. |
 | `theme`           | `string`  | Built-in themes include `dark`, `light`, `sepia`, and `midnight`.                        |
-| `allowCreateMode` | `boolean` | Enables annotation creation tools in the normal viewer.                                  |
 | `showThumbnails`  | `boolean` | Allows the gallery/thumbnail navigation when multiple image canvases exist.              |
 | `showMetadata`    | `boolean` | Allows the metadata panel.                                                               |
 | `showCollection`  | `boolean` | Allows the Collection panel when `manifest-id` is a Collection (`viewer` mode only).     |
 | `showSearch`      | `boolean` | Allows search when a compatible service is available.                                    |
-| `showAnnotations` | `boolean` | Allows the annotations panel when annotations exist or creation is enabled.              |
+| `showAnnotations` | `boolean` | Allows the annotations panel when annotations exist.                                     |
 | `showTools`       | `boolean` | Allows image adjustment and rotation tools.                                              |
 | `showLayers`      | `boolean` | Allows media/layer opacity controls when layers are available.                           |
 | `showSettings`    | `boolean` | Allows viewer settings and layout controls.                                              |
@@ -203,37 +202,6 @@ viewer.config = {
 
 These hooks let the host application apply its own access policy; they do not
 make Mango a complete IIIF Authentication client.
-
-## Story builder options
-
-```js
-{
-  story: {
-    annotationPageId: 'https://museum.example/stories/object-42/chapters',
-    languages: ['en', 'cy'],
-    showDebug: false,
-    save: {
-      enabled: true,
-      endpoint: '/api/stories/exhibition-tour',
-      method: 'PUT',
-      headers: { Authorization: 'Bearer …' },
-      credentials: 'same-origin',
-      timeoutMs: 10000,
-    },
-  },
-}
-```
-
-`annotationPageId` supplies the stable public HTTP(S) identifier used when a new
-story is exported. An ID already present in a loaded story is retained unless
-this setting overrides it. `languages` controls the languages offered by the
-story builder. `save` enables server persistence; without a usable endpoint,
-Mango presents the exported JSON for the author to copy. The save endpoint must
-accept Mango's IIIF AnnotationPage story and return JSON containing
-`{ "success": true }` for a successful save.
-
-Do not put long-lived secrets into browser configuration. Use same-origin
-sessions or short-lived credentials provided by your application.
 
 ## TypeScript source of truth
 

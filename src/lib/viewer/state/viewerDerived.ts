@@ -410,9 +410,7 @@ export const createViewerDerived = (
   );
   const allowAnnotations = derived(
     [state.config, annotationsAvailable],
-    ([config, available]) =>
-      config?.showAnnotations !== false &&
-      (available || config?.allowCreateMode === true),
+    ([config, available]) => config?.showAnnotations !== false && available,
   );
   const allowTools = derived(
     [state.config, mediaType],

@@ -51,7 +51,7 @@ import type {
   AnnotationPoint,
   ResolvedAnnotation,
 } from '../../iiif/annotationResolver';
-import type { ChapterAnnotationTool } from '../../core/types/story';
+import type { AnnotationTool } from './model';
 import type { AnnotationEditability, AnnotationProvenance } from './model';
 import {
   DEFAULT_BODY_PURPOSE,
@@ -85,7 +85,7 @@ const TEXT_PURPOSES = ['commenting', 'describing', 'transcribing', 'editing'];
 /** The editor tool that authors a given shape, or null when none does. */
 export const shapeTool = (
   shape: NeutralShape,
-): Exclude<ChapterAnnotationTool, 'select'> | null => {
+): Exclude<AnnotationTool, 'select'> | null => {
   switch (shape.type) {
     case 'rect':
       return 'rectangle';

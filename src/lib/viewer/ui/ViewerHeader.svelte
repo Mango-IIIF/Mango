@@ -1,14 +1,13 @@
 <script lang="ts">
   import { t } from '../../core/i18n';
   import type { ManifestEntry } from '../../core/state/manifests';
-  import MangoFooterBrand from '../../story/ui/MangoFooterBrand.svelte';
 
   export let manifestId = '';
   export let manifestEntry: ManifestEntry | undefined;
 </script>
 
 <header class="viewer__header">
-  <MangoFooterBrand position="inline" />
+  <span class="viewer__brand">{$t('about.brand')}</span>
   {#if manifestId && (manifestEntry?.label || manifestEntry?.isFetching || manifestEntry?.error)}
     <span class="viewer__header-divider" aria-hidden="true">|</span>
     <div class="manifest">
@@ -42,6 +41,13 @@
     line-height: 1;
     user-select: none;
     flex-shrink: 0;
+  }
+
+  .viewer__brand {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    opacity: 0.75;
   }
 
   .manifest {

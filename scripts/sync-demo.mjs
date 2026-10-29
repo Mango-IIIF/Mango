@@ -30,7 +30,7 @@ function copyDirRecursive(src, dest) {
  *
  * Vite emits content-hashed filenames, so a copy that only ever adds leaves
  * every previous build's chunks behind for ever — this directory had
- * accumulated 1259 `storyBuilder-*.js` bundles and 1.7GB of them.
+ * can otherwise accumulate a large set of obsolete hashed bundles.
  *
  * Pruning rather than emptying the directory is deliberate. `dev-demo` re-runs
  * this sync on every rebuild while the demo server is serving out of it, and

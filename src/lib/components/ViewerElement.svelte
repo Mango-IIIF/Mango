@@ -18,16 +18,6 @@
         type: 'String',
         reflect: true,
       },
-      story: {
-        attribute: 'story',
-        type: 'String',
-        reflect: true,
-      },
-      storyUrl: {
-        attribute: 'story-url',
-        type: 'String',
-        reflect: true,
-      },
       plugins: {
         attribute: 'plugins',
         type: 'Object',
@@ -46,32 +36,23 @@
   import type { ViewerApiTarget } from '../core/types/viewer-api';
   import { translate } from '../core/i18n';
   import type { ContentSize, ViewBox } from '../core/types/viewer';
+  import type { ViewerMode } from '../core/types/viewer';
   import type { MediaType, MediaSource } from '../iiif/mediaResolver';
   import type { ViewerPlugin } from '../core/types/plugin';
-  import type { StoryState } from '../core/types/story';
-  import type { ExportEnvelope } from '../story/storySerializer';
-  import type { StoryBuilderController } from '../story/storyBuilderController';
-  import { normaliseStoryInput } from '../story/viewer/storyLoader';
   import { ViewerApiAdapter } from '../viewer/api/ViewerApiAdapter';
+  import type { ResolvedAnnotation } from '../iiif/annotationResolver';
+  import type { StagePoint } from '../core/types/renderer';
 
   export let manifestId = '';
   export let config: string | ViewerConfig | undefined = undefined;
-  export let mode: string | undefined = undefined;
-  export let story: string | Record<string, unknown> | undefined = undefined;
-  export let storyUrl: string | undefined = undefined;
+  export let mode: ViewerMode | undefined = undefined;
   export let plugins: ViewerPlugin[] = [];
   let parsedConfig: ViewerConfig | undefined;
   let normalisedConfig: ViewerConfig = {};
-  let modePlugins: ViewerPlugin[] = [];
-  let lastMode: string | undefined = undefined;
-  let lastStoryForBuilder: typeof story | typeof storyUrl = undefined;
-  let resolvedPlugins: ViewerPlugin[] = [];
   let viewerInstance: ViewerApiTarget | null = null;
   const api = new ViewerApiAdapter(() => viewerInstance);
   let hostElement: HTMLDivElement | null = null;
   let eventTargetOwner: unknown = null;
-  let storyBuilderPluginRequest = 0;
-  let storyBuilderController: StoryBuilderController | null = null;
 
   $: parsedConfig = parseViewerConfig(config, (error) => {
     console.warn(translate('warnings.invalidConfig'), error);
@@ -82,83 +63,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const iiifContent = urlParams.get('iiif-content');
     if (iiifContent) {
-      if (mode === 'story-viewer' || mode === 'story-builder') {
-        storyUrl = iiifContent;
-      } else {
-        manifestId = iiifContent;
-      }
+      manifestId = iiifContent;
     }
-  }
-  $: if (
-    mode !== lastMode ||
-    (mode === 'story-builder' &&
-      (story !== lastStoryForBuilder || storyUrl !== lastStoryForBuilder))
-  ) {
-    lastMode = mode;
-    storyBuilderController = null;
-    if (mode === 'story-builder') {
-      lastStoryForBuilder = story || storyUrl;
-      const requestId = ++storyBuilderPluginRequest;
-      void loadStoryForBuilder().then((loadedStory) => {
-        if (requestId !== storyBuilderPluginRequest) return;
-        void import('../plugins/storyBuilder').then(({ createStoryBuilderPlugins }) => {
-          if (requestId !== storyBuilderPluginRequest) return;
-          modePlugins = createStoryBuilderPlugins({
-            initialStory: loadedStory ?? undefined,
-            languages: normalisedConfig.story?.languages,
-            annotationPageId: normalisedConfig.story?.annotationPageId,
-            annotationBase: normalisedConfig.story?.annotationBase,
-            identifiersLocked: normalisedConfig.story?.identifiersLocked,
-            onControllerReady: (controller) => {
-              if (requestId === storyBuilderPluginRequest) {
-                storyBuilderController = controller;
-              }
-            },
-          });
-        });
-      });
-    } else {
-      storyBuilderPluginRequest++;
-      modePlugins = [];
-    }
-  }
-  $: resolvedPlugins = [...modePlugins, ...plugins];
-  $: storyBuilderController?.setSaveConfig(normalisedConfig.story?.save ?? {});
-
-  async function loadStoryForBuilder(): Promise<StoryState | null> {
-    let source: unknown = undefined;
-    if (story !== undefined && story !== null && `${story}` !== '') {
-      source = story;
-    } else if (storyUrl) {
-      try {
-        const response = await fetch(storyUrl);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        source = await response.json();
-      } catch (error) {
-        console.error('Failed to load story for builder:', error);
-        return null;
-      }
-    } else {
-      return null;
-    }
-
-    let parsed: unknown = source;
-    if (typeof source === 'string') {
-      try {
-        parsed = JSON.parse(source);
-      } catch (error) {
-        console.error('Invalid story JSON:', error);
-        return null;
-      }
-    }
-
-    // Parse and normalise the story input to support standard IIIF Presentation API v3 AnnotationPages
-    const normalised = normaliseStoryInput(parsed);
-    if (normalised.ok && normalised.story) {
-      return normalised.story;
-    }
-      console.error(normalised.error ?? translate('storyViewer.invalidAnnotationPage'));
-    return null;
   }
 
   export function getViewBox(): ViewBox | null {
@@ -293,8 +199,51 @@
     return api.addAnnotation(annotation);
   }
 
+  export function getAnnotations(): ResolvedAnnotation[] {
+    return api.getAnnotations();
+  }
+
+  export function setAnnotations(annotations: unknown[]): Promise<void> {
+    return api.setAnnotations(annotations);
+  }
+
+  export function updateAnnotation(
+    annotationId: string,
+    patch: Partial<ResolvedAnnotation>,
+  ): Promise<void> {
+    return api.updateAnnotation(annotationId, patch);
+  }
+
   export function removeAnnotation(annotationId: string): Promise<void> {
     return api.removeAnnotation(annotationId);
+  }
+
+  export function selectAnnotation(annotationId: string, preventZoom?: boolean): void {
+    api.selectAnnotation(annotationId, preventZoom);
+  }
+
+  export function clearAnnotationSelection(): void {
+    api.clearAnnotationSelection();
+  }
+
+  export function getSelectedAnnotationId(): string | null {
+    return api.getSelectedAnnotationId();
+  }
+
+  export function getRendererExtension() {
+    return api.getRendererExtension();
+  }
+
+  export function getStageSize() {
+    return api.getStageSize();
+  }
+
+  export function canvasToScreen(point: StagePoint) {
+    return api.canvasToScreen(point);
+  }
+
+  export function screenToCanvas(point: StagePoint) {
+    return api.screenToCanvas(point);
   }
 
   export function updateLayerOpacity(id: string, opacity: number): void {
@@ -307,18 +256,6 @@
 
   export function getMediaSources(): MediaSource[] {
     return api.getMediaSources();
-  }
-
-  /** Returns a detached snapshot while the element is in Story Builder mode. */
-  export function getStory(): StoryState | null {
-    return storyBuilderController?.getStory() ?? null;
-  }
-
-  /** Returns the builder's portable IIIF AnnotationPage representation. */
-  export function exportStory(): ExportEnvelope | null {
-    if (!storyBuilderController) return null;
-    const validation = storyBuilderController.saveExport();
-    return validation.ok ? storyBuilderController.getExportPayload() : null;
   }
 
   export function on<K extends keyof ViewerEventMap>(
@@ -350,9 +287,7 @@
     bind:this={viewerInstance}
     {manifestId}
     config={normalisedConfig}
-    {story}
-    {storyUrl}
-    plugins={resolvedPlugins}
+    {plugins}
     {mode}
   />
 </div>
@@ -384,18 +319,4 @@
     height: var(--mango-viewer-height, 100dvh);
   }
 
-  /*
-   * The annotation editor's list needs a box of its own to be usable, so the
-   * element grows to provide one rather than taking the height off the page
-   * being annotated. Still a single definite block size — only its value
-   * changes — which is what the shadow layout depends on.
-   *
-   * An embedder who sets `mango-viewer { height: ... }` in site CSS wins over
-   * this, as they do over the base rule; the list then shares the height they
-   * chose.
-   */
-  :host([data-annotation-list='open']) {
-    height: calc(var(--mango-viewer-height, min(720px, 100vh)) + 230px);
-    height: calc(var(--mango-viewer-height, min(720px, 100svh)) + 230px);
-  }
 </style>

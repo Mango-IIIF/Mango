@@ -33,7 +33,7 @@ const svgDescribesOpenPath = (svg: string | undefined): boolean =>
  * answer and every producer sets it; the SVG sniff behind it is only for legacy
  * v2 annotations that arrive as a bare SvgSelector with no shape recorded.
  *
- * Shared so that the annotation editor, the plain viewer and the story overlay
+ * Shared so that annotation-aware viewer features
  * cannot disagree about the same annotation — they did, and a freehand drawn as
  * an open curve came back closed and filled once committed.
  */

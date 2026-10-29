@@ -49,6 +49,8 @@ export type AnnotationControllerConfig = {
 };
 
 export type AnnotationController = {
+  getAnnotations: () => ResolvedAnnotation[];
+  setAnnotations: (annotations: unknown[]) => Promise<void>;
   addAnnotation: (annotation: unknown) => Promise<void>;
   updateAnnotation: (
     annotationId: string,
@@ -63,7 +65,6 @@ export type AnnotationController = {
   ) => Promise<void>;
   /** Commits the edits already applied to an annotation as one save. */
   commitAnnotation: (annotationId: string) => Promise<void>;
-  setAnnotationMode: (mode: "edit" | "create") => void;
   setSearchQuery: (value: string) => void;
   handleSearchResultClick: (annotation: ResolvedAnnotation) => void;
 };
@@ -216,6 +217,20 @@ export const createAnnotationController = ({
     addAnnotationValue(resolved);
   };
 
+  const getAnnotations = (): ResolvedAnnotation[] => [
+    ...get(derivedStores.annotations),
+  ];
+
+  const setAnnotations = async (annotations: unknown[]): Promise<void> => {
+    const resolved = annotations
+      .map(toResolvedAnnotation)
+      .filter((annotation): annotation is ResolvedAnnotation => annotation !== null);
+    const key = currentCanvasKey();
+    state.userAnnotations.update((current) => updateRecord(current, key, resolved));
+    state.removedAnnotationIds.update((current) => ({ ...current, [key]: [] }));
+    emitStateChange();
+  };
+
   const removeAnnotation = async (annotationId: string): Promise<void> => {
     state.userAnnotations.update((current) => {
       const next: Record<string, ResolvedAnnotation[]> = {};
@@ -243,9 +258,6 @@ export const createAnnotationController = ({
     emitStateChange();
   };
 
-  const setAnnotationMode = (mode: "edit" | "create") => {
-    state.annotationMode.set(mode);
-  };
 
   /**
    * Applies an edit through the annotation's canonical document.
@@ -452,12 +464,13 @@ export const createAnnotationController = ({
   };
 
   return {
+    getAnnotations,
+    setAnnotations,
     addAnnotation,
     updateAnnotation,
     removeAnnotation,
     replaceAnnotation,
     commitAnnotation,
-    setAnnotationMode,
     setSearchQuery,
     handleSearchResultClick,
   };

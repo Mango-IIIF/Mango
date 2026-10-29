@@ -25,7 +25,6 @@ const allowsTouchInteraction = (target: EventTarget): boolean =>
     // These horizontal rails live inside nested shadow/layout boundaries on
     // iOS. The fullscreen drag guard must not cancel their touchmove events;
     // doing so makes overflow-x look correct while finger scrolling is dead.
-    target.classList.contains("story-shell__footer") ||
     target.classList.contains("stage__toolbar") ||
     target.classList.contains("viewer__control-rail") ||
     target.classList.contains("viewer__dock") ||

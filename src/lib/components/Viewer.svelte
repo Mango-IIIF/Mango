@@ -5,18 +5,19 @@
   import type { ViewerPlugin } from '../core/types/plugin';
   import type { ViewerEventMap } from '../core/types/events';
   import type { ContentSize, ViewBox } from '../core/types/viewer';
+  import type { ViewerMode } from '../core/types/viewer';
   import type { ModelPose, ModelPoseOptions } from '../core/types/model';
   import type { MediaSource } from '../iiif/mediaResolver';
   import type { ViewerApiTarget } from '../core/types/viewer-api';
   import { ViewerApiAdapter } from '../viewer/api/ViewerApiAdapter';
+  import type { ResolvedAnnotation } from '../iiif/annotationResolver';
+  import type { StagePoint } from '../core/types/renderer';
 
   interface Props {
     manifestId?: string;
     config?: ViewerConfig | undefined;
     plugins?: ViewerPlugin[];
-    mode?: string | undefined;
-    story?: string | Record<string, unknown> | undefined;
-    storyUrl?: string | undefined;
+    mode?: ViewerMode | undefined;
   }
 
   let {
@@ -24,8 +25,6 @@
     config = undefined,
     plugins = [],
     mode = undefined,
-    story = undefined,
-    storyUrl = $bindable(undefined),
   }: Props = $props();
 
   let layoutRef: ViewerApiTarget | null = $state(null);
@@ -36,11 +35,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const iiifContent = urlParams.get('iiif-content');
       if (iiifContent) {
-        if (mode === 'story-viewer' || mode === 'story-builder') {
-          storyUrl = iiifContent;
-        } else {
-          manifestId = iiifContent;
-        }
+        manifestId = iiifContent;
       }
     }
   });
@@ -195,8 +190,51 @@
     return api.addAnnotation(annotation);
   }
 
+  export function getAnnotations(): ResolvedAnnotation[] {
+    return api.getAnnotations();
+  }
+
+  export function setAnnotations(annotations: unknown[]): Promise<void> {
+    return api.setAnnotations(annotations);
+  }
+
+  export function updateAnnotation(
+    annotationId: string,
+    patch: Partial<ResolvedAnnotation>,
+  ): Promise<void> {
+    return api.updateAnnotation(annotationId, patch);
+  }
+
   export async function removeAnnotation(annotationId: string): Promise<void> {
     return api.removeAnnotation(annotationId);
+  }
+
+  export function selectAnnotation(annotationId: string, preventZoom?: boolean): void {
+    api.selectAnnotation(annotationId, preventZoom);
+  }
+
+  export function clearAnnotationSelection(): void {
+    api.clearAnnotationSelection();
+  }
+
+  export function getSelectedAnnotationId(): string | null {
+    return api.getSelectedAnnotationId();
+  }
+
+  export function getRendererExtension() {
+    return api.getRendererExtension();
+  }
+
+  export function getStageSize() {
+    return api.getStageSize();
+  }
+
+  export function canvasToScreen(point: StagePoint) {
+    return api.canvasToScreen(point);
+  }
+
+  export function screenToCanvas(point: StagePoint) {
+    return api.screenToCanvas(point);
   }
 
   export function updateLayerOpacity(id: string, opacity: number): void {
@@ -225,8 +263,6 @@
     bind:manifestId
     {config}
     {plugins}
-    mode={mode}
-    {story}
-    {storyUrl}
+    chrome={true}
   />
 {/if}

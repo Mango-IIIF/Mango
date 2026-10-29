@@ -6,7 +6,7 @@ import type { ViewerController } from "./state/viewerController";
 export type ViewerSettingsLayout = "1x1" | "1x2" | "2x1" | "1x2-panel" | "2x2";
 /**
  * Every selectable theme, in the order the settings panel offers them. Adding a
- * theme means adding it here, defining its `--viewer-*`/`--story-*` tokens in
+ * theme means adding it here and defining its `--viewer-*` tokens in
  * ViewerLayout, and adding a `workspace.theme*` label to the locale catalogues.
  */
 export const viewerSettingsThemes = [
@@ -34,8 +34,6 @@ export type ViewerContext = {
     locale: string;
     layoutMode: "single" | "two-page" | "continuous" | "gallery";
   };
-  readonly canDrawAnnotations: boolean;
-  readonly annotationMode: "edit" | "create";
 };
 
 const VIEWER_CONTEXT_KEY = Symbol("mango-viewer-context");

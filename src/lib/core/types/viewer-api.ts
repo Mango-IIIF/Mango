@@ -2,8 +2,12 @@ import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
 import type { ModelPose, ModelPoseOptions } from './model';
 import type { ViewerEventMap } from './events';
 import type { ContentSize, ViewBox, ViewerStateSnapshot } from './viewer';
-import type { ChapterAnnotationTool, StoryFrame } from './story';
 import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
+import type {
+  RendererExtension,
+  StagePoint,
+  StageSize,
+} from './renderer';
 
 export type ViewerApi = {
   getViewBox: () => ViewBox | null;
@@ -47,20 +51,20 @@ export type ViewerApi = {
   getModelTarget?: () => string | null;
   getModelOrientation?: () => string | null;
   addAnnotation: (annotation: unknown) => Promise<void>;
+  getAnnotations: () => ResolvedAnnotation[];
+  setAnnotations: (annotations: unknown[]) => Promise<void>;
+  updateAnnotation: (
+    annotationId: string,
+    patch: Partial<ResolvedAnnotation>,
+  ) => Promise<void>;
   removeAnnotation: (annotationId: string) => Promise<void>;
-  setAnnotationTool?: (tool: ChapterAnnotationTool) => void;
-  setStoryAnnotations?: (annotations: ResolvedAnnotation[]) => void;
-  setStoryAnnotationEditing?: (enabled: boolean) => void;
-  setStoryAnnotationSelection?: (annotationId: string | null) => void;
-  /** Fixed width/height contract for the builder's authored output surface. */
-  setStoryPresentationAspect?: (aspect: number) => void;
-  /**
-   * Camera-keyframe objects the story builder wants drawn on the stage.
-   * Chapter framing itself is the fixed stage camera, not a second rectangle.
-   */
-  setStoryFrames?: (frames: StoryFrame[]) => void;
-  /** Which of the frames carries the handles. */
-  setStoryFrameSelection?: (frameId: string | null) => void;
+  selectAnnotation: (annotationId: string, preventZoom?: boolean) => void;
+  clearAnnotationSelection: () => void;
+  getSelectedAnnotationId: () => string | null;
+  getRendererExtension: () => RendererExtension | null;
+  getStageSize: () => StageSize;
+  canvasToScreen: (point: StagePoint) => StagePoint | null;
+  screenToCanvas: (point: StagePoint) => StagePoint | null;
   updateLayerOpacity?: (id: string, opacity: number) => void;
   getLayerOpacities?: () => Record<string, number>;
   getMediaSources?: () => MediaSource[];

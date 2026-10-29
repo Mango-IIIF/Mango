@@ -1,10 +1,8 @@
 import type { AVPlayerConfig } from '@mango-iiif/av/core';
-import type { SaveConfig } from '../../story/storySerializer';
 
 export type ViewerConfig = {
   language?: string;
   theme?: 'dark' | 'light' | 'sepia' | 'midnight' | 'ringo' | string;
-  allowCreateMode?: boolean;
   showThumbnails?: boolean;
   showCollection?: boolean;
   showMetadata?: boolean;
@@ -35,11 +33,6 @@ export type ViewerConfig = {
   };
   /** Audio/video player, controls, transcript, request, and playback options. */
   av?: AVPlayerConfig;
-  /** Standalone annotation-authoring setup. */
-  annotations?: {
-    /** Allowed BCP 47 languages shown by the annotation language switch. */
-    languages?: string[];
-  };
   initialCanvasIndex?: number;
   initialLayoutMode?: 'single' | 'two-page' | 'continuous' | 'gallery';
   initialRotation?: number;
@@ -48,17 +41,5 @@ export type ViewerConfig = {
     y: number;
     w: number;
     h: number;
-  };
-  story?: {
-    enabled?: boolean;
-    showDebug?: boolean;
-    languages?: string[];
-    /** Public HTTP(S) identifier used for new story AnnotationPage exports. */
-    annotationPageId?: string;
-    /** Optional chapter Annotation base. Defaults to `${annotationPageId}/annotation/`. */
-    annotationBase?: string;
-    /** Prevent authors from changing host-supplied canonical identifiers. */
-    identifiersLocked?: boolean;
-    save?: SaveConfig;
   };
 };
