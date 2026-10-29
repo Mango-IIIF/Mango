@@ -123,7 +123,7 @@
   let userIdleTimer: ReturnType<typeof setTimeout> | undefined;
   /*
    * Set once a caller has framed the viewport programmatically on the current
-   * image — `setViewBox`, i.e. a search result, an annotation focus, or a story
+   * image — `setViewBox`, i.e. a search result or an annotation focus
    * chapter. It is the programmatic twin of `userDrivingViewport`: both mean
    * "somebody owns this viewport, stop refitting it to home".
    *
@@ -554,6 +554,31 @@
     return { width: size.x, height: size.y };
   };
 
+  export const getViewer = (): OpenSeadragon.Viewer | null => viewer;
+
+  export const canvasToScreen = (
+    point: { x: number; y: number },
+  ): { x: number; y: number } | null => {
+    const item = viewer?.world?.getItemAt(0);
+    if (!viewer?.viewport || !item) return null;
+    const viewportPoint = item.imageToViewportCoordinates(point.x, point.y);
+    const screenPoint = viewer.viewport.pixelFromPoint(viewportPoint, true);
+    return { x: screenPoint.x, y: screenPoint.y };
+  };
+
+  export const screenToCanvas = (
+    point: { x: number; y: number },
+  ): { x: number; y: number } | null => {
+    const item = viewer?.world?.getItemAt(0);
+    if (!viewer?.viewport || !item) return null;
+    const viewportPoint = viewer.viewport.pointFromPixel(
+      new OpenSeadragon.Point(point.x, point.y),
+      true,
+    );
+    const imagePoint = item.viewportToImageCoordinates(viewportPoint);
+    return { x: imagePoint.x, y: imagePoint.y };
+  };
+
   export const getZoom = (): number => {
     return lastZoom;
   };
@@ -905,7 +930,7 @@
            * that on its own: it only pans, so it re-centres the crop.
            *
            * Only refit what was fitted. A reader who had zoomed in, or a caller
-           * that framed the viewport for a story chapter or a search hit, keeps
+           * that framed the viewport for a search hit keeps
            * exactly what they asked for.
            */
           const viewport = viewer?.viewport;
@@ -953,7 +978,7 @@
         baseImageLoaded = true;
         openingBaseCustomId = '';
         // A fresh image starts unclaimed. Callers that want this one framed
-        // (a search hit, a story chapter) re-claim it via setViewBox below,
+        // (for example, a search hit) re-claim it via setViewBox below,
         // which lands after this handler has run.
         callerFramedViewport = false;
         onviewerready?.({ viewer: viewer as OpenSeadragon.Viewer });
@@ -965,7 +990,7 @@
           settleInitialHome();
         }
         handleViewportChange();
-        // A story chapter or search result can arrive before OSD has created
+        // A search result can arrive before OSD has created
         // its first world item. `setViewBox` records that request; opening the
         // source is the first point at which image-space coordinates are safe
         // to resolve. Applying it here also claims the viewport so the initial
@@ -1009,7 +1034,7 @@
         // Without an initial viewBox, refitting home is the right repair; with
         // one, the settle loop above owns the viewport and goHome would just
         // discard the configured region. The same holds for a framing a caller
-        // applied at runtime — a search hit or story chapter.
+        // applied at runtime, such as a search hit.
         if (!initialViewBox && !callerFramedViewport) {
           viewer.viewport?.goHome?.(true);
         }
@@ -1086,24 +1111,18 @@
 
     if (activeLayoutImages && activeLayoutImages.length > 0) {
       let currentY = 0;
-      for (const img of activeLayoutImages) {
+      for (const [imagePosition, img] of activeLayoutImages.entries()) {
         let x = 0;
         let y = 0;
         let w = 1.0;
         const h = img.height / img.width;
 
         if (layoutMode === 'two-page') {
-          if (img.index === 0) {
-            x = 0;
-            y = 0;
-            w = 1.0;
-          } else if (img.index % 2 === 1) {
-            // Left page
+          if (imagePosition === 0) {
             x = 0;
             y = 0;
             w = 1.0;
           } else {
-            // Right page
             x = 1.02;
             y = 0;
             w = 1.0;
@@ -1199,6 +1218,35 @@
   let openingBaseCustomId = '';
   let pendingBaseTarget: TargetItem | null = null;
   const loadingLayerIds = new Set<string>();
+  let fittedLayoutSignature = '';
+
+  const getLayoutSignature = (items: TargetItem[]): string =>
+    items
+      .filter((item) => item.isPrimary)
+      .map((item) => `${item.customLayerId}:${item.x}:${item.y}:${item.width}`)
+      .join('|');
+
+  const fitChangedLayout = (items: TargetItem[]): void => {
+    if (!viewer?.viewport) return;
+    const signature = getLayoutSignature(items);
+    if (!signature || signature === fittedLayoutSignature) return;
+
+    const loadedIds = new Set<string>();
+    for (let index = 0; index < viewer.world.getItemCount(); index += 1) {
+      const id = tiledImageLayerIds.get(viewer.world.getItemAt(index));
+      if (id) loadedIds.add(id);
+    }
+    const primaryItemsLoaded = items
+      .filter((item) => item.isPrimary)
+      .every((item) => loadedIds.has(item.customLayerId));
+    if (!primaryItemsLoaded) return;
+
+    fittedLayoutSignature = signature;
+    callerFramedViewport = false;
+    pendingViewBoxRequest = null;
+    viewer.viewport.goHome?.(true);
+    viewer.viewport.applyConstraints?.();
+  };
 
   const openBaseTarget = (target: TargetItem): void => {
     if (!viewer) return;
@@ -1330,6 +1378,7 @@
             const pos = new OpenSeadragonClass.Point(matchingTarget.x, matchingTarget.y);
             item.setPosition(pos);
             item.setWidth(matchingTarget.width);
+            fitChangedLayout(currentTargets);
           },
           error: (err) => {
             console.error(`Failed to load tile source for layer ${target.customLayerId}:`, err);
@@ -1343,6 +1392,11 @@
         viewer.addTiledImage(options);
       }
     });
+
+    // Moving from a spread/continuous layout back to a layout whose images
+    // are already loaded does not raise addTiledImage's success callback.
+    // Refit here as well so the surviving page fills the stage again.
+    fitChangedLayout(items);
   });
 
   $effect(() => {

@@ -26,7 +26,6 @@ export type ViewerStateStores = {
   showLayers: ReturnType<typeof writable<boolean>>;
   layoutMode: ReturnType<typeof writable<'single' | 'two-page' | 'continuous' | 'gallery'>>;
   layerOpacities: ReturnType<typeof writable<Record<string, number>>>;
-  annotationMode: ReturnType<typeof writable<'edit' | 'create'>>;
   searchQuery: ReturnType<typeof writable<string>>;
   selectedSearchResultId: ReturnType<typeof writable<string | null>>;
   activeAnnotationId: ReturnType<typeof writable<string | null>>;
@@ -84,7 +83,6 @@ export const createViewerState = (
       initial?.layoutMode ?? 'single',
     ),
     layerOpacities: writable<Record<string, number>>({}),
-    annotationMode: writable('edit'),
     searchQuery: writable(''),
     selectedSearchResultId: writable<string | null>(null),
     activeAnnotationId: writable<string | null>(null),

@@ -70,7 +70,6 @@
   });
 
   const layoutConfig: ViewerConfig = {
-    allowCreateMode: true,
     showThumbnails: false,
     showContents: false,
     showSearch: false,
@@ -141,6 +140,7 @@
             </span>
             <input
               type="number"
+              name={`window-${windowNode.id}-page`}
               min="1"
               max={canvasCount}
               value={pageInput}
@@ -187,7 +187,7 @@
   .workspace-window {
     position: relative;
     isolation: isolate;
-    border-radius: 14px;
+    border-radius: 0;
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(9, 17, 28, 0.88);
     width: 100%;
@@ -231,7 +231,7 @@
     height: 28px;
     padding: 5px;
     border: 1px solid transparent;
-    border-radius: 7px;
+    border-radius: 0;
     background: transparent;
     cursor: pointer;
     transform: translateY(-50%);
@@ -273,7 +273,7 @@
     gap: 10px;
     padding: 6px 8px;
     border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 999px;
+    border-radius: 0;
     background: rgba(8, 16, 25, 0.78);
     backdrop-filter: blur(8px);
     color: rgba(238, 245, 252, 0.9);
@@ -288,7 +288,7 @@
     height: 28px;
     padding: 0;
     border: 0;
-    border-radius: 999px;
+    border-radius: 0;
     background: rgba(255, 255, 255, 0.08);
     color: #dce8f5;
     font-size: 20px;
@@ -313,7 +313,7 @@
     height: 28px;
     padding: 0 5px;
     border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 7px;
+    border-radius: 0;
     background: rgba(255, 255, 255, 0.08);
     color: inherit;
     font: inherit;

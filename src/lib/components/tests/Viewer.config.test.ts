@@ -20,6 +20,90 @@ afterEach(() => {
 });
 
 describe('Viewer config', () => {
+  it('applies the configured theme to the viewer shell', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    targets.push(target);
+    mounted.push(mount(Viewer, { target, props: { config: { theme: 'light' } } }));
+
+    const shell = target.querySelector<HTMLElement>('.viewer');
+    expect(shell?.dataset.theme).toBe('light');
+  });
+
+  it('does not render the legacy stage dock alongside the viewer sidebar', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    targets.push(target);
+    mounted.push(mount(Viewer, { target }));
+
+    expect(target.querySelector('.viewer-sidebar')).toBeTruthy();
+    expect(target.querySelector('.viewer__dock')).toBeNull();
+  });
+
+  it('opens and closes the IIIF manifest manager', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    targets.push(target);
+    mounted.push(mount(Viewer, { target }));
+
+    const toggle = target.querySelector<HTMLButtonElement>(
+      '[aria-label="IIIF manifests"]',
+    );
+    expect(toggle).toBeTruthy();
+    toggle?.click();
+    await tick();
+    expect(target.querySelector('.viewer__manifest-overlay')).toBeTruthy();
+
+    target.querySelector<HTMLButtonElement>('[aria-label="Close manifest manager"]')?.click();
+    await tick();
+    expect(target.querySelector('.viewer__manifest-overlay')).toBeNull();
+  });
+
+  it('collapses and restores the viewer sidebar', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    targets.push(target);
+    mounted.push(mount(Viewer, { target }));
+
+    target.querySelector<HTMLButtonElement>('.viewer-sidebar__collapse')?.click();
+    await tick();
+    expect(target.querySelector('.viewer__control-rail')).toBeNull();
+
+    const expand = target.querySelector<HTMLButtonElement>('.viewer__expand-sidebar');
+    expect(expand).toBeTruthy();
+    expand?.click();
+    await tick();
+    expect(target.querySelector('.viewer__control-rail')).toBeTruthy();
+  });
+
+  it('opens the multi-manifest workspace from viewer settings', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    targets.push(target);
+    mounted.push(mount(Viewer, { target }));
+
+    const settingsButton = Array.from(
+      target.querySelectorAll<HTMLButtonElement>('.viewer-sidebar__button'),
+    ).find((button) => button.textContent?.includes('View settings'));
+    settingsButton?.click();
+    await tick();
+
+    const layout = target.querySelector<HTMLSelectElement>(
+      '[aria-label="Comparison layout"]',
+    );
+    expect(layout).toBeTruthy();
+    const pageLayout = target.querySelector('[aria-label="Page layout"]');
+    expect(
+      pageLayout?.compareDocumentPosition(layout!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    layout!.value = '1x2';
+    layout!.dispatchEvent(new Event('change', { bubbles: true }));
+    await tick();
+
+    expect(target.querySelector('.workspace-grid--column')).toBeTruthy();
+    expect(target.querySelectorAll('.workspace-window')).toHaveLength(2);
+  });
+
   it('places the sidebar on the right', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
@@ -62,38 +146,6 @@ describe('Viewer config', () => {
     expect(target.querySelector('.viewer__control-rail')).toBeNull();
     expect(target.querySelector('.panel-stack--left')).toBeNull();
     expect(target.querySelector('.viewer__grid--left')).toBeNull();
-  });
-
-  it('keeps the annotation visibility preference after the panel closes', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-    targets.push(target);
-    mounted.push(
-      mount(Viewer, {
-        target,
-        props: {
-          config: {
-            allowCreateMode: true,
-            sidebar: { open: true, activePanel: 'annotations' },
-          },
-        },
-      }),
-    );
-    await tick();
-
-    const toggle = target.querySelector<HTMLButtonElement>(
-      '[role="switch"][aria-checked="false"]',
-    );
-    expect(toggle?.textContent).toContain('Keep annotations visible');
-    toggle?.click();
-    await tick();
-    expect(toggle?.getAttribute('aria-checked')).toBe('true');
-
-    target.querySelector<HTMLButtonElement>('[aria-label="Close annotation editor"]')?.click();
-    await tick();
-
-    expect(toggle?.getAttribute('aria-checked')).toBe('true');
-    expect(toggle?.closest('[hidden]')).toBeTruthy();
   });
 
   it('keeps an invoked panel mounted when it is closed and reopened', async () => {

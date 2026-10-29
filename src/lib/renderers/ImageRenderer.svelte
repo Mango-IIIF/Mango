@@ -24,7 +24,10 @@
   import type { ImageFilters } from '../core/types/filters';
   import type { ContentSize, ViewBox } from '../core/types/viewer';
   import type { ViewerConfig } from '../core/types/config';
-  import type { ActiveLayoutImage } from '../core/types/renderer';
+  import type {
+    ActiveLayoutImage,
+    ImageRendererExtension,
+  } from '../core/types/renderer';
 
   interface Props {
     source?: MediaSource | null;
@@ -89,6 +92,17 @@
 
   export const getContentSize = (): ContentSize | null => {
     return osd?.getContentSize?.() ?? null;
+  };
+
+  export const getExtension = (): ImageRendererExtension | null => {
+    const viewer = osd?.getViewer?.();
+    if (!viewer) return null;
+    return {
+      kind: 'image',
+      viewer,
+      canvasToScreen: (point) => osd?.canvasToScreen?.(point) ?? null,
+      screenToCanvas: (point) => osd?.screenToCanvas?.(point) ?? null,
+    };
   };
 
   export const setViewBox = (box: ViewBox): void => {

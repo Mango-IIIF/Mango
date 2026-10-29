@@ -70,7 +70,12 @@
 
       <section class="settings-section">
         <h3>{$t('workspace.language')}</h3>
-        <select value={locale} onchange={(event) => onlocalechange?.((event.currentTarget as HTMLSelectElement).value)}>
+        <select
+          name="workspace-language"
+          aria-label={$t('workspace.language')}
+          value={locale}
+          onchange={(event) => onlocalechange?.((event.currentTarget as HTMLSelectElement).value)}
+        >
           {#each supportedLocales as option}
             <option value={option}>{option.toUpperCase()}</option>
           {/each}

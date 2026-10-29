@@ -46,3 +46,10 @@ export type AnnotationSaveState =
   | { status: 'saved' }
   | { status: 'failed'; message: string }
   | { status: 'conflicted'; message: string };
+export type AnnotationTool =
+  | 'select'
+  | 'rectangle'
+  | 'point'
+  | 'polygon'
+  | 'freehand'
+  | 'line';

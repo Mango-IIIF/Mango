@@ -35,8 +35,8 @@ describe('i18n catalogue', () => {
 
   it('interpolates named parameters', () => {
     expect(
-      translate('storyViewer.chapterPosition', { current: 2, total: 7 }),
-    ).toBe('Chapter 2 of 7');
+      translate('viewer.panels.collection.messages.loadNextDates', { count: 7 }),
+    ).toBe('Load next 7 dates');
   });
 
   it('translates into a locale passed as an override', () => {

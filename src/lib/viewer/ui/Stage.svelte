@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
   import { t } from '../../core/i18n';
   import PluginSlot from '../../plugins/PluginSlot.svelte';
   import RendererHost from './RendererHost.svelte';
@@ -7,7 +6,6 @@
   import type { ImageFilters } from '../../core/types/filters';
   import type { ModelPose, ModelPoseOptions } from '../../core/types/model';
   import type { ContentSize, ViewBox } from '../../core/types/viewer';
-  import type { StoryFrame } from '../../core/types/story';
   import type { MediaSource, MediaType } from '../../iiif/mediaResolver';
   import type { AVPlayerController } from '@mango-iiif/av/core';
   import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
@@ -15,19 +13,14 @@
   import type { RendererEventHandlers } from '../types/rendererEvents';
   import type { ViewerConfig } from '../../core/types/config';
   import AnnotationLayer from '../../features/annotations/AnnotationLayer.svelte';
-  import AnnotationEditorLayer from '../../features/annotations/AnnotationEditorLayer.svelte';
-  import StoryFrameLayer from '../../story/ui/StoryFrameLayer.svelte';
-  import type { OSDAnnotationEditor } from '@mango-iiif/annotation';
-  import type { LabelSizing } from '../../features/annotations/rectangleLabelLayout';
-  import type { LayerItem } from '../../features/annotations/workspace/LeftSidebar.svelte';
-  import type { ViewportState } from '../../core/state/viewportState.svelte';
-  import { VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
   import type {
     ActiveLayoutImage,
+    RendererExtension,
     RendererComponent,
     RendererInstance,
+    StagePoint,
+    StageSize,
   } from '../../core/types/renderer';
-  import type OpenSeadragon from 'openseadragon';
 
   type DockPanel =
     | 'thumbnails'
@@ -83,39 +76,10 @@
       ((payload: { zoom: number; viewBox: ViewBox; homeZoom?: number }) => void) | undefined;
     onrotationchange?: ((payload: { rotation: number }) => void) | undefined;
     onpaneltoggle?: ((payload: { panel: DockPanel; open: boolean }) => void) | undefined;
-    annotationTool?: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
-    annotationEditorEnabled?: boolean;
-    annotationEditorAnnotations?: ResolvedAnnotation[];
-    annotationLayers?: LayerItem[];
-    /** Layer new annotations are created in. */
-    activeLayerId?: string;
-    /** Size band for shape labels, in screen pixels. */
-    labelSizing?: LabelSizing;
-    oneditorready?: ((editor: OSDAnnotationEditor | null) => void) | undefined;
-    ongeometrycommit?: ((payload: { id: string }) => void) | undefined;
-    canvasId?: string | null;
-    onannotationcreate?:
-      | ((payload: {
-          annotation: unknown;
-          tool?: 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
-        }) => void)
-      | undefined;
-    onannotationupdate?:
-      ((payload: { id: string; patch: Record<string, unknown> }) => void) | undefined;
-    onannotationdelete?: ((payload: { id: string }) => void) | undefined;
-    onannotationselect?: ((payload: { id: string }) => void) | undefined;
-    onannotationtoolchange?:
-      | ((payload: {
-          tool: 'select' | 'rectangle' | 'point' | 'polygon' | 'freehand' | 'line';
-        }) => void)
-      | undefined;
+    onrendererready?: ((payload: { renderer: RendererExtension }) => void) | undefined;
+    onstageresize?: ((payload: StageSize) => void) | undefined;
     layoutMode?: 'single' | 'two-page' | 'continuous';
     activeLayoutImages?: ActiveLayoutImage[];
-    /** Story frames drawn on the stage as movable, aspect-locked regions. */
-    storyFrames?: StoryFrame[];
-    storyFrameSelection?: string | null;
-    onstoryframecommit?: ((payload: { frameId: string; viewBox: ViewBox }) => void) | undefined;
-    onstoryframeselect?: ((payload: { frameId: string | null }) => void) | undefined;
   }
 
   let {
@@ -161,29 +125,12 @@
     onzoomchange = undefined,
     onrotationchange = undefined,
     onpaneltoggle = undefined,
-    annotationTool = 'select',
-    annotationEditorEnabled = false,
-    annotationEditorAnnotations = undefined,
-    annotationLayers = [],
-    activeLayerId = 'mine',
-    labelSizing = undefined,
-    oneditorready = undefined,
-    ongeometrycommit = undefined,
-    canvasId = null,
-    onannotationcreate = undefined,
-    onannotationupdate = undefined,
-    onannotationdelete = undefined,
-    onannotationselect = undefined,
-    onannotationtoolchange = undefined,
+    onrendererready = undefined,
+    onstageresize = undefined,
     layoutMode = 'single',
     activeLayoutImages = [],
-    storyFrames = [],
-    storyFrameSelection = null,
-    onstoryframecommit = undefined,
-    onstoryframeselect = undefined,
   }: Props = $props();
-  const viewportState = getContext<ViewportState | undefined>(VIEWPORT_STATE_CONTEXT_KEY);
-  let effectiveCanvasId = $derived(canvasId ?? viewportState?.manifestId ?? null);
+  void canZoom;
   let useConstrainedMedia = $derived(constrainMediaHeight && !fillHeight && mediaType !== 'video');
   let isFixedStage = $derived(
     !fillHeight && (!mediaSource || mediaType !== 'video') && !useConstrainedMedia,
@@ -192,8 +139,6 @@
   let useRendererNativeAnnotationLayer = $derived(mediaType === 'image' || mediaType === 'audio');
 
   let rendererInstance: RendererInstance | null = $state(null);
-  let annotationViewer: OpenSeadragon.Viewer | null = $state(null);
-  let annotationCanvasSize = $state({ width: 0, height: 0 });
   let mediaBounds: HTMLDivElement | null = $state(null);
   let stageWidth = $state(0);
   let stageHeight = $state(0);
@@ -207,16 +152,37 @@
   export const getContentSize = (): ContentSize | null =>
     rendererInstance?.getContentSize?.() ?? null;
 
+  export const getRendererExtension = (): RendererExtension | null => {
+    const extension = rendererInstance?.getExtension?.();
+    if (extension) return extension;
+    if (!rendererInstance || !mediaType) return null;
+    if (mediaType === 'image') return null;
+    return { kind: mediaType, instance: rendererInstance };
+  };
+
+  export const getStageSize = (): StageSize => ({
+    width: stageWidth,
+    height: stageHeight,
+  });
+
+  export const canvasToScreen = (point: StagePoint): StagePoint | null => {
+    const extension = getRendererExtension();
+    return extension?.kind === 'image' ? extension.canvasToScreen(point) : null;
+  };
+
+  export const screenToCanvas = (point: StagePoint): StagePoint | null => {
+    const extension = getRendererExtension();
+    return extension?.kind === 'image' ? extension.screenToCanvas(point) : null;
+  };
+
   export const setViewBox = (box: ViewBox): void => {
     if (rendererInstance?.setViewBox) {
       rendererInstance.setViewBox(box);
       pendingViewBox = null;
       return;
     }
-    // Story playback can request its first framing while the dynamically
-    // imported renderer is still mounting. Keep that request instead of
-    // silently dropping it; the renderer-level queue below covers the later
-    // interval while OSD itself is opening the tile source.
+    // A host can request framing while the dynamically imported renderer is
+    // still mounting. Keep that request until the renderer is ready.
     pendingViewBox = { ...box };
   };
 
@@ -327,17 +293,10 @@
     onzoomchange?.(payload);
   };
 
-  const syncAnnotationCanvasSize = (viewer: OpenSeadragon.Viewer) => {
-    const size = viewer?.world?.getItemAt(0)?.getContentSize?.();
-    if (size?.x > 0 && size?.y > 0) {
-      annotationCanvasSize = { width: size.x, height: size.y };
-    }
-  };
-
-  const handleRendererViewerReady = (payload: { viewer: OpenSeadragon.Viewer }) => {
+  const handleRendererViewerReady = () => {
     rendererError = '';
-    annotationViewer = payload.viewer;
-    syncAnnotationCanvasSize(payload.viewer);
+    const extension = getRendererExtension();
+    if (extension) onrendererready?.({ renderer: extension });
   };
 
   const handleRendererError = (payload: { message: string }) => {
@@ -371,10 +330,12 @@
     if (!mediaBounds || typeof ResizeObserver === 'undefined') return;
     stageWidth = mediaBounds.clientWidth;
     stageHeight = mediaBounds.clientHeight;
+    onstageresize?.({ width: stageWidth, height: stageHeight });
     const observer = new ResizeObserver(() => {
       if (!mediaBounds) return;
       stageWidth = mediaBounds.clientWidth;
       stageHeight = mediaBounds.clientHeight;
+      onstageresize?.({ width: stageWidth, height: stageHeight });
     });
     observer.observe(mediaBounds);
     return () => observer.disconnect();
@@ -437,7 +398,7 @@
         {rendererComponent}
         {avController}
         source={mediaSource}
-        annotations={annotationEditorEnabled ? [] : annotations}
+        {annotations}
         {highlightIds}
         {activeAnnotationId}
         {hoverAnnotationId}
@@ -478,43 +439,9 @@
       />
     {/if}
 
-    <AnnotationEditorLayer
-      enabled={annotationEditorEnabled}
-      viewer={annotationViewer}
-      activeTool={annotationTool}
-      canvasWidth={annotationCanvasSize.width || mediaSource?.width || 0}
-      canvasHeight={annotationCanvasSize.height || mediaSource?.height || 0}
-      canvasId={effectiveCanvasId}
-      annotations={annotationEditorAnnotations ?? annotations}
-      {activeAnnotationId}
-      layers={annotationLayers}
-      {activeLayerId}
-      {...(labelSizing ? { labelSizing } : {})}
-      {oneditorready}
-      {ongeometrycommit}
-      onannotationcreate={(payload) => onannotationcreate?.(payload)}
-      onannotationupdate={(payload) => onannotationupdate?.(payload)}
-      onannotationdelete={(payload) => onannotationdelete?.(payload)}
-      onannotationselect={(payload) => onannotationselect?.(payload)}
-      ontoolchange={(payload) => onannotationtoolchange?.(payload)}
-    />
-
-    {#if storyFrames.length > 0}
-      <StoryFrameLayer
-        viewer={annotationViewer}
-        canvasWidth={annotationCanvasSize.width || mediaSource?.width || 0}
-        canvasHeight={annotationCanvasSize.height || mediaSource?.height || 0}
-        frames={storyFrames}
-        selectedFrameId={storyFrameSelection}
-        onframecommit={(payload) => onstoryframecommit?.(payload)}
-        onframeselect={(payload) => onstoryframeselect?.(payload)}
-      />
-    {/if}
-
     {#if overlayPlugins.length > 0}
       <div
         class:stage__overlay--flush={fillHeight}
-        class:stage__overlay--annotation-editing={annotationEditorEnabled}
         class="stage__overlay"
       >
         <PluginSlot slot="overlay" plugins={overlayPlugins} context={pluginContext} />
@@ -531,7 +458,7 @@
     height: 100%;
     min-height: 0;
     /*
-     * A size container so a story stage can be sized against the slot it
+     * A size container so the stage can be sized against the slot it
      * actually sits in. The viewer-level container is the whole element,
      * including its bars, which is the wrong reference for "how much room does
      * the picture have".
@@ -644,15 +571,7 @@
     pointer-events: auto;
   }
 
-  /*
-   * Overlay plugins fill the stage and normally own its pointer input. While the
-   * annotation editor is open, that transparent panel must not sit in front of
-   * the editor's SVG handles. Interactive overlay children can still opt back
-   * in with pointer-events: auto (for example, story placement controls).
-   */
-  .stage__overlay--annotation-editing :global(.plugin-panel--overlay) {
-    pointer-events: none;
-  }
+  /* Overlay plugins fill the stage and normally own its pointer input. */
 
   @container mango-viewer (max-width: 1024px) {
     .stage__container {

@@ -81,10 +81,9 @@ describe("createViewerFullscreenController", () => {
     root.remove();
   });
 
-  it("allows touch scrolling on story and viewer control rails in fallback fullscreen", async () => {
+  it("allows touch scrolling on viewer control rails in fallback fullscreen", async () => {
     const root = document.createElement("div");
     const allowedClasses = [
-      "story-shell__footer",
       "stage__toolbar",
       "viewer__control-rail",
       "viewer__dock",

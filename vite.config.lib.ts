@@ -18,10 +18,10 @@ const customElementConfig = (filename: string | undefined) => {
 };
 
 export default defineConfig({
-  root: resolve(__dirname, 'src'),
+  root: resolve(import.meta.dirname, 'src'),
   plugins: [
     svelte({
-      configFile: resolve(__dirname, 'svelte.config.js'),
+      configFile: resolve(import.meta.dirname, 'svelte.config.js'),
       dynamicCompileOptions({ filename }) {
         return customElementConfig(filename);
       },
@@ -30,16 +30,11 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        index: resolve(__dirname, 'src/lib/index.ts'),
-        all: resolve(__dirname, 'src/lib/all.ts'),
-        element: resolve(__dirname, 'src/lib/element.ts'),
-        'element-viewer': resolve(__dirname, 'src/lib/elements/viewer.ts'),
-        'element-story-viewer': resolve(__dirname, 'src/lib/elements/story-viewer.ts'),
-        'element-story-builder': resolve(__dirname, 'src/lib/elements/story-builder.ts'),
-        'element-annotation-editor': resolve(__dirname, 'src/lib/elements/annotation-editor.ts'),
-        'annotation-editor': resolve(__dirname, 'src/lib/annotation-editor.ts'),
-        'story-viewer': resolve(__dirname, 'src/lib/story-viewer.ts'),
-        'story-builder': resolve(__dirname, 'src/lib/story-builder.ts'),
+        index: resolve(import.meta.dirname, 'src/lib/index.ts'),
+        all: resolve(import.meta.dirname, 'src/lib/all.ts'),
+        element: resolve(import.meta.dirname, 'src/lib/element.ts'),
+        'element-viewer': resolve(import.meta.dirname, 'src/lib/elements/viewer.ts'),
+        'core-viewer': resolve(import.meta.dirname, 'src/lib/core-viewer.ts'),
       },
       formats: ['es'],
       fileName: (_format, entryName) => `${entryName}.js`,
@@ -47,7 +42,7 @@ export default defineConfig({
     rollupOptions: {
       external: ['svelte', 'svelte/internal', /^svelte\//],
     },
-    outDir: resolve(__dirname, 'src/dist'),
+    outDir: resolve(import.meta.dirname, 'src/dist'),
     emptyOutDir: true,
   },
 });

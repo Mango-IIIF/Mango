@@ -19,10 +19,10 @@ const customElementConfig = (filename: string | undefined) => {
 };
 
 export default defineConfig({
-  root: resolve(__dirname, 'src'),
+  root: resolve(import.meta.dirname, 'src'),
   plugins: [
     svelte({
-      configFile: resolve(__dirname, 'svelte.config.js'),
+      configFile: resolve(import.meta.dirname, 'svelte.config.js'),
       dynamicCompileOptions({ filename }) {
         return customElementConfig(filename);
       },
@@ -30,8 +30,8 @@ export default defineConfig({
     {
       name: 'mango-element-shadow-css',
       closeBundle() {
-        const jsPath = resolve(__dirname, 'src/dist/mango-viewer-element.js');
-        const cssPath = resolve(__dirname, 'src/dist/mango-viewer-element.css');
+        const jsPath = resolve(import.meta.dirname, 'src/dist/mango-viewer-element.js');
+        const cssPath = resolve(import.meta.dirname, 'src/dist/mango-viewer-element.css');
 
         console.log('[CSS Inject] Checking files:', jsPath, cssPath);
         const jsExists = existsSync(jsPath);
@@ -57,7 +57,7 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/lib/element.ts'),
+      entry: resolve(import.meta.dirname, 'src/lib/element.ts'),
       name: 'MangoViewerElement',
       formats: ['es'],
       fileName: () => 'mango-viewer-element.js',
@@ -67,7 +67,7 @@ export default defineConfig({
         assetFileNames: 'mango-viewer-element.[ext]',
       },
     },
-    outDir: resolve(__dirname, 'src/dist'),
+    outDir: resolve(import.meta.dirname, 'src/dist'),
     emptyOutDir: false,
     cssCodeSplit: false,
   },

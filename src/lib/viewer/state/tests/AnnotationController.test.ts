@@ -135,6 +135,22 @@ describe('AnnotationController shape preservation', () => {
     await controller.addAnnotation({ id: 'rect-1', x: 1, y: 2, w: 3, h: 4 });
     expect(stored('rect-1')?.shapeType).toBe('rect');
   });
+
+  it('replaces host annotations for the active canvas', async () => {
+    const { controller, stored } = makeController();
+
+    await controller.setAnnotations([
+      { id: 'host-1', x: 1, y: 2, w: 3, h: 4, text: 'From host' },
+      { id: 'host-2', x: 5, y: 6, w: 7, h: 8 },
+    ]);
+
+    expect(stored('host-1')).toMatchObject({
+      id: 'host-1',
+      text: 'From host',
+      shapeType: 'rect',
+    });
+    expect(stored('host-2')?.shapeType).toBe('rect');
+  });
 });
 
 describe('AnnotationController edits to read-only annotations', () => {

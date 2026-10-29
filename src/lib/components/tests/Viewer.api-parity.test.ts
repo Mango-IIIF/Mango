@@ -10,8 +10,6 @@ const exportedFunctions = (source: string): string[] =>
     .filter((name) => name !== "setEventTarget")
     .sort();
 
-const elementOnlyStoryFunctions = new Set(['exportStory', 'getStory']);
-
 describe("viewer entrypoint API parity", () => {
   it("keeps the Svelte component and custom element capabilities aligned", () => {
     const component = readFileSync(
@@ -23,11 +21,7 @@ describe("viewer entrypoint API parity", () => {
       "utf8",
     );
 
-    expect(
-      exportedFunctions(element).filter(
-        (name) => !elementOnlyStoryFunctions.has(name),
-      ),
-    ).toEqual(exportedFunctions(component));
+    expect(exportedFunctions(element)).toEqual(exportedFunctions(component));
   });
 
   it("forwards layer opacity methods through the viewer component", async () => {

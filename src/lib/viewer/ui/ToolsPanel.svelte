@@ -38,6 +38,7 @@
       </label>
       <input
         id="brightness-slider"
+        name="brightness"
         class="tools__slider"
         type="range"
         min="0"
@@ -60,6 +61,7 @@
       </label>
       <input
         id="contrast-slider"
+        name="contrast"
         class="tools__slider"
         type="range"
         min="0"
@@ -82,6 +84,7 @@
       </label>
       <input
         id="saturation-slider"
+        name="saturation"
         class="tools__slider"
         type="range"
         min="0"
@@ -102,6 +105,7 @@
     <label class="tools__toggle">
       <span>{$t('viewer.panels.tools.invert')}</span>
       <input
+        name="invert"
         type="checkbox"
         checked={$imageFilters.invert}
         disabled={$mediaType !== 'image'}
@@ -117,6 +121,7 @@
     <label class="tools__toggle">
       <span>{$t('viewer.panels.tools.grayscale')}</span>
       <input
+        name="grayscale"
         type="checkbox"
         checked={$imageFilters.grayscale}
         disabled={$mediaType !== 'image'}

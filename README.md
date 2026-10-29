@@ -4,7 +4,7 @@
 [![CI](https://github.com/Mango-IIIF/Mango/actions/workflows/ci.yml/badge.svg)](https://github.com/Mango-IIIF/Mango/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Mango is a flexible IIIF viewer and storytelling toolkit for museums, libraries,
+Mango is a flexible IIIF viewer for museums, libraries,
 archives, galleries, and digital scholarship projects. It can be added directly
 to an existing website as `<mango-viewer>` or installed as an npm dependency in
 a JavaScript, React, Vue, or Svelte application.
@@ -20,11 +20,8 @@ search into one responsive interface.
   services, external annotations, language maps, and Content Search services.
 - **Easy to embed** — use a standalone module on a normal HTML page or install
   the framework-neutral custom element from npm.
-- **Built for interpretation** — publish guided stories or use the story builder
-  to capture canvases, viewports, media segments, narration, text, model poses,
-  and layer settings.
-- **Annotation workflows** — display W3C/IIIF annotations, draw local shapes,
-  and connect export events to an institution's storage service.
+- **Annotation-aware** — display W3C/IIIF annotations and expose APIs that host
+  applications can use to add or remove annotations.
 - **Institution-ready presentation** — configure panels, layouts, themes,
   languages, OpenSeadragon, A/V behaviour, and responsive sizing.
 - **Extensible** — plugins receive a DOM mount point, typed viewer API, event
@@ -151,96 +148,62 @@ unsubscribe();
 viewer.destroy();
 ```
 
-The package also exports a native Svelte 5 component. See
-[application integrations](https://github.com/Mango-IIIF/Mango/wiki/Integrations)
-for React 18/19, Vue 3, Svelte, and custom-element properties.
+The package also exports a native Svelte 5 component.
 
 ### Package entry points
 
 | Import                                      | Contents                                                                     |
 | ------------------------------------------- | ---------------------------------------------------------------------------- |
 | `@mango-iiif/iiif-viewer`                   | `Mango`, `ViewerComponent`, shared types, API, events, and plugin helpers    |
+| `@mango-iiif/iiif-viewer/core`              | Headless `ViewerCore` component for hosts that provide their own chrome      |
 | `@mango-iiif/iiif-viewer/element`           | Registers `<mango-viewer>`                                                   |
 | `@mango-iiif/iiif-viewer/style.css`         | Styles for the class and native Svelte builds (the element bundles its own)  |
-| `@mango-iiif/iiif-viewer/all`               | Main exports plus story viewer, story builder, and annotation editor exports |
-| `@mango-iiif/iiif-viewer/story-viewer`      | Story playback components and runtime helpers                                |
-| `@mango-iiif/iiif-viewer/story-builder`     | Story authoring components, state, validation, and helpers                   |
-| `@mango-iiif/iiif-viewer/annotation-editor` | Annotation workspace, editor layer, and conversion helpers                   |
+| `@mango-iiif/iiif-viewer/all`               | Alias for the main viewer exports                                             |
 
-`/element/viewer`, `/element/story-viewer`, `/element/story-builder`, and
-`/element/annotation-editor` are also exported. Each currently registers the
-same complete element as `/element`.
+`/element/viewer` is also exported and registers the same element as `/element`.
+
+### Building on the viewer
+
+Annotation and storytelling applications can use `ViewerCore` as their stage
+without inheriting Mango's header, sidebars, or toolbars:
+
+```svelte
+<script lang="ts">
+  import { ViewerCore, type ViewerApi } from '@mango-iiif/iiif-viewer/core';
+  import '@mango-iiif/iiif-viewer/style.css';
+
+  let viewer: ViewerApi;
+</script>
+
+<ViewerCore bind:this={viewer} manifestId={manifestId} plugins={plugins} />
+```
+
+The full viewer and headless core expose the same host API. Hosts can load and
+mutate annotations, control annotation selection, inspect the active renderer,
+convert image coordinates to and from screen coordinates, and subscribe to
+`rendererReady` and `stageResize`. Plugins can mount UI in viewer slots; use
+their `order` field for deterministic stacking and `pointerEvents` for
+interactive overlays. The image renderer extension exposes its typed
+OpenSeadragon instance, while other renderer kinds remain renderer-neutral.
 
 ## Viewer modes
 
-The same custom element supports several collection and authoring experiences:
+The custom element supports the viewer and multi-view workspace:
 
 | Mode                | Purpose                         | Primary input                   |
 | ------------------- | ------------------------------- | ------------------------------- |
 | `viewer`            | Browse a Manifest or Collection | `manifest-id`                   |
 | `workspace`         | Arrange multiple viewer windows | viewer UI                       |
-| `annotation-editor` | Draw and export annotations     | `manifest-id`                   |
-| `story-viewer`      | Play a guided narrative         | `story-url` or `story`          |
-| `story-builder`     | Author and export a narrative   | optional `story-url` or `story` |
-
-```html
-<mango-viewer
-  mode="annotation-editor"
-  manifest-id="https://example.org/iiif/manifest.json"
-></mango-viewer>
-```
-
-```html
-<mango-viewer
-  mode="story-viewer"
-  story-url="/stories/exhibition-tour.json"
-></mango-viewer>
-```
-
-### Host-managed story storage
-
-Story Builder can save to browser-owned storage such as IndexedDB by assigning
-an asynchronous handler in JavaScript. The handler receives the portable IIIF
-AnnotationPage produced by the builder:
-
-```js
-const builder = document.querySelector("mango-viewer");
-builder.config = {
-  story: {
-    save: {
-      handler: async (story) => {
-        await storiesDatabase.put(story);
-        return { ok: true, message: "Saved locally" };
-      },
-    },
-  },
-};
-```
-
-The current editable state and IIIF export can also be read on demand with
-`builder.getStory()` and `builder.exportStory()`. Both return `null` outside
-Story Builder mode or before the builder is ready. The `storySaveRequest` and
-`storyExport` events expose the same portable document when the corresponding
-toolbar actions are selected.
 
 ## Documentation
 
-The [Mango GitHub Wiki](https://github.com/Mango-IIIF/Mango/wiki) contains the
-complete user and contributor documentation:
+The [Mango GitHub Wiki](https://github.com/Mango-IIIF/Mango/wiki) contains
+additional viewer documentation:
 
-| Guide                                                                                                 | What it covers                                                                    |
-| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [Getting started](https://github.com/Mango-IIIF/Mango/wiki/Getting-Started)                           | Standalone websites, npm installation, modes, and blank-viewer troubleshooting    |
-| [Configuration](https://github.com/Mango-IIIF/Mango/wiki/Configuration)                               | Panels, layouts, OSD, PDF, 3D, A/V, stories, and all first-party options          |
-| [Application integrations](https://github.com/Mango-IIIF/Mango/wiki/Integrations)                     | JavaScript, React, Vue, Svelte, and package entry points                          |
-| [JavaScript API](https://github.com/Mango-IIIF/Mango/wiki/API-Reference)                              | Navigation, viewports, media, models, layers, annotations, and state              |
-| [Events](https://github.com/Mango-IIIF/Mango/wiki/Event-Handling)                                     | DOM and class events, payloads, persistence, and analytics examples               |
-| [Theming and languages](https://github.com/Mango-IIIF/Mango/wiki/Theming-and-Languages)               | Built-in themes, CSS variables, language selection, and translation contributions |
-| [Plugins](https://github.com/Mango-IIIF/Mango/wiki/Plugin-System)                                     | Plugin contract, slots, lifecycle, registration, and a complete example           |
-| [Story viewer and builder](https://github.com/Mango-IIIF/Mango/wiki/Storytelling-Format)              | IIIF AnnotationPage stories, model/layer state, authoring, and saving              |
-| [IIIF and W3C support](https://github.com/Mango-IIIF/Mango/wiki/IIIF-Conformance)                     | Supported standards, evidence boundaries, and current limitations                 |
-| [Deployment and accessibility](https://github.com/Mango-IIIF/Mango/wiki/Deployment-and-Accessibility) | CORS, CSP, accessibility, privacy, authentication, and production checks          |
-| [Developer guide](https://github.com/Mango-IIIF/Mango/wiki/Developer-Guide)                           | Architecture, local development, testing, builds, and contribution workflow       |
+| Guide                                                                   | What it covers                                                  |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [Configuration](https://github.com/Mango-IIIF/Mango/wiki/Configuration) | Panels, layouts, OSD, PDF, 3D, A/V, and first-party options     |
+| [Plugins](https://github.com/Mango-IIIF/Mango/wiki/Plugin-System)       | Plugin contract, slots, lifecycle, registration, and an example |
 
 ## IIIF support
 
@@ -258,9 +221,7 @@ limitations include:
 
 Mango's audio/video request hooks can participate in an access strategy owned by
 the host application, but they do not make the viewer a complete Authentication
-API client. Read the
-[support matrix](https://github.com/Mango-IIIF/Mango/wiki/IIIF-Conformance)
-before adopting Mango for restricted or unusually complex resources.
+API client.
 
 ## Supporting packages
 
@@ -268,8 +229,6 @@ Mango delegates focused responsibilities to other `@mango-iiif` packages:
 
 - [`@mango-iiif/w3c-parser`](https://www.npmjs.com/package/@mango-iiif/w3c-parser)
   parses W3C annotations and spatial/temporal selectors.
-- [`@mango-iiif/annotation`](https://www.npmjs.com/package/@mango-iiif/annotation)
-  provides OpenSeadragon annotation interaction and drawing.
 - [`@mango-iiif/iiif-search-client`](https://www.npmjs.com/package/@mango-iiif/iiif-search-client)
   discovers and queries IIIF Content Search services.
 - [`@mango-iiif/av`](https://www.npmjs.com/package/@mango-iiif/av) provides

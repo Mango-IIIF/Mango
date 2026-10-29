@@ -17,14 +17,6 @@
   const { activeAnnotationId, keepAnnotationsVisible } = viewer.state;
   const controller = viewer.controller;
 
-  let allowCreateMode = $derived(viewer.canDrawAnnotations);
-  let effectiveMode = $derived(viewer.annotationMode);
-
-  const setMode = (mode: 'edit' | 'create') => {
-    if (!allowCreateMode) return;
-    controller.setAnnotationMode(mode);
-  };
-
   /*
    * Selecting zooms to the annotation's region, or opens it in the editor.
    * An annotation on the whole canvas has no region, so outside the editor a
@@ -34,7 +26,7 @@
     Boolean(annotation.rect || annotation.point || annotation.polygon);
 
   const isSelectable = (annotation: ResolvedAnnotation) =>
-    allowCreateMode || isPlaced(annotation) || Boolean(annotation.time);
+    isPlaced(annotation) || Boolean(annotation.time);
 
   const selectAnnotation = (id: string) => {
     controller.handleAnnotationSelect({ id });
@@ -95,9 +87,8 @@
 {/snippet}
 
 <section
-  class="panel panel--editor"
+  class="panel panel--annotations"
   aria-label={$t('viewer.panels.annotations.label')}
-  data-mode={effectiveMode}
 >
   <div class="panel__header">
     <div class="panel__title">{$t('viewer.panels.annotations.title')}</div>
@@ -127,34 +118,10 @@
       <span></span>
     </span>
   </button>
-  {#if allowCreateMode}
-    <div class="panel__tabs">
-      <button
-        type="button"
-        class="panel__tab"
-        class:panel__tab--active={effectiveMode === 'edit'}
-        onclick={() => setMode('edit')}
-      >
-        {$t('viewer.panels.annotations.viewList')}
-      </button>
-      <button
-        type="button"
-        class="panel__tab"
-        class:panel__tab--active={effectiveMode === 'create'}
-        onclick={() => setMode('create')}
-      >
-        {$t('viewer.panels.annotations.drawShape')}
-      </button>
-    </div>
-  {/if}
   <div class="panel__body">
     {#if $overlayAnnotations.length === 0}
       <div class="panel__empty">
-        {#if effectiveMode === 'create'}
-          {$t('viewer.panels.annotations.drawHint')}
-        {:else}
-          {$t('viewer.panels.annotations.emptyList')}
-        {/if}
+        {$t('viewer.panels.annotations.emptyList')}
       </div>
     {:else}
       <ul class="annotation-list">

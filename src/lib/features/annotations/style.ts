@@ -233,7 +233,7 @@ export const rgbaFromHex = (color: string, alpha: number): string => {
 
 /**
  * Restricts application-authored colours before interpolating them into CSS.
- * Story documents and host-provided layer definitions are input, not trusted
+ * Annotation documents and host-provided layer definitions are input, not trusted
  * code; accepting a semicolon here would let data escape its declaration even
  * though imported stylesheets themselves are parsed safely.
  */

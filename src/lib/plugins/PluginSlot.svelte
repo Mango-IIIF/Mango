@@ -5,10 +5,11 @@
   export let plugins: ViewerPlugin[] = [];
   export let context: Omit<PluginContext, 'mount'>;
   export let slot: PluginSlot;
+  $: orderedPlugins = [...plugins].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 </script>
 
 <div class="plugin-slot plugin-slot--{slot}">
-  {#each plugins as plugin (plugin.id)}
+  {#each orderedPlugins as plugin (plugin.id)}
     <PluginPanel {plugin} {context} {slot} />
   {/each}
 </div>

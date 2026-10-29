@@ -71,6 +71,8 @@ export type ViewerController = {
   setManifest: (manifestId: string) => void;
   getManifestId: () => string | null;
   addAnnotation: (annotation: unknown) => Promise<void>;
+  getAnnotations: () => ResolvedAnnotation[];
+  setAnnotations: (annotations: unknown[]) => Promise<void>;
   updateAnnotation: (
     annotationId: string,
     patch: Partial<ResolvedAnnotation>,
@@ -89,7 +91,6 @@ export type ViewerController = {
     value: ImageFilters[K],
   ) => void;
   resetImageFilters: () => void;
-  setAnnotationMode: (mode: "edit" | "create") => void;
   setSearchQuery: (value: string) => void;
   handleSearchResultClick: (annotation: ResolvedAnnotation) => void;
   setPanelOpen: (panel: ViewerPanel, open: boolean) => void;
@@ -158,7 +159,6 @@ export const resetManifestScopedState = (
   state.selectedSearchResultId.set(null);
   state.iiifSearchResults.set([]);
   state.imageFilters.set({ ...DEFAULT_IMAGE_FILTERS });
-  state.annotationMode.set("edit");
   state.activeAnnotationId.set(null);
   state.hoverAnnotationId.set(null);
   state.mediaTime.set(0);
@@ -481,11 +481,12 @@ export const createViewerController = ({
 
     // Annotation controller methods
     addAnnotation: annotationController.addAnnotation,
+    getAnnotations: annotationController.getAnnotations,
+    setAnnotations: annotationController.setAnnotations,
     updateAnnotation: annotationController.updateAnnotation,
     removeAnnotation: annotationController.removeAnnotation,
     replaceAnnotation: annotationController.replaceAnnotation,
     commitAnnotation: annotationController.commitAnnotation,
-    setAnnotationMode: annotationController.setAnnotationMode,
     setSearchQuery: annotationController.setSearchQuery,
     handleSearchResultClick: annotationController.handleSearchResultClick,
 

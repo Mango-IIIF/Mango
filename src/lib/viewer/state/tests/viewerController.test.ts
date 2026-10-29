@@ -22,7 +22,6 @@ describe('viewerController manifest transitions', () => {
       ...DEFAULT_IMAGE_FILTERS,
       brightness: 75,
     });
-    state.annotationMode.set('create');
     state.activeAnnotationId.set('active-annotation');
     state.hoverAnnotationId.set('hover-annotation');
     state.mediaTime.set(42);
@@ -45,7 +44,6 @@ describe('viewerController manifest transitions', () => {
     expect(get(state.selectedSearchResultId)).toBeNull();
     expect(get(state.iiifSearchResults)).toEqual([]);
     expect(get(state.imageFilters)).toEqual(DEFAULT_IMAGE_FILTERS);
-    expect(get(state.annotationMode)).toBe('edit');
     expect(get(state.activeAnnotationId)).toBeNull();
     expect(get(state.hoverAnnotationId)).toBeNull();
     expect(get(state.mediaTime)).toBe(0);

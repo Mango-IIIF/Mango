@@ -27,4 +27,8 @@ export type ViewerPlugin = PluginLifecycle & {
   label: string;
   slot: PluginSlot;
   capabilities?: PluginCapabilities;
+  /** Lower values mount first. Plugins with the same order keep host order. */
+  order?: number;
+  /** Overlay plugins default to interactive; passive visual layers can opt out. */
+  pointerEvents?: 'auto' | 'none';
 };

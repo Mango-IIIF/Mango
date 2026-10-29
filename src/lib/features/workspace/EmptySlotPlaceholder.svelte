@@ -90,6 +90,8 @@
       <div class="empty-slot__row">
         <input
           type="text"
+          name="manifest-url"
+          aria-label={$t('workspace.emptySlot.placeholder')}
           placeholder={$t('workspace.emptySlot.placeholder')}
           bind:value={inputUrl}
           onkeydown={(event) => event.key === 'Enter' && handleSubmit()}
@@ -108,7 +110,7 @@
   .empty-slot {
     height: 100%;
     min-height: 220px;
-    border-radius: 14px;
+    border-radius: 0;
     border: 1px dashed rgba(133, 167, 198, 0.46);
     background: linear-gradient(140deg, rgba(9, 22, 35, 0.72), rgba(15, 30, 46, 0.85));
     padding: 14px;
@@ -147,7 +149,7 @@
 
   input,
   button {
-    border-radius: 10px;
+    border-radius: 0;
     border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(255, 255, 255, 0.08);
     color: #e6eef8;

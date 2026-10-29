@@ -3,6 +3,21 @@ import type { ImageFilters } from "./filters";
 import type { ModelPose, ModelPoseOptions } from "./model";
 import type { ContentSize, ViewBox } from "./viewer";
 import type { MediaSource } from "../../iiif/mediaResolver";
+import type OpenSeadragon from "openseadragon";
+
+export type StagePoint = { x: number; y: number };
+export type StageSize = { width: number; height: number };
+
+export type ImageRendererExtension = {
+  kind: "image";
+  viewer: OpenSeadragon.Viewer;
+  canvasToScreen: (point: StagePoint) => StagePoint | null;
+  screenToCanvas: (point: StagePoint) => StagePoint | null;
+};
+
+export type RendererExtension =
+  | ImageRendererExtension
+  | { kind: "audio" | "video" | "pdf" | "model"; instance: unknown };
 
 export type RendererComponent = Component<Record<string, unknown>>;
 
@@ -14,6 +29,7 @@ export type ActiveLayoutImage = {
 };
 
 export type RendererInstance = {
+  getExtension?: () => RendererExtension | null;
   getViewBox?: () => ViewBox | null;
   getContentSize?: () => ContentSize | null;
   setViewBox?: (box: ViewBox) => void;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '../../core/i18n';
   import type { ManifestEntry } from '../../core/state/manifests';
-  import MangoFooterBrand from '../../story/ui/MangoFooterBrand.svelte';
+  import MangoFooterBrand from './MangoFooterBrand.svelte';
 
   export let manifestId = '';
   export let manifestEntry: ManifestEntry | undefined;

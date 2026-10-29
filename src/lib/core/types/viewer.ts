@@ -24,3 +24,4 @@ export type ViewerStateSnapshot = {
   annotationCount: number;
   layerOpacities?: Record<string, number>;
 };
+export type ViewerMode = 'viewer' | 'workspace';
