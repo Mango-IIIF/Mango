@@ -47,6 +47,8 @@
           <input
             class="layers__slider"
             type="range"
+            name={`layer-opacity-${index}`}
+            aria-label={layer.label || (index === 0 ? $t('viewer.panels.layers.baseImage') : $t('viewer.panels.layers.layerNumber', { number: index + 1 }))}
             min="0"
             max="100"
             value={Math.round(opacity * 100)}

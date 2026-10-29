@@ -2,7 +2,7 @@ import { createReadStream, existsSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 
-const root = resolve(__dirname, 'apps/demo');
+const root = resolve(import.meta.dirname, 'apps/demo');
 const demoDist = resolve(root, 'dist');
 
 const contentTypes: Record<string, string> = {

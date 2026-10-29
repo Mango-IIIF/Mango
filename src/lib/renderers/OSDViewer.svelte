@@ -1111,24 +1111,18 @@
 
     if (activeLayoutImages && activeLayoutImages.length > 0) {
       let currentY = 0;
-      for (const img of activeLayoutImages) {
+      for (const [imagePosition, img] of activeLayoutImages.entries()) {
         let x = 0;
         let y = 0;
         let w = 1.0;
         const h = img.height / img.width;
 
         if (layoutMode === 'two-page') {
-          if (img.index === 0) {
-            x = 0;
-            y = 0;
-            w = 1.0;
-          } else if (img.index % 2 === 1) {
-            // Left page
+          if (imagePosition === 0) {
             x = 0;
             y = 0;
             w = 1.0;
           } else {
-            // Right page
             x = 1.02;
             y = 0;
             w = 1.0;
@@ -1224,6 +1218,35 @@
   let openingBaseCustomId = '';
   let pendingBaseTarget: TargetItem | null = null;
   const loadingLayerIds = new Set<string>();
+  let fittedLayoutSignature = '';
+
+  const getLayoutSignature = (items: TargetItem[]): string =>
+    items
+      .filter((item) => item.isPrimary)
+      .map((item) => `${item.customLayerId}:${item.x}:${item.y}:${item.width}`)
+      .join('|');
+
+  const fitChangedLayout = (items: TargetItem[]): void => {
+    if (!viewer?.viewport) return;
+    const signature = getLayoutSignature(items);
+    if (!signature || signature === fittedLayoutSignature) return;
+
+    const loadedIds = new Set<string>();
+    for (let index = 0; index < viewer.world.getItemCount(); index += 1) {
+      const id = tiledImageLayerIds.get(viewer.world.getItemAt(index));
+      if (id) loadedIds.add(id);
+    }
+    const primaryItemsLoaded = items
+      .filter((item) => item.isPrimary)
+      .every((item) => loadedIds.has(item.customLayerId));
+    if (!primaryItemsLoaded) return;
+
+    fittedLayoutSignature = signature;
+    callerFramedViewport = false;
+    pendingViewBoxRequest = null;
+    viewer.viewport.goHome?.(true);
+    viewer.viewport.applyConstraints?.();
+  };
 
   const openBaseTarget = (target: TargetItem): void => {
     if (!viewer) return;
@@ -1355,6 +1378,7 @@
             const pos = new OpenSeadragonClass.Point(matchingTarget.x, matchingTarget.y);
             item.setPosition(pos);
             item.setWidth(matchingTarget.width);
+            fitChangedLayout(currentTargets);
           },
           error: (err) => {
             console.error(`Failed to load tile source for layer ${target.customLayerId}:`, err);
@@ -1368,6 +1392,11 @@
         viewer.addTiledImage(options);
       }
     });
+
+    // Moving from a spread/continuous layout back to a layout whose images
+    // are already loaded does not raise addTiledImage's success callback.
+    // Refit here as well so the surviving page fills the stage again.
+    fitChangedLayout(items);
   });
 
   $effect(() => {

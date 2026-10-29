@@ -3,18 +3,15 @@
   import iiifIcon from '../../features/workspace/iiif_bw.svg';
   import {
     ChevronsLeft,
-    Download,
     Hammer,
     Image,
     Info,
     ListTree,
     MessageSquare,
     MessageSquareText,
-    Quote,
     ScanEye,
     Search,
     Settings,
-    Share2,
     SquareSplitHorizontal,
   } from '@lucide/svelte';
 
@@ -292,33 +289,6 @@
             <span>{$t('workspace.sidebar.compare')}</span>
           </button>
         {/if}
-        <button
-          class="viewer-sidebar__button"
-          type="button"
-          title={iconOnly ? $t('workspace.sidebar.download') : undefined}
-          disabled
-        >
-          <Download aria-hidden="true" />
-          <span>{$t('workspace.sidebar.download')}</span>
-        </button>
-        <button
-          class="viewer-sidebar__button"
-          type="button"
-          title={iconOnly ? $t('workspace.sidebar.share') : undefined}
-          disabled
-        >
-          <Share2 aria-hidden="true" />
-          <span>{$t('workspace.sidebar.share')}</span>
-        </button>
-        <button
-          class="viewer-sidebar__button"
-          type="button"
-          title={iconOnly ? $t('workspace.sidebar.cite') : undefined}
-          disabled
-        >
-          <Quote aria-hidden="true" />
-          <span>{$t('workspace.sidebar.cite')}</span>
-        </button>
       </div>
     </div>
     </div>
@@ -502,15 +472,6 @@
           <SquareSplitHorizontal aria-hidden="true" />
         </button>
       {/if}
-      <button class="viewer-mobile-nav__button" type="button" aria-label={$t('workspace.sidebar.download')} title={$t('workspace.sidebar.download')} disabled>
-        <Download aria-hidden="true" />
-      </button>
-      <button class="viewer-mobile-nav__button" type="button" aria-label={$t('workspace.sidebar.share')} title={$t('workspace.sidebar.share')} disabled>
-        <Share2 aria-hidden="true" />
-      </button>
-      <button class="viewer-mobile-nav__button" type="button" aria-label={$t('workspace.sidebar.cite')} title={$t('workspace.sidebar.cite')} disabled>
-        <Quote aria-hidden="true" />
-      </button>
     </div>
   </nav>
 {:else}

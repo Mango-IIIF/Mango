@@ -154,6 +154,7 @@
         <input
           class="workspace-splitter workspace-splitter--row"
           type="range"
+          name={`workspace-row-splitter-${index}`}
           aria-label={$t('workspace.resizeRows')}
           min="10"
           max="90"
@@ -193,6 +194,7 @@
         <input
           class="workspace-splitter workspace-splitter--column"
           type="range"
+          name={`workspace-column-splitter-${index}`}
           aria-label={$t('workspace.resizeColumns')}
           min="10"
           max="90"

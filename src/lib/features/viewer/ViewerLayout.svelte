@@ -19,6 +19,9 @@
   import StageGalleryView from '../../viewer/ui/StageGalleryView.svelte';
   import StageToolbar from '../../viewer/ui/StageToolbar.svelte';
   import Gallery from '../../viewer/ui/Gallery.svelte';
+  import ManifestManager from '../workspace/ManifestManager.svelte';
+  import GridContainer from '../workspace/GridContainer.svelte';
+  import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
   import { createViewerState } from '../../viewer/state/viewerState';
   import { createViewerDerived } from '../../viewer/state/viewerDerived';
   import { createViewerController } from '../../viewer/state/viewerController';
@@ -56,8 +59,10 @@
   let theme:ViewerSettingsTheme=$state(['dark','light','sepia','midnight','ringo'].includes(initialConfig.theme??'')?initialConfig.theme as ViewerSettingsTheme:'dark');
   let locale=$state(initialConfig.language??'en');
   let settingsLayout=$state<'1x1'|'1x2'|'2x1'|'1x2-panel'|'2x2'>('1x1');
+  let workspace=$state<WorkspaceStore|null>(null);
   let contentsTab=$state<'toc'|'transcript'>('toc');
   let sidebarCollapsed=$state(false);
+  let showManifestManager=$state(false);
   let canZoom=$state(false), viewerRoot:HTMLElement|null=$state(null), isFullscreen=$state(false), lastCanvasIndex=get(selectedCanvasIndex);
   let lastConfigInput:ViewerConfig|undefined;
   let lastPluginsInput:ViewerPlugin[]|undefined;
@@ -78,10 +83,12 @@
     updateLayerOpacity:controller.updateLayerOpacity,getLayerOpacities:()=>get(layerOpacities),getMediaSources:()=>get(mediaSources),on:controller.on,off:controller.off
   };
   pluginContext.viewer=viewerApi;
-  setViewerContext({state:viewerState,derived:viewerDerived,controller,settings:{get layout(){return settingsLayout;},set layout(v){settingsLayout=v;},get theme(){return theme;},set theme(v){theme=v;},get locale(){return locale;},set locale(v){locale=v;normalisedConfig={...normalisedConfig,language:v};viewerState.config.set(normalisedConfig);},get layoutMode(){return get(layoutMode);},set layoutMode(v){controller.setLayoutMode(v);}}});
+  setViewerContext({state:viewerState,derived:viewerDerived,controller,settings:{get layout(){return settingsLayout;},set layout(v){if(v===settingsLayout)return;settingsLayout=v;if(v==='1x1'){workspace=null;return;}showMetadata.set(false);showSearch.set(false);showAnnotations.set(false);showTools.set(false);showSettings.set(false);showContents.set(false);showLayers.set(false);workspace??=new WorkspaceStore(manifestId);workspace.setLayoutPreset(v);},get theme(){return theme;},set theme(v){theme=v;},get locale(){return locale;},set locale(v){locale=v;normalisedConfig={...normalisedConfig,language:v};viewerState.config.set(normalisedConfig);},get layoutMode(){return get(layoutMode);},set layoutMode(v){controller.setLayoutMode(v);}}});
 
   const panelToggle=(panel:Parameters<typeof controller.setPanelOpen>[0],open:boolean)=>controller.setPanelOpen(panel,open);
   const openContents=(tab:'toc'|'transcript')=>{contentsTab=tab;panelToggle('contents',true);};
+  const previousCanvas=()=>{const index=get(selectedCanvasIndex);controller.setCanvasByIndex(get(layoutMode)==='two-page'?Math.max(0,Math.floor(index/2)*2-2):index-1);};
+  const nextCanvas=()=>{const index=get(selectedCanvasIndex);controller.setCanvasByIndex(get(layoutMode)==='two-page'?Math.min(get(canvases).length-1,Math.floor(index/2)*2+2):index+1);};
   const handleCollectionSelect=async(selection:CollectionSelection)=>navigateMango({getManifestId:()=>manifestId||null,getCanvasCount:controller.getCanvasCount,setManifest:(id)=>manifestId=id,setCanvasById:controller.setCanvasById,on:controller.on},selection);
 
   export function getContentSize():ContentSize|null{return stageRef?.getContentSize?.()??null;}
@@ -118,17 +125,22 @@
   {#if chrome&&normalisedConfig.sidebar?.enabled!==false&&sidebarCollapsed}<button class="viewer__expand-sidebar" type="button" onclick={()=>sidebarCollapsed=false} aria-label={$t('viewer.stage.controls.expandSidebar')} title={$t('viewer.stage.controls.expandSidebar')}><ChevronsRight aria-hidden="true"/></button>{/if}
   <div class="viewer__grid" class:viewer__grid--controls={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed} class:viewer__grid--left={chrome&&$leftVisible&&!sidebarCollapsed} class:viewer__grid--nav-compact={chrome&&$leftVisible&&!sidebarCollapsed} class:viewer__grid--sidebar-right={chrome&&normalisedConfig.sidebar?.position==='right'}>
     {#if chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed}
-      <aside class="viewer__control-rail" aria-label={$t('viewer.stage.controls.label')}><ViewerDock compact variant="sidebar" iconOnly={$leftVisible} galleryActive={$showThumbnails} allowThumbnails={$allowThumbnails} allowCollection={$allowCollection} allowContents={$contentsAvailable} allowChapters={$avChaptersAvailable} allowTranscript={$avTranscriptAvailable} allowSearch={$allowSearch} allowMetadata={$allowMetadata} allowAnnotations={$allowAnnotations} allowTools={$allowTools} allowLayers={$allowLayers} allowSettings={normalisedConfig.showSettings!==false} showThumbnails={$showThumbnails} showCollection={$showCollection} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showAnnotations={$showAnnotations} showTools={$showTools} showLayers={$showLayers} showSettings={$showSettings} {contentsTab} oncollapse={()=>sidebarCollapsed=true} ongalleryopen={()=>showThumbnails.set(!$showThumbnails)} oncontentsopen={openContents} onpanelToggle={(d)=>panelToggle(d.panel,d.open)}/></aside>
+      <aside class="viewer__control-rail" aria-label={$t('viewer.stage.controls.label')}><ViewerDock compact variant="sidebar" iconOnly={$leftVisible} galleryActive={$showThumbnails} allowThumbnails={$allowThumbnails} allowCollection={$allowCollection} allowContents={$contentsAvailable} allowChapters={$contentsAvailable&&$avChaptersAvailable} allowTranscript={$contentsAvailable&&$avTranscriptAvailable} allowSearch={$allowSearch} allowMetadata={$allowMetadata} allowAnnotations={$allowAnnotations} allowTools={$allowTools} allowLayers={$allowLayers} allowSettings={normalisedConfig.showSettings!==false} showThumbnails={$showThumbnails} showCollection={$showCollection} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showAnnotations={$showAnnotations} showTools={$showTools} showLayers={$showLayers} showSettings={$showSettings} {showManifestManager} {contentsTab} oncollapse={()=>sidebarCollapsed=true} onmanifesttoggle={()=>showManifestManager=!showManifestManager} ongalleryopen={()=>showThumbnails.set(!$showThumbnails)} oncontentsopen={openContents} onpanelToggle={(d)=>panelToggle(d.panel,d.open)}/></aside>
       <LeftPanelStack visible={$leftVisible} redesigned {contentsTab} showCollection={$showCollection} showAnnotations={$showAnnotations} showTools={$showTools} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showSettings={$showSettings} showLayers={$showLayers} leftPlugins={$pluginSlots.left} {pluginContext} onpanelToggle={(p,o)=>panelToggle(p,o)} oncollectionSelect={handleCollectionSelect}/>
     {/if}
+    {#if showManifestManager}<div class="viewer__manifest-overlay"><ManifestManager {workspace} onclose={()=>showManifestManager=false} onsingleload={(id)=>setManifest(id)}/></div>{/if}
     <main class="stage stage--viewer" class:stage--joined-sidebar-left={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed&&!$leftVisible&&normalisedConfig.sidebar?.position!=='right'} class:stage--joined-sidebar-right={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed&&!$leftVisible&&normalisedConfig.sidebar?.position==='right'} aria-label={$t('viewer.stage.label')}>
+      {#if settingsLayout==='1x1'}
       <div class="stage__primary stage__viewer-frame">
       {#if $layoutMode==='gallery'}<StageGalleryView canvases={$canvases} thumbnails={$canvasThumbnails} selectedCanvasIndex={$selectedCanvasIndex} onselect={(d)=>{controller.setCanvasByIndex(d.index);controller.setLayoutMode('single');}}/>
       {:else}<Stage bind:this={stageRef} bind:canZoom rendererComponent={$rendererComponent} {avController} mediaSource={$mediaSource} annotations={$overlayAnnotations} highlightIds={$highlightIds} activeAnnotationId={$activeAnnotationId} hoverAnnotationId={$hoverAnnotationId} overlayPlugins={$pluginSlots.overlay} {pluginContext} isFetching={$manifestEntry?.isFetching??false} error={$manifestEntry?.error??''} imageFilters={$imageFilters} mediaType={$mediaType} viewerConfig={normalisedConfig} showDock={false} allowThumbnails={$allowThumbnails} allowSearch={$allowSearch} allowMetadata={$allowMetadata} allowAnnotations={$allowAnnotations} allowTools={$allowTools} allowLayers={$allowLayers} allowSettings={normalisedConfig.showSettings!==false} allowContents={$contentsAvailable} showThumbnails={$showThumbnails} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showAnnotations={$showAnnotations} showTools={$showTools} showLayers={$showLayers} layers={$mediaSources} layerOpacities={$layerOpacities} {rendererHandlers} rotation={$rotation} initialViewBox={initialViewState.viewBox} layoutMode={$layoutMode} activeLayoutImages={$activeLayoutImages} onviewboxchange={controller.handleViewBoxChange} onzoomchange={controller.handleZoomChange} onrotationchange={controller.handleRotationChange} onpaneltoggle={(d)=>panelToggle(d.panel,d.open)} onrendererready={(d)=>controller.emitEvent('rendererReady',d)} onstageresize={(d)=>controller.emitEvent('stageResize',d)}/>{/if}
-      {#if chrome&&$layoutMode!=='gallery'}<StageToolbar {canZoom} hasSource={Boolean($mediaSource)} placement="below" mediaType={$mediaType} selectedCanvasIndex={$selectedCanvasIndex} totalCanvases={$canvases.length} zoomPercent={getZoom()} rotation={$rotation} onhome={()=>stageRef?.goHome?.()} onzoomIn={zoomIn} onzoomOut={zoomOut} onsetZoomPercent={(d)=>setZoom(d.percent)} onrotate={controller.handleRotationChange} onsetCanvasIndex={(d)=>controller.setCanvasByIndex(d.index)} onprevCanvas={()=>controller.setCanvasByIndex($selectedCanvasIndex-1)} onnextCanvas={()=>controller.setCanvasByIndex($selectedCanvasIndex+1)}/>{/if}
+      {#if chrome&&$layoutMode!=='gallery'}<StageToolbar {canZoom} hasSource={Boolean($mediaSource)} placement="below" mediaType={$mediaType} selectedCanvasIndex={$selectedCanvasIndex} totalCanvases={$canvases.length} zoomPercent={getZoom()} rotation={$rotation} onhome={()=>stageRef?.goHome?.()} onzoomIn={zoomIn} onzoomOut={zoomOut} onsetZoomPercent={(d)=>setZoom(d.percent)} onrotate={controller.handleRotationChange} onsetCanvasIndex={(d)=>controller.setCanvasByIndex(d.index)} onprevCanvas={previousCanvas} onnextCanvas={nextCanvas}/>{/if}
       </div>
       {#if chrome&&$showThumbnails&&$layoutMode!=='gallery'}<Gallery redesigned canvases={$canvases} canvasThumbnails={$canvasThumbnails} selectedCanvasIndex={$selectedCanvasIndex} onpanelToggle={(d)=>panelToggle(d.panel,d.open)} oncanvasSelect={(d)=>controller.setCanvasByIndex(d.index)} onviewall={()=>controller.setLayoutMode('gallery')}/>{/if}
       {#if $pluginSlots.bottom.length}<div class="stage__bottom"><PluginSlot plugins={$pluginSlots.bottom} {pluginContext}/></div>{/if}
+      {:else if workspace}
+        <GridContainer node={workspace.layout} activeWindowId={workspace.activeWindowId} onfocuswindow={(id)=>workspace?.setActiveWindow(id)} onmovewindow={(d)=>workspace?.moveWindow(d.id,d.direction)} onclosewindow={(id)=>{workspace?.closeWindow(id);if(workspace?.layout.type==='window'){settingsLayout='1x1';workspace=null;}}} onloadmanifest={(d)=>{workspace?.setWindowManifest(d.id,d.manifestId);workspace?.setActiveWindow(d.id);}} oncanvaschange={(d)=>workspace?.setWindowCanvasIndex(d.id,d.canvasIndex)} onresizesplit={(d)=>workspace?.updateSplitSizes(d.targetId,d.sizes)} onopenmanifestmanager={(id)=>{workspace?.setActiveWindow(id);showManifestManager=true;}}/>
+      {/if}
     </main>
     {#if chrome&&$pluginSlots.right.length}<aside class="panel-stack panel-stack--right"><PluginSlot plugins={$pluginSlots.right} {pluginContext}/></aside>{/if}
   </div>
@@ -163,7 +175,8 @@
     --viewer-close-button-hover-border: rgba(255, 255, 255, 0.34);
     --viewer-close-button-color: var(--viewer-text);
     --viewer-focus-ring: rgba(42, 199, 255, 0.7);
-    --viewer-chrome-radius: 18px;
+    --viewer-chrome-radius: 0;
+    --viewer-close-button-radius: 0;
 
     position: relative;
     display: grid;
@@ -176,7 +189,7 @@
     overflow: hidden;
     padding: 20px 0 0;
     border: 1px solid #1c2530;
-    border-radius: var(--mango-viewer-radius, 24px);
+    border-radius: 0;
     background: radial-gradient(120% 120% at 10% 0%, #1d2632 0%, #111720 55%, #0b0f14 100%);
     color: var(--viewer-text);
     font-family: sans-serif;
@@ -217,7 +230,7 @@
     width: 34px;
     height: 34px;
     border: 1px solid var(--viewer-panel-border);
-    border-radius: var(--viewer-chrome-radius);
+    border-radius: 0;
     background: var(--viewer-panel);
     color: var(--viewer-text);
     cursor: pointer;
@@ -250,11 +263,151 @@
     padding: 0;
     border: 1px solid var(--viewer-panel-border);
     border-left: 0;
-    border-radius: 0 var(--viewer-chrome-radius) var(--viewer-chrome-radius) 0;
+    border-radius: 0;
     background: var(--viewer-panel-strong);
     color: var(--viewer-text);
     cursor: pointer;
     transform: translateY(-50%);
+  }
+
+  .viewer[data-theme='light'] {
+    --viewer-bg: #f3f5f8;
+    --viewer-surface: #f7f8fb;
+    --viewer-panel: #e9edf3;
+    --viewer-panel-strong: #dde4ed;
+    --viewer-panel-border: rgba(34, 48, 65, 0.12);
+    --viewer-text: #223041;
+    --viewer-muted: #586576;
+    --viewer-accent: #53719c;
+    --viewer-accent-2: #357f99;
+    --viewer-accent-tools: #53719c;
+    --viewer-stage: #f3f5f8;
+    --viewer-stage-glow: rgba(108, 174, 199, 0.16);
+    --viewer-stage-tail: #fff;
+    --viewer-control-rail-bg: linear-gradient(180deg, rgba(241, 245, 251, 0.95), rgba(229, 236, 245, 0.95));
+    --viewer-stage-bottom-bg: rgba(241, 245, 251, 0.9);
+    --viewer-toolbar-separator: rgba(34, 48, 65, 0.16);
+    --viewer-toolbar-group-border: rgba(34, 48, 65, 0.16);
+    --viewer-toolbar-button-bg: rgba(255, 255, 255, 0.84);
+    --viewer-toolbar-button-hover-bg: rgba(124, 150, 190, 0.2);
+    --viewer-toolbar-value-text: #223041;
+    --viewer-close-button-border: rgba(34, 48, 65, 0.2);
+    --viewer-close-button-bg: rgba(255, 255, 255, 0.92);
+    --viewer-close-button-hover-bg: rgba(233, 240, 248, 0.96);
+    --viewer-close-button-hover-border: rgba(34, 48, 65, 0.3);
+    --viewer-close-button-color: #223041;
+    --viewer-search-input-bg: rgba(255, 255, 255, 0.92);
+    --viewer-search-clear-bg: rgba(124, 150, 190, 0.2);
+    --viewer-search-item-bg: rgba(255, 255, 255, 0.78);
+    --viewer-search-item-hover-bg: rgba(124, 150, 190, 0.22);
+    --viewer-well-bg: rgba(34, 48, 65, 0.07);
+    --viewer-focus-ring: #0b6fa4;
+    border-color: #dbe2eb;
+    background: radial-gradient(135% 135% at 10% 0%, #e6f1ff 0%, #f5faff 45%, #fff 100%);
+  }
+
+  .viewer[data-theme='sepia'] {
+    --viewer-bg: #eee4d2;
+    --viewer-surface: #f7f0e3;
+    --viewer-panel: #e8dcc6;
+    --viewer-panel-strong: #dac9aa;
+    --viewer-panel-border: rgba(76, 58, 35, 0.16);
+    --viewer-text: #3d3023;
+    --viewer-muted: #67563f;
+    --viewer-accent: #a86f46;
+    --viewer-accent-2: #2f858b;
+    --viewer-accent-tools: #66864a;
+    --viewer-stage: #f4ecde;
+    --viewer-stage-glow: rgba(47, 133, 139, 0.13);
+    --viewer-stage-tail: #fffaf0;
+    --viewer-control-rail-bg: linear-gradient(180deg, rgba(241, 231, 212, 0.96), rgba(229, 214, 188, 0.96));
+    --viewer-stage-bottom-bg: rgba(241, 231, 212, 0.9);
+    --viewer-toolbar-separator: rgba(76, 58, 35, 0.16);
+    --viewer-toolbar-group-border: rgba(76, 58, 35, 0.16);
+    --viewer-toolbar-button-bg: rgba(255, 250, 240, 0.86);
+    --viewer-toolbar-button-hover-bg: rgba(47, 133, 139, 0.15);
+    --viewer-toolbar-value-text: #3d3023;
+    --viewer-close-button-border: rgba(76, 58, 35, 0.2);
+    --viewer-close-button-bg: rgba(255, 250, 240, 0.94);
+    --viewer-close-button-hover-bg: rgba(239, 227, 207, 0.96);
+    --viewer-close-button-hover-border: rgba(76, 58, 35, 0.32);
+    --viewer-close-button-color: #3d3023;
+    --viewer-search-input-bg: rgba(255, 250, 240, 0.94);
+    --viewer-search-clear-bg: rgba(47, 133, 139, 0.14);
+    --viewer-search-item-bg: rgba(255, 250, 240, 0.78);
+    --viewer-search-item-hover-bg: rgba(47, 133, 139, 0.16);
+    --viewer-well-bg: rgba(76, 58, 35, 0.09);
+    --viewer-focus-ring: #1b6b70;
+    border-color: #d8c7aa;
+    background: radial-gradient(135% 135% at 10% 0%, #f5ead7 0%, #eee4d2 48%, #e5d7bf 100%);
+  }
+
+  .viewer[data-theme='midnight'] {
+    --viewer-bg: #07111f;
+    --viewer-surface: #0a1728;
+    --viewer-panel: #0c192a;
+    --viewer-panel-strong: #13263d;
+    --viewer-panel-border: rgba(126, 180, 235, 0.15);
+    --viewer-text: #edf6ff;
+    --viewer-muted: #91a7bf;
+    --viewer-accent: #a78bfa;
+    --viewer-accent-2: #38bdf8;
+    --viewer-accent-tools: #5eead4;
+    --viewer-stage: #050d18;
+    --viewer-stage-glow: rgba(56, 189, 248, 0.15);
+    --viewer-stage-tail: #020711;
+    --viewer-control-rail-bg: linear-gradient(180deg, rgba(12, 29, 48, 0.96), rgba(5, 15, 28, 0.96));
+    --viewer-stage-bottom-bg: rgba(5, 15, 28, 0.88);
+    --viewer-toolbar-button-bg: rgba(126, 180, 235, 0.08);
+    --viewer-toolbar-button-hover-bg: rgba(126, 180, 235, 0.16);
+    --viewer-toolbar-value-text: #edf6ff;
+    --viewer-well-bg: rgba(3, 8, 16, 0.45);
+    --viewer-focus-ring: #38bdf8;
+    border-color: #142b46;
+    background: radial-gradient(130% 130% at 8% 0%, #142a46 0%, #07111f 50%, #020711 100%);
+  }
+
+  .viewer[data-theme='ringo'] {
+    --viewer-bg: #ffd60a;
+    --viewer-surface: #ffe987;
+    --viewer-panel: #ffe15c;
+    --viewer-panel-strong: #ffcf1f;
+    --viewer-panel-border: rgba(74, 48, 0, 0.24);
+    --viewer-text: #2e2000;
+    --viewer-muted: #6d5200;
+    --viewer-accent: #a8232b;
+    --viewer-accent-2: #0072c6;
+    --viewer-accent-tools: #00875a;
+    --viewer-stage: #fff6c2;
+    --viewer-stage-glow: rgba(168, 35, 43, 0.1);
+    --viewer-stage-tail: #fffdf0;
+    --viewer-control-rail-bg: rgba(255, 225, 92, 0.96);
+    --viewer-stage-bottom-bg: rgba(255, 244, 184, 0.92);
+    --viewer-toolbar-separator: rgba(74, 48, 0, 0.2);
+    --viewer-toolbar-group-border: rgba(74, 48, 0, 0.2);
+    --viewer-toolbar-button-bg: rgba(156, 43, 34, 0.94);
+    --viewer-toolbar-button-hover-bg: rgba(124, 32, 25, 0.98);
+    --viewer-toolbar-button-color: #fff4b8;
+    --viewer-toolbar-value-text: #2e2000;
+    --viewer-nav-button-bg: rgba(156, 43, 34, 0.94);
+    --viewer-nav-button-hover-bg: rgba(124, 32, 25, 0.98);
+    --viewer-nav-button-border: rgba(74, 48, 0, 0.28);
+    --viewer-nav-button-color: #fff4b8;
+    --viewer-nav-button-active-bg: rgba(124, 32, 25, 0.98);
+    --viewer-nav-button-active-border: #fff4b8;
+    --viewer-close-button-border: rgba(74, 48, 0, 0.24);
+    --viewer-close-button-bg: rgba(255, 252, 226, 0.94);
+    --viewer-close-button-hover-bg: rgba(255, 238, 160, 0.96);
+    --viewer-close-button-hover-border: rgba(74, 48, 0, 0.36);
+    --viewer-close-button-color: #2e2000;
+    --viewer-search-input-bg: rgba(255, 252, 226, 0.94);
+    --viewer-search-clear-bg: rgba(168, 35, 43, 0.16);
+    --viewer-search-item-bg: rgba(255, 252, 226, 0.78);
+    --viewer-search-item-hover-bg: rgba(168, 35, 43, 0.18);
+    --viewer-well-bg: rgba(74, 48, 0, 0.1);
+    --viewer-focus-ring: #0056a3;
+    border-color: #e0a800;
+    background: var(--viewer-bg);
   }
 
   .viewer__grid {
@@ -268,6 +421,16 @@
     min-height: 0;
     row-gap: 18px;
     column-gap: 18px;
+  }
+
+  .viewer__manifest-overlay {
+    position: absolute;
+    z-index: 30;
+    inset: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .viewer__grid--controls {
@@ -291,15 +454,15 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .viewer__grid--sidebar-right:not(.viewer__grid--left) {
+  .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls:not(.viewer__grid--left) {
     grid-template-columns: minmax(0, 1fr) 220px;
   }
 
-  .viewer__grid--sidebar-right.viewer__grid--left {
+  .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left {
     grid-template-columns: minmax(0, 1fr) minmax(320px, 410px) 220px;
   }
 
-  .viewer__grid--sidebar-right.viewer__grid--left.viewer__grid--nav-compact {
+  .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
     grid-template-columns: minmax(0, 1fr) minmax(320px, 410px) 72px;
   }
 
@@ -396,7 +559,7 @@
     margin: 0;
     padding: 6px;
     border: 1px solid var(--viewer-panel-border);
-    border-radius: 14px;
+    border-radius: 0;
     background: var(--viewer-stage-bottom-bg);
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.34);
     backdrop-filter: blur(12px);
@@ -426,6 +589,28 @@
   .stage__bottom {
     display: grid;
     gap: 12px;
+  }
+
+  .viewer :global(button),
+  .viewer :global(input),
+  .viewer :global(select),
+  .viewer :global(textarea),
+  .viewer :global(.viewer-sidebar__button),
+  .viewer :global(.viewer-sidebar__collapse),
+  .viewer :global(.viewer-mobile-nav__button),
+  .viewer :global(.viewer__dock-button),
+  .viewer :global(.stage__toolbar-button),
+  .viewer :global(.stage__toolbar-group),
+  .viewer :global(.stage__toolbar-input),
+  .viewer :global(.panel__close),
+  .viewer :global(.gallery__close),
+  .viewer :global(.gallery__button),
+  .viewer :global(.plugin-panel__panel) {
+    border-radius: 0;
+  }
+
+  .viewer :global(.viewer-sidebar__button) {
+    border-radius: 10px;
   }
 
   .panel-stack--right {

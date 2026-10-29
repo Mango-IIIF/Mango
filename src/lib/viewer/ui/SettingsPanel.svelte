@@ -29,7 +29,12 @@
     <!-- language -->
     <div class="settings-panel__section">
       <div class="settings-panel__label">{$t('workspace.language')}</div>
-      <select value={settings.locale} onchange={(event) => settings.locale = (event.currentTarget as HTMLSelectElement).value}>
+      <select
+        name="viewer-language"
+        aria-label={$t('workspace.language')}
+        value={settings.locale}
+        onchange={(event) => settings.locale = (event.currentTarget as HTMLSelectElement).value}
+      >
         {#each supportedLocales as option}
           <option value={option}>{option.toUpperCase()}</option>
         {/each}
@@ -51,7 +56,7 @@
       </div>
     </div>
 
-    <!-- workspace -->
+    <!-- page layout -->
     <div
       class="settings-panel__section"
       class:settings-panel__section--disabled={pageLayoutDisabled}
@@ -112,6 +117,23 @@
           <Grid2x2 aria-hidden="true" />
         </button>
       </div>
+    </div>
+
+    <!-- comparison workspace -->
+    <div class="settings-panel__section">
+      <div class="settings-panel__label">{$t('workspace.compare.title')}</div>
+      <select
+        name="comparison-layout"
+        aria-label={$t('workspace.compare.group')}
+        value={settings.layout}
+        onchange={(event) => settings.layout = (event.currentTarget as HTMLSelectElement).value as typeof settings.layout}
+      >
+        <option value="1x1">{$t('workspace.compare.single')} — 1 × 1</option>
+        <option value="1x2">{$t('workspace.compare.sideBySide')} — 1 × 2</option>
+        <option value="2x1">{$t('workspace.compare.stacked')} — 2 × 1</option>
+        <option value="1x2-panel">{$t('workspace.compare.oneByTwo')} — 1 + 2</option>
+        <option value="2x2">{$t('workspace.compare.grid')} — 2 × 2</option>
+      </select>
     </div>
 
   </div>

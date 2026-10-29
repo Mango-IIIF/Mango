@@ -19,6 +19,7 @@
           <span>Manifest URL</span>
           <input
             id="manifest-id"
+            name="manifest-id"
             type="url"
             value="https://iiif.wellcomecollection.org/presentation/v2/b18035723"
           />
@@ -30,48 +31,48 @@
           <form id="config-form">
             <fieldset>
               <legend>General</legend>
-              <label>Language <input data-config-path="language" value="en" /></label>
+              <label>Language <input name="language" data-config-path="language" value="en" /></label>
               <label>
                 Theme
-                <select data-config-path="theme">
+                <select name="theme" data-config-path="theme">
                   <option value="dark">Dark</option>
                   <option value="light">Light</option>
                 </select>
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="showThumbnails" checked /> Thumbnails
+                <input type="checkbox" name="showThumbnails" data-config-path="showThumbnails" checked /> Thumbnails
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="showMetadata" checked /> Metadata
+                <input type="checkbox" name="showMetadata" data-config-path="showMetadata" checked /> Metadata
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="showSearch" checked /> Search
+                <input type="checkbox" name="showSearch" data-config-path="showSearch" checked /> Search
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="showAnnotations" checked /> Annotations
+                <input type="checkbox" name="showAnnotations" data-config-path="showAnnotations" checked /> Annotations
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="showTools" /> Tools
+                <input type="checkbox" name="showTools" data-config-path="showTools" /> Tools
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="showLayers" /> Layers
+                <input type="checkbox" name="showLayers" data-config-path="showLayers" /> Layers
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="showSettings" checked /> Show settings button
+                <input type="checkbox" name="showSettings" data-config-path="showSettings" checked /> Show settings button
               </label>
             </fieldset>
 
             <fieldset>
               <legend>Sidebar</legend>
               <label class="config-check">
-                <input id="enable-sidebar" type="checkbox" data-config-path="sidebar.enabled" checked /> Enable sidebar
+                <input id="enable-sidebar" type="checkbox" name="sidebar.enabled" data-config-path="sidebar.enabled" checked /> Enable sidebar
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="sidebar.open" checked /> Open initially
+                <input type="checkbox" name="sidebar.open" data-config-path="sidebar.open" checked /> Open initially
               </label>
               <label>
                 Active panel
-                <select data-config-path="sidebar.activePanel">
+                <select name="sidebar.activePanel" data-config-path="sidebar.activePanel">
                   <option value="metadata">Metadata</option>
                   <option value="search">Search</option>
                   <option value="annotations">Annotations</option>
@@ -83,7 +84,7 @@
               </label>
               <label>
                 Position
-                <select data-config-path="sidebar.position">
+                <select name="sidebar.position" data-config-path="sidebar.position">
                   <option value="left">Left</option>
                   <option value="right">Right</option>
                 </select>
@@ -94,11 +95,11 @@
               <legend>Initial view</legend>
               <label>
                 Canvas index (zero-based)
-                <input type="number" min="0" data-config-path="initialCanvasIndex" value="0" />
+                <input type="number" min="0" name="initialCanvasIndex" data-config-path="initialCanvasIndex" value="0" />
               </label>
               <label>
                 Layout
-                <select data-config-path="initialLayoutMode">
+                <select name="initialLayoutMode" data-config-path="initialLayoutMode">
                   <option value="single">Single</option>
                   <option value="two-page">Two page</option>
                   <option value="continuous">Continuous</option>
@@ -107,7 +108,7 @@
               </label>
               <label>
                 Rotation
-                <select data-config-path="initialRotation" data-value-type="number">
+                <select name="initialRotation" data-config-path="initialRotation" data-value-type="number">
                   <option value="0">0°</option>
                   <option value="90">90°</option>
                   <option value="180">180°</option>
@@ -115,29 +116,29 @@
                 </select>
               </label>
               <label class="config-check">
-                <input type="checkbox" id="enable-initial-view-box" /> Apply initial view box
+                <input type="checkbox" id="enable-initial-view-box" name="enable-initial-view-box" /> Apply initial view box
               </label>
               <div class="config-coordinate-grid">
-                <label>X <input type="number" data-config-path="initialViewBox.x" data-optional-group="initial-view-box" value="0" /></label>
-                <label>Y <input type="number" data-config-path="initialViewBox.y" data-optional-group="initial-view-box" value="0" /></label>
-                <label>Width <input type="number" min="1" data-config-path="initialViewBox.w" data-optional-group="initial-view-box" value="1000" /></label>
-                <label>Height <input type="number" min="1" data-config-path="initialViewBox.h" data-optional-group="initial-view-box" value="1000" /></label>
+                <label>X <input type="number" name="initialViewBox.x" data-config-path="initialViewBox.x" data-optional-group="initial-view-box" value="0" /></label>
+                <label>Y <input type="number" name="initialViewBox.y" data-config-path="initialViewBox.y" data-optional-group="initial-view-box" value="0" /></label>
+                <label>Width <input type="number" min="1" name="initialViewBox.w" data-config-path="initialViewBox.w" data-optional-group="initial-view-box" value="1000" /></label>
+                <label>Height <input type="number" min="1" name="initialViewBox.h" data-config-path="initialViewBox.h" data-optional-group="initial-view-box" value="1000" /></label>
               </div>
             </fieldset>
 
             <fieldset>
               <legend>OpenSeadragon</legend>
               <label class="config-check">
-                <input type="checkbox" data-config-path="osd.preserveViewport" /> Preserve viewport
+                <input type="checkbox" name="osd.preserveViewport" data-config-path="osd.preserveViewport" /> Preserve viewport
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="osd.showNavigator" /> Show navigator
+                <input type="checkbox" name="osd.showNavigator" data-config-path="osd.showNavigator" /> Show navigator
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="osd.showRotationControl" /> Rotation control
+                <input type="checkbox" name="osd.showRotationControl" data-config-path="osd.showRotationControl" /> Rotation control
               </label>
               <label class="config-check">
-                <input type="checkbox" data-config-path="osd.clickToZoomEnabled" /> Click to zoom
+                <input type="checkbox" name="osd.clickToZoomEnabled" data-config-path="osd.clickToZoomEnabled" /> Click to zoom
               </label>
             </fieldset>
 
@@ -145,7 +146,7 @@
               <legend>PDF</legend>
               <label>
                 Initial page (one-based)
-                <input type="number" min="1" data-config-path="pdf.page" value="1" />
+                <input type="number" min="1" name="pdf.page" data-config-path="pdf.page" value="1" />
               </label>
             </fieldset>
 

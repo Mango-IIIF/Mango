@@ -283,13 +283,10 @@ export const createViewerDerived = (
       };
 
       if (layoutMode === "two-page") {
-        if (index === 0) {
-          // Cover page
-          const cover = getCanvasImage(0);
-          return cover ? [cover] : [];
-        }
-        // Pairing subsequent pages: (1, 2), (3, 4), (5, 6), etc.
-        const leftIndex = index % 2 === 1 ? index : index - 1;
+        // Keep every selected canvas in a stable spread. Do not assume that
+        // canvas zero is a standalone cover: many manifests do not describe a
+        // cover at all, and that made Side by Side appear broken on first use.
+        const leftIndex = index % 2 === 0 ? index : index - 1;
         const rightIndex = leftIndex + 1;
 
         const leftImg = getCanvasImage(leftIndex);

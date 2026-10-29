@@ -256,6 +256,7 @@
           <Search size={18} aria-hidden="true" />
           <input
             type="search"
+            name="manifest-search"
             bind:value={query}
             placeholder={$t('workspace.manifestManager.searchPlaceholder')}
             aria-label={$t('workspace.manifestManager.search')}
@@ -275,7 +276,7 @@
           </div>
           <label class="source-filter">
             <span class="sr-only">{$t('workspace.manifestManager.source')}</span>
-            <select bind:value={source}>
+            <select name="manifest-source" bind:value={source}>
               <option value="all">{$t('workspace.manifestManager.allSources')}</option>
               {#each sourceOptions as sourceOption}
                 <option value={sourceOption}>{sourceOption}</option>
@@ -377,6 +378,7 @@
         <Link size={18} aria-hidden="true" />
         <input
           id="manifest-manager-url"
+          name="manifest-url"
           type="url"
           bind:value={manifestUrl}
           placeholder={$t('workspace.manifestManager.urlPlaceholder')}
@@ -387,7 +389,7 @@
       {#if isMultiView}
         <label class="target-field" for="manifest-manager-window">
           <span>{$t('workspace.manifestManager.targetWindow')}</span>
-          <select id="manifest-manager-window" bind:value={selectedWindowId}>
+          <select id="manifest-manager-window" name="target-window" bind:value={selectedWindowId}>
             {#each windows as windowNode, index (windowNode.id)}
               <option value={windowNode.id}>
                 {$t('workspace.manifestManager.window', { number: index + 1 })}{windowNode.id === workspace?.activeWindowId ? ` — ${$t('workspace.manifestManager.active')}` : ''}

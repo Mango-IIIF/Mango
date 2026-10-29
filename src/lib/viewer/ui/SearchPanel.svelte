@@ -46,6 +46,7 @@
       <div class="search__row">
         <input
           id="search-input"
+          name="search-query"
           class="search__input"
           type="search"
           value={$searchQuery}

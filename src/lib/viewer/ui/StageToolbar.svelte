@@ -18,7 +18,7 @@
     onhome?: () => void;
     onzoomIn?: () => void;
     onzoomOut?: () => void;
-    onrotate?: () => void;
+    onrotate?: (payload: { rotation: number }) => void;
     onprevCanvas?: () => void;
     onnextCanvas?: () => void;
     onsetCanvasIndex?: (payload: { index: number }) => void;
@@ -224,7 +224,7 @@
         aria-label={$t('viewer.toolbar.rotateRight')}
         title={$t('viewer.toolbar.rotateRight')}
         disabled={!canRotate}
-        onclick={() => onrotate?.()}
+        onclick={() => onrotate?.({ rotation: (rotation + 90) % 360 })}
       >
         <span
           class="stage__toolbar-rotate-icon"
@@ -264,9 +264,10 @@
         <input
           class="stage__toolbar-input stage__toolbar-input--canvas"
           type="text"
+          name="canvas-number"
           inputmode="numeric"
           pattern="[0-9]*"
-        aria-label={$t('viewer.toolbar.canvasNumber')}
+          aria-label={$t('viewer.toolbar.canvasNumber')}
           value={canvasNumberInput}
           style={`width: ${Math.max(2, String(Math.max(totalCanvases, currentCanvasNumber, 1)).length)}ch;`}
           disabled={totalCanvases <= 0}
@@ -323,9 +324,10 @@
         <input
           class="stage__toolbar-input stage__toolbar-input--zoom"
           type="text"
+          name="zoom-percent"
           inputmode="numeric"
           pattern="[0-9]*"
-        aria-label={$t('viewer.toolbar.zoomPercent')}
+          aria-label={$t('viewer.toolbar.zoomPercent')}
           value={zoomPercentInput}
           disabled={!hasSource || !canZoom}
           onfocus={() => (isEditingZoomPercent = true)}

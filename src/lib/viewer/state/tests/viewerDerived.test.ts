@@ -135,7 +135,7 @@ describe("viewerDerived - activeLayoutImages", () => {
     expect(value[0].index).toBe(2);
   });
 
-  it("should return cover page at index 0 in two-page mode", () => {
+  it("should return the first two canvases at index 0 in two-page mode", () => {
     manifestsStore.set({
       "test-manifest": {
         id: "test-manifest",
@@ -157,12 +157,14 @@ describe("viewerDerived - activeLayoutImages", () => {
       value = val;
     })();
 
-    expect(value.length).toBe(1);
+    expect(value.length).toBe(2);
     expect(value[0].id).toBe("c0");
     expect(value[0].index).toBe(0);
+    expect(value[1].id).toBe("c1");
+    expect(value[1].index).toBe(1);
   });
 
-  it("should return paired canvases for pages 1 and 2 in two-page mode", () => {
+  it("should keep an odd-indexed canvas in its stable spread", () => {
     manifestsStore.set({
       "test-manifest": {
         id: "test-manifest",
@@ -185,8 +187,8 @@ describe("viewerDerived - activeLayoutImages", () => {
     })();
 
     expect(value.length).toBe(2);
-    expect(value[0].id).toBe("c1");
-    expect(value[1].id).toBe("c2");
+    expect(value[0].id).toBe("c0");
+    expect(value[1].id).toBe("c1");
   });
 
   it("should return all canvases in continuous scroll mode", () => {
