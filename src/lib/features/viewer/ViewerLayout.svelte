@@ -2,7 +2,7 @@
   import { get } from 'svelte/store';
   import { onDestroy, onMount, setContext } from 'svelte';
   import { ChevronsRight, Expand, Shrink } from '@lucide/svelte';
-  import { t } from '../../core/i18n';
+  import { setLocale, t } from '../../core/i18n';
   import { normaliseViewerConfig } from '../../core/config/normalise';
   import type { ViewerConfig } from '../../core/types/config';
   import type { ViewerEventMap } from '../../core/types/events';
@@ -26,6 +26,8 @@
   import { createViewerDerived } from '../../viewer/state/viewerDerived';
   import { createViewerController } from '../../viewer/state/viewerController';
   import type { RendererEventHandlers } from '../../viewer/types/rendererEvents';
+  import type { AnnotationPatchOptions } from '../../viewer/state/controllers/AnnotationController';
+  import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { ViewportState, VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
@@ -35,8 +37,8 @@
   import { navigateMango } from '@mango-iiif/collection-navigator/mango';
   import type { CollectionSelection } from '@mango-iiif/collection-navigator';
 
-  interface Props { manifestId?: string; config?: ViewerConfig; plugins?: ViewerPlugin[]; chrome?: boolean; canvasIndex?: number; oncanvaschange?: (detail:{canvasIndex:number})=>void; }
-  let { manifestId=$bindable(''), config=undefined, plugins=[], chrome=false, canvasIndex=undefined, oncanvaschange=undefined }:Props=$props();
+  interface Props { manifestId?: string; config?: ViewerConfig; plugins?: ViewerPlugin[]; chrome?: boolean; toolbar?: boolean; canvasIndex?: number; oncanvaschange?: (detail:{canvasIndex:number})=>void; /** Draw annotations on the stage. Off for hosts that draw their own, such as an editor. */ annotationOverlay?: boolean; /** Asked before the viewer's own controls turn the page. Return false to stay. */ onbeforecanvaschange?: (detail:{canvasIndex:number})=>boolean|void; }
+  let { manifestId=$bindable(''), config=undefined, plugins=[], chrome=false, toolbar=undefined, canvasIndex=undefined, oncanvaschange=undefined, annotationOverlay=true, onbeforecanvaschange=undefined }:Props=$props();
   const normaliseConfigForViewer=(value?:ViewerConfig):ViewerConfig=>{
     const next=normaliseViewerConfig(value);
     if(next.sidebar?.open!==undefined)return next;
@@ -51,8 +53,8 @@
   const viewerDerived=createViewerDerived(viewerState);
   let stageRef:ReturnType<typeof Stage>|null=$state(null);
   const controller=createViewerController({state:viewerState,derived:viewerDerived,dispatch:()=>undefined,applyViewBox:(box)=>stageRef?.setViewBox?.(box)});
-  const {manifestEntry,collectionEntry,canvases,canvasThumbnails,mediaSource,mediaType,rendererComponent,overlayAnnotations,highlightIds,pluginSlots,leftVisible,allowThumbnails,allowCollection,allowMetadata,allowSearch,allowAnnotations,allowTools,allowLayers,contentsAvailable,avChaptersAvailable,avTranscriptAvailable,mediaSources,activeLayoutImages}=viewerDerived;
-  const {selectedCanvasIndex,zoom,showThumbnails,showCollection,showMetadata,showSearch,showAnnotations,showTools,showSettings,showContents,showLayers,layerOpacities,layoutMode,rotation,activeAnnotationId,hoverAnnotationId,imageFilters}=viewerState;
+  const {manifestEntry,collectionEntry,canvases,canvasThumbnails,mediaSource,mediaType,rendererComponent,annotations,overlayAnnotations,highlightIds,pluginSlots,leftVisible,allowThumbnails,allowCollection,allowMetadata,allowSearch,allowAnnotations,allowTools,allowLayers,contentsAvailable,avChaptersAvailable,avTranscriptAvailable,mediaSources,activeLayoutImages}=viewerDerived;
+  const {userAnnotations,selectedCanvasIndex,zoom,showThumbnails,showCollection,showMetadata,showSearch,showAnnotations,showTools,showSettings,showContents,showLayers,layerOpacities,layoutMode,rotation,activeAnnotationId,hoverAnnotationId,imageFilters}=viewerState;
   const avController=viewerDerived.av.controller;
   setContext(VIEWPORT_STATE_CONTEXT_KEY,new ViewportState());
   let normalisedConfig:ViewerConfig=$state(initialConfig);
@@ -73,11 +75,11 @@
   const rendererHandlers:RendererEventHandlers={onMediaPlay:controller.handleMediaPlay,onMediaPause:controller.handleMediaPause,onMediaTimeUpdate:controller.handleMediaTimeUpdate,onMediaSeek:controller.handleMediaSeek,onMediaSegmentEnd:controller.handleMediaSegmentEnd,onModelChange:controller.handleModelChange,onAnnotationHover:controller.handleAnnotationHover,onAnnotationSelect:controller.handleAnnotationSelect,onAnnotationClear:controller.handleAnnotationClear};
 
   const viewerApi:ViewerApi={
-    getViewBox:()=>getViewBox(),setViewBox:(box)=>setViewBox(box),getContentSize:()=>getContentSize(),getZoom:()=>getZoom(),setZoom:(v)=>setZoom(v),zoomIn:()=>zoomIn(),zoomOut:()=>zoomOut(),panTo:(x,y)=>panTo(x,y),
+    getViewBox:()=>getViewBox(),setViewBox:(box)=>setViewBox(box),getContentSize:()=>getContentSize(),getZoom:()=>getZoom(),setZoom:(v)=>setZoom(v),goHome:()=>goHome(),zoomIn:()=>zoomIn(),zoomOut:()=>zoomOut(),panTo:(x,y)=>panTo(x,y),
     getMediaType:()=>get(mediaType),getState:controller.getStateSnapshot,getCanvasIndex:controller.getCanvasIndex,getCanvasId:controller.getCanvasId,getCanvasCount:controller.getCanvasCount,setCanvasByIndex:controller.setCanvasByIndex,setCanvasById:controller.setCanvasById,
     setManifest:(id)=>setManifest(id),getManifestId:()=>manifestId||null,start:()=>stageRef?.start?.(),play:()=>stageRef?.play?.(),pause:()=>stageRef?.pause?.(),stop:()=>stageRef?.stop?.(),seekBy:(v)=>stageRef?.seekBy?.(v),seekTo:(v)=>stageRef?.seekTo?.(v),setMediaSegment:(a,b)=>stageRef?.setMediaSegment?.(a,b),
     setModelOrbit:(v)=>stageRef?.setModelOrbit?.(v),setModelTarget:(v)=>stageRef?.setModelTarget?.(v),setModelOrientation:(v)=>stageRef?.setModelOrientation?.(v),setModelPose:(v,o)=>stageRef?.setModelPose?.(v,o),getModelOrbit:()=>stageRef?.getModelOrbit?.()??null,getModelTarget:()=>stageRef?.getModelTarget?.()??null,getModelOrientation:()=>stageRef?.getModelOrientation?.()??null,getModelPose:()=>stageRef?.getModelPose?.()??null,
-    addAnnotation:controller.addAnnotation,getAnnotations:controller.getAnnotations,setAnnotations:controller.setAnnotations,updateAnnotation:(id,patch)=>controller.updateAnnotation(id,patch),removeAnnotation:controller.removeAnnotation,
+    addAnnotation:controller.addAnnotation,getAnnotations:controller.getAnnotations,setAnnotations:controller.setAnnotations,updateAnnotation:(id,patch,options)=>controller.updateAnnotation(id,patch,options),removeAnnotation:controller.removeAnnotation,
     selectAnnotation:(id,preventZoom)=>controller.handleAnnotationSelect({id,preventZoom}),clearAnnotationSelection:controller.handleAnnotationClear,getSelectedAnnotationId:()=>get(activeAnnotationId),
     getRendererExtension:()=>stageRef?.getRendererExtension?.()??null,getStageSize:()=>stageRef?.getStageSize?.()??{width:0,height:0},canvasToScreen:(point)=>stageRef?.canvasToScreen?.(point)??null,screenToCanvas:(point)=>stageRef?.screenToCanvas?.(point)??null,
     updateLayerOpacity:controller.updateLayerOpacity,getLayerOpacities:()=>get(layerOpacities),getMediaSources:()=>get(mediaSources),on:controller.on,off:controller.off
@@ -87,8 +89,9 @@
 
   const panelToggle=(panel:Parameters<typeof controller.setPanelOpen>[0],open:boolean)=>controller.setPanelOpen(panel,open);
   const openContents=(tab:'toc'|'transcript')=>{contentsTab=tab;panelToggle('contents',true);};
-  const previousCanvas=()=>{const index=get(selectedCanvasIndex);controller.setCanvasByIndex(get(layoutMode)==='two-page'?Math.max(0,Math.floor(index/2)*2-2):index-1);};
-  const nextCanvas=()=>{const index=get(selectedCanvasIndex);controller.setCanvasByIndex(get(layoutMode)==='two-page'?Math.min(get(canvases).length-1,Math.floor(index/2)*2+2):index+1);};
+  const requestCanvas=(index:number)=>{if(onbeforecanvaschange?.({canvasIndex:index})===false)return;controller.setCanvasByIndex(index);};
+  const previousCanvas=()=>{const index=get(selectedCanvasIndex);requestCanvas(get(layoutMode)==='two-page'?Math.max(0,Math.floor(index/2)*2-2):index-1);};
+  const nextCanvas=()=>{const index=get(selectedCanvasIndex);requestCanvas(get(layoutMode)==='two-page'?Math.min(get(canvases).length-1,Math.floor(index/2)*2+2):index+1);};
   const handleCollectionSelect=async(selection:CollectionSelection)=>navigateMango({getManifestId:()=>manifestId||null,getCanvasCount:controller.getCanvasCount,setManifest:(id)=>manifestId=id,setCanvasById:controller.setCanvasById,on:controller.on},selection);
 
   export function getContentSize():ContentSize|null{return stageRef?.getContentSize?.()??null;}
@@ -96,6 +99,7 @@
   export function setViewBox(box:ViewBox):void{stageRef?.setViewBox?.(box);}
   export function getZoom():number{return get(zoom)>0?Math.max(10,Math.round(get(zoom)*100)):100;}
   export function setZoom(percent:number):void{if(Number.isFinite(percent))stageRef?.setZoom?.(percent/100);}
+  export function goHome():void{stageRef?.goHome?.();}
   export function zoomIn():void{stageRef?.zoomBy?.(1.2);}
   export function zoomOut():void{stageRef?.zoomBy?.(.8);}
   export function panTo(x:number,y:number):void{const box=getViewBox();if(box)setViewBox({x:x-box.w/2,y:y-box.h/2,w:box.w,h:box.h});}
@@ -105,13 +109,16 @@
   export function getState(){return controller.getStateSnapshot();} export function getCanvasIndex():number{return controller.getCanvasIndex();} export function getCanvasId():string|null{return controller.getCanvasId();} export function getCanvasCount():number{return controller.getCanvasCount();} export function setCanvasByIndex(v:number):void{controller.setCanvasByIndex(v);} export function setCanvasById(v:string):void{controller.setCanvasById(v);}
   export function setManifest(id:string):void{viewerState.collectionId.set('');manifestId=id;} export function getManifestId():string|null{return manifestId||null;}
   export function start():void{stageRef?.start?.();} export function play():void{stageRef?.play?.();} export function pause():void{stageRef?.pause?.();} export function stop():void{stageRef?.stop?.();} export function seekBy(v:number):void{stageRef?.seekBy?.(v);} export function seekTo(v:number):void{stageRef?.seekTo?.(v);} export function setMediaSegment(a:number,b:number):void{stageRef?.setMediaSegment?.(a,b);}
-  export function addAnnotation(v:unknown):Promise<void>{return controller.addAnnotation(v);} export function getAnnotations(){return controller.getAnnotations();} export function setAnnotations(v:unknown[]){return controller.setAnnotations(v);} export function updateAnnotation(id:string,patch:Parameters<typeof controller.updateAnnotation>[1]){return controller.updateAnnotation(id,patch);} export function removeAnnotation(v:string):Promise<void>{return controller.removeAnnotation(v);}
+  export function addAnnotation(v:unknown):Promise<void>{return controller.addAnnotation(v);} export function getAnnotations(){return controller.getAnnotations();} export function setAnnotations(v:unknown[]){return controller.setAnnotations(v);} export function updateAnnotation(id:string,patch:Parameters<typeof controller.updateAnnotation>[1],options?:AnnotationPatchOptions){return controller.updateAnnotation(id,patch,options);} export function removeAnnotation(v:string):Promise<void>{return controller.removeAnnotation(v);}
+  export function replaceAnnotation(id:string,v:ResolvedAnnotation):Promise<void>{return controller.replaceAnnotation(id,v);} export function commitAnnotation(id:string):Promise<void>{return controller.commitAnnotation(id);} export function getUserAnnotations():ResolvedAnnotation[]{return Object.values(get(userAnnotations)??{}).flat();}
   export function selectAnnotation(id:string,preventZoom=false){controller.handleAnnotationSelect({id,preventZoom});} export function clearAnnotationSelection(){controller.handleAnnotationClear();} export function getSelectedAnnotationId(){return get(activeAnnotationId);}
   export function getRendererExtension(){return stageRef?.getRendererExtension?.()??null;} export function getStageSize(){return stageRef?.getStageSize?.()??{width:0,height:0};} export function canvasToScreen(point:{x:number;y:number}){return stageRef?.canvasToScreen?.(point)??null;} export function screenToCanvas(point:{x:number;y:number}){return stageRef?.screenToCanvas?.(point)??null;}
   export function updateLayerOpacity(id:string,v:number):void{controller.updateLayerOpacity(id,v);} export function getLayerOpacities(){return get(layerOpacities);} export function getMediaSources(){return get(mediaSources);}
   export function on<K extends keyof ViewerEventMap>(e:K,h:(p:ViewerEventMap[K])=>void){return controller.on(e,h);} export function off<K extends keyof ViewerEventMap>(e:K,h:(p:ViewerEventMap[K])=>void){controller.off(e,h);} export function setEventTarget(v:EventTarget):void{controller.setEventTarget(v);}
 
-  $effect.pre(()=>{if(configInitialized&&config===lastConfigInput)return;configInitialized=true;lastConfigInput=config;normalisedConfig=normaliseConfigForViewer(config);viewerState.config.set(normalisedConfig);});
+  $effect.pre(()=>{if(configInitialized&&config===lastConfigInput)return;configInitialized=true;lastConfigInput=config;normalisedConfig=normaliseConfigForViewer(config);if(normalisedConfig.language)locale=normalisedConfig.language;viewerState.config.set(normalisedConfig);});
+  $effect(()=>setLocale(locale));
+  $effect(()=>{controller.emitEvent('annotationsChange',{annotations:$annotations});});
   $effect.pre(()=>{if(pluginsInitialized&&plugins===lastPluginsInput)return;pluginsInitialized=true;lastPluginsInput=plugins;viewerState.plugins.set([...corePlugins,...plugins]);});
   $effect.pre(()=>viewerState.manifestId.set(manifestId??''));
   $effect(()=>{if(canvasIndex!==undefined&&canvasIndex!==get(selectedCanvasIndex))controller.setCanvasByIndex(canvasIndex);});
@@ -121,7 +128,7 @@
 </script>
 
 <div class="viewer" class:viewer--headless={!chrome} data-theme={theme} bind:this={viewerRoot}>
-  {#if chrome}<div class="viewer__top-row"><ViewerHeader {manifestId} manifestEntry={$manifestEntry}/><div class="viewer__top-actions">{#if $pluginSlots.top.length}<PluginSlot slot="top" plugins={$pluginSlots.top} {pluginContext}/>{/if}<button class="viewer__fullscreen-btn viewer__fullscreen-btn--labelled" type="button" onclick={()=>fullscreenController.toggle()} aria-label={isFullscreen?$t('viewer.stage.controls.closeFullscreen'):$t('viewer.stage.controls.enterFullscreen')}>{#if isFullscreen}<Shrink aria-hidden="true"/>{:else}<Expand aria-hidden="true"/>{/if}<span>{isFullscreen?$t('viewer.stage.controls.closeFullscreen'):$t('viewer.stage.controls.fullscreen')}</span></button></div></div>{/if}
+  {#if chrome}<div class="viewer__top-row"><ViewerHeader {manifestId} manifestEntry={$manifestEntry}/><div class="viewer__top-actions">{#if $pluginSlots.top.length}<PluginSlot slot="top" plugins={$pluginSlots.top} context={pluginContext}/>{/if}<button class="viewer__fullscreen-btn viewer__fullscreen-btn--labelled" type="button" onclick={()=>fullscreenController.toggle()} aria-label={isFullscreen?$t('viewer.stage.controls.closeFullscreen'):$t('viewer.stage.controls.enterFullscreen')}>{#if isFullscreen}<Shrink aria-hidden="true"/>{:else}<Expand aria-hidden="true"/>{/if}<span>{isFullscreen?$t('viewer.stage.controls.closeFullscreen'):$t('viewer.stage.controls.fullscreen')}</span></button></div></div>{/if}
   {#if chrome&&normalisedConfig.sidebar?.enabled!==false&&sidebarCollapsed}<button class="viewer__expand-sidebar" type="button" onclick={()=>sidebarCollapsed=false} aria-label={$t('viewer.stage.controls.expandSidebar')} title={$t('viewer.stage.controls.expandSidebar')}><ChevronsRight aria-hidden="true"/></button>{/if}
   <div class="viewer__grid" class:viewer__grid--controls={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed} class:viewer__grid--left={chrome&&$leftVisible&&!sidebarCollapsed} class:viewer__grid--nav-compact={chrome&&$leftVisible&&!sidebarCollapsed} class:viewer__grid--sidebar-right={chrome&&normalisedConfig.sidebar?.position==='right'}>
     {#if chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed}
@@ -132,17 +139,17 @@
     <main class="stage stage--viewer" class:stage--joined-sidebar-left={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed&&!$leftVisible&&normalisedConfig.sidebar?.position!=='right'} class:stage--joined-sidebar-right={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed&&!$leftVisible&&normalisedConfig.sidebar?.position==='right'} aria-label={$t('viewer.stage.label')}>
       {#if settingsLayout==='1x1'}
       <div class="stage__primary stage__viewer-frame">
-      {#if $layoutMode==='gallery'}<StageGalleryView canvases={$canvases} thumbnails={$canvasThumbnails} selectedCanvasIndex={$selectedCanvasIndex} onselect={(d)=>{controller.setCanvasByIndex(d.index);controller.setLayoutMode('single');}}/>
-      {:else}<Stage bind:this={stageRef} bind:canZoom rendererComponent={$rendererComponent} {avController} mediaSource={$mediaSource} annotations={$overlayAnnotations} highlightIds={$highlightIds} activeAnnotationId={$activeAnnotationId} hoverAnnotationId={$hoverAnnotationId} overlayPlugins={$pluginSlots.overlay} {pluginContext} isFetching={$manifestEntry?.isFetching??false} error={$manifestEntry?.error??''} imageFilters={$imageFilters} mediaType={$mediaType} viewerConfig={normalisedConfig} showDock={false} allowThumbnails={$allowThumbnails} allowSearch={$allowSearch} allowMetadata={$allowMetadata} allowAnnotations={$allowAnnotations} allowTools={$allowTools} allowLayers={$allowLayers} allowSettings={normalisedConfig.showSettings!==false} allowContents={$contentsAvailable} showThumbnails={$showThumbnails} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showAnnotations={$showAnnotations} showTools={$showTools} showLayers={$showLayers} layers={$mediaSources} layerOpacities={$layerOpacities} {rendererHandlers} rotation={$rotation} initialViewBox={initialViewState.viewBox} layoutMode={$layoutMode} activeLayoutImages={$activeLayoutImages} onviewboxchange={controller.handleViewBoxChange} onzoomchange={controller.handleZoomChange} onrotationchange={controller.handleRotationChange} onpaneltoggle={(d)=>panelToggle(d.panel,d.open)} onrendererready={(d)=>controller.emitEvent('rendererReady',d)} onstageresize={(d)=>controller.emitEvent('stageResize',d)}/>{/if}
-      {#if chrome&&$layoutMode!=='gallery'}<StageToolbar {canZoom} hasSource={Boolean($mediaSource)} placement="below" mediaType={$mediaType} selectedCanvasIndex={$selectedCanvasIndex} totalCanvases={$canvases.length} zoomPercent={getZoom()} rotation={$rotation} onhome={()=>stageRef?.goHome?.()} onzoomIn={zoomIn} onzoomOut={zoomOut} onsetZoomPercent={(d)=>setZoom(d.percent)} onrotate={controller.handleRotationChange} onsetCanvasIndex={(d)=>controller.setCanvasByIndex(d.index)} onprevCanvas={previousCanvas} onnextCanvas={nextCanvas}/>{/if}
+      {#if $layoutMode==='gallery'}<StageGalleryView canvases={$canvases} thumbnails={$canvasThumbnails} selectedCanvasIndex={$selectedCanvasIndex} onselect={(d)=>{if(onbeforecanvaschange?.({canvasIndex:d.index})===false)return;controller.setCanvasByIndex(d.index);controller.setLayoutMode('single');}}/>
+      {:else}<Stage bind:this={stageRef} bind:canZoom rendererComponent={$rendererComponent} {avController} mediaSource={$mediaSource} annotations={annotationOverlay?$overlayAnnotations:[]} highlightIds={$highlightIds} activeAnnotationId={$activeAnnotationId} hoverAnnotationId={$hoverAnnotationId} overlayPlugins={$pluginSlots.overlay} {pluginContext} isFetching={$manifestEntry?.isFetching??false} error={$manifestEntry?.error??''} imageFilters={$imageFilters} mediaType={$mediaType} viewerConfig={normalisedConfig} fillHeight={!chrome} showDock={false} allowThumbnails={$allowThumbnails} allowSearch={$allowSearch} allowMetadata={$allowMetadata} allowAnnotations={$allowAnnotations} allowTools={$allowTools} allowLayers={$allowLayers} allowSettings={normalisedConfig.showSettings!==false} allowContents={$contentsAvailable} showThumbnails={$showThumbnails} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showAnnotations={$showAnnotations} showTools={$showTools} showLayers={$showLayers} layers={$mediaSources} layerOpacities={$layerOpacities} {rendererHandlers} rotation={$rotation} initialViewBox={initialViewState.viewBox} layoutMode={$layoutMode} activeLayoutImages={$activeLayoutImages} onviewboxchange={controller.handleViewBoxChange} onzoomchange={controller.handleZoomChange} onrotationchange={controller.handleRotationChange} onpaneltoggle={(d)=>panelToggle(d.panel,d.open)} onrendererready={(d)=>controller.emitEvent('rendererReady',d)} onstageresize={(d)=>controller.emitEvent('stageResize',d)}/>{/if}
+      {#if (toolbar??chrome)&&$layoutMode!=='gallery'}<StageToolbar {canZoom} hasSource={Boolean($mediaSource)} placement="below" mediaType={$mediaType} selectedCanvasIndex={$selectedCanvasIndex} totalCanvases={$canvases.length} zoomPercent={getZoom()} rotation={$rotation} onhome={()=>stageRef?.goHome?.()} onzoomIn={zoomIn} onzoomOut={zoomOut} onsetZoomPercent={(d)=>setZoom(d.percent)} onrotate={controller.handleRotationChange} onsetCanvasIndex={(d)=>requestCanvas(d.index)} onprevCanvas={previousCanvas} onnextCanvas={nextCanvas}/>{/if}
       </div>
-      {#if chrome&&$showThumbnails&&$layoutMode!=='gallery'}<Gallery redesigned canvases={$canvases} canvasThumbnails={$canvasThumbnails} selectedCanvasIndex={$selectedCanvasIndex} onpanelToggle={(d)=>panelToggle(d.panel,d.open)} oncanvasSelect={(d)=>controller.setCanvasByIndex(d.index)} onviewall={()=>controller.setLayoutMode('gallery')}/>{/if}
-      {#if $pluginSlots.bottom.length}<div class="stage__bottom"><PluginSlot plugins={$pluginSlots.bottom} {pluginContext}/></div>{/if}
+      {#if chrome&&$showThumbnails&&$layoutMode!=='gallery'}<Gallery redesigned canvases={$canvases} canvasThumbnails={$canvasThumbnails} selectedCanvasIndex={$selectedCanvasIndex} onpanelToggle={(d)=>panelToggle(d.panel,d.open)} oncanvasSelect={(d)=>requestCanvas(d.index)} onviewall={()=>controller.setLayoutMode('gallery')}/>{/if}
+      {#if $pluginSlots.bottom.length}<div class="stage__bottom"><PluginSlot slot="bottom" plugins={$pluginSlots.bottom} context={pluginContext}/></div>{/if}
       {:else if workspace}
         <GridContainer node={workspace.layout} activeWindowId={workspace.activeWindowId} onfocuswindow={(id)=>workspace?.setActiveWindow(id)} onmovewindow={(d)=>workspace?.moveWindow(d.id,d.direction)} onclosewindow={(id)=>{workspace?.closeWindow(id);if(workspace?.layout.type==='window'){settingsLayout='1x1';workspace=null;}}} onloadmanifest={(d)=>{workspace?.setWindowManifest(d.id,d.manifestId);workspace?.setActiveWindow(d.id);}} oncanvaschange={(d)=>workspace?.setWindowCanvasIndex(d.id,d.canvasIndex)} onresizesplit={(d)=>workspace?.updateSplitSizes(d.targetId,d.sizes)} onopenmanifestmanager={(id)=>{workspace?.setActiveWindow(id);showManifestManager=true;}}/>
       {/if}
     </main>
-    {#if chrome&&$pluginSlots.right.length}<aside class="panel-stack panel-stack--right"><PluginSlot plugins={$pluginSlots.right} {pluginContext}/></aside>{/if}
+    {#if chrome&&$pluginSlots.right.length}<aside class="panel-stack panel-stack--right"><PluginSlot slot="right" plugins={$pluginSlots.right} context={pluginContext}/></aside>{/if}
   </div>
 </div>
 <style>
@@ -448,6 +455,15 @@
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
     grid-template-columns: 72px minmax(320px, 410px) minmax(0, 1fr);
+  }
+
+  /* Headless: a host owns the frame, so the viewer is only its stage. */
+  .viewer--headless {
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
 
   .viewer--headless .viewer__grid {

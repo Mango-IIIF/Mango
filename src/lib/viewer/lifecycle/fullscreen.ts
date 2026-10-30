@@ -37,11 +37,14 @@ export const createViewerFullscreenController = ({
   getShadowHost,
   onChange,
   preferFallback = () => false,
+  allowTouch = () => false,
 }: {
   getRoot: () => HTMLElement | null;
   getShadowHost: () => Element | null;
   onChange: (state: ViewerFullscreenState) => void;
   preferFallback?: () => boolean;
+  /** Host surfaces that scroll by touch and must keep their touchmove events. */
+  allowTouch?: (target: Element) => boolean;
 }): ViewerFullscreenController => {
   let fallback = false;
   let restoreDocumentOverflow: (() => void) | null = null;
@@ -117,8 +120,10 @@ export const createViewerFullscreenController = ({
   const guardDrag = (event: TouchEvent | PointerEvent): void => {
     if (!(fallback || isNativeActive())) return;
     if ("pointerType" in event && event.pointerType !== "touch") return;
-    if (!event.composedPath().some(allowsTouchInteraction))
-      event.preventDefault();
+    const allowed = (target: EventTarget) =>
+      allowsTouchInteraction(target) ||
+      (target instanceof Element && allowTouch(target));
+    if (!event.composedPath().some(allowed)) event.preventDefault();
   };
 
   const handleKeydown = (event: KeyboardEvent): void => {

@@ -50,6 +50,9 @@ export class ViewerApiAdapter {
   setZoom(percent: number): void {
     this.getTarget()?.setZoom?.(percent);
   }
+  goHome(): void {
+    this.getTarget()?.goHome?.();
+  }
   zoomIn(): void {
     this.getTarget()?.zoomIn?.();
   }

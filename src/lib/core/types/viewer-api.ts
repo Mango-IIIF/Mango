@@ -3,6 +3,7 @@ import type { ModelPose, ModelPoseOptions } from './model';
 import type { ViewerEventMap } from './events';
 import type { ContentSize, ViewBox, ViewerStateSnapshot } from './viewer';
 import type { ResolvedAnnotation } from '../../iiif/annotationResolver';
+import type { AnnotationPatchOptions } from '../../viewer/state/controllers/AnnotationController';
 import type {
   RendererExtension,
   StagePoint,
@@ -22,6 +23,8 @@ export type ViewerApi = {
   getZoom?: () => number;
   /** Zoom to a percentage of the fit-to-view baseline. Clamped to 10–2000. */
   setZoom?: (percent: number) => void;
+  /** Return to the fit-to-view framing for the current canvas. */
+  goHome?: () => void;
   zoomIn?: () => void;
   zoomOut?: () => void;
   /** Recentre on an image-space point, keeping the current zoom. */
@@ -56,6 +59,7 @@ export type ViewerApi = {
   updateAnnotation: (
     annotationId: string,
     patch: Partial<ResolvedAnnotation>,
+    options?: AnnotationPatchOptions,
   ) => Promise<void>;
   removeAnnotation: (annotationId: string) => Promise<void>;
   selectAnnotation: (annotationId: string, preventZoom?: boolean) => void;

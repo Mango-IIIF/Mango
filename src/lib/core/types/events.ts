@@ -43,6 +43,8 @@ export type ViewerEventMap = {
     preventZoom?: boolean;
   };
   annotationClear: void;
+  /** The current canvas's annotations changed: loaded, added, edited or removed. */
+  annotationsChange: { annotations: ResolvedAnnotation[] };
   rotationChange: { rotation: number };
   /**
    * @deprecated Internal projections, kept for one cycle. Use

@@ -87,6 +87,10 @@
     api.setZoom(percent);
   }
 
+  export function goHome(): void {
+    api.goHome();
+  }
+
   export function zoomIn(): void {
     api.zoomIn();
   }

@@ -186,6 +186,13 @@ their `order` field for deterministic stacking and `pointerEvents` for
 interactive overlays. The image renderer extension exposes its typed
 OpenSeadragon instance, while other renderer kinds remain renderer-neutral.
 
+`ViewerCore` is headless by default and fills its host. Pass `toolbar` to keep
+the stage toolbar without the rest of the chrome. The `/core` entry also
+exports what such hosts share with the viewer rather than copy: the i18n
+locale store and `translate`, `createEventBus`, the manifest cache, canvas
+thumbnails, the fullscreen controller, and the annotation model helpers
+(`createMangoAnnotation`, `resolveAnnotationJson`, layer styles).
+
 ## Viewer modes
 
 The custom element supports the viewer and multi-view workspace:

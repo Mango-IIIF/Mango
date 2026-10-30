@@ -79,6 +79,11 @@ export class Mango implements ViewerApi {
     instance?.setZoom?.(percent);
   }
 
+  goHome(): void {
+    const instance = this.instance as { goHome?: () => void };
+    instance?.goHome?.();
+  }
+
   zoomIn(): void {
     const instance = this.instance as { zoomIn?: () => void };
     instance?.zoomIn?.();
