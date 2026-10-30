@@ -111,13 +111,11 @@
   let renderFrameId: number | null = null;
   let centeringAtHome = false;
   /*
-   * Set while the pointer is driving the viewport (drag, wheel, pinch). OSD
-   * already keeps an axis centred when the content is narrower than the surface
-   * (`visibilityRatio: 1` + `constrainDuringPan: true`), so re-centering from
-   * inside `pan`/`zoom` handlers only fought the gesture: OSD moved the image on
-   * one frame and `panTo(..., true)` yanked it back on the next, which is the
-   * stutter users felt. Re-centering still runs for open, resize and
-   * animation-finish — every case where nobody is holding the image.
+   * Set while the pointer is driving the viewport (drag, wheel, pinch).
+   * Re-centering from inside `pan`/`zoom` handlers fights the gesture: OSD moves
+   * the image on one frame and `panTo(..., true)` yanks it back on the next.
+   * Re-centering is therefore reserved for the fitted home view; once zoomed,
+   * a reader must be free to move a page edge toward the centre for annotation.
    */
   let userDrivingViewport = false;
   let userIdleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -169,7 +167,6 @@
       initialViewBoxSettling ||
       typeof viewport.getHomeZoom !== 'function' ||
       typeof viewport.getHomeBounds !== 'function' ||
-      typeof viewport.getBounds !== 'function' ||
       typeof viewport.getCenter !== 'function' ||
       typeof viewport.panTo !== 'function'
     ) {
@@ -182,23 +179,12 @@
     }
     const center = viewport.getCenter(true);
     const homeCenter = viewport.getHomeBounds().getCenter();
-    const visibleBounds = viewport.getBounds(true);
-    const contentBounds = viewer?.world?.getHomeBounds?.();
     const atHome = zoom <= homeZoom * 1.001;
-    const contentFitsHorizontally = Boolean(
-      contentBounds && contentBounds.width <= visibleBounds.width * 1.001,
-    );
-    const contentFitsVertically = Boolean(
-      contentBounds && contentBounds.height <= visibleBounds.height * 1.001,
-    );
-    if (!atHome && !contentFitsHorizontally && !contentFitsVertically) return;
+    if (!atHome) return;
 
-    // Constrain each axis independently. A tall portrait at modest zoom may
-    // be vertically pannable while still narrower than the surface; forcing
-    // both axes home would make legitimate reading/navigation impossible.
     const targetCenter = {
-      x: atHome || contentFitsHorizontally ? homeCenter.x : center.x,
-      y: atHome || contentFitsVertically ? homeCenter.y : center.y,
+      x: homeCenter.x,
+      y: homeCenter.y,
     };
     if (
       Math.abs(center.x - targetCenter.x) < 0.000001 &&
@@ -893,10 +879,10 @@
         minZoomImageRatio: 0.1,
         // Ensure consistent viewport behavior across devices
         homeFillsViewer: false,
-        // Do not let a casual one-finger drag leave a small portrait image
-        // parked against one edge with a large empty gutter. Zoomed images
-        // remain pannable, while the viewport is constrained to real content.
-        visibilityRatio: 1,
+        // Keep half of the viewport over content. This lets a zoomed page edge
+        // move to the centre (useful while tagging/annotating near an edge),
+        // without allowing the canvas to be dragged completely out of sight.
+        visibilityRatio: 0.5,
         constrainDuringPan: true,
         gestureSettingsMouse: {
           clickToZoom: legacyOsdConfig?.clickToZoomEnabled ?? false,

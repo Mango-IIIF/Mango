@@ -56,6 +56,43 @@ const waitFor = async (predicate: () => boolean) => {
 };
 
 describe('renderer pass-through config', () => {
+  it('allows a zoomed page edge to be panned to the viewport centre by default', async () => {
+    mocks.osdFactory.mockReturnValue({
+      viewport: {
+        getBounds: vi.fn(() => ({ x: 0, y: 0, width: 1, height: 1 })),
+        getZoom: vi.fn(() => 1),
+        getRotation: vi.fn(() => 0),
+        setRotation: vi.fn(),
+        applyConstraints: vi.fn(),
+      },
+      world: {
+        getItemAt: vi.fn(),
+        getItemCount: vi.fn(() => 0),
+        removeItem: vi.fn(),
+      },
+      addHandler: vi.fn(),
+      addTiledImage: vi.fn(),
+      open: vi.fn(),
+      close: vi.fn(),
+      destroy: vi.fn(),
+    });
+
+    mounted.push(
+      mount(ImageRenderer, {
+        target: createTarget(),
+        props: { source: imageSource },
+      }),
+    );
+    await waitFor(() => mocks.osdFactory.mock.calls.length > 0);
+
+    expect(mocks.osdFactory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visibilityRatio: 0.5,
+        constrainDuringPan: true,
+      }),
+    );
+  });
+
   it('passes arbitrary OpenSeadragon options after defaults', async () => {
     const handlers = new Map<string, () => void>();
     const viewport = {
