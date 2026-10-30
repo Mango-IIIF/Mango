@@ -83,6 +83,12 @@ for troubleshooting and production guidance.
 npm install @mango-iiif/iiif-viewer svelte
 ```
 
+OpenSeadragon is a dependency the npm build imports rather than bundles, so an
+application that also uses it — directly, or through a library that draws on
+Mango's image viewer such as Annotorious — shares one copy. (OSD's viewport API
+does not accept points made by a second copy.) The standalone
+`mango-viewer-element.js` bundle still includes its own.
+
 Register the custom element once in the application entry point:
 
 ```js
@@ -118,7 +124,9 @@ viewer.config = {
 ```
 
 `theme` and `language` belong inside `config`; they are not separate custom
-element attributes.
+element attributes. `config.theme` sets the starting theme; to change it later
+without reloading the viewer, call `viewer.setTheme("sepia")` (`getTheme()`
+returns the current one). Unknown theme names are ignored.
 
 ## JavaScript class API
 

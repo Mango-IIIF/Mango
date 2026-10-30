@@ -53,6 +53,12 @@ export class ViewerApiAdapter {
   goHome(): void {
     this.getTarget()?.goHome?.();
   }
+  getTheme(): string {
+    return this.getTarget()?.getTheme?.() ?? 'dark';
+  }
+  setTheme(theme: string): void {
+    this.getTarget()?.setTheme?.(theme);
+  }
   zoomIn(): void {
     this.getTarget()?.zoomIn?.();
   }
