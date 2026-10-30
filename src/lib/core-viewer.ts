@@ -38,6 +38,8 @@ export type ViewerCoreInstance = ViewerApi &
       | 'getZoom'
       | 'setZoom'
       | 'panTo'
+      | 'getTheme'
+      | 'setTheme'
       | 'getCanvasCount'
       | 'setMediaSegment'
     >

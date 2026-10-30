@@ -31,7 +31,7 @@
   import { resolveInitialViewerState } from '../../viewer/initialization/viewerInitializer';
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { ViewportState, VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
-  import { setViewerContext, type ViewerSettingsTheme } from '../../viewer/context';
+  import { isViewerSettingsTheme, setViewerContext, type ViewerSettingsTheme } from '../../viewer/context';
   import { createViewerFullscreenController } from '../../viewer/lifecycle/fullscreen';
   import { findFirstManifestId } from '../../viewer/iiif/collectionNavigation';
   import { navigateMango } from '@mango-iiif/collection-navigator/mango';
@@ -103,6 +103,8 @@
   export function zoomIn():void{stageRef?.zoomBy?.(1.2);}
   export function zoomOut():void{stageRef?.zoomBy?.(.8);}
   export function panTo(x:number,y:number):void{const box=getViewBox();if(box)setViewBox({x:x-box.w/2,y:y-box.h/2,w:box.w,h:box.h});}
+  export function getTheme():ViewerSettingsTheme{return theme;}
+  export function setTheme(v:string):void{if(isViewerSettingsTheme(v))theme=v;}
   export function getMediaType(){return get(mediaType);}
   export function setModelOrbit(v:string):void{stageRef?.setModelOrbit?.(v);} export function setModelTarget(v:string):void{stageRef?.setModelTarget?.(v);} export function setModelOrientation(v:string):void{stageRef?.setModelOrientation?.(v);}
   export function setModelPose(v:ModelPose,o?:ModelPoseOptions):void{stageRef?.setModelPose?.(v,o);} export function getModelOrbit():string|null{return stageRef?.getModelOrbit?.()??null;} export function getModelTarget():string|null{return stageRef?.getModelTarget?.()??null;} export function getModelOrientation():string|null{return stageRef?.getModelOrientation?.()??null;} export function getModelPose():ModelPose|null{return stageRef?.getModelPose?.()??null;}

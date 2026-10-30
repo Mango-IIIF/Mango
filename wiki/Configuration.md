@@ -68,7 +68,7 @@ layers panel requires multiple renderable media sources.
 | Option            | Type      | Effect                                                                                   |
 | ----------------- | --------- | ---------------------------------------------------------------------------------------- |
 | `language`        | `string`  | Preferred UI and metadata language. Falls back to the browser language and then English. |
-| `theme`           | `string`  | Built-in themes include `dark`, `light`, `sepia`, and `midnight`.                        |
+| `theme`           | `string`  | Starting theme: `dark`, `light`, `sepia`, `midnight` or `ringo`; see `setTheme()`.       |
 | `showThumbnails`  | `boolean` | Allows the gallery/thumbnail navigation when multiple image canvases exist.              |
 | `showMetadata`    | `boolean` | Allows the metadata panel.                                                               |
 | `showCollection`  | `boolean` | Allows the Collection panel when `manifest-id` is a Collection (`viewer` mode only).     |

@@ -79,6 +79,16 @@ export class Mango implements ViewerApi {
     instance?.setZoom?.(percent);
   }
 
+  getTheme(): string {
+    const instance = this.instance as { getTheme?: () => string };
+    return instance?.getTheme?.() ?? 'dark';
+  }
+
+  setTheme(theme: string): void {
+    const instance = this.instance as { setTheme?: (value: string) => void };
+    instance?.setTheme?.(theme);
+  }
+
   goHome(): void {
     const instance = this.instance as { goHome?: () => void };
     instance?.goHome?.();

@@ -82,6 +82,16 @@
     api.goHome();
   }
 
+  /** The colour theme in use. */
+  export function getTheme(): string {
+    return api.getTheme();
+  }
+
+  /** Switch colour theme without reloading the viewer. */
+  export function setTheme(theme: string): void {
+    api.setTheme(theme);
+  }
+
   export function zoomIn(): void {
     api.zoomIn();
   }

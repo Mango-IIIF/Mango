@@ -40,7 +40,14 @@ export default defineConfig({
       fileName: (_format, entryName) => `${entryName}.js`,
     },
     rollupOptions: {
-      external: ['svelte', 'svelte/internal', /^svelte\//],
+      /*
+       * OpenSeadragon stays external so the host resolves one copy. Libraries
+       * that draw on Mango's viewer, such as Annotorious, bring their own import
+       * of it, and OSD overloads its viewport API on `instanceof $.Point`: points
+       * from a second copy are misread as numbers. The standalone element
+       * bundle (vite.config.element.ts) still includes it.
+       */
+      external: ['svelte', 'svelte/internal', /^svelte\//, 'openseadragon', /^openseadragon\//],
     },
     outDir: resolve(import.meta.dirname, 'src/dist'),
     emptyOutDir: true,
