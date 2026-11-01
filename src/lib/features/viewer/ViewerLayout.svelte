@@ -18,7 +18,7 @@
   import Stage from '../../viewer/ui/Stage.svelte';
   import StageGalleryView from '../../viewer/ui/StageGalleryView.svelte';
   import StageToolbar from '../../viewer/ui/StageToolbar.svelte';
-  import Gallery from '../../viewer/ui/Gallery.svelte';
+  import GalleryStrip from '../../viewer/ui/GalleryStrip.svelte';
   import ManifestManager from '../workspace/ManifestManager.svelte';
   import GridContainer from '../workspace/GridContainer.svelte';
   import { WorkspaceStore } from '../workspace/workspaceStore.svelte';
@@ -53,10 +53,10 @@
   const viewerDerived=createViewerDerived(viewerState);
   let stageRef:ReturnType<typeof Stage>|null=$state(null);
   const controller=createViewerController({state:viewerState,derived:viewerDerived,dispatch:()=>undefined,applyViewBox:(box)=>stageRef?.setViewBox?.(box)});
-  const {manifestEntry,collectionEntry,canvases,canvasThumbnails,mediaSource,mediaType,rendererComponent,annotations,overlayAnnotations,highlightIds,pluginSlots,leftVisible,allowThumbnails,allowCollection,allowMetadata,allowSearch,allowAnnotations,allowTools,allowLayers,contentsAvailable,avChaptersAvailable,avTranscriptAvailable,mediaSources,activeLayoutImages}=viewerDerived;
+  const {manifestEntry,collectionEntry,canvases,canvasThumbnails,mediaSource,mediaType,rendererComponent,annotations,overlayAnnotations,highlightIds,pluginSlots,leftVisible,allowThumbnails,thumbnailsInSidebar,allowCollection,allowMetadata,allowSearch,allowAnnotations,allowTools,allowLayers,contentsAvailable,avChaptersAvailable,avTranscriptAvailable,mediaSources,activeLayoutImages}=viewerDerived;
   const {userAnnotations,selectedCanvasIndex,zoom,showThumbnails,showCollection,showMetadata,showSearch,showAnnotations,showTools,showSettings,showContents,showLayers,layerOpacities,layoutMode,rotation,activeAnnotationId,hoverAnnotationId,imageFilters}=viewerState;
   const avController=viewerDerived.av.controller;
-  setContext(VIEWPORT_STATE_CONTEXT_KEY,new ViewportState());
+  const viewportState=setContext(VIEWPORT_STATE_CONTEXT_KEY,new ViewportState());
   let normalisedConfig:ViewerConfig=$state(initialConfig);
   let theme:ViewerSettingsTheme=$state(['dark','light','sepia','midnight','ringo'].includes(initialConfig.theme??'')?initialConfig.theme as ViewerSettingsTheme:'dark');
   let locale=$state(initialConfig.language??'en');
@@ -64,6 +64,9 @@
   let workspace=$state<WorkspaceStore|null>(null);
   let contentsTab=$state<'toc'|'transcript'>('toc');
   let sidebarCollapsed=$state(false);
+  let showControls=$state(true);
+  let narrow=$state(false);
+  let mobile=$state(false);
   let showManifestManager=$state(false);
   let canZoom=$state(false), viewerRoot:HTMLElement|null=$state(null), isFullscreen=$state(false), lastCanvasIndex=get(selectedCanvasIndex);
   let lastConfigInput:ViewerConfig|undefined;
@@ -120,22 +123,25 @@
 
   $effect.pre(()=>{if(configInitialized&&config===lastConfigInput)return;configInitialized=true;lastConfigInput=config;normalisedConfig=normaliseConfigForViewer(config);if(normalisedConfig.language)locale=normalisedConfig.language;viewerState.config.set(normalisedConfig);});
   $effect(()=>setLocale(locale));
+  /* Components that read the page from context (the stage toolbar) follow the viewer's page. */
+  $effect.pre(()=>{viewportState.selectedCanvasIndex=$selectedCanvasIndex;});
   $effect(()=>{controller.emitEvent('annotationsChange',{annotations:$annotations});});
   $effect.pre(()=>{if(pluginsInitialized&&plugins===lastPluginsInput)return;pluginsInitialized=true;lastPluginsInput=plugins;viewerState.plugins.set([...corePlugins,...plugins]);});
   $effect.pre(()=>viewerState.manifestId.set(manifestId??''));
   $effect(()=>{if(canvasIndex!==undefined&&canvasIndex!==get(selectedCanvasIndex))controller.setCanvasByIndex(canvasIndex);});
   $effect(()=>{const current=$selectedCanvasIndex;if(current!==lastCanvasIndex){lastCanvasIndex=current;oncanvaschange?.({canvasIndex:current});}});
   $effect(()=>{const collection=$collectionEntry;if(!collection?.json||manifestId!==collection.id)return;const first=findFirstManifestId(collection.json);if(first)manifestId=first;});
+  $effect(()=>{if(!viewerRoot)return;const update=()=>{const width=viewerRoot?.clientWidth??0;if(width>0){narrow=width<=1024;mobile=width<=768;return;}if(typeof window.matchMedia==='function'){narrow=window.matchMedia('(max-width: 1024px)').matches;mobile=window.matchMedia('(max-width: 768px)').matches;}};update();if(typeof ResizeObserver==='undefined')return;const observer=new ResizeObserver(update);observer.observe(viewerRoot);return()=>observer.disconnect();});
   onMount(()=>fullscreenController.attach()); onDestroy(()=>controller.destroy());
 </script>
 
 <div class="viewer" class:viewer--headless={!chrome} data-theme={theme} bind:this={viewerRoot}>
   {#if chrome}<div class="viewer__top-row"><ViewerHeader {manifestId} manifestEntry={$manifestEntry}/><div class="viewer__top-actions">{#if $pluginSlots.top.length}<PluginSlot slot="top" plugins={$pluginSlots.top} context={pluginContext}/>{/if}<button class="viewer__fullscreen-btn viewer__fullscreen-btn--labelled" type="button" onclick={()=>fullscreenController.toggle()} aria-label={isFullscreen?$t('viewer.stage.controls.closeFullscreen'):$t('viewer.stage.controls.enterFullscreen')}>{#if isFullscreen}<Shrink aria-hidden="true"/>{:else}<Expand aria-hidden="true"/>{/if}<span>{isFullscreen?$t('viewer.stage.controls.closeFullscreen'):$t('viewer.stage.controls.fullscreen')}</span></button></div></div>{/if}
   {#if chrome&&normalisedConfig.sidebar?.enabled!==false&&sidebarCollapsed}<button class="viewer__expand-sidebar" type="button" onclick={()=>sidebarCollapsed=false} aria-label={$t('viewer.stage.controls.expandSidebar')} title={$t('viewer.stage.controls.expandSidebar')}><ChevronsRight aria-hidden="true"/></button>{/if}
-  <div class="viewer__grid" class:viewer__grid--controls={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed} class:viewer__grid--left={chrome&&$leftVisible&&!sidebarCollapsed} class:viewer__grid--nav-compact={chrome&&$leftVisible&&!sidebarCollapsed} class:viewer__grid--sidebar-right={chrome&&normalisedConfig.sidebar?.position==='right'}>
+  <div class="viewer__grid" class:viewer__grid--controls={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed} class:viewer__grid--left={chrome&&$leftVisible&&!sidebarCollapsed} class:viewer__grid--nav-compact={chrome&&$leftVisible&&!sidebarCollapsed&&!mobile} class:viewer__grid--sidebar-right={chrome&&normalisedConfig.sidebar?.position==='right'} class:viewer__grid--mobile={mobile}>
     {#if chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed}
-      <aside class="viewer__control-rail" aria-label={$t('viewer.stage.controls.label')}><ViewerDock compact variant="sidebar" iconOnly={$leftVisible} galleryActive={$showThumbnails} allowThumbnails={$allowThumbnails} allowCollection={$allowCollection} allowContents={$contentsAvailable} allowChapters={$contentsAvailable&&$avChaptersAvailable} allowTranscript={$contentsAvailable&&$avTranscriptAvailable} allowSearch={$allowSearch} allowMetadata={$allowMetadata} allowAnnotations={$allowAnnotations} allowTools={$allowTools} allowLayers={$allowLayers} allowSettings={normalisedConfig.showSettings!==false} showThumbnails={$showThumbnails} showCollection={$showCollection} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showAnnotations={$showAnnotations} showTools={$showTools} showLayers={$showLayers} showSettings={$showSettings} {showManifestManager} {contentsTab} oncollapse={()=>sidebarCollapsed=true} onmanifesttoggle={()=>showManifestManager=!showManifestManager} ongalleryopen={()=>showThumbnails.set(!$showThumbnails)} oncontentsopen={openContents} onpanelToggle={(d)=>panelToggle(d.panel,d.open)}/></aside>
-      <LeftPanelStack visible={$leftVisible} redesigned {contentsTab} showCollection={$showCollection} showAnnotations={$showAnnotations} showTools={$showTools} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showSettings={$showSettings} showLayers={$showLayers} leftPlugins={$pluginSlots.left} {pluginContext} onpanelToggle={(p,o)=>panelToggle(p,o)} oncollectionSelect={handleCollectionSelect}/>
+      <aside class="viewer__control-rail" aria-label={$t('viewer.stage.controls.label')}><ViewerDock compact variant="sidebar" {mobile} iconOnly={$leftVisible||narrow} galleryActive={$showThumbnails} allowControls={toolbar??chrome} controlsActive={showControls} oncontrolstoggle={()=>showControls=!showControls} allowThumbnails={$allowThumbnails} allowCollection={$allowCollection} allowContents={$contentsAvailable} allowChapters={$contentsAvailable&&$avChaptersAvailable} allowTranscript={$contentsAvailable&&$avTranscriptAvailable} allowSearch={$allowSearch} allowMetadata={$allowMetadata} allowAnnotations={$allowAnnotations} allowTools={$allowTools} allowLayers={$allowLayers} allowSettings={normalisedConfig.showSettings!==false} showThumbnails={$showThumbnails} showCollection={$showCollection} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showAnnotations={$showAnnotations} showTools={$showTools} showLayers={$showLayers} showSettings={$showSettings} {showManifestManager} {contentsTab} oncollapse={()=>sidebarCollapsed=true} onmanifesttoggle={()=>showManifestManager=!showManifestManager} ongalleryopen={()=>panelToggle('thumbnails',!$showThumbnails)} oncontentsopen={openContents} onpanelToggle={(d)=>panelToggle(d.panel,d.open)}/></aside>
+      <LeftPanelStack visible={$leftVisible} redesigned {contentsTab} showCollection={$showCollection} showAnnotations={$showAnnotations} showTools={$showTools} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showSettings={$showSettings} showLayers={$showLayers} showThumbnails={$showThumbnails&&$thumbnailsInSidebar} leftPlugins={$pluginSlots.left} {pluginContext} onpanelToggle={(p,o)=>panelToggle(p,o)} oncollectionSelect={handleCollectionSelect} oncanvasSelect={(d)=>requestCanvas(d.index)} onviewall={()=>controller.setLayoutMode('gallery')}/>
     {/if}
     {#if showManifestManager}<div class="viewer__manifest-overlay"><ManifestManager {workspace} onclose={()=>showManifestManager=false} onsingleload={(id)=>setManifest(id)}/></div>{/if}
     <main class="stage stage--viewer" class:stage--joined-sidebar-left={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed&&!$leftVisible&&normalisedConfig.sidebar?.position!=='right'} class:stage--joined-sidebar-right={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed&&!$leftVisible&&normalisedConfig.sidebar?.position==='right'} aria-label={$t('viewer.stage.label')}>
@@ -143,9 +149,9 @@
       <div class="stage__primary stage__viewer-frame">
       {#if $layoutMode==='gallery'}<StageGalleryView canvases={$canvases} thumbnails={$canvasThumbnails} selectedCanvasIndex={$selectedCanvasIndex} onselect={(d)=>{if(onbeforecanvaschange?.({canvasIndex:d.index})===false)return;controller.setCanvasByIndex(d.index);controller.setLayoutMode('single');}}/>
       {:else}<Stage bind:this={stageRef} bind:canZoom rendererComponent={$rendererComponent} {avController} mediaSource={$mediaSource} annotations={annotationOverlay?$overlayAnnotations:[]} highlightIds={$highlightIds} activeAnnotationId={$activeAnnotationId} hoverAnnotationId={$hoverAnnotationId} overlayPlugins={$pluginSlots.overlay} {pluginContext} isFetching={$manifestEntry?.isFetching??false} error={$manifestEntry?.error??''} imageFilters={$imageFilters} mediaType={$mediaType} viewerConfig={normalisedConfig} fillHeight={!chrome} showDock={false} allowThumbnails={$allowThumbnails} allowSearch={$allowSearch} allowMetadata={$allowMetadata} allowAnnotations={$allowAnnotations} allowTools={$allowTools} allowLayers={$allowLayers} allowSettings={normalisedConfig.showSettings!==false} allowContents={$contentsAvailable} showThumbnails={$showThumbnails} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showAnnotations={$showAnnotations} showTools={$showTools} showLayers={$showLayers} layers={$mediaSources} layerOpacities={$layerOpacities} {rendererHandlers} rotation={$rotation} initialViewBox={initialViewState.viewBox} layoutMode={$layoutMode} activeLayoutImages={$activeLayoutImages} onviewboxchange={controller.handleViewBoxChange} onzoomchange={controller.handleZoomChange} onrotationchange={controller.handleRotationChange} onpaneltoggle={(d)=>panelToggle(d.panel,d.open)} onrendererready={(d)=>controller.emitEvent('rendererReady',d)} onstageresize={(d)=>controller.emitEvent('stageResize',d)}/>{/if}
-      {#if (toolbar??chrome)&&$layoutMode!=='gallery'}<StageToolbar {canZoom} hasSource={Boolean($mediaSource)} placement="below" mediaType={$mediaType} selectedCanvasIndex={$selectedCanvasIndex} totalCanvases={$canvases.length} zoomPercent={getZoom()} rotation={$rotation} onhome={()=>stageRef?.goHome?.()} onzoomIn={zoomIn} onzoomOut={zoomOut} onsetZoomPercent={(d)=>setZoom(d.percent)} onrotate={controller.handleRotationChange} onsetCanvasIndex={(d)=>requestCanvas(d.index)} onprevCanvas={previousCanvas} onnextCanvas={nextCanvas}/>{/if}
+      {#if (toolbar??chrome)&&showControls&&$layoutMode!=='gallery'}<StageToolbar {canZoom} hasSource={Boolean($mediaSource)} placement="below" mediaType={$mediaType} selectedCanvasIndex={$selectedCanvasIndex} totalCanvases={$canvases.length} zoomPercent={getZoom()} rotation={$rotation} onhome={()=>stageRef?.goHome?.()} onzoomIn={zoomIn} onzoomOut={zoomOut} onsetZoomPercent={(d)=>setZoom(d.percent)} onrotate={controller.handleRotationChange} onsetCanvasIndex={(d)=>requestCanvas(d.index)} onprevCanvas={previousCanvas} onnextCanvas={nextCanvas}/>{/if}
+      {#if chrome&&$allowThumbnails&&$showThumbnails&&!$thumbnailsInSidebar&&$layoutMode!=='gallery'}<GalleryStrip canvases={$canvases} canvasThumbnails={$canvasThumbnails} selectedCanvasIndex={$selectedCanvasIndex} oncanvasSelect={(d)=>requestCanvas(d.index)} onviewall={()=>controller.setLayoutMode('gallery')}/>{/if}
       </div>
-      {#if chrome&&$showThumbnails&&$layoutMode!=='gallery'}<Gallery redesigned canvases={$canvases} canvasThumbnails={$canvasThumbnails} selectedCanvasIndex={$selectedCanvasIndex} onpanelToggle={(d)=>panelToggle(d.panel,d.open)} oncanvasSelect={(d)=>requestCanvas(d.index)} onviewall={()=>controller.setLayoutMode('gallery')}/>{/if}
       {#if $pluginSlots.bottom.length}<div class="stage__bottom"><PluginSlot slot="bottom" plugins={$pluginSlots.bottom} context={pluginContext}/></div>{/if}
       {:else if workspace}
         <GridContainer node={workspace.layout} activeWindowId={workspace.activeWindowId} onfocuswindow={(id)=>workspace?.setActiveWindow(id)} onmovewindow={(d)=>workspace?.moveWindow(d.id,d.direction)} onclosewindow={(id)=>{workspace?.closeWindow(id);if(workspace?.layout.type==='window'){settingsLayout='1x1';workspace=null;}}} onloadmanifest={(d)=>{workspace?.setWindowManifest(d.id,d.manifestId);workspace?.setActiveWindow(d.id);}} oncanvaschange={(d)=>workspace?.setWindowCanvasIndex(d.id,d.canvasIndex)} onresizesplit={(d)=>workspace?.updateSplitSizes(d.targetId,d.sizes)} onopenmanifestmanager={(id)=>{workspace?.setActiveWindow(id);showManifestManager=true;}}/>
@@ -546,10 +552,11 @@
     overflow-y: auto;
   }
 
+  /* The image, then the toolbar and the thumbnail strip as rows of their own under it. */
   .stage__primary {
     position: relative;
     display: grid;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto auto;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
@@ -568,30 +575,30 @@
     border-radius: var(--viewer-chrome-radius);
   }
 
-  .stage__primary :global(.stage__toolbar--below) {
-    position: absolute;
-    z-index: 12;
-    left: 50%;
-    bottom: 14px;
-    width: min(calc(100% - 24px), 560px);
+  /*
+   * In the flow, not floated: undo the toolbar's own narrow-screen centring
+   * (left: 50% and a translate) and scrolling. Groups that don't fit wrap onto
+   * a second row, so every control stays in view.
+   */
+  .stage__primary :global(.stage__toolbar.stage__toolbar--below) {
+    position: static;
+    left: auto;
+    width: 100%;
     margin: 0;
-    padding: 6px;
-    border: 1px solid var(--viewer-panel-border);
-    border-radius: 0;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow: visible;
+    border-top: 1px solid var(--viewer-panel-border);
     background: var(--viewer-stage-bottom-bg);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.34);
-    backdrop-filter: blur(12px);
-    opacity: 0;
-    pointer-events: none;
-    transform: translate(-50%, 8px);
-    transition: opacity 220ms ease, transform 220ms ease;
+    transform: none;
   }
 
-  .stage__primary:hover :global(.stage__toolbar--below),
-  .stage__primary:focus-within :global(.stage__toolbar--below) {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translate(-50%, 0);
+  /* Phones: every pixel goes to the buttons. */
+  @container mango-viewer (width <= 500px) {
+    .stage__primary :global(.stage__toolbar.stage__toolbar--below) {
+      padding-inline: 0;
+    }
   }
 
   .stage--joined-sidebar-left .stage__primary,
@@ -621,8 +628,6 @@
   .viewer :global(.stage__toolbar-group),
   .viewer :global(.stage__toolbar-input),
   .viewer :global(.panel__close),
-  .viewer :global(.gallery__close),
-  .viewer :global(.gallery__button),
   .viewer :global(.plugin-panel__panel) {
     border-radius: 0;
   }
@@ -658,6 +663,119 @@
       z-index: 20;
       inset: 0 auto 0 56px;
       width: min(360px, calc(100% - 56px));
+    }
+  }
+
+  /*
+   * The viewer is frequently embedded in a narrow column on a wide desktop,
+   * so this layout is selected from the viewer's measured width rather than
+   * the browser viewport. The phone dock occupies its own row beneath the
+   * stage instead of stealing a permanent strip down the image's left edge.
+   */
+  .viewer__grid--mobile,
+  .viewer__grid--mobile.viewer__grid--left,
+  .viewer__grid--mobile.viewer__grid--sidebar-right:not(.viewer__grid--left),
+  .viewer__grid--mobile.viewer__grid--sidebar-right.viewer__grid--left {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) auto !important;
+    gap: 0;
+  }
+
+  .viewer__grid--mobile > .stage,
+  .viewer__grid--mobile.viewer__grid--sidebar-right > .stage {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .viewer__grid--mobile > .viewer__control-rail,
+  .viewer__grid--mobile.viewer__grid--nav-compact > .viewer__control-rail,
+  .viewer__grid--mobile.viewer__grid--sidebar-right > .viewer__control-rail {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100% !important;
+    padding: 6px 8px;
+    justify-items: safe center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 0;
+    border-top: 1px solid var(--viewer-panel-border);
+    background: var(--viewer-control-rail-bg);
+    scrollbar-width: none;
+  }
+
+  .viewer__grid--mobile > .viewer__control-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .viewer__grid--mobile :global(.panel-stack--left) {
+    position: absolute;
+    z-index: 20;
+    inset: 0 0 57px;
+    height: auto;
+    width: 100%;
+    max-width: none;
+  }
+
+  @container mango-viewer (width <= 768px) {
+    .viewer {
+      gap: 10px;
+      padding-top: 12px;
+    }
+
+    .viewer__top-row {
+      align-items: center;
+      gap: 8px;
+      padding-inline: 12px;
+    }
+
+    .viewer__top-row :global(.manifest__title) {
+      font-size: 18px;
+    }
+
+    .viewer__fullscreen-btn--labelled {
+      width: 36px;
+      min-width: 36px;
+      padding: 0;
+    }
+
+    .viewer__fullscreen-btn--labelled span {
+      display: none;
+    }
+  }
+
+  /* A short landscape embed has width to spare but very little height. */
+  @container mango-viewer (max-height: 500px) and (min-width: 560px) {
+    .viewer__grid--mobile,
+    .viewer__grid--mobile.viewer__grid--left,
+    .viewer__grid--mobile.viewer__grid--sidebar-right.viewer__grid--left {
+      grid-template-columns: auto minmax(0, 1fr) !important;
+      grid-template-rows: minmax(0, 1fr) !important;
+    }
+
+    .viewer__grid--mobile > .viewer__control-rail,
+    .viewer__grid--mobile.viewer__grid--nav-compact > .viewer__control-rail,
+    .viewer__grid--mobile.viewer__grid--sidebar-right > .viewer__control-rail {
+      grid-column: 1;
+      grid-row: 1;
+      width: auto !important;
+      padding: 8px 6px;
+      justify-items: stretch;
+      overflow-x: hidden;
+      overflow-y: auto;
+      border-top: 0;
+      border-right: 1px solid var(--viewer-panel-border);
+    }
+
+    .viewer__grid--mobile > .stage,
+    .viewer__grid--mobile.viewer__grid--sidebar-right > .stage {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .viewer__grid--mobile :global(.panel-stack--left) {
+      inset: 0 0 0 57px;
+      height: 100%;
+      width: min(360px, calc(100% - 57px));
     }
   }
 </style>

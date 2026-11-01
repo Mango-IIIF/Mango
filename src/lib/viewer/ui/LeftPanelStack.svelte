@@ -11,6 +11,7 @@
   import LayersPanel from './LayersPanel.svelte';
   import ComparePanel from './ComparePanel.svelte';
   import CollectionPanel from './CollectionPanel.svelte';
+  import ThumbnailsPanel from './ThumbnailsPanel.svelte';
   import type { CollectionSelection } from '@mango-iiif/collection-navigator';
   import type { Component } from 'svelte';
 
@@ -25,12 +26,16 @@
     showSettings?: boolean;
     showLayers?: boolean;
     showCompare?: boolean;
+    /** Page thumbnails, when configured to show in the sidebar. */
+    showThumbnails?: boolean;
     redesigned?: boolean;
     contentsTab?: 'toc' | 'transcript';
     leftPlugins?: ViewerPlugin[];
     pluginContext: Omit<PluginContext, 'mount'>;
-    onpanelToggle?: (panel: 'collection' | 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers' | 'compare', open: boolean) => void;
+    onpanelToggle?: (panel: 'collection' | 'annotations' | 'tools' | 'search' | 'metadata' | 'contents' | 'settings' | 'layers' | 'compare' | 'thumbnails', open: boolean) => void;
     oncollectionSelect?: (selection: CollectionSelection) => void;
+    oncanvasSelect?: (payload: { index: number }) => void;
+    onviewall?: () => void;
   }
 
   let {
@@ -44,12 +49,15 @@
     showSettings = false,
     showLayers = false,
     showCompare = false,
+    showThumbnails = false,
     redesigned = false,
     contentsTab = 'toc',
     leftPlugins = [],
     pluginContext,
     onpanelToggle,
     oncollectionSelect,
+    oncanvasSelect,
+    onviewall,
   }: Props = $props();
 
   const viewer = getViewerContext();
@@ -80,6 +88,7 @@
     search: false,
     metadata: false,
     layers: false,
+    thumbnails: false,
   });
 
   $effect(() => {
@@ -95,6 +104,7 @@
       void loadMetadataPanel();
     }
     if (showLayers) loaded.layers = true;
+    if (showThumbnails) loaded.thumbnails = true;
   });
 </script>
 
@@ -104,6 +114,17 @@
   hidden={!visible}
   aria-label={$t('viewer.panels.leftLabel')}
 >
+  {#if loaded.thumbnails}
+    <div hidden={!showThumbnails}>
+      <ThumbnailsPanel
+        {redesigned}
+        {oncanvasSelect}
+        {onviewall}
+        onclose={() => onpanelToggle?.('thumbnails', false)}
+      />
+    </div>
+  {/if}
+
   {#if loaded.collection}
     <div hidden={!showCollection}>
       <CollectionPanel

@@ -9,6 +9,7 @@
     ListTree,
     MessageSquare,
     MessageSquareText,
+    PanelBottom,
     ScanEye,
     Search,
     Settings,
@@ -55,9 +56,13 @@
     mobile?: boolean;
     iconOnly?: boolean;
     galleryActive?: boolean;
+    /** Show the button that toggles the stage toolbar, and whether it is showing. */
+    allowControls?: boolean;
+    controlsActive?: boolean;
     contentsTab?: 'toc' | 'transcript';
     oncollapse?: () => void;
     ongalleryopen?: () => void;
+    oncontrolstoggle?: () => void;
     oncontentsopen?: (tab: 'toc' | 'transcript') => void;
     oncomparetoggle?: () => void;
     onmanifesttoggle?: () => void;
@@ -93,9 +98,12 @@
     mobile = false,
     iconOnly = false,
     galleryActive = false,
+    allowControls = false,
+    controlsActive = true,
     contentsTab = 'toc',
     oncollapse = undefined,
     ongalleryopen = undefined,
+    oncontrolstoggle = undefined,
     oncontentsopen = undefined,
     oncomparetoggle = undefined,
     onmanifesttoggle = undefined,
@@ -127,6 +135,19 @@
           >
             <Image aria-hidden="true" />
             <span>{$t('workspace.sidebar.gallery')}</span>
+          </button>
+        {/if}
+        {#if allowControls}
+          <button
+            class:viewer-sidebar__button--active={controlsActive}
+            class="viewer-sidebar__button"
+            type="button"
+            title={iconOnly ? $t('workspace.sidebar.controls') : undefined}
+            aria-pressed={controlsActive}
+            onclick={() => oncontrolstoggle?.()}
+          >
+            <PanelBottom aria-hidden="true" />
+            <span>{$t('workspace.sidebar.controls')}</span>
           </button>
         {/if}
         {#if allowCollection}
@@ -317,6 +338,19 @@
           onclick={() => ongalleryopen?.()}
         >
           <Image aria-hidden="true" />
+        </button>
+      {/if}
+      {#if allowControls}
+        <button
+          class:viewer-mobile-nav__button--active={controlsActive}
+          class="viewer-mobile-nav__button"
+          type="button"
+          aria-label={$t('workspace.sidebar.controls')}
+          title={$t('workspace.sidebar.controls')}
+          aria-pressed={controlsActive}
+          onclick={() => oncontrolstoggle?.()}
+        >
+          <PanelBottom aria-hidden="true" />
         </button>
       {/if}
       {#if allowCollection}

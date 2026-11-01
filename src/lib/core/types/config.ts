@@ -4,6 +4,10 @@ export type ViewerConfig = {
   language?: string;
   theme?: 'dark' | 'light' | 'sepia' | 'midnight' | 'ringo' | string;
   showThumbnails?: boolean;
+  /** Where the page thumbnails go: a strip under the toolbar (default) or a sidebar panel. */
+  thumbnails?: {
+    position?: 'below' | 'sidebar';
+  };
   showCollection?: boolean;
   showMetadata?: boolean;
   showSearch?: boolean;

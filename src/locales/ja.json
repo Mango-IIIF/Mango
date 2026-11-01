@@ -217,6 +217,7 @@
       "empty": "表示可能なキャンバスがありません。",
       "unavailable": "メディア利用不可",
       "canvasAlt": "キャンバス {index}",
+      "page": "ページ {n}: {label}",
       "pages": "ページ",
       "viewAll": "全 {count} ページを表示"
     },
@@ -350,6 +351,7 @@
       "navigation": "ビューアのナビゲーション",
       "browse": "閲覧",
       "gallery": "ギャラリー",
+      "controls": "コントロール",
       "metadata": "メタデータ",
       "search": "検索",
       "annotations": "注釈",

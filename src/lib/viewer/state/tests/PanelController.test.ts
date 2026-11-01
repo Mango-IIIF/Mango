@@ -32,6 +32,55 @@ describe('PanelController', () => {
     expect(get(state.showThumbnails)).toBe(true);
   });
 
+  it('keeps the thumbnail strip open alongside a sidebar panel', () => {
+    const state = createViewerState({ config: {} });
+    const derived = { ...createViewerDerived(state), allowThumbnails: writable(true) };
+    const controller = createPanelController({
+      state,
+      derived,
+      emitEvent: vi.fn(),
+      emitStateChange: vi.fn(),
+    });
+    const unsubscribers = controller.setupPanelEffects();
+
+    try {
+      controller.setPanelOpen('thumbnails', true);
+      expect(get(state.showMetadata)).toBe(true);
+
+      controller.setPanelOpen('settings', true);
+      expect(get(state.showThumbnails)).toBe(true);
+      expect(get(state.showSettings)).toBe(true);
+    } finally {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    }
+  });
+
+  it('makes thumbnails one of the sidebar panels when configured there', () => {
+    const state = createViewerState({ config: { thumbnails: { position: 'sidebar' } } });
+    const derived = { ...createViewerDerived(state), allowThumbnails: writable(true) };
+    const controller = createPanelController({
+      state,
+      derived,
+      emitEvent: vi.fn(),
+      emitStateChange: vi.fn(),
+    });
+    const unsubscribers = controller.setupPanelEffects();
+
+    try {
+      expect(get(state.showMetadata)).toBe(true);
+
+      controller.setPanelOpen('thumbnails', true);
+      expect(get(state.showThumbnails)).toBe(true);
+      expect(get(state.showMetadata)).toBe(false);
+
+      controller.setPanelOpen('settings', true);
+      expect(get(state.showThumbnails)).toBe(false);
+      expect(get(state.showSettings)).toBe(true);
+    } finally {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    }
+  });
+
   it('starts with every left panel closed when sidebar.open is false', () => {
     const state = createViewerState({ config: { sidebar: { open: false } } });
     const derived = createViewerDerived(state);
