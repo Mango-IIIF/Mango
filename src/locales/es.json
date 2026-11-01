@@ -217,6 +217,7 @@
       "empty": "No hay lienzos disponibles.",
       "unavailable": "Contenido multimedia no disponible",
       "canvasAlt": "Lienzo {index}",
+      "page": "Página {n}: {label}",
       "pages": "Páginas",
       "viewAll": "Ver las {count} páginas"
     },
@@ -350,6 +351,7 @@
       "navigation": "Navegación del visor",
       "browse": "Explorar",
       "gallery": "Galería",
+      "controls": "Controles",
       "metadata": "Metadatos",
       "search": "Buscar",
       "annotations": "Anotaciones",

@@ -19,7 +19,7 @@ export const isIPadLikeDevice = (
 
 const allowsTouchInteraction = (target: EventTarget): boolean =>
   target instanceof Element &&
-  (target.classList.contains("gallery__list") ||
+  (target.classList.contains("gallery-strip__pages") ||
     target.classList.contains("panel-stack--left") ||
     target.classList.contains("stage-gallery-view") ||
     // These horizontal rails live inside nested shadow/layout boundaries on

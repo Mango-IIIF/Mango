@@ -102,6 +102,8 @@ export type ViewerDerivedStores = {
   uiLocale: Readable<string>;
   metadataLocale: Readable<string>;
   allowThumbnails: Readable<boolean>;
+  /** Page thumbnails in a sidebar panel rather than a strip under the stage. */
+  thumbnailsInSidebar: Readable<boolean>;
   allowCollection: Readable<boolean>;
   allowMetadata: Readable<boolean>;
   allowSearch: Readable<boolean>;
@@ -390,6 +392,10 @@ export const createViewerDerived = (
     [state.config, galleryAvailable],
     ([config, available]) => config?.showThumbnails !== false && available,
   );
+  const thumbnailsInSidebar = derived(
+    state.config,
+    (config) => config?.thumbnails?.position === "sidebar",
+  );
   const allowCollection = derived(
     [state.config, collectionEntry],
     ([config, entry]) =>
@@ -460,6 +466,9 @@ export const createViewerDerived = (
       state.showLayers,
       allowLayers,
       pluginSlots,
+      state.showThumbnails,
+      allowThumbnails,
+      thumbnailsInSidebar,
     ],
     ([
       showCollection,
@@ -476,6 +485,9 @@ export const createViewerDerived = (
       showLayersValue,
       allowLayersValue,
       slots,
+      showThumbnails,
+      allowThumbnailsValue,
+      thumbnailsInSidebarValue,
     ]) =>
       (showCollection && allowCollectionValue) ||
       (showSearch && allowSearchValue) ||
@@ -485,6 +497,7 @@ export const createViewerDerived = (
       showSettings ||
       (showTools && allowToolsValue) ||
       (showLayersValue && allowLayersValue) ||
+      (showThumbnails && allowThumbnailsValue && thumbnailsInSidebarValue) ||
       slots.left.length > 0,
   );
 
@@ -574,6 +587,7 @@ export const createViewerDerived = (
     uiLocale,
     metadataLocale,
     allowThumbnails,
+    thumbnailsInSidebar,
     allowCollection,
     allowMetadata,
     allowSearch,

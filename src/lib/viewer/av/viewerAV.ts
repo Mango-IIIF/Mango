@@ -40,8 +40,7 @@ const avConfig = (config?: ViewerConfig): AVPlayerConfig => ({
     ...config?.av?.controls,
   },
   audioArt: {
-    transcript: true,
-    visualizer: 'pulse',
+    captions: 'context',
     ...config?.av?.audioArt,
   },
   preferredLanguages: preferredLanguages(config),

@@ -217,6 +217,7 @@
       "empty": "No canvases available.",
       "unavailable": "Media unavailable",
       "canvasAlt": "Canvas {index}",
+      "page": "Page {n}: {label}",
       "pages": "Pages",
       "viewAll": "View all {count} pages"
     },
@@ -350,6 +351,7 @@
       "navigation": "Viewer navigation",
       "browse": "Browse",
       "gallery": "Gallery",
+      "controls": "Controls",
       "metadata": "Metadata",
       "search": "Search",
       "annotations": "Annotations",

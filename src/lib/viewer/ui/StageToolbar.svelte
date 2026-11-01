@@ -391,7 +391,7 @@
     --stage-toolbar-value-gap: 4px;
     --stage-toolbar-value-padding: 8px;
     --stage-toolbar-icon-size: 17px;
-    --stage-toolbar-radius: 10px;
+    --stage-toolbar-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -403,7 +403,7 @@
     box-sizing: border-box;
     margin-inline: auto;
     padding: 3px;
-    border-radius: 11px;
+    border-radius: 0;
     border: none;
     background: transparent;
     box-shadow: none;
@@ -612,7 +612,7 @@
       --stage-toolbar-value-gap: clamp(2px, .8cqw, 4px);
       --stage-toolbar-value-padding: clamp(3px, 1.2cqw, 6px);
       --stage-toolbar-icon-size: clamp(15px, 5.2cqw, 18px);
-      --stage-toolbar-radius: clamp(8px, 2.8cqw, 10px);
+      --stage-toolbar-radius: 0;
       width: 100%;
       max-width: 100%;
       position: relative;

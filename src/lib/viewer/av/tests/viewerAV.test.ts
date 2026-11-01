@@ -261,7 +261,7 @@ describe('viewer AV integration', () => {
     expect(get(state.selectedCanvasIndex)).toBe(0);
   });
 
-  it('configures audio visualization defaults and allows overrides', () => {
+  it('configures audio caption defaults and allows overrides', () => {
     const state = createViewerState();
     integration = createViewerAV(state);
     expect(integration.controller.config.controls).toMatchObject({
@@ -270,25 +270,22 @@ describe('viewer AV integration', () => {
     });
     expect(integration.controller.config.audioArt).toEqual({
       title: '',
-      transcript: true,
-      visualizer: 'pulse',
+      captions: 'context',
     });
-    expect(integration.controller.config.crossorigin).toBe('');
+    expect(integration.controller.config.withCredentials).toBe(false);
 
     state.config.set({
       av: {
-        crossorigin: 'use-credentials',
+        withCredentials: true,
         audioArt: {
-          transcript: false,
-          visualizer: 'waveform',
+          captions: 'line',
         },
       },
     });
     expect(integration.controller.config.audioArt).toEqual({
       title: '',
-      transcript: false,
-      visualizer: 'waveform',
+      captions: 'line',
     });
-    expect(integration.controller.config.crossorigin).toBe('use-credentials');
+    expect(integration.controller.config.withCredentials).toBe(true);
   });
 });
