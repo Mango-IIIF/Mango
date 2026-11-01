@@ -33,4 +33,11 @@ describe('ViewerDock navigation availability', () => {
     expect(target.textContent).not.toContain('Cite');
   });
 
+  it('renders the horizontal mobile navigation instead of the desktop sidebar', () => {
+    const target = renderDock({ mobile: true, allowThumbnails: true });
+
+    expect(target.querySelector('.viewer-mobile-nav')).toBeTruthy();
+    expect(target.querySelector('.viewer-sidebar')).toBeNull();
+    expect(target.querySelector('[aria-label="Gallery"]')).toBeTruthy();
+  });
 });

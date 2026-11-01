@@ -217,6 +217,7 @@
       "empty": "Dim cynfasau ar gael.",
       "unavailable": "Cyfryngau ddim ar gael",
       "canvasAlt": "Cynfas {index}",
+      "page": "Tudalen {n}: {label}",
       "pages": "Tudalennau",
       "viewAll": "Gweld pob un o'r {count} tudalen"
     },
@@ -350,6 +351,7 @@
       "navigation": "Llywio'r gwyliwr",
       "browse": "Pori",
       "gallery": "Galeri",
+      "controls": "Rheolyddion",
       "metadata": "Metadata",
       "search": "Chwilio",
       "annotations": "Anodiadau",

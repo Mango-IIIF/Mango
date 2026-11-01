@@ -52,7 +52,16 @@ export const createPanelController = ({
     "search",
     "metadata",
     "layers",
+    "thumbnails",
   ];
+
+  /* Thumbnails are a sidebar panel only when configured so; otherwise a strip that sits alongside any panel. */
+  const thumbnailsInSidebar = (): boolean =>
+    get(derivedStores.thumbnailsInSidebar);
+  const leftPanels = (): ViewerPanel[] =>
+    thumbnailsInSidebar()
+      ? leftPanelOrder
+      : leftPanelOrder.filter((panel) => panel !== "thumbnails");
 
   const configuredInitialPanel = leftPanelOrder.includes(
     initialActivePanel as ViewerPanel,
@@ -73,11 +82,12 @@ export const createPanelController = ({
     metadata: state.showMetadata,
     settings: state.showSettings,
     layers: state.showLayers,
+    thumbnails: state.showThumbnails,
   };
 
   const isLeftPanel = (
     panel: ViewerPanel,
-  ): panel is Exclude<ViewerPanel, "thumbnails"> => panel !== "thumbnails";
+  ): boolean => panel !== "thumbnails" || thumbnailsInSidebar();
 
   const leftPanelAllowed = (panel: ViewerPanel): boolean => {
     if (get(state.config)?.sidebar?.enabled === false) return false;
@@ -98,13 +108,15 @@ export const createPanelController = ({
         return get(derivedStores.allowLayers);
       case "settings":
         return get(state.config)?.showSettings !== false;
+      case "thumbnails":
+        return thumbnailsInSidebar() && get(derivedStores.allowThumbnails);
       default:
         return false;
     }
   };
 
   const hasOpenLeftPanel = (): boolean =>
-    leftPanelOrder.some((panel) => {
+    leftPanels().some((panel) => {
       const store = leftPanelStores[panel];
       return store ? get(store) : false;
     });
@@ -117,7 +129,7 @@ export const createPanelController = ({
       return preferred;
     }
 
-    const openAndAllowed = leftPanelOrder.find((panel) => {
+    const openAndAllowed = leftPanels().find((panel) => {
       const store = leftPanelStores[panel];
       if (!store) return false;
       return get(store) && leftPanelAllowed(panel);
@@ -126,7 +138,7 @@ export const createPanelController = ({
 
     if (!useFallback) return null;
 
-    const firstAllowed = leftPanelOrder.find((panel) =>
+    const firstAllowed = leftPanels().find((panel) =>
       leftPanelAllowed(panel),
     );
     return firstAllowed ?? null;
@@ -138,7 +150,7 @@ export const createPanelController = ({
   ) => {
     const target = resolveActiveLeftPanel(preferred, useFallback);
 
-    leftPanelOrder.forEach((panel) => {
+    leftPanels().forEach((panel) => {
       const store = leftPanelStores[panel];
       if (!store) return;
       const shouldOpen = target === panel;
@@ -161,9 +173,9 @@ export const createPanelController = ({
   }
 
   const setPanelOpen = (panel: ViewerPanel, open: boolean) => {
-    if (panel === "thumbnails") {
+    if (!isLeftPanel(panel)) {
       state.showThumbnails.set(open);
-    } else if (isLeftPanel(panel)) {
+    } else {
       const store = leftPanelStores[panel];
       if (open) {
         lastOpenedLeftPanel = panel;
@@ -186,7 +198,7 @@ export const createPanelController = ({
       if (!store) return;
       unsubscribers.push(
         store.subscribe((open) => {
-          if (open) {
+          if (open && isLeftPanel(panel)) {
             if (lastOpenedLeftPanel !== panel) {
               lastOpenedLeftPanel = panel;
               enforceSingleLeftPanel(panel);
@@ -206,6 +218,8 @@ export const createPanelController = ({
         derivedStores.allowTools,
         derivedStores.contentsAvailable,
         derivedStores.allowLayers,
+        derivedStores.allowThumbnails,
+        derivedStores.thumbnailsInSidebar,
       ],
       () => {
         if (awaitingInitialPanel && leftPanelAllowed(configuredInitialPanel)) {

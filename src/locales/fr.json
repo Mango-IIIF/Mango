@@ -217,6 +217,7 @@
       "empty": "Aucun canevas disponible.",
       "unavailable": "Média indisponible",
       "canvasAlt": "Canevas {index}",
+      "page": "Page {n} : {label}",
       "pages": "Pages",
       "viewAll": "Voir les {count} pages"
     },
@@ -350,6 +351,7 @@
       "navigation": "Navigation de la visionneuse",
       "browse": "Parcourir",
       "gallery": "Galerie",
+      "controls": "Commandes",
       "metadata": "Métadonnées",
       "search": "Rechercher",
       "annotations": "Annotations",

@@ -96,8 +96,24 @@ sidebar: {
 | ------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | `enabled`     | `boolean`                                                                      | Enables the sidebar and its controls.                                                    |
 | `open`        | `boolean`                                                                      | Opens the selected panel initially.                                                      |
-| `activePanel` | `metadata`, `search`, `annotations`, `tools`, `contents`, `settings`, `layers` | Selects the initial panel. Availability still depends on the resource and other options. |
+| `activePanel` | `metadata`, `search`, `annotations`, `tools`, `contents`, `settings`, `layers`, `thumbnails` | Selects the initial panel; `thumbnails` needs `thumbnails.position: 'sidebar'`. Availability still depends on the resource and other options. |
 | `position`    | `left`, `right`                                                                | Places the sidebar on the selected side.                                                 |
+
+## Thumbnails
+
+```js
+thumbnails: {
+  position: 'below',
+}
+```
+
+| Option     | Values             | Effect                                                                                                         |
+| ---------- | ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `position` | `below`, `sidebar` | `below` (default) shows a strip of page thumbnails under the viewer controls; `sidebar` shows them as a panel. |
+
+The gallery button in the sidebar opens and closes them either way; `showThumbnails: false` removes them.
+
+The viewer controls (page, zoom, rotate and home) sit in a bar under the viewer; the **Controls** button in the sidebar shows and hides them.
 
 ## Initial canvas and view
 
@@ -176,11 +192,11 @@ Common `av` options include:
 | `controls`   | `navigation`, `autoAdvance`, `seek`, `volume`, `captions`, `playbackRate`, `pictureInPicture`, `fullscreen`, `sourceSelector`, `download`, `skipSeconds` |
 | `panels`     | `chapters`, `transcript`, `annotations`, `metadata`, `supplementalFiles`                                                                                 |
 | `transcript` | `autoScroll`, `search`, `download`, `showNotes`, `showMetadata`, `showSearchMarkers`                                                                     |
-| `audioArt`   | Timed `transcript` display and `visualizer` (`pulse`, `waveform`, or `spectrum`); colour and strength are CSS variables, see [Theming and languages](Theming-and-Languages.md) |
+| `audioArt`   | Optional `title` and timed transcript `captions` (`context`, `line`, or `false`) for audio |
 | `resume`     | `enabled`, `maxItems`, `ttlDays`, and `prompt`                                                                                                           |
 
 Top-level options include `preferredLanguages`, `autoAdvance`, `repeat`,
-`startCanvasId`, `startTime`, `activePanel`, `crossorigin`, `preload`,
+`startCanvasId`, `startTime`, `activePanel`, `withCredentials`,
 `playbackRates`, and translated `strings`.
 
 Advanced integrations can provide `fetch`, `requestInit`, `resolveRequest`, and
