@@ -131,14 +131,14 @@
   $effect(()=>{if(canvasIndex!==undefined&&canvasIndex!==get(selectedCanvasIndex))controller.setCanvasByIndex(canvasIndex);});
   $effect(()=>{const current=$selectedCanvasIndex;if(current!==lastCanvasIndex){lastCanvasIndex=current;oncanvaschange?.({canvasIndex:current});}});
   $effect(()=>{const collection=$collectionEntry;if(!collection?.json||manifestId!==collection.id)return;const first=findFirstManifestId(collection.json);if(first)manifestId=first;});
-  $effect(()=>{if(!viewerRoot)return;const update=()=>{const width=viewerRoot?.clientWidth??0;if(width>0){narrow=width<=1024;mobile=width<=768;return;}if(typeof window.matchMedia==='function'){narrow=window.matchMedia('(max-width: 1024px)').matches;mobile=window.matchMedia('(max-width: 768px)').matches;}};update();if(typeof ResizeObserver==='undefined')return;const observer=new ResizeObserver(update);observer.observe(viewerRoot);return()=>observer.disconnect();});
+  $effect(()=>{if(!viewerRoot)return;const update=(entries?:ResizeObserverEntry[])=>{const entryWidth=entries?.[0]?.contentBoxSize?.[0]?.inlineSize;const width=typeof entryWidth==='number'&&entryWidth>0?entryWidth:(viewerRoot?.clientWidth??0);if(width>0){narrow=width<=1024;mobile=width<=768;return;}if(typeof window.matchMedia==='function'){narrow=window.matchMedia('(max-width: 1024px)').matches;mobile=window.matchMedia('(max-width: 768px)').matches;}};update();if(typeof ResizeObserver==='undefined')return;const observer=new ResizeObserver(update);observer.observe(viewerRoot);return()=>observer.disconnect();});
   onMount(()=>fullscreenController.attach()); onDestroy(()=>controller.destroy());
 </script>
 
 <div class="viewer" class:viewer--headless={!chrome} data-theme={theme} bind:this={viewerRoot}>
   {#if chrome}<div class="viewer__top-row"><ViewerHeader {manifestId} manifestEntry={$manifestEntry}/><div class="viewer__top-actions">{#if $pluginSlots.top.length}<PluginSlot slot="top" plugins={$pluginSlots.top} context={pluginContext}/>{/if}<button class="viewer__fullscreen-btn viewer__fullscreen-btn--labelled" type="button" onclick={()=>fullscreenController.toggle()} aria-label={isFullscreen?$t('viewer.stage.controls.closeFullscreen'):$t('viewer.stage.controls.enterFullscreen')}>{#if isFullscreen}<Shrink aria-hidden="true"/>{:else}<Expand aria-hidden="true"/>{/if}<span>{isFullscreen?$t('viewer.stage.controls.closeFullscreen'):$t('viewer.stage.controls.fullscreen')}</span></button></div></div>{/if}
   {#if chrome&&normalisedConfig.sidebar?.enabled!==false&&sidebarCollapsed}<button class="viewer__expand-sidebar" type="button" onclick={()=>sidebarCollapsed=false} aria-label={$t('viewer.stage.controls.expandSidebar')} title={$t('viewer.stage.controls.expandSidebar')}><ChevronsRight aria-hidden="true"/></button>{/if}
-  <div class="viewer__grid" class:viewer__grid--controls={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed} class:viewer__grid--left={chrome&&$leftVisible&&!sidebarCollapsed} class:viewer__grid--nav-compact={chrome&&$leftVisible&&!sidebarCollapsed&&!mobile} class:viewer__grid--sidebar-right={chrome&&normalisedConfig.sidebar?.position==='right'} class:viewer__grid--mobile={mobile}>
+  <div class="viewer__grid" class:viewer__grid--controls={chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed} class:viewer__grid--left={chrome&&$leftVisible&&!sidebarCollapsed} class:viewer__grid--nav-compact={chrome&&($leftVisible||narrow)&&!sidebarCollapsed&&!mobile} class:viewer__grid--sidebar-right={chrome&&normalisedConfig.sidebar?.position==='right'} class:viewer__grid--mobile={mobile}>
     {#if chrome&&normalisedConfig.sidebar?.enabled!==false&&!sidebarCollapsed}
       <aside class="viewer__control-rail" aria-label={$t('viewer.stage.controls.label')}><ViewerDock compact variant="sidebar" {mobile} iconOnly={$leftVisible||narrow} galleryActive={$showThumbnails} allowControls={toolbar??chrome} controlsActive={showControls} oncontrolstoggle={()=>showControls=!showControls} allowThumbnails={$allowThumbnails} allowCollection={$allowCollection} allowContents={$contentsAvailable} allowChapters={$contentsAvailable&&$avChaptersAvailable} allowTranscript={$contentsAvailable&&$avTranscriptAvailable} allowSearch={$allowSearch} allowMetadata={$allowMetadata} allowAnnotations={$allowAnnotations} allowTools={$allowTools} allowLayers={$allowLayers} allowSettings={normalisedConfig.showSettings!==false} showThumbnails={$showThumbnails} showCollection={$showCollection} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showAnnotations={$showAnnotations} showTools={$showTools} showLayers={$showLayers} showSettings={$showSettings} {showManifestManager} {contentsTab} oncollapse={()=>sidebarCollapsed=true} onmanifesttoggle={()=>showManifestManager=!showManifestManager} ongalleryopen={()=>panelToggle('thumbnails',!$showThumbnails)} oncontentsopen={openContents} onpanelToggle={(d)=>panelToggle(d.panel,d.open)}/></aside>
       <LeftPanelStack visible={$leftVisible} redesigned {contentsTab} showCollection={$showCollection} showAnnotations={$showAnnotations} showTools={$showTools} showContents={$showContents} showSearch={$showSearch} showMetadata={$showMetadata} showSettings={$showSettings} showLayers={$showLayers} showThumbnails={$showThumbnails&&$thumbnailsInSidebar} leftPlugins={$pluginSlots.left} {pluginContext} onpanelToggle={(p,o)=>panelToggle(p,o)} oncollectionSelect={handleCollectionSelect} oncanvasSelect={(d)=>requestCanvas(d.index)} onviewall={()=>controller.setLayoutMode('gallery')}/>
@@ -461,6 +461,10 @@
     grid-template-columns: 220px minmax(320px, 410px) minmax(0, 1fr);
   }
 
+  .viewer__grid.viewer__grid--controls.viewer__grid--nav-compact:not(.viewer__grid--left) {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
   .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
     grid-template-columns: 72px minmax(320px, 410px) minmax(0, 1fr);
   }
@@ -484,6 +488,10 @@
 
   .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left {
     grid-template-columns: minmax(0, 1fr) minmax(320px, 410px) 220px;
+  }
+
+  .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--nav-compact:not(.viewer__grid--left) {
+    grid-template-columns: minmax(0, 1fr) 72px;
   }
 
   .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
@@ -640,19 +648,19 @@
     min-width: 260px;
   }
 
-  @media (max-width: 1024px) {
-    .viewer__grid,
-    .viewer__grid--left,
-    .viewer__grid--sidebar-right:not(.viewer__grid--left),
-    .viewer__grid--sidebar-right.viewer__grid--left {
-      grid-template-columns: 56px minmax(0, 1fr);
+  @container mango-viewer (width <= 1024px) {
+    .viewer__grid.viewer__grid--controls,
+    .viewer__grid.viewer__grid--controls.viewer__grid--left,
+    .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls:not(.viewer__grid--left),
+    .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left {
+      grid-template-columns: 72px minmax(0, 1fr);
     }
 
-    .viewer__grid--sidebar-right > .stage {
+    .viewer__grid--controls.viewer__grid--sidebar-right > .stage {
       grid-column: 2;
     }
 
-    .viewer__grid--sidebar-right > .viewer__control-rail {
+    .viewer__grid--controls.viewer__grid--sidebar-right > .viewer__control-rail {
       grid-column: 1;
       border-right: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
       border-left: 0;
@@ -661,8 +669,8 @@
     .viewer__grid :global(.panel-stack--left) {
       position: absolute;
       z-index: 20;
-      inset: 0 auto 0 56px;
-      width: min(360px, calc(100% - 56px));
+      inset: 0 auto 0 72px;
+      width: min(360px, calc(100% - 72px));
     }
   }
 

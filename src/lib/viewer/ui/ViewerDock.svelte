@@ -1021,9 +1021,10 @@
 
   .viewer-sidebar--icon-only .viewer-sidebar__button,
   .viewer-sidebar--icon-only .viewer-sidebar__collapse {
+    justify-content: center;
     min-height: 44px;
     gap: 0;
-    padding: 10px 15px;
+    padding: 10px;
   }
 
   .viewer-sidebar--icon-only .viewer-sidebar__button span,
