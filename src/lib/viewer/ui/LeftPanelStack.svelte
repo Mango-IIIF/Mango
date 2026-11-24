@@ -245,7 +245,7 @@
   .panel-stack--left.panel-stack--redesigned {
     padding: 18px 24px 28px;
     border-radius: 0 var(--viewer-chrome-radius, 0) var(--viewer-chrome-radius, 0) 0;
-    background: rgba(18, 25, 34, 0.72);
+    background: var(--viewer-panel, #121922);
     box-shadow: none;
     transform-origin: left center;
     animation: viewer-secondary-panel-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -253,22 +253,22 @@
 
   :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .panel-stack--left.panel-stack--redesigned {
     border-color: rgba(34, 48, 65, 0.12);
-    background: rgba(233, 237, 243, 0.9);
+    background: #e9edf3;
   }
 
   :global(.viewer[data-theme='sepia']) .panel-stack--left.panel-stack--redesigned {
     border-color: rgba(76, 58, 35, 0.16);
-    background: rgba(232, 220, 198, 0.92);
+    background: #e8dcc6;
   }
 
   :global(.viewer[data-theme='midnight']) .panel-stack--left.panel-stack--redesigned {
     border-color: rgba(126, 180, 235, 0.15);
-    background: rgba(7, 19, 33, 0.9);
+    background: #071321;
   }
 
   :global(.viewer[data-theme='ringo']) .panel-stack--left.panel-stack--redesigned {
     border-color: rgba(74, 48, 0, 0.18);
-    background: rgba(255, 235, 140, 0.92);
+    background: #ffeb8c;
   }
 
   .panel-stack--left.panel-stack--redesigned :global(.panel) {

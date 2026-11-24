@@ -648,20 +648,27 @@
     min-width: 260px;
   }
 
-  @container mango-viewer (width <= 1024px) {
+  @container mango-viewer (width > 768px) and (width <= 1024px) {
     .viewer__grid.viewer__grid--controls,
+    .viewer__grid.viewer__grid--controls.viewer__grid--nav-compact,
     .viewer__grid.viewer__grid--controls.viewer__grid--left,
+    .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact,
     .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls:not(.viewer__grid--left),
-    .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left {
+    .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--nav-compact:not(.viewer__grid--left),
+    .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left,
+    .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
       grid-template-columns: 72px minmax(0, 1fr);
     }
 
+    .viewer__grid--controls > .stage,
     .viewer__grid--controls.viewer__grid--sidebar-right > .stage {
       grid-column: 2;
+      grid-row: 1;
     }
 
     .viewer__grid--controls.viewer__grid--sidebar-right > .viewer__control-rail {
       grid-column: 1;
+      grid-row: 1;
       border-right: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
       border-left: 0;
     }
@@ -671,6 +678,7 @@
       z-index: 20;
       inset: 0 auto 0 72px;
       width: min(360px, calc(100% - 72px));
+      box-shadow: 12px 0 32px rgba(0, 0, 0, 0.45);
     }
   }
 
