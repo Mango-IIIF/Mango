@@ -1,6 +1,6 @@
 {
   "name": "@mango-iiif/iiif-viewer",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "A Svelte-based viewer for IIIF resources.",
   "license": "MIT",
   "repository": {
@@ -42,10 +42,13 @@
       "types": "./src/dist/all.d.ts"
     },
     "./element": {
-      "import": "./src/dist/element.js"
+      "import": "./src/dist/mango-viewer-element.js"
     },
     "./element/viewer": {
-      "import": "./src/dist/element-viewer.js"
+      "import": "./src/dist/mango-viewer-element.js"
+    },
+    "./standalone": {
+      "import": "./src/dist/mango-viewer-element.js"
     },
     "./core": {
       "import": "./src/dist/core-viewer.js",
@@ -75,6 +78,11 @@
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "svelte": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@google/model-viewer": "^4.1.0",
