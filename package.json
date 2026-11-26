@@ -1,6 +1,6 @@
 {
   "name": "@mango-iiif/iiif-viewer",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "A Svelte-based viewer for IIIF resources.",
   "license": "MIT",
   "repository": {

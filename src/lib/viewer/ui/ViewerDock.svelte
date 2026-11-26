@@ -793,7 +793,6 @@
     .viewer-mobile-nav__group + .viewer-mobile-nav__group {
       padding-top: 8px;
       padding-left: 0;
-      border-top: 1px solid var(--viewer-panel-border);
       border-left: 0;
     }
   }
@@ -1001,7 +1000,6 @@
 
   .viewer-sidebar--icon-only .viewer-sidebar__section + .viewer-sidebar__section {
     padding-top: 12px;
-    border-top: 1px solid var(--viewer-panel-border);
   }
 
   .viewer-sidebar--icon-only .viewer-sidebar__heading {

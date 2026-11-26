@@ -428,7 +428,6 @@
     flex-wrap: wrap;
     justify-content: center;
     overflow: visible;
-    border-top: 1px solid var(--viewer-panel-border);
     background: var(--viewer-stage-bottom-bg);
     transform: none;
   }

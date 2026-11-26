@@ -150,12 +150,23 @@ export type {
 export type { AnnotationPatchOptions } from './viewer/state/controllers/AnnotationController';
 
 export {
+  clearLocaleOverrides,
+  createI18n,
+  createViewerI18n,
   getLocale,
   locale,
   setLocale,
+  setLocaleOverrides,
   supportedLocales,
   t,
   translate,
+  viewerLocales,
+  type CreateI18nOptions,
+  type I18nInstance,
+  type I18nParams,
+  type LocaleCatalogues,
+  type MessageTree,
+  type TranslateFn,
 } from './core/i18n';
 export { createEventBus } from './core/events/eventBus';
 export { normaliseViewerConfig, parseViewerConfig } from './core/config/normalise';
