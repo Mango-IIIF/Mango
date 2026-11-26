@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
   import { ExternalLink, X } from '@lucide/svelte';
   import MangoLogoIcon from './MangoLogoIcon.svelte';
   import pkg from '../../../../package.json';
@@ -8,50 +7,10 @@
   export let open = false;
   export let onClose: () => void = () => {};
   export let version: string = pkg.version;
-
-  /*
-   * Easter egg: the Ringo theme turns the About box into a jukebox.
-   *
-   * The theme is read off the nearest `.viewer` ancestor rather than the viewer
-   * context, because this modal is also mounted from the story builder and from
-   * standalone brand footers, where that context may not exist. Nothing is
-   * embedded — and no request reaches YouTube — unless the reader is on Ringo
-   * and has actually opened the dialog.
-   */
-  let backdropEl: HTMLElement | null = null;
-  let isRingo = false;
-  let themeObserver: MutationObserver | null = null;
-
-  const readTheme = () => {
-    isRingo = backdropEl?.closest('.viewer')?.getAttribute('data-theme') === 'ringo';
-  };
-
-  /*
-   * `data-theme` is an attribute on an ancestor, not reactive state here, so
-   * reading it once would go stale: the host can switch theme through the
-   * config API while the dialog is open, which left the embed showing under a
-   * theme that should not have it. Watch the attribute for as long as we are
-   * open, and stop watching as soon as we are not.
-   */
-  const stopWatching = () => {
-    themeObserver?.disconnect();
-    themeObserver = null;
-  };
-
-  $: if (open && backdropEl) {
-    readTheme();
-    stopWatching();
-    const viewer = backdropEl.closest('.viewer');
-    if (viewer && typeof MutationObserver !== 'undefined') {
-      themeObserver = new MutationObserver(readTheme);
-      themeObserver.observe(viewer, { attributes: true, attributeFilter: ['data-theme'] });
-    }
-  } else if (!open) {
-    stopWatching();
-    isRingo = false;
-  }
-
-  onDestroy(stopWatching);
+  export let title: string | undefined = undefined;
+  export let description: string | undefined = undefined;
+  export let homepage = 'https://mangoviewer.dev/';
+  export let visitLabel: string | undefined = undefined;
 
   const handleKeydown = (event: KeyboardEvent) => {
     if (open && event.key === 'Escape') {
@@ -66,7 +25,6 @@
   <div
     class="mango-about-backdrop"
     role="presentation"
-    bind:this={backdropEl}
     on:click|self={onClose}
   >
     <div
@@ -88,37 +46,24 @@
         <div class="mango-about-modal__badge">
           <MangoLogoIcon size={48} color="var(--mango-about-accent)" />
         </div>
-        <h2 id="mango-about-title">{$t('about.title')}</h2>
+        <h2 id="mango-about-title">{title ?? $t('about.title')}</h2>
         <span class="mango-about-modal__version">{$t('about.version', { version })}</span>
       </div>
 
       <div class="mango-about-modal__body">
         <p>
-          {$t('about.description')}
+          {description ?? $t('about.description')}
         </p>
-
-        {#if isRingo}
-          <div class="mango-about-modal__easter-egg">
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/j_JaDDcyIIU"
-              title={$t('about.easterEggTitle')}
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-              allow="encrypted-media; picture-in-picture; web-share"
-              allowfullscreen
-            ></iframe>
-          </div>
-        {/if}
       </div>
 
       <div class="mango-about-modal__footer">
         <a
           class="mango-about-modal__link"
-          href="https://mangoviewer.dev/"
+          href={homepage}
           target="_blank"
           rel="noopener noreferrer"
         >
-          <span>{$t('about.visit')}</span>
+          <span>{visitLabel ?? $t('about.visit')}</span>
           <ExternalLink size={16} aria-hidden="true" />
         </a>
         <button
@@ -194,7 +139,7 @@
 
   .mango-about-modal__close:hover {
     background: color-mix(in srgb, var(--viewer-text, #e8edf4) 14%, transparent);
-    color: white;
+    color: var(--mango-about-text);
   }
 
   .mango-about-modal__header {
@@ -221,7 +166,7 @@
     font-size: 22px;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: white;
+    color: var(--mango-about-text);
   }
 
   .mango-about-modal__version {
@@ -249,24 +194,6 @@
   .mango-about-modal__body p {
     margin: 0;
     text-align: center;
-  }
-
-  .mango-about-modal__easter-egg {
-    /* The modal caps at 480px, so size from the box rather than the embed's own
-       560x315 and let the ratio carry the height. */
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid var(--mango-about-border);
-    background: #000;
-  }
-
-  .mango-about-modal__easter-egg iframe {
-    display: block;
-    width: 100%;
-    height: 100%;
-    border: 0;
   }
 
   .mango-about-modal__footer {
@@ -330,7 +257,7 @@
     border-radius: 10px;
     border: 1px solid color-mix(in srgb, var(--viewer-text, #e8edf4) 12%, transparent);
     background: color-mix(in srgb, var(--viewer-text, #e8edf4) 6%, transparent);
-    color: white;
+    color: var(--mango-about-text);
     font-weight: 600;
     font-size: 13px;
     cursor: pointer;

@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { webcrypto } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 
@@ -20,6 +20,9 @@ const customElementConfig = (filename: string | undefined) => {
 
 export default defineConfig({
   root: resolve(import.meta.dirname, 'src'),
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  },
   plugins: [
     svelte({
       configFile: resolve(import.meta.dirname, 'svelte.config.js'),
@@ -29,6 +32,9 @@ export default defineConfig({
     }),
     {
       name: 'mango-element-shadow-css',
+      buildStart() {
+        rmSync(resolve(import.meta.dirname, 'src/dist/standalone'), { recursive: true, force: true });
+      },
       closeBundle() {
         const jsPath = resolve(import.meta.dirname, 'src/dist/mango-viewer-element.js');
         const cssPath = resolve(import.meta.dirname, 'src/dist/mango-viewer-element.css');
@@ -64,6 +70,7 @@ export default defineConfig({
     },
     rolldownOptions: {
       output: {
+        chunkFileNames: 'standalone/[name]-[hash].js',
         assetFileNames: 'mango-viewer-element.[ext]',
       },
     },

@@ -256,7 +256,7 @@
     filter: invert(1);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']))
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']))
     .workspace-window__manifest-button img {
     filter: none;
   }

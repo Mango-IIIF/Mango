@@ -84,7 +84,7 @@ describe('Viewer config', () => {
 
     const settingsButton = Array.from(
       target.querySelectorAll<HTMLButtonElement>('.viewer-sidebar__button'),
-    ).find((button) => button.textContent?.includes('View settings'));
+    ).find((button) => button.textContent?.trim() === 'Settings');
     settingsButton?.click();
     await tick();
 

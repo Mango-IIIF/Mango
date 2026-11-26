@@ -240,7 +240,6 @@
     "themeLight": "ライト",
     "themeSepia": "セピア",
     "themeMidnight": "ミッドナイト",
-    "themeRingo": "リンゴ",
     "closeSettings": "設定を閉じる",
     "showSettings": "設定を表示",
     "hideSettings": "設定を非表示",
@@ -437,7 +436,7 @@
   },
   "about": {
     "title": "Mango Viewer",
-    "easterEggTitle": "Yellow Submarine",
+    "description": "画像、音声、動画、PDF、3Dモデルに対応したフレームワーク非依存のモダンなIIIFビューアです。",
     "visit": "mangoviewer.dev を開く",
     "buttonTitle": "Mango Viewer について (mangoviewer.dev)",
     "buttonLabel": "Mango Viewer について",

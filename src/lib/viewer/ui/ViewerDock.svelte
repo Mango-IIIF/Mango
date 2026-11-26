@@ -289,12 +289,12 @@
             class:viewer-sidebar__button--active={showSettings}
             class="viewer-sidebar__button"
             type="button"
-            title={iconOnly ? $t('workspace.sidebar.viewSettings') : undefined}
+            title={iconOnly ? $t('workspace.settings') : undefined}
             aria-pressed={showSettings}
             onclick={() => onpanelToggle?.({ panel: 'settings', open: !showSettings })}
           >
             <Settings aria-hidden="true" />
-            <span>{$t('workspace.sidebar.viewSettings')}</span>
+            <span>{$t('workspace.settings')}</span>
           </button>
         {/if}
         {#if SHOW_COMPARISON_CONTROL}
@@ -485,8 +485,8 @@
           class:viewer-mobile-nav__button--active={showSettings}
           class="viewer-mobile-nav__button"
           type="button"
-          aria-label={$t('workspace.sidebar.viewSettings')}
-          title={$t('workspace.sidebar.viewSettings')}
+          aria-label={$t('workspace.settings')}
+          title={$t('workspace.settings')}
           aria-pressed={showSettings}
           onclick={() => onpanelToggle?.({ panel: 'settings', open: !showSettings })}
         >
@@ -957,18 +957,9 @@
     filter: invert(1);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .viewer-sidebar__button--iiif img,
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .viewer-mobile-nav__button--iiif img {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .viewer-sidebar__button--iiif img,
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .viewer-mobile-nav__button--iiif img {
     filter: none;
-  }
-
-  /*
-   * Ringo fills the sidebar buttons with the trim red, so the IIIF mark has to
-   * go light again — the light-family rule above would leave it dark on dark.
-   * The mobile nav keeps its pale buttons, so it is deliberately not included.
-   */
-  :global(.viewer[data-theme='ringo']) .viewer-sidebar__button--iiif img {
-    filter: invert(1);
   }
 
   .viewer-sidebar__button:hover:not(:disabled),

@@ -277,33 +277,33 @@
     border: 0;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .compare-panel .layout-card) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .compare-panel .layout-card) {
     border-color: rgba(34, 48, 65, 0.18);
     background: rgba(255, 255, 255, 0.72);
     color: #223041;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .compare-panel .layout-card:hover:not(:disabled):not(.layout-card--selected)) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .compare-panel .layout-card:hover:not(:disabled):not(.layout-card--selected)) {
     border-color: rgba(18, 160, 207, 0.55);
     background: rgba(236, 247, 252, 0.94);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .compare-panel .layout-card--selected) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .compare-panel .layout-card--selected) {
     border-color: var(--viewer-accent-2, #159fce);
     background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 13%, transparent);
     box-shadow: inset 0 0 0 1px rgba(21, 159, 206, 0.14);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .compare-panel .layout-card__label) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .compare-panel .layout-card__label) {
     color: #223041;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .compare-panel .layout-card__icon) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .compare-panel .layout-card__icon) {
     color: rgba(34, 48, 65, 0.72);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .compare-panel .layout-card:hover:not(:disabled):not(.layout-card--selected) .layout-card__icon),
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .compare-panel .layout-card--selected .layout-card__icon) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .compare-panel .layout-card:hover:not(:disabled):not(.layout-card--selected) .layout-card__icon),
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .compare-panel .layout-card--selected .layout-card__icon) {
     color: var(--viewer-accent-2, #159fce);
   }
 

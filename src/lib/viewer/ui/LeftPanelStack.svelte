@@ -251,7 +251,7 @@
     animation: viewer-secondary-panel-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .panel-stack--left.panel-stack--redesigned {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .panel-stack--left.panel-stack--redesigned {
     border-color: rgba(34, 48, 65, 0.12);
     background: #e9edf3;
   }
@@ -264,11 +264,6 @@
   :global(.viewer[data-theme='midnight']) .panel-stack--left.panel-stack--redesigned {
     border-color: rgba(126, 180, 235, 0.15);
     background: #071321;
-  }
-
-  :global(.viewer[data-theme='ringo']) .panel-stack--left.panel-stack--redesigned {
-    border-color: rgba(74, 48, 0, 0.18);
-    background: #ffeb8c;
   }
 
   .panel-stack--left.panel-stack--redesigned :global(.panel) {
@@ -449,17 +444,18 @@
   }
 
   :global(.panel__tabs) {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
     padding: 6px;
-    border-radius: 12px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.05);
   }
 
   :global(.panel__tab) {
-    border: none;
-    border-radius: 10px;
+    flex: 1 1 auto;
+    border: 1px solid transparent;
+    border-radius: var(--viewer-control-radius, 6px);
     padding: 6px 10px;
     font-size: 12px;
     font-weight: 600;
@@ -475,12 +471,12 @@
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 8%, transparent);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .panel-stack--left :global(.panel__tab) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .panel-stack--left :global(.panel__tab) {
     background: rgba(255, 255, 255, 0.78);
     color: #223041;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .panel-stack--left :global(.panel__tab--active) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .panel-stack--left :global(.panel__tab--active) {
     border-color: var(--viewer-accent-2, #159fce);
     background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 13%, transparent);
     color: var(--viewer-text, #16435a);

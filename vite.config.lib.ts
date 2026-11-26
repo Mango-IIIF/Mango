@@ -1,3 +1,4 @@
+import { copyFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { webcrypto } from 'node:crypto';
 import { defineConfig } from 'vite';
@@ -9,6 +10,24 @@ if (
 ) {
   Object.defineProperty(globalThis, 'crypto', { configurable: true, value: webcrypto });
 }
+
+const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as {
+  dependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+};
+
+/*
+ * Keep runtime dependencies external in the library build so consuming apps and
+ * sibling packages (Lychee, Papaya) share one deduplicated copy instead of
+ * bundling duplicate multi-MB copies of RAMP, pdfjs-dist, model-viewer, and OSD.
+ * `@lucide/svelte` ships uncompiled `.svelte` files, so bundle it here.
+ */
+const BUNDLED = ['@lucide/svelte'];
+const externalPackages = Object.keys({ ...pkg.dependencies, ...pkg.peerDependencies }).filter(
+  (name) => !BUNDLED.includes(name),
+);
+const isExternal = (id: string) =>
+  externalPackages.some((name) => id === name || id.startsWith(`${name}/`));
 
 const customElementConfig = (filename: string | undefined) => {
   if (filename?.includes('ViewerElement.svelte')) {
@@ -26,6 +45,15 @@ export default defineConfig({
         return customElementConfig(filename);
       },
     }),
+    {
+      name: 'mango-copy-themes-css',
+      closeBundle() {
+        copyFileSync(
+          resolve(import.meta.dirname, 'src/lib/core/themes.css'),
+          resolve(import.meta.dirname, 'src/dist/themes.css'),
+        );
+      },
+    },
   ],
   build: {
     lib: {
@@ -40,14 +68,7 @@ export default defineConfig({
       fileName: (_format, entryName) => `${entryName}.js`,
     },
     rollupOptions: {
-      /*
-       * OpenSeadragon stays external so the host resolves one copy. Libraries
-       * that draw on Mango's viewer, such as Annotorious, bring their own import
-       * of it, and OSD overloads its viewport API on `instanceof $.Point`: points
-       * from a second copy are misread as numbers. The standalone element
-       * bundle (vite.config.element.ts) still includes it.
-       */
-      external: ['svelte', 'svelte/internal', /^svelte\//, 'openseadragon', /^openseadragon\//],
+      external: isExternal,
     },
     outDir: resolve(import.meta.dirname, 'src/dist'),
     emptyOutDir: true,

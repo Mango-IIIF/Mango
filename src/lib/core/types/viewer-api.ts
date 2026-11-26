@@ -29,7 +29,7 @@ export type ViewerApi = {
   zoomOut?: () => void;
   /** Recentre on an image-space point, keeping the current zoom. */
   panTo?: (x: number, y: number) => void;
-  /** The colour theme in use: dark, light, sepia, midnight or ringo. */
+  /** The colour theme in use: dark, light, sepia or midnight. */
   getTheme?: () => string;
   /**
    * Switch colour theme without reloading the viewer, so the page, zoom and

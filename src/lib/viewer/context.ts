@@ -2,27 +2,22 @@ import { getContext, setContext } from "svelte";
 import type { ViewerDerivedStores } from "./state/viewerDerived";
 import type { ViewerStateStores } from "./state/viewerState";
 import type { ViewerController } from "./state/viewerController";
+import {
+  VIEWER_THEME_IDS,
+  isViewerTheme,
+  type ViewerTheme,
+} from "../core/themes";
 
 export type ViewerSettingsLayout = "1x1" | "1x2" | "2x1" | "1x2-panel" | "2x2";
 /**
- * Every selectable theme, in the order the settings panel offers them. Adding a
- * theme means adding it here and defining its `--viewer-*` tokens in
- * ViewerLayout, and adding a `workspace.theme*` label to the locale catalogues.
+ * Every selectable theme, in the order the settings panel offers them. Defined
+ * once in `core/themes.ts` alongside the canonical CSS tokens in `core/themes.css`.
  */
-export const viewerSettingsThemes = [
-  "dark",
-  "light",
-  "sepia",
-  "midnight",
-  "ringo",
-] as const;
+export const viewerSettingsThemes = VIEWER_THEME_IDS;
 
-export type ViewerSettingsTheme = (typeof viewerSettingsThemes)[number];
+export type ViewerSettingsTheme = ViewerTheme;
 
-export const isViewerSettingsTheme = (
-  value: string | undefined | null,
-): value is ViewerSettingsTheme =>
-  !!value && (viewerSettingsThemes as readonly string[]).includes(value);
+export const isViewerSettingsTheme = isViewerTheme;
 
 export type ViewerContext = {
   state: ViewerStateStores;

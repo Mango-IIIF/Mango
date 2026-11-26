@@ -6,7 +6,13 @@
  * them.
  */
 import type { Component } from 'svelte';
+import './core/themes.css';
 import ViewerLayout from './features/viewer/ViewerLayout.svelte';
+import ViewerHeaderComponent from './viewer/ui/ViewerHeader.svelte';
+import MangoFooterBrandComponent from './viewer/ui/MangoFooterBrand.svelte';
+import MangoAboutModalComponent from './viewer/ui/MangoAboutModal.svelte';
+import MangoLogoIconComponent from './viewer/ui/MangoLogoIcon.svelte';
+import type { ManifestEntry } from './core/state/manifests';
 import type { ViewerConfig } from './core/types/config';
 import type { ViewerPlugin } from './core/types/plugin';
 import type { ViewerApi } from './core/types/viewer-api';
@@ -59,6 +65,61 @@ export const ViewerCore = ViewerLayout as unknown as Component<
   'manifestId'
 >;
 export default ViewerCore;
+
+export type ViewerHeaderProps = {
+  manifestId?: string;
+  manifestEntry?: ManifestEntry;
+  brand?: string;
+  buttonTitle?: string;
+  buttonLabel?: string;
+  aboutTitle?: string;
+  aboutDescription?: string;
+  aboutVersion?: string;
+  aboutHomepage?: string;
+  aboutVisitLabel?: string;
+};
+
+export type MangoFooterBrandProps = {
+  position?: 'fixed' | 'absolute' | 'relative' | 'inline';
+  size?: number;
+  brand?: string;
+  buttonTitle?: string;
+  buttonLabel?: string;
+  aboutTitle?: string;
+  aboutDescription?: string;
+  aboutVersion?: string;
+  aboutHomepage?: string;
+  aboutVisitLabel?: string;
+};
+
+export type MangoAboutModalProps = {
+  open?: boolean;
+  onClose?: () => void;
+  version?: string;
+  title?: string;
+  description?: string;
+  homepage?: string;
+  visitLabel?: string;
+};
+
+export type MangoLogoIconProps = {
+  size?: number;
+  color?: string;
+  className?: string;
+};
+
+export const ViewerHeader = ViewerHeaderComponent as unknown as Component<ViewerHeaderProps>;
+export const MangoFooterBrand = MangoFooterBrandComponent as unknown as Component<MangoFooterBrandProps>;
+export const MangoAboutModal = MangoAboutModalComponent as unknown as Component<MangoAboutModalProps>;
+export const MangoLogoIcon = MangoLogoIconComponent as unknown as Component<MangoLogoIconProps>;
+
+export {
+  VIEWER_THEMES,
+  VIEWER_THEME_IDS,
+  isViewerTheme,
+  resolveViewerTheme,
+  type ViewerTheme,
+} from './core/themes';
 
 export type { ViewerApi } from './core/types/viewer-api';
 export type { ViewerConfig } from './core/types/config';

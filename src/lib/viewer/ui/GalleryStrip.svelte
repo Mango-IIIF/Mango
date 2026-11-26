@@ -105,7 +105,7 @@
     flex: 1;
     gap: 8px;
     min-width: 0;
-    padding: 8px 12px;
+    padding: 6px 12px;
     overflow-x: auto;
     scrollbar-width: thin;
   }
@@ -187,12 +187,12 @@
     display: grid;
     flex: 0 0 auto;
     place-items: center;
-    width: 64px;
-    height: 80px;
+    width: 52px;
+    height: 64px;
     padding: 0;
     overflow: hidden;
     border: 2px solid transparent;
-    border-radius: 6px;
+    border-radius: var(--viewer-control-radius, 6px);
     background: var(--viewer-well-bg, rgba(255, 255, 255, 0.06));
     color: var(--viewer-muted);
     cursor: pointer;

@@ -74,12 +74,17 @@ describe('AVRenderer controller lifecycle', () => {
       props: { controller },
     });
 
-    const player = target.querySelector('mango-av-player');
+    const player = target.querySelector('mango-av-player') as
+      | (HTMLElement & { controller?: AVPlayerController })
+      | null;
     expect(player).toBeTruthy();
 
     await waitFor(() => {
-      const media = player?.shadowRoot?.querySelector('audio');
-      return media?.getAttribute('src') === 'https://example.org/audio.mp3';
+      const stage = player?.shadowRoot?.querySelector('.player[data-kind="audio"]');
+      const rampHost = player?.shadowRoot?.querySelector('.ramp');
+      return Boolean(stage && rampHost && player?.controller === controller);
     });
+
+    expect(controller.source?.src).toBe('https://example.org/audio.mp3');
   });
 });

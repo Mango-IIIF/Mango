@@ -158,7 +158,7 @@
     opacity: 0.48;
   }
   select {
-    border-radius: 8px;
+    border-radius: var(--viewer-control-radius, 6px);
     border: 1px solid rgba(255, 255, 255, 0.18);
     background: rgba(255, 255, 255, 0.08);
     color: var(--viewer-text);
@@ -166,12 +166,27 @@
     padding: 6px 8px;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .panel__tabs) {
+  .settings-panel .panel__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .settings-panel .panel__tab {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 72px;
+    border-radius: var(--viewer-control-radius, 6px);
+    text-align: center;
+  }
+
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .panel__tabs) {
     background: rgba(255, 255, 255, 0.6);
     border: 1px solid rgba(34, 48, 65, 0.1);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .panel__tab) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .panel__tab) {
     background: rgba(255, 255, 255, 0.84);
     color: #223041;
   }
@@ -183,13 +198,13 @@
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 8%, transparent);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .panel__tab--active) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .panel__tab--active) {
     border-color: var(--viewer-accent-2, #159fce);
     background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 13%, transparent);
     color: var(--viewer-text, #16435a);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel select) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel select) {
     border-color: rgba(34, 48, 65, 0.18);
     background: rgba(255, 255, 255, 0.84);
   }
@@ -197,7 +212,7 @@
   .page-layout-options {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
   }
 
   .page-layout-card {
@@ -205,10 +220,10 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
-    min-height: 52px;
-    padding: 9px 10px;
+    min-height: 48px;
+    padding: 8px 10px;
     border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 10px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.045);
     color: rgba(235, 242, 250, 0.9);
     font-size: 11.5px;
@@ -223,8 +238,8 @@
   }
 
   .page-layout-card :global(svg) {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     color: rgba(226, 235, 245, 0.82);
     stroke-width: 1.8;
     transition: color 160ms ease;
@@ -241,11 +256,10 @@
   }
 
   .page-layout-card--selected {
-    border: 2px solid var(--viewer-accent-2, #2ac7ff);
-    padding: 10px 11px;
+    border-color: var(--viewer-accent-2, #2ac7ff);
     background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 12%, transparent);
     color: var(--viewer-text, #f5fbff);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 12%, transparent);
+    box-shadow: inset 0 0 0 1px var(--viewer-accent-2, #2ac7ff);
   }
 
   .page-layout-card:focus-visible {
@@ -257,23 +271,23 @@
     cursor: not-allowed;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .page-layout-card) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .page-layout-card) {
     border-color: rgba(34, 48, 65, 0.18);
     background: rgba(255, 255, 255, 0.72);
     color: #223041;
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .page-layout-card--selected) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia']) .settings-panel .page-layout-card--selected) {
     border-color: var(--viewer-accent-2, #159fce);
     background: color-mix(in srgb, var(--viewer-accent-2, #2ac7ff) 13%, transparent);
     color: var(--viewer-text, #16435a);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .page-layout-card :global(svg) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .page-layout-card :global(svg) {
     color: rgba(34, 48, 65, 0.72);
   }
 
-  :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo'])) .page-layout-card--selected :global(svg) {
+  :global(.viewer:is([data-theme='light'], [data-theme='sepia'])) .page-layout-card--selected :global(svg) {
     color: var(--viewer-accent-2, #159fce);
   }
 

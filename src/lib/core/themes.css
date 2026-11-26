@@ -1,0 +1,240 @@
+/*
+ * Canonical Mango theme tokens (`dark`, `light`, `sepia`, `midnight`).
+ *
+ * Applied to any `.viewer` shell (Mango Viewer, Lychee EditorShell, Papaya
+ * StoryShell) so every package in the Mango ecosystem inherits the exact same
+ * `--viewer-*` design tokens and keyboard focus indicator from one source.
+ */
+
+.viewer {
+  --viewer-bg: #0f141b;
+  --viewer-surface: #151d26;
+  --viewer-panel: #121922;
+  --viewer-panel-strong: #1b242e;
+  --viewer-panel-border: rgba(255, 255, 255, 0.08);
+  --viewer-text: #e8edf4;
+  --viewer-muted: #9aa6b2;
+  --viewer-accent: #ff4fa2;
+  --viewer-accent-2: #2ac7ff;
+  --viewer-accent-tools: #a3e635;
+  --viewer-stage: #111720;
+  --viewer-stage-glow: rgba(42, 199, 255, 0.12);
+  --viewer-stage-tail: #0b0f14;
+  --viewer-dock-button-bg: rgba(15, 20, 27, 0.95);
+  --viewer-dock-button-border: rgba(255, 255, 255, 0.12);
+  --viewer-dock-tooltip-bg: rgba(10, 14, 19, 0.95);
+  --viewer-dock-active-border: rgba(42, 199, 255, 0.58);
+  --viewer-dock-active-ring: rgba(42, 199, 255, 0.22);
+  --viewer-dock-active-chip-text: #06141d;
+  --viewer-dock-button-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+  --viewer-dock-active-shadow-base: 0 12px 24px rgba(0, 0, 0, 0.35);
+  --viewer-gallery-bg: rgba(10, 14, 19, 0.85);
+  --viewer-gallery-item-bg: rgba(18, 25, 34, 0.85);
+  --viewer-gallery-item-border: rgba(255, 255, 255, 0.08);
+  --viewer-gallery-thumb-bg: rgba(255, 255, 255, 0.06);
+  --viewer-gallery-close-bg: rgba(255, 255, 255, 0.1);
+  --viewer-gallery-active-ring: rgba(42, 199, 255, 0.2);
+  --viewer-chrome-radius: 0;
+  --viewer-control-radius: 6px;
+  --viewer-close-button-size: 28px;
+  --viewer-close-button-radius: var(--viewer-control-radius);
+  --viewer-close-button-border: rgba(255, 255, 255, 0.18);
+  --viewer-close-button-bg: rgba(255, 255, 255, 0.1);
+  --viewer-close-button-hover-bg: rgba(255, 255, 255, 0.16);
+  --viewer-close-button-hover-border: rgba(255, 255, 255, 0.34);
+  --viewer-close-button-color: var(--viewer-text);
+  --viewer-close-button-glyph-size: 15px;
+  --viewer-close-button-focus-ring: rgba(42, 199, 255, 0.55);
+  --viewer-stage-bottom-bg: rgba(12, 16, 22, 0.72);
+  --viewer-toolbar-separator: rgba(255, 255, 255, 0.14);
+  --viewer-toolbar-group-border: rgba(255, 255, 255, 0.1);
+  --viewer-toolbar-group-bg: transparent;
+  --viewer-toolbar-button-bg: rgba(255, 255, 255, 0.03);
+  --viewer-toolbar-button-hover-bg: rgba(255, 255, 255, 0.08);
+  --viewer-toolbar-value-text: rgba(230, 236, 246, 0.96);
+  --viewer-toolbar-value-bg: transparent;
+  --viewer-search-input-bg: rgba(10, 14, 19, 0.8);
+  --viewer-search-clear-bg: rgba(255, 255, 255, 0.1);
+  --viewer-search-item-bg: rgba(255, 255, 255, 0.06);
+  --viewer-search-item-hover-bg: rgba(255, 255, 255, 0.1);
+  --viewer-search-focus: rgba(42, 199, 255, 0.65);
+  --viewer-control-rail-bg: linear-gradient(
+    180deg,
+    rgba(20, 28, 37, 0.92) 0%,
+    rgba(14, 20, 29, 0.92) 100%
+  );
+  --viewer-danger: #ffb8b8;
+  --viewer-success: #72cea4;
+  --viewer-warning: #e8b85f;
+  --viewer-well-bg: rgba(5, 10, 16, 0.35);
+  --viewer-focus-ring: rgba(42, 199, 255, 0.7);
+  border-color: #1c2530;
+  background: radial-gradient(120% 120% at 10% 0%, #1d2632 0%, #111720 55%, #0b0f14 100%);
+  color: var(--viewer-text);
+}
+
+.viewer[data-theme='light'] {
+  --viewer-bg: #f3f5f8;
+  --viewer-surface: #f7f8fb;
+  --viewer-panel: #e9edf3;
+  --viewer-panel-strong: #dde4ed;
+  --viewer-panel-border: rgba(34, 48, 65, 0.12);
+  --viewer-text: #223041;
+  --viewer-muted: #586576;
+  --viewer-accent: #53719c;
+  --viewer-accent-2: #357f99;
+  --viewer-accent-tools: #53719c;
+  --viewer-stage: #f3f5f8;
+  --viewer-stage-glow: rgba(108, 174, 199, 0.16);
+  --viewer-stage-tail: #ffffff;
+  --viewer-dock-button-bg: rgba(248, 251, 255, 0.96);
+  --viewer-dock-button-border: rgba(34, 48, 65, 0.2);
+  --viewer-dock-tooltip-bg: rgba(241, 246, 252, 0.97);
+  --viewer-dock-active-border: rgba(21, 159, 206, 0.65);
+  --viewer-dock-active-ring: rgba(42, 199, 255, 0.18);
+  --viewer-dock-active-chip-text: #16435a;
+  --viewer-dock-button-shadow: 0 10px 20px rgba(34, 48, 65, 0.18);
+  --viewer-dock-active-shadow-base: 0 10px 20px rgba(34, 48, 65, 0.2);
+  --viewer-gallery-bg: rgba(242, 246, 252, 0.92);
+  --viewer-gallery-item-bg: rgba(255, 255, 255, 0.92);
+  --viewer-gallery-item-border: rgba(34, 48, 65, 0.14);
+  --viewer-gallery-thumb-bg: rgba(224, 232, 241, 0.72);
+  --viewer-gallery-close-bg: rgba(255, 255, 255, 0.92);
+  --viewer-gallery-active-ring: rgba(108, 174, 199, 0.26);
+  --viewer-close-button-border: rgba(34, 48, 65, 0.2);
+  --viewer-close-button-bg: rgba(255, 255, 255, 0.92);
+  --viewer-close-button-hover-bg: rgba(233, 240, 248, 0.96);
+  --viewer-close-button-hover-border: rgba(34, 48, 65, 0.3);
+  --viewer-close-button-color: #223041;
+  --viewer-close-button-focus-ring: var(--viewer-focus-ring);
+  --viewer-stage-bottom-bg: rgba(241, 245, 251, 0.9);
+  --viewer-toolbar-separator: rgba(34, 48, 65, 0.16);
+  --viewer-toolbar-group-border: rgba(34, 48, 65, 0.16);
+  --viewer-toolbar-group-bg: transparent;
+  --viewer-toolbar-button-bg: rgba(255, 255, 255, 0.84);
+  --viewer-toolbar-button-hover-bg: rgba(124, 150, 190, 0.2);
+  --viewer-toolbar-value-text: #223041;
+  --viewer-toolbar-value-bg: transparent;
+  --viewer-search-input-bg: rgba(255, 255, 255, 0.92);
+  --viewer-search-clear-bg: rgba(124, 150, 190, 0.2);
+  --viewer-search-item-bg: rgba(255, 255, 255, 0.78);
+  --viewer-search-item-hover-bg: rgba(124, 150, 190, 0.22);
+  --viewer-search-focus: var(--viewer-focus-ring);
+  --viewer-control-rail-bg: linear-gradient(
+    180deg,
+    rgba(241, 245, 251, 0.95) 0%,
+    rgba(229, 236, 245, 0.95) 100%
+  );
+  --viewer-danger: #b3243c;
+  --viewer-success: #1d7a52;
+  --viewer-warning: #8a5a00;
+  --viewer-well-bg: rgba(34, 48, 65, 0.07);
+  --viewer-focus-ring: #0b6fa4;
+  border-color: #dbe2eb;
+  background: radial-gradient(135% 135% at 10% 0%, #e6f1ff 0%, #f5faff 45%, #ffffff 100%);
+}
+
+.viewer[data-theme='sepia'] {
+  --viewer-bg: #eee4d2;
+  --viewer-surface: #f7f0e3;
+  --viewer-panel: #e8dcc6;
+  --viewer-panel-strong: #dac9aa;
+  --viewer-panel-border: rgba(76, 58, 35, 0.16);
+  --viewer-text: #3d3023;
+  --viewer-muted: #67563f;
+  --viewer-accent: #a86f46;
+  --viewer-accent-2: #2f858b;
+  --viewer-accent-tools: #66864a;
+  --viewer-stage: #f4ecde;
+  --viewer-stage-glow: rgba(47, 133, 139, 0.13);
+  --viewer-stage-tail: #fffaf0;
+  --viewer-dock-button-bg: rgba(255, 250, 240, 0.94);
+  --viewer-dock-button-border: rgba(76, 58, 35, 0.2);
+  --viewer-dock-tooltip-bg: rgba(250, 243, 230, 0.97);
+  --viewer-dock-active-border: rgba(47, 133, 139, 0.68);
+  --viewer-dock-active-ring: rgba(47, 133, 139, 0.2);
+  --viewer-dock-active-chip-text: #173f42;
+  --viewer-dock-button-shadow: 0 10px 20px rgba(76, 58, 35, 0.16);
+  --viewer-dock-active-shadow-base: 0 10px 20px rgba(76, 58, 35, 0.18);
+  --viewer-gallery-bg: rgba(244, 236, 222, 0.94);
+  --viewer-gallery-item-bg: rgba(255, 250, 240, 0.94);
+  --viewer-gallery-item-border: rgba(76, 58, 35, 0.15);
+  --viewer-gallery-thumb-bg: rgba(224, 210, 185, 0.72);
+  --viewer-gallery-close-bg: rgba(255, 250, 240, 0.94);
+  --viewer-gallery-active-ring: rgba(47, 133, 139, 0.24);
+  --viewer-close-button-border: rgba(76, 58, 35, 0.2);
+  --viewer-close-button-bg: rgba(255, 250, 240, 0.94);
+  --viewer-close-button-hover-bg: rgba(239, 227, 207, 0.96);
+  --viewer-close-button-hover-border: rgba(76, 58, 35, 0.32);
+  --viewer-close-button-color: #3d3023;
+  --viewer-close-button-focus-ring: var(--viewer-focus-ring);
+  --viewer-stage-bottom-bg: rgba(241, 231, 212, 0.9);
+  --viewer-toolbar-separator: rgba(76, 58, 35, 0.16);
+  --viewer-toolbar-group-border: rgba(76, 58, 35, 0.16);
+  --viewer-toolbar-group-bg: transparent;
+  --viewer-toolbar-button-bg: rgba(255, 250, 240, 0.86);
+  --viewer-toolbar-button-hover-bg: rgba(47, 133, 139, 0.15);
+  --viewer-toolbar-value-text: #3d3023;
+  --viewer-toolbar-value-bg: transparent;
+  --viewer-search-input-bg: rgba(255, 250, 240, 0.94);
+  --viewer-search-clear-bg: rgba(47, 133, 139, 0.14);
+  --viewer-search-item-bg: rgba(255, 250, 240, 0.78);
+  --viewer-search-item-hover-bg: rgba(47, 133, 139, 0.16);
+  --viewer-search-focus: var(--viewer-focus-ring);
+  --viewer-control-rail-bg: linear-gradient(
+    180deg,
+    rgba(241, 231, 212, 0.96) 0%,
+    rgba(229, 214, 188, 0.96) 100%
+  );
+  --viewer-danger: #a32b26;
+  --viewer-success: #2f6b4a;
+  --viewer-warning: #7a5410;
+  --viewer-well-bg: rgba(76, 58, 35, 0.09);
+  --viewer-focus-ring: #1b6b70;
+  border-color: #d8c7aa;
+  background: radial-gradient(135% 135% at 10% 0%, #f5ead7 0%, #eee4d2 48%, #e5d7bf 100%);
+}
+
+.viewer[data-theme='midnight'] {
+  --viewer-bg: #07111f;
+  --viewer-surface: #0a1728;
+  --viewer-panel: #0c192a;
+  --viewer-panel-strong: #13263d;
+  --viewer-panel-border: rgba(126, 180, 235, 0.15);
+  --viewer-text: #edf6ff;
+  --viewer-muted: #91a7bf;
+  --viewer-accent: #a78bfa;
+  --viewer-accent-2: #38bdf8;
+  --viewer-accent-tools: #5eead4;
+  --viewer-stage: #050d18;
+  --viewer-stage-glow: rgba(56, 189, 248, 0.15);
+  --viewer-stage-tail: #020711;
+  --viewer-dock-button-bg: rgba(7, 17, 31, 0.96);
+  --viewer-dock-tooltip-bg: rgba(3, 10, 20, 0.97);
+  --viewer-control-rail-bg: linear-gradient(
+    180deg,
+    rgba(12, 29, 48, 0.96) 0%,
+    rgba(5, 15, 28, 0.96) 100%
+  );
+  --viewer-stage-bottom-bg: rgba(5, 15, 28, 0.88);
+  --viewer-toolbar-button-bg: rgba(126, 180, 235, 0.08);
+  --viewer-toolbar-button-hover-bg: rgba(126, 180, 235, 0.16);
+  --viewer-toolbar-value-text: #edf6ff;
+  --viewer-danger: #ff9db0;
+  --viewer-success: #5eead4;
+  --viewer-warning: #fbbf24;
+  --viewer-well-bg: rgba(3, 8, 16, 0.45);
+  --viewer-focus-ring: #38bdf8;
+  border-color: #142b46;
+  background: radial-gradient(130% 130% at 8% 0%, #142a46 0%, #07111f 50%, #020711 100%);
+}
+
+/*
+ * Keyboard focus indicator for every control in the viewer (WCAG 2.2 SC 1.4.11:
+ * >= 3:1 against the surface behind it). Each light-family theme restates
+ * --viewer-focus-ring above so it remains legible on pale panels.
+ */
+.viewer :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--viewer-focus-ring, rgba(42, 199, 255, 0.7));
+  outline-offset: 2px;
+}

@@ -5,6 +5,14 @@
 
   export let position: 'fixed' | 'absolute' | 'relative' | 'inline' = 'relative';
   export let size = 16;
+  export let brand: string | undefined = undefined;
+  export let buttonTitle: string | undefined = undefined;
+  export let buttonLabel: string | undefined = undefined;
+  export let aboutTitle: string | undefined = undefined;
+  export let aboutDescription: string | undefined = undefined;
+  export let aboutVersion: string | undefined = undefined;
+  export let aboutHomepage: string | undefined = undefined;
+  export let aboutVisitLabel: string | undefined = undefined;
 
   let aboutOpen = false;
 
@@ -23,15 +31,23 @@
   <button
     type="button"
     class="mango-footer-brand__button"
-    title={$t('about.buttonTitle')}
-    aria-label={$t('about.buttonLabel')}
+    title={buttonTitle ?? $t('about.buttonTitle')}
+    aria-label={buttonLabel ?? $t('about.buttonLabel')}
     on:click={toggleModal}
   >
     <MangoLogoIcon {size} color="currentColor" />
-    <span class="mango-footer-brand__label">{$t('about.brand')}</span>
+    <span class="mango-footer-brand__label">{brand ?? $t('about.brand')}</span>
   </button>
 
-  <MangoAboutModal open={aboutOpen} onClose={() => (aboutOpen = false)} />
+  <MangoAboutModal
+    open={aboutOpen}
+    onClose={() => (aboutOpen = false)}
+    title={aboutTitle}
+    description={aboutDescription}
+    version={aboutVersion}
+    homepage={aboutHomepage}
+    visitLabel={aboutVisitLabel}
+  />
 </div>
 
 <style>

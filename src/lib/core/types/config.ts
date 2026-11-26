@@ -2,7 +2,7 @@ import type { AVPlayerConfig } from '@mango-iiif/av/core';
 
 export type ViewerConfig = {
   language?: string;
-  theme?: 'dark' | 'light' | 'sepia' | 'midnight' | 'ringo' | string;
+  theme?: 'dark' | 'light' | 'sepia' | 'midnight' | string;
   showThumbnails?: boolean;
   /** Where the page thumbnails go: a strip under the toolbar (default) or a sidebar panel. */
   thumbnails?: {

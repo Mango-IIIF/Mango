@@ -5,10 +5,28 @@
 
   export let manifestId = '';
   export let manifestEntry: ManifestEntry | undefined;
+  export let brand: string | undefined = undefined;
+  export let buttonTitle: string | undefined = undefined;
+  export let buttonLabel: string | undefined = undefined;
+  export let aboutTitle: string | undefined = undefined;
+  export let aboutDescription: string | undefined = undefined;
+  export let aboutVersion: string | undefined = undefined;
+  export let aboutHomepage: string | undefined = undefined;
+  export let aboutVisitLabel: string | undefined = undefined;
 </script>
 
 <header class="viewer__header">
-  <MangoFooterBrand position="inline" />
+  <MangoFooterBrand
+    position="inline"
+    {brand}
+    {buttonTitle}
+    {buttonLabel}
+    {aboutTitle}
+    {aboutDescription}
+    {aboutVersion}
+    {aboutHomepage}
+    {aboutVisitLabel}
+  />
   {#if manifestId && (manifestEntry?.label || manifestEntry?.isFetching || manifestEntry?.error)}
     <span class="viewer__header-divider" aria-hidden="true">|</span>
     <div class="manifest">
@@ -61,14 +79,19 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 22px;
+    font-size: 17px;
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
+    line-height: 1.25;
   }
 
   @media (max-width: 900px) {
     .viewer__header {
       text-align: center;
+    }
+
+    .manifest__title {
+      font-size: 15px;
     }
   }
 </style>

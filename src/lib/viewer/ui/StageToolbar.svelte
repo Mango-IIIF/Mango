@@ -381,17 +381,17 @@
 <style>
   .stage__toolbar {
     --stage-toolbar-gap: 5px;
-    --stage-toolbar-button-width: 36px;
-    --stage-toolbar-button-height: 34px;
+    --stage-toolbar-button-width: 34px;
+    --stage-toolbar-button-height: 32px;
     --stage-toolbar-group-height: calc(var(--stage-toolbar-button-height) + 2px);
-    --stage-toolbar-value-width: 85px;
-    --stage-toolbar-zoom-width: 74px;
+    --stage-toolbar-value-width: 78px;
+    --stage-toolbar-zoom-width: 68px;
     --stage-toolbar-zoom-input-width: 3.6ch;
-    --stage-toolbar-value-font-size: 12px;
+    --stage-toolbar-value-font-size: 11.5px;
     --stage-toolbar-value-gap: 4px;
-    --stage-toolbar-value-padding: 8px;
-    --stage-toolbar-icon-size: 17px;
-    --stage-toolbar-radius: 0;
+    --stage-toolbar-value-padding: 6px;
+    --stage-toolbar-icon-size: 16px;
+    --stage-toolbar-radius: var(--viewer-control-radius, 6px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -412,19 +412,19 @@
   }
 
   .stage__toolbar--below {
-    --stage-toolbar-button-width: 40px;
-    --stage-toolbar-button-height: 38px;
-    --stage-toolbar-group-height: 40px;
-    --stage-toolbar-value-width: 90px;
-    --stage-toolbar-zoom-width: 78px;
-    --stage-toolbar-icon-size: 18px;
+    --stage-toolbar-button-width: 34px;
+    --stage-toolbar-button-height: 32px;
+    --stage-toolbar-group-height: 34px;
+    --stage-toolbar-value-width: 78px;
+    --stage-toolbar-zoom-width: 68px;
+    --stage-toolbar-icon-size: 16px;
     /*
      * Clear of the media, not tucked into it. This was -6px, which pulled the
      * bar up over the stage panel's bottom edge so the buttons straddled its
      * border. Every surface that lays the bar out statically had to override
      * that away, making compact embedded layouts difficult to use.
      */
-    margin-top: 6px;
+    margin-top: 4px;
   }
 
   .stage__toolbar--above {
@@ -433,7 +433,7 @@
 
   .stage__toolbar-separator {
     width: 1px;
-    height: 29px;
+    height: 22px;
     background: var(--viewer-toolbar-separator, rgba(255, 255, 255, 0.14));
   }
 
@@ -612,7 +612,7 @@
       --stage-toolbar-value-gap: clamp(2px, .8cqw, 4px);
       --stage-toolbar-value-padding: clamp(3px, 1.2cqw, 6px);
       --stage-toolbar-icon-size: clamp(15px, 5.2cqw, 18px);
-      --stage-toolbar-radius: 0;
+      --stage-toolbar-radius: var(--viewer-control-radius, 6px);
       width: 100%;
       max-width: 100%;
       position: relative;
@@ -736,8 +736,8 @@
    */
   @container mango-viewer (max-height: 360px) {
     .stage__toolbar--below {
-      --stage-toolbar-button-height: 38px;
-      --stage-toolbar-group-height: 40px;
+      --stage-toolbar-button-height: 32px;
+      --stage-toolbar-group-height: 34px;
     }
   }
 

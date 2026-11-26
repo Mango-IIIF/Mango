@@ -1,6 +1,6 @@
 {
   "name": "@mango-iiif/iiif-viewer",
-  "version": "0.6.5",
+  "version": "0.7.0",
   "description": "A Svelte-based viewer for IIIF resources.",
   "license": "MIT",
   "repository": {
@@ -54,7 +54,8 @@
       "import": "./src/dist/core-viewer.js",
       "types": "./src/dist/core-viewer.d.ts"
     },
-    "./style.css": "./src/dist/iiif-viewer.css"
+    "./style.css": "./src/dist/iiif-viewer.css",
+    "./themes.css": "./src/dist/themes.css"
   },
   "workspaces": [
     "apps/*"

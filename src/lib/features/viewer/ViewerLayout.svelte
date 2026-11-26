@@ -32,6 +32,8 @@
   import { parseURLHash } from '../../viewer/osd/URLStateManager';
   import { ViewportState, VIEWPORT_STATE_CONTEXT_KEY } from '../../core/state/viewportState.svelte';
   import { isViewerSettingsTheme, setViewerContext, type ViewerSettingsTheme } from '../../viewer/context';
+  import { resolveViewerTheme } from '../../core/themes';
+  import '../../core/themes.css';
   import { createViewerFullscreenController } from '../../viewer/lifecycle/fullscreen';
   import { findFirstManifestId } from '../../viewer/iiif/collectionNavigation';
   import { navigateMango } from '@mango-iiif/collection-navigator/mango';
@@ -56,9 +58,9 @@
   const {manifestEntry,collectionEntry,canvases,canvasThumbnails,mediaSource,mediaType,rendererComponent,annotations,overlayAnnotations,highlightIds,pluginSlots,leftVisible,allowThumbnails,thumbnailsInSidebar,allowCollection,allowMetadata,allowSearch,allowAnnotations,allowTools,allowLayers,contentsAvailable,avChaptersAvailable,avTranscriptAvailable,mediaSources,activeLayoutImages}=viewerDerived;
   const {userAnnotations,selectedCanvasIndex,zoom,showThumbnails,showCollection,showMetadata,showSearch,showAnnotations,showTools,showSettings,showContents,showLayers,layerOpacities,layoutMode,rotation,activeAnnotationId,hoverAnnotationId,imageFilters}=viewerState;
   const avController=viewerDerived.av.controller;
-  const viewportState=setContext(VIEWPORT_STATE_CONTEXT_KEY,new ViewportState());
+  const viewportState=setContext(VIEWPORT_STATE_CONTEXT_KEY,new ViewportState({selectedCanvasIndex:get(selectedCanvasIndex)}));
   let normalisedConfig:ViewerConfig=$state(initialConfig);
-  let theme:ViewerSettingsTheme=$state(['dark','light','sepia','midnight','ringo'].includes(initialConfig.theme??'')?initialConfig.theme as ViewerSettingsTheme:'dark');
+  let theme:ViewerSettingsTheme=$state(resolveViewerTheme(initialConfig.theme));
   let locale=$state(initialConfig.language??'en');
   let settingsLayout=$state<'1x1'|'1x2'|'2x1'|'1x2-panel'|'2x2'>('1x1');
   let workspace=$state<WorkspaceStore|null>(null);
@@ -162,51 +164,19 @@
 </div>
 <style>
   .viewer {
-    --viewer-bg: #0f141b;
-    --viewer-surface: #151d26;
-    --viewer-panel: #121922;
-    --viewer-panel-strong: #1b242e;
-    --viewer-panel-border: rgba(255, 255, 255, 0.08);
-    --viewer-text: #e8edf4;
-    --viewer-muted: #9aa6b2;
-    --viewer-accent: #ff4fa2;
-    --viewer-accent-2: #2ac7ff;
-    --viewer-accent-tools: #a3e635;
-    --viewer-stage: #111720;
-    --viewer-stage-glow: rgba(42, 199, 255, 0.12);
-    --viewer-stage-tail: #0b0f14;
-    --viewer-control-rail-bg: linear-gradient(180deg, rgba(20, 28, 37, 0.92), rgba(14, 20, 29, 0.92));
-    --viewer-stage-bottom-bg: rgba(12, 16, 22, 0.72);
-    --viewer-toolbar-separator: rgba(255, 255, 255, 0.14);
-    --viewer-toolbar-group-border: rgba(255, 255, 255, 0.1);
-    --viewer-toolbar-group-bg: transparent;
-    --viewer-toolbar-button-bg: rgba(255, 255, 255, 0.03);
-    --viewer-toolbar-button-hover-bg: rgba(255, 255, 255, 0.08);
-    --viewer-toolbar-value-text: rgba(230, 236, 246, 0.96);
-    --viewer-toolbar-value-bg: transparent;
-    --viewer-close-button-border: rgba(255, 255, 255, 0.18);
-    --viewer-close-button-bg: rgba(255, 255, 255, 0.1);
-    --viewer-close-button-hover-bg: rgba(255, 255, 255, 0.16);
-    --viewer-close-button-hover-border: rgba(255, 255, 255, 0.34);
-    --viewer-close-button-color: var(--viewer-text);
-    --viewer-focus-ring: rgba(42, 199, 255, 0.7);
-    --viewer-chrome-radius: 0;
-    --viewer-close-button-radius: 0;
-
     position: relative;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: 16px;
+    gap: 10px;
     box-sizing: border-box;
     width: 100%;
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    padding: 20px 0 0;
-    border: 1px solid #1c2530;
+    padding: 12px 0 0;
+    border-width: 1px;
+    border-style: solid;
     border-radius: 0;
-    background: radial-gradient(120% 120% at 10% 0%, #1d2632 0%, #111720 55%, #0b0f14 100%);
-    color: var(--viewer-text);
     font-family: sans-serif;
     font-size: 16px;
     font-style: normal;
@@ -218,10 +188,10 @@
 
   .viewer__top-row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     min-width: 0;
     gap: 12px;
-    padding: 0 20px;
+    padding: 0 16px;
   }
 
   .viewer__top-row :global(.viewer-header) {
@@ -245,7 +215,7 @@
     width: 30px;
     height: 30px;
     border: 1px solid var(--viewer-panel-border);
-    border-radius: 0;
+    border-radius: var(--viewer-control-radius);
     background: var(--viewer-panel);
     color: var(--viewer-text);
     cursor: pointer;
@@ -283,146 +253,6 @@
     color: var(--viewer-text);
     cursor: pointer;
     transform: translateY(-50%);
-  }
-
-  .viewer[data-theme='light'] {
-    --viewer-bg: #f3f5f8;
-    --viewer-surface: #f7f8fb;
-    --viewer-panel: #e9edf3;
-    --viewer-panel-strong: #dde4ed;
-    --viewer-panel-border: rgba(34, 48, 65, 0.12);
-    --viewer-text: #223041;
-    --viewer-muted: #586576;
-    --viewer-accent: #53719c;
-    --viewer-accent-2: #357f99;
-    --viewer-accent-tools: #53719c;
-    --viewer-stage: #f3f5f8;
-    --viewer-stage-glow: rgba(108, 174, 199, 0.16);
-    --viewer-stage-tail: #fff;
-    --viewer-control-rail-bg: linear-gradient(180deg, rgba(241, 245, 251, 0.95), rgba(229, 236, 245, 0.95));
-    --viewer-stage-bottom-bg: rgba(241, 245, 251, 0.9);
-    --viewer-toolbar-separator: rgba(34, 48, 65, 0.16);
-    --viewer-toolbar-group-border: rgba(34, 48, 65, 0.16);
-    --viewer-toolbar-button-bg: rgba(255, 255, 255, 0.84);
-    --viewer-toolbar-button-hover-bg: rgba(124, 150, 190, 0.2);
-    --viewer-toolbar-value-text: #223041;
-    --viewer-close-button-border: rgba(34, 48, 65, 0.2);
-    --viewer-close-button-bg: rgba(255, 255, 255, 0.92);
-    --viewer-close-button-hover-bg: rgba(233, 240, 248, 0.96);
-    --viewer-close-button-hover-border: rgba(34, 48, 65, 0.3);
-    --viewer-close-button-color: #223041;
-    --viewer-search-input-bg: rgba(255, 255, 255, 0.92);
-    --viewer-search-clear-bg: rgba(124, 150, 190, 0.2);
-    --viewer-search-item-bg: rgba(255, 255, 255, 0.78);
-    --viewer-search-item-hover-bg: rgba(124, 150, 190, 0.22);
-    --viewer-well-bg: rgba(34, 48, 65, 0.07);
-    --viewer-focus-ring: #0b6fa4;
-    border-color: #dbe2eb;
-    background: radial-gradient(135% 135% at 10% 0%, #e6f1ff 0%, #f5faff 45%, #fff 100%);
-  }
-
-  .viewer[data-theme='sepia'] {
-    --viewer-bg: #eee4d2;
-    --viewer-surface: #f7f0e3;
-    --viewer-panel: #e8dcc6;
-    --viewer-panel-strong: #dac9aa;
-    --viewer-panel-border: rgba(76, 58, 35, 0.16);
-    --viewer-text: #3d3023;
-    --viewer-muted: #67563f;
-    --viewer-accent: #a86f46;
-    --viewer-accent-2: #2f858b;
-    --viewer-accent-tools: #66864a;
-    --viewer-stage: #f4ecde;
-    --viewer-stage-glow: rgba(47, 133, 139, 0.13);
-    --viewer-stage-tail: #fffaf0;
-    --viewer-control-rail-bg: linear-gradient(180deg, rgba(241, 231, 212, 0.96), rgba(229, 214, 188, 0.96));
-    --viewer-stage-bottom-bg: rgba(241, 231, 212, 0.9);
-    --viewer-toolbar-separator: rgba(76, 58, 35, 0.16);
-    --viewer-toolbar-group-border: rgba(76, 58, 35, 0.16);
-    --viewer-toolbar-button-bg: rgba(255, 250, 240, 0.86);
-    --viewer-toolbar-button-hover-bg: rgba(47, 133, 139, 0.15);
-    --viewer-toolbar-value-text: #3d3023;
-    --viewer-close-button-border: rgba(76, 58, 35, 0.2);
-    --viewer-close-button-bg: rgba(255, 250, 240, 0.94);
-    --viewer-close-button-hover-bg: rgba(239, 227, 207, 0.96);
-    --viewer-close-button-hover-border: rgba(76, 58, 35, 0.32);
-    --viewer-close-button-color: #3d3023;
-    --viewer-search-input-bg: rgba(255, 250, 240, 0.94);
-    --viewer-search-clear-bg: rgba(47, 133, 139, 0.14);
-    --viewer-search-item-bg: rgba(255, 250, 240, 0.78);
-    --viewer-search-item-hover-bg: rgba(47, 133, 139, 0.16);
-    --viewer-well-bg: rgba(76, 58, 35, 0.09);
-    --viewer-focus-ring: #1b6b70;
-    border-color: #d8c7aa;
-    background: radial-gradient(135% 135% at 10% 0%, #f5ead7 0%, #eee4d2 48%, #e5d7bf 100%);
-  }
-
-  .viewer[data-theme='midnight'] {
-    --viewer-bg: #07111f;
-    --viewer-surface: #0a1728;
-    --viewer-panel: #0c192a;
-    --viewer-panel-strong: #13263d;
-    --viewer-panel-border: rgba(126, 180, 235, 0.15);
-    --viewer-text: #edf6ff;
-    --viewer-muted: #91a7bf;
-    --viewer-accent: #a78bfa;
-    --viewer-accent-2: #38bdf8;
-    --viewer-accent-tools: #5eead4;
-    --viewer-stage: #050d18;
-    --viewer-stage-glow: rgba(56, 189, 248, 0.15);
-    --viewer-stage-tail: #020711;
-    --viewer-control-rail-bg: linear-gradient(180deg, rgba(12, 29, 48, 0.96), rgba(5, 15, 28, 0.96));
-    --viewer-stage-bottom-bg: rgba(5, 15, 28, 0.88);
-    --viewer-toolbar-button-bg: rgba(126, 180, 235, 0.08);
-    --viewer-toolbar-button-hover-bg: rgba(126, 180, 235, 0.16);
-    --viewer-toolbar-value-text: #edf6ff;
-    --viewer-well-bg: rgba(3, 8, 16, 0.45);
-    --viewer-focus-ring: #38bdf8;
-    border-color: #142b46;
-    background: radial-gradient(130% 130% at 8% 0%, #142a46 0%, #07111f 50%, #020711 100%);
-  }
-
-  .viewer[data-theme='ringo'] {
-    --viewer-bg: #ffd60a;
-    --viewer-surface: #ffe987;
-    --viewer-panel: #ffe15c;
-    --viewer-panel-strong: #ffcf1f;
-    --viewer-panel-border: rgba(74, 48, 0, 0.24);
-    --viewer-text: #2e2000;
-    --viewer-muted: #6d5200;
-    --viewer-accent: #a8232b;
-    --viewer-accent-2: #0072c6;
-    --viewer-accent-tools: #00875a;
-    --viewer-stage: #fff6c2;
-    --viewer-stage-glow: rgba(168, 35, 43, 0.1);
-    --viewer-stage-tail: #fffdf0;
-    --viewer-control-rail-bg: rgba(255, 225, 92, 0.96);
-    --viewer-stage-bottom-bg: rgba(255, 244, 184, 0.92);
-    --viewer-toolbar-separator: rgba(74, 48, 0, 0.2);
-    --viewer-toolbar-group-border: rgba(74, 48, 0, 0.2);
-    --viewer-toolbar-button-bg: rgba(156, 43, 34, 0.94);
-    --viewer-toolbar-button-hover-bg: rgba(124, 32, 25, 0.98);
-    --viewer-toolbar-button-color: #fff4b8;
-    --viewer-toolbar-value-text: #2e2000;
-    --viewer-nav-button-bg: rgba(156, 43, 34, 0.94);
-    --viewer-nav-button-hover-bg: rgba(124, 32, 25, 0.98);
-    --viewer-nav-button-border: rgba(74, 48, 0, 0.28);
-    --viewer-nav-button-color: #fff4b8;
-    --viewer-nav-button-active-bg: rgba(124, 32, 25, 0.98);
-    --viewer-nav-button-active-border: #fff4b8;
-    --viewer-close-button-border: rgba(74, 48, 0, 0.24);
-    --viewer-close-button-bg: rgba(255, 252, 226, 0.94);
-    --viewer-close-button-hover-bg: rgba(255, 238, 160, 0.96);
-    --viewer-close-button-hover-border: rgba(74, 48, 0, 0.36);
-    --viewer-close-button-color: #2e2000;
-    --viewer-search-input-bg: rgba(255, 252, 226, 0.94);
-    --viewer-search-clear-bg: rgba(168, 35, 43, 0.16);
-    --viewer-search-item-bg: rgba(255, 252, 226, 0.78);
-    --viewer-search-item-hover-bg: rgba(168, 35, 43, 0.18);
-    --viewer-well-bg: rgba(74, 48, 0, 0.1);
-    --viewer-focus-ring: #0056a3;
-    border-color: #e0a800;
-    background: var(--viewer-bg);
   }
 
   .viewer__grid {
@@ -470,7 +300,8 @@
   }
 
   /* Headless: a host owns the frame, so the viewer is only its stage. */
-  .viewer--headless {
+  .viewer.viewer--headless,
+  .viewer.viewer--headless[data-theme] {
     grid-template-rows: minmax(0, 1fr);
     gap: 0;
     padding: 0;
@@ -624,24 +455,14 @@
     gap: 12px;
   }
 
-  .viewer :global(button),
-  .viewer :global(input),
-  .viewer :global(select),
-  .viewer :global(textarea),
-  .viewer :global(.viewer-sidebar__button),
-  .viewer :global(.viewer-sidebar__collapse),
-  .viewer :global(.viewer-mobile-nav__button),
-  .viewer :global(.viewer__dock-button),
+  /* Grouped toolbar buttons & inline inputs stay square inside their rounded group container. */
   .viewer :global(.stage__toolbar-button),
-  .viewer :global(.stage__toolbar-group),
-  .viewer :global(.stage__toolbar-input),
-  .viewer :global(.panel__close),
-  .viewer :global(.plugin-panel__panel) {
+  .viewer :global(.stage__toolbar-input) {
     border-radius: 0;
   }
 
   .viewer :global(.viewer-sidebar__button) {
-    border-radius: 8px;
+    border-radius: var(--viewer-control-radius);
   }
 
   .panel-stack--right {

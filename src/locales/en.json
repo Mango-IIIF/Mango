@@ -240,7 +240,6 @@
     "themeLight": "Light",
     "themeSepia": "Sepia",
     "themeMidnight": "Midnight",
-    "themeRingo": "Ringo",
     "closeSettings": "Close settings",
     "showSettings": "Show settings",
     "hideSettings": "Hide settings",
@@ -437,7 +436,7 @@
   },
   "about": {
     "title": "Mango Viewer",
-    "easterEggTitle": "Yellow Submarine",
+    "description": "A modern, framework-agnostic IIIF viewer for images, audio, video, PDFs, and 3D models.",
     "visit": "Visit mangoviewer.dev",
     "buttonTitle": "About Mango Viewer (mangoviewer.dev)",
     "buttonLabel": "About Mango Viewer",

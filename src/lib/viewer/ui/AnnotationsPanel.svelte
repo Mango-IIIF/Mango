@@ -164,15 +164,15 @@
 
 <style>
   .annotation-visibility-toggle {
-    width: calc(100% - 24px);
-    margin: 0 12px 12px;
-    padding: 10px 11px;
+    width: 100%;
+    margin: 0 0 12px;
+    padding: 9px 11px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     border: 1px solid var(--viewer-panel-border, rgba(255, 255, 255, 0.12));
-    border-radius: 11px;
+    border-radius: var(--viewer-control-radius, 8px);
     background: rgba(255, 255, 255, 0.045);
     color: var(--viewer-text);
     text-align: left;

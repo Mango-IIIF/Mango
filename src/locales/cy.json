@@ -240,7 +240,6 @@
     "themeLight": "Golau",
     "themeSepia": "Sepia",
     "themeMidnight": "Canol nos",
-    "themeRingo": "Ringo",
     "closeSettings": "Cau gosodiadau",
     "showSettings": "Dangos gosodiadau",
     "hideSettings": "Cuddio gosodiadau",
@@ -437,7 +436,7 @@
   },
   "about": {
     "title": "Mango Viewer",
-    "easterEggTitle": "Yellow Submarine",
+    "description": "Gwelydd IIIF modern, annibynnol ar fframwaith, ar gyfer delweddau, sain, fideo, PDFs a modelau 3D.",
     "visit": "Ewch i mangoviewer.dev",
     "buttonTitle": "Ynghylch Mango Viewer (mangoviewer.dev)",
     "buttonLabel": "Ynghylch Mango Viewer",
