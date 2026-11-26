@@ -1,10 +1,14 @@
 <script lang="ts">
-  import { stopPropagation } from 'svelte/legacy';
-
   import { onMount } from 'svelte';
   import type OpenSeadragon from 'openseadragon';
+  import {
+    AnnotationOverlay,
+    projectOverlayItems,
+    type ProjectedOverlayShape,
+  } from '@mango-iiif/annotation/view';
   import { t } from '../core/i18n';
-  import { isOpenPathAnnotation, type ResolvedAnnotation } from '../iiif/annotationResolver';
+  import type { ResolvedAnnotation } from '../iiif/annotationResolver';
+  import { toCanvasOverlayItems } from '../features/annotations/overlayAdapter';
   import type { TileSource, MediaSource } from '../iiif/mediaResolver';
   import type { ImageFilters } from '../core/types/filters';
   import type { ContentSize, ViewBox } from '../core/types/viewer';
@@ -62,23 +66,9 @@
     onloaderror = undefined,
   }: Props = $props();
 
-  type Bounds = { x: number; y: number; width: number; height: number };
-
-  type RenderedAnnotation = {
-    id: string;
-    type: 'rect' | 'point' | 'polygon' | 'polyline';
-    rect?: { x: number; y: number; width: number; height: number };
-    point?: { x: number; y: number };
-    points?: string;
-    bounds: Bounds;
-    isHighlight: boolean;
-    text?: string;
-    label?: string;
-    className?: string;
-    style?: string;
-  };
-
   let container: HTMLDivElement | null = $state(null);
+  let overlayWidth = $state(0);
+  let overlayHeight = $state(0);
   let tooltipElement: HTMLDivElement | null = $state(null);
   /** Where the pointer went down, so the click that ends a drag can be told apart. */
   let pressPoint: { x: number; y: number } | null = null;
@@ -86,7 +76,7 @@
   let OpenSeadragonClass: typeof OpenSeadragon | null = null;
   const tiledImageLayerIds = new WeakMap<OpenSeadragon.TiledImage, string>();
   let baseImageLoaded = $state(false);
-  let rendered: RenderedAnnotation[] = $state([]);
+  let rendered: ProjectedOverlayShape[] = $state([]);
   let lastViewBox: ViewBox | null = null;
   let lastZoom = 0;
   let initialViewBoxApplied = false;
@@ -218,73 +208,11 @@
     return parts.length > 0 ? parts.join(' ') : 'none';
   };
 
-  const LAYER_COLORS: Record<string, string> = {
-    research: '#fb7185',
-    transcription: '#60a5fa',
-    highlights: '#34d399',
-    mine: '#a78bfa',
-  };
-  const DEFAULT_LAYER_COLOR = '#a78bfa';
-  const DEFAULT_LAYER_FILL_OPACITY = 0.18;
-
-  const styleForLayerClass = (styleClass?: string): string => {
-    const color = styleClass
-      ? (LAYER_COLORS[styleClass] ?? DEFAULT_LAYER_COLOR)
-      : DEFAULT_LAYER_COLOR;
-    const r = parseInt(color.slice(1, 3), 16) || 0;
-    const g = parseInt(color.slice(3, 5), 16) || 0;
-    const b = parseInt(color.slice(5, 7), 16) || 0;
-    return `stroke: ${color}; fill: rgba(${r}, ${g}, ${b}, ${DEFAULT_LAYER_FILL_OPACITY});`;
-  };
-
-  const resolveAnnotationStyle = (annotation: ResolvedAnnotation): string =>
-    annotation.targetStyle?.trim() || styleForLayerClass(annotation.targetStyleClass);
-
-  const labelText = (annotation: ResolvedAnnotation): string =>
-    annotation.label?.trim() || '';
-
-  const labelPosition = (annotation: RenderedAnnotation): { x: number; y: number } => ({
-    x: annotation.bounds.x + annotation.bounds.width / 2,
-    y: annotation.bounds.y + annotation.bounds.height + 12,
-  });
-
-  const parseStyleDeclarations = (style: string): Record<string, string> => {
-    const entries = style
-      .split(';')
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .map((part) => {
-        const separator = part.indexOf(':');
-        if (separator < 0) return null;
-        const key = part.slice(0, separator).trim().toLowerCase();
-        const value = part.slice(separator + 1).trim();
-        if (!key || !value) return null;
-        return [key, value] as const;
-      })
-      .filter((entry): entry is readonly [string, string] => Boolean(entry));
-    return Object.fromEntries(entries);
-  };
-
-  const toHtmlAnnotationStyle = (style: string): string => {
-    const declarations = parseStyleDeclarations(style);
-    const stroke = declarations.stroke;
-    const fill = declarations.fill;
-    const extra = Object.entries(declarations)
-      .filter(([key]) => key !== 'stroke' && key !== 'fill')
-      .map(([key, value]) => `${key}: ${value};`);
-    const mapped: string[] = [];
-    if (stroke) mapped.push(`border-color: ${stroke};`);
-    if (fill) mapped.push(`background: ${fill};`);
-    return [...mapped, ...extra].join(' ');
-  };
-
-  const handleAnnotationEnter = (id: string) => {
-    onannotationhover?.({ id });
-  };
-
-  const handleAnnotationLeave = (id: string) => {
-    if (hoverAnnotationId === id) {
-      onannotationhover?.({ id: null });
+  const handleAnnotationHover = (payload: { id: string | null }) => {
+    if (payload.id === null) {
+      if (hoverAnnotationId) onannotationhover?.({ id: null });
+    } else {
+      onannotationhover?.({ id: payload.id });
     }
   };
 
@@ -313,13 +241,6 @@
     handleClearSelection();
   };
 
-  const handleAnnotationKeydown = (event: KeyboardEvent, id: string) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      handleAnnotationSelect(id);
-    }
-  };
-
   const handleClearKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -334,6 +255,15 @@
     return true;
   };
 
+  let displayShapes = $derived(
+    rendered.map((shape) => ({
+      ...shape,
+      isActive: shape.id === activeAnnotationId,
+      isHover: shape.id === hoverAnnotationId,
+      isDimmed: isDimmed(shape.id),
+    })),
+  );
+
   const updateTooltip = () => {
     if (!activeAnnotationId) {
       tooltip = null;
@@ -344,7 +274,7 @@
       tooltip = null;
       return;
     }
-    const text = target.text?.trim() || fallbackText;
+    const text = target.title?.trim() || fallbackText;
     if (!text) {
       tooltip = null;
       return;
@@ -406,93 +336,17 @@
       rendered = [];
       return;
     }
-    const highlightSet = new Set(highlightIds);
-    const toViewerPoint = (x: number, y: number) => {
-      const viewportRect = tiledImage.imageToViewportRectangle(x, y, 0, 0);
+    const items = toCanvasOverlayItems(spatial, {
+      highlightIds,
+      activeAnnotationId,
+      hoverAnnotationId,
+    });
+    const toViewerPoint = (point: { x: number; y: number }) => {
+      const viewportRect = tiledImage.imageToViewportRectangle(point.x, point.y, 0, 0);
       const pixelRect = viewer.viewport.viewportToViewerElementRectangle(viewportRect);
       return { x: pixelRect.x, y: pixelRect.y };
     };
-
-    rendered = spatial
-      .map((annotation) => {
-        const className = annotation.targetStyleClass;
-        const style = resolveAnnotationStyle(annotation);
-        if (annotation.polygon?.points?.length) {
-          const pixelPoints = annotation.polygon.points.map((point) =>
-            toViewerPoint(point.x, point.y),
-          );
-          const points = pixelPoints.map((pixel) => `${pixel.x},${pixel.y}`).join(' ');
-          const xs = pixelPoints.map((point) => point.x);
-          const ys = pixelPoints.map((point) => point.y);
-          const minX = Math.min(...xs);
-          const maxX = Math.max(...xs);
-          const minY = Math.min(...ys);
-          const maxY = Math.max(...ys);
-          const isPolyline = isOpenPathAnnotation(annotation);
-          return {
-            id: annotation.id,
-            type: isPolyline ? 'polyline' : 'polygon',
-            points,
-            bounds: {
-              x: minX,
-              y: minY,
-              width: maxX - minX,
-              height: maxY - minY,
-            },
-            isHighlight: highlightSet.has(annotation.id),
-            text: annotation.text,
-            label: labelText(annotation),
-            className,
-            style,
-          };
-        }
-        if (annotation.point) {
-          const pixel = toViewerPoint(annotation.point.x, annotation.point.y);
-          return {
-            id: annotation.id,
-            type: 'point',
-            point: pixel,
-            bounds: { x: pixel.x, y: pixel.y, width: 0, height: 0 },
-            isHighlight: highlightSet.has(annotation.id),
-            text: annotation.text,
-            label: labelText(annotation),
-            className,
-            style: toHtmlAnnotationStyle(style),
-          };
-        }
-        if (!annotation.rect) {
-          return null;
-        }
-        const viewportRect = tiledImage.imageToViewportRectangle(
-          annotation.rect.x,
-          annotation.rect.y,
-          annotation.rect.w,
-          annotation.rect.h,
-        );
-        const pixelRect = viewer.viewport.viewportToViewerElementRectangle(viewportRect);
-        return {
-          id: annotation.id,
-          type: 'rect',
-          rect: {
-            x: pixelRect.x,
-            y: pixelRect.y,
-            width: pixelRect.width,
-            height: pixelRect.height,
-          },
-          bounds: {
-            x: pixelRect.x,
-            y: pixelRect.y,
-            width: pixelRect.width,
-            height: pixelRect.height,
-          },
-          isHighlight: highlightSet.has(annotation.id),
-          text: annotation.text,
-          label: labelText(annotation),
-          className,
-          style: toHtmlAnnotationStyle(style),
-        };
-      })
-      .filter((value): value is RenderedAnnotation => Boolean(value));
+    rendered = projectOverlayItems(items, toViewerPoint);
     updateTooltip();
   };
 
@@ -1417,113 +1271,20 @@
   onkeydown={handleClearKeydown}
 >
   <div class="osd__viewport" bind:this={container}></div>
-  <div class="osd__overlays" aria-hidden="true">
-    <svg class="annotation-svg" aria-hidden="true">
-      {#each rendered as annotation (annotation.id)}
-        {#if annotation.type === 'polygon' && annotation.points}
-          <polygon
-            class="annotation-shape {annotation.isHighlight
-              ? 'annotation--hit'
-              : ''} {annotation.className ?? ''}"
-            class:annotation--dimmed={isDimmed(annotation.id)}
-            class:annotation--active={annotation.id === activeAnnotationId}
-            points={annotation.points}
-            style={annotation.style}
-            data-annotation-id={annotation.id}
-            onmouseenter={() => handleAnnotationEnter(annotation.id)}
-            onmouseleave={() => handleAnnotationLeave(annotation.id)}
-            role="button"
-            tabindex="0"
-            onclick={stopPropagation(() => handleAnnotationSelect(annotation.id))}
-            onkeydown={(event) => handleAnnotationKeydown(event, annotation.id)}
-          >
-            {#if annotation.text}
-              <title>{annotation.text}</title>
-            {/if}
-          </polygon>
-        {:else if annotation.type === 'polyline' && annotation.points}
-          <polyline
-            class="annotation-shape annotation-shape--polyline {annotation.isHighlight
-              ? 'annotation--hit'
-              : ''} {annotation.className ?? ''}"
-            class:annotation--dimmed={isDimmed(annotation.id)}
-            class:annotation--active={annotation.id === activeAnnotationId}
-            points={annotation.points}
-            style={annotation.style}
-            data-annotation-id={annotation.id}
-            onmouseenter={() => handleAnnotationEnter(annotation.id)}
-            onmouseleave={() => handleAnnotationLeave(annotation.id)}
-            role="button"
-            tabindex="0"
-            onclick={stopPropagation(() => handleAnnotationSelect(annotation.id))}
-            onkeydown={(event) => handleAnnotationKeydown(event, annotation.id)}
-          >
-            {#if annotation.text}
-              <title>{annotation.text}</title>
-            {/if}
-          </polyline>
-        {/if}
-      {/each}
-    </svg>
-    {#each rendered as annotation (annotation.id)}
-      {#if annotation.type === 'rect' && annotation.rect}
-        <div
-          class="annotation {annotation.isHighlight
-            ? 'annotation--hit'
-            : ''} {annotation.className ?? ''}"
-          class:annotation--dimmed={isDimmed(annotation.id)}
-          class:annotation--active={annotation.id === activeAnnotationId}
-          style="
-            left: {annotation.rect.x}px;
-            top: {annotation.rect.y}px;
-            width: {annotation.rect.width}px;
-            height: {annotation.rect.height}px;
-            {annotation.style ?? ''}
-          "
-          title={annotation.text}
-          data-annotation-id={annotation.id}
-          onmouseenter={() => handleAnnotationEnter(annotation.id)}
-          onmouseleave={() => handleAnnotationLeave(annotation.id)}
-          role="button"
-          tabindex="0"
-          onclick={stopPropagation(() => handleAnnotationSelect(annotation.id))}
-          onkeydown={(event) => handleAnnotationKeydown(event, annotation.id)}
-        ></div>
-      {:else if annotation.type === 'point' && annotation.point}
-        <div
-          class="annotation annotation--point {annotation.isHighlight
-            ? 'annotation--hit'
-            : ''} {annotation.className ?? ''}"
-          class:annotation--dimmed={isDimmed(annotation.id)}
-          class:annotation--active={annotation.id === activeAnnotationId}
-          style="
-            left: {annotation.point.x}px;
-            top: {annotation.point.y}px;
-            {annotation.style ?? ''}
-          "
-          title={annotation.text}
-          data-annotation-id={annotation.id}
-          onmouseenter={() => handleAnnotationEnter(annotation.id)}
-          onmouseleave={() => handleAnnotationLeave(annotation.id)}
-          role="button"
-          tabindex="0"
-          onclick={stopPropagation(() => handleAnnotationSelect(annotation.id))}
-          onkeydown={(event) => handleAnnotationKeydown(event, annotation.id)}
-        ></div>
-      {/if}
-    {/each}
-    {#each rendered as annotation (annotation.id)}
-      {#if annotation.label}
-        {@const position = labelPosition(annotation)}
-        <div
-          class="annotation-label"
-          class:annotation-label--dimmed={isDimmed(annotation.id)}
-          style="left: {position.x}px; top: {position.y}px;"
-        >
-          {annotation.label}
-        </div>
-      {/if}
-    {/each}
+  <div
+    class="osd__overlays"
+    bind:clientWidth={overlayWidth}
+    bind:clientHeight={overlayHeight}
+  >
+    <AnnotationOverlay
+      shapes={displayShapes}
+      width={overlayWidth}
+      height={overlayHeight}
+      labelMode="pill"
+      fallbackLabel={fallbackText}
+      onhover={handleAnnotationHover}
+      onselect={({ id }) => handleAnnotationSelect(id)}
+    />
     {#if tooltip}
       <div
         bind:this={tooltipElement}
@@ -1570,101 +1331,6 @@
     pointer-events: none;
   }
 
-  .annotation-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  .annotation-shape {
-    fill: rgba(255, 79, 162, 0.2);
-    stroke: rgba(255, 79, 162, 0.85);
-    stroke-width: 2px;
-    vector-effect: non-scaling-stroke;
-    transition:
-      stroke 0.2s ease,
-      fill 0.2s ease,
-      opacity 0.2s ease;
-    pointer-events: auto;
-    cursor: pointer;
-  }
-
-  .annotation-shape--polyline {
-    fill: none !important;
-  }
-
-  .annotation-shape.annotation--hit {
-    fill: var(--viewer-search-hit-fill, rgba(42, 199, 255, 0.25)) !important;
-    stroke: var(--viewer-search-hit-border, rgba(42, 199, 255, 0.95)) !important;
-  }
-
-  .annotation-shape.annotation--active {
-    stroke-width: 3px;
-  }
-
-  .annotation {
-    position: absolute;
-    border: 2px solid rgba(255, 79, 162, 0.85);
-    background: rgba(255, 79, 162, 0.2);
-    border-radius: 6px;
-    transition:
-      border-color 0.2s ease,
-      background 0.2s ease,
-      opacity 0.2s ease;
-    pointer-events: auto;
-    cursor: pointer;
-  }
-
-  .annotation--point {
-    width: 12px;
-    height: 12px;
-    border-radius: 999px;
-    transform: translate(-50%, -50%);
-  }
-
-  .annotation--hit {
-    border-color: var(
-      --viewer-search-hit-border,
-      rgba(42, 199, 255, 0.95)
-    ) !important;
-    background: var(
-      --viewer-search-hit-fill,
-      rgba(42, 199, 255, 0.25)
-    ) !important;
-    animation: pulse 1.6s ease-in-out infinite;
-  }
-
-  .annotation--active {
-    border-width: 3px;
-  }
-
-  .annotation--dimmed {
-    opacity: 0.18;
-  }
-
-  .annotation-label {
-    position: absolute;
-    transform: translateX(-50%);
-    padding: 2px 6px;
-    border-radius: 6px;
-    background: rgba(12, 16, 22, 0.84);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #f1f5f9;
-    font-size: 11px;
-    line-height: 1.2;
-    max-width: min(220px, 60cqw);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    pointer-events: none;
-  }
-
-  .annotation-label--dimmed {
-    opacity: 0.3;
-  }
-
   .annotation-tooltip {
     position: absolute;
     transform: translateX(-50%);
@@ -1678,17 +1344,5 @@
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
     pointer-events: auto;
     z-index: 2;
-  }
-
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(42, 199, 255, 0.35);
-    }
-    70% {
-      box-shadow: 0 0 0 12px rgba(42, 199, 255, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(42, 199, 255, 0);
-    }
   }
 </style>
