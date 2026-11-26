@@ -833,7 +833,7 @@
   .viewer-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -845,7 +845,7 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    gap: 34px;
+    gap: 20px;
     min-height: 0;
     padding: 0 4px 8px 0;
     overflow-x: hidden;
@@ -872,22 +872,22 @@
   }
 
   .viewer-sidebar__section {
-    gap: 14px;
+    gap: 8px;
     transition: gap 220ms ease;
   }
 
   .viewer-sidebar__items {
-    gap: 10px;
+    gap: 6px;
   }
 
   .viewer-sidebar__heading {
-    padding-inline: 8px;
+    padding-inline: 6px;
     color: var(--viewer-muted);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    max-height: 18px;
+    max-height: 16px;
     opacity: 1;
     overflow: hidden;
     transition:
@@ -900,13 +900,13 @@
   .viewer-sidebar__collapse {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 9px;
     width: 100%;
-    min-height: 46px;
+    min-height: 36px;
     box-sizing: border-box;
-    padding: 10px 12px;
+    padding: 7px 10px;
     border: 1px solid var(--viewer-nav-button-border, var(--viewer-panel-border));
-    border-radius: 10px;
+    border-radius: 8px;
     /*
      * Tokenised so a theme can fill these with a strong colour and still choose
      * a glyph that reads on it — see the stage toolbar, which does the same. The
@@ -916,7 +916,7 @@
     background: var(--viewer-nav-button-bg, rgba(255, 255, 255, 0.025));
     color: var(--viewer-nav-button-color, var(--viewer-text));
     font: inherit;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     text-align: left;
     cursor: pointer;
@@ -930,7 +930,7 @@
 
   .viewer-sidebar__button span,
   .viewer-sidebar__collapse span {
-    max-width: 160px;
+    max-width: 145px;
     opacity: 1;
     overflow: hidden;
     white-space: nowrap;
@@ -943,17 +943,17 @@
 
   .viewer-sidebar__button :global(svg),
   .viewer-sidebar__collapse :global(svg) {
-    width: 20px;
-    height: 20px;
-    flex: 0 0 20px;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
     stroke-width: 1.8;
   }
 
   .viewer-sidebar__button--iiif img,
   .viewer-mobile-nav__button--iiif img {
-    width: 20px;
-    height: 20px;
-    flex: 0 0 20px;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
     filter: invert(1);
   }
 
@@ -993,7 +993,7 @@
 
   .viewer-sidebar__collapse {
     flex: 0 0 auto;
-    min-height: 38px;
+    min-height: 34px;
     margin-top: 0;
     border-color: transparent;
     background: transparent;
@@ -1001,7 +1001,7 @@
   }
 
   .viewer-sidebar--icon-only .viewer-sidebar__scroll {
-    gap: 22px;
+    gap: 14px;
   }
 
   .viewer-sidebar--icon-only .viewer-sidebar__section {
@@ -1009,7 +1009,7 @@
   }
 
   .viewer-sidebar--icon-only .viewer-sidebar__section + .viewer-sidebar__section {
-    padding-top: 18px;
+    padding-top: 12px;
     border-top: 1px solid var(--viewer-panel-border);
   }
 
@@ -1022,9 +1022,9 @@
   .viewer-sidebar--icon-only .viewer-sidebar__button,
   .viewer-sidebar--icon-only .viewer-sidebar__collapse {
     justify-content: center;
-    min-height: 44px;
+    min-height: 36px;
     gap: 0;
-    padding: 10px;
+    padding: 8px;
   }
 
   .viewer-sidebar--icon-only .viewer-sidebar__button span,

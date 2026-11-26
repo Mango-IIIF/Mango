@@ -243,7 +243,7 @@
   }
 
   .panel-stack--left.panel-stack--redesigned {
-    padding: 18px 24px 28px;
+    padding: 14px 18px 20px;
     border-radius: 0 var(--viewer-chrome-radius, 0) var(--viewer-chrome-radius, 0) 0;
     background: var(--viewer-panel, #121922);
     box-shadow: none;
@@ -272,7 +272,7 @@
   }
 
   .panel-stack--left.panel-stack--redesigned :global(.panel) {
-    gap: 18px;
+    gap: 14px;
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -280,12 +280,12 @@
   }
 
   .panel-stack--left.panel-stack--redesigned :global(.panel__header) {
-    min-height: 46px;
+    min-height: 36px;
   }
 
   .panel-stack--left.panel-stack--redesigned :global(.panel__title) {
     color: var(--viewer-text);
-    font-size: 24px;
+    font-size: 17px;
     font-family: Georgia, 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: 0;
@@ -293,14 +293,14 @@
   }
 
   .panel-stack--left.panel-stack--redesigned :global(.panel__close) {
-    width: 38px;
-    height: 38px;
-    font-size: 19px;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
   }
 
   .panel-stack--left.panel-stack--redesigned :global(.panel__body) {
-    font-size: 13px;
-    line-height: 1.55;
+    font-size: 12px;
+    line-height: 1.48;
   }
 
   @keyframes viewer-secondary-panel-enter {

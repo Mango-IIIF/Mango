@@ -149,7 +149,7 @@
     gap: 8px;
   }
   .settings-panel__label {
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--viewer-muted);
@@ -158,11 +158,12 @@
     opacity: 0.48;
   }
   select {
-    border-radius: 10px;
+    border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.18);
     background: rgba(255, 255, 255, 0.08);
     color: var(--viewer-text);
-    padding: 8px 10px;
+    font-size: 12px;
+    padding: 6px 8px;
   }
 
   :global(.viewer:is([data-theme='light'], [data-theme='sepia'], [data-theme='ringo']) .settings-panel .panel__tabs) {
@@ -203,14 +204,14 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px;
-    min-height: 64px;
-    padding: 11px 12px;
+    gap: 8px;
+    min-height: 52px;
+    padding: 9px 10px;
     border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 12px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.045);
     color: rgba(235, 242, 250, 0.9);
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 650;
     line-height: 1.2;
     text-align: left;
@@ -222,8 +223,8 @@
   }
 
   .page-layout-card :global(svg) {
-    width: 25px;
-    height: 25px;
+    width: 20px;
+    height: 20px;
     color: rgba(226, 235, 245, 0.82);
     stroke-width: 1.8;
     transition: color 160ms ease;

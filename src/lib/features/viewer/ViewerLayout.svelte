@@ -241,29 +241,29 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    width: 34px;
-    height: 34px;
+    gap: 6px;
+    width: 30px;
+    height: 30px;
     border: 1px solid var(--viewer-panel-border);
     border-radius: 0;
     background: var(--viewer-panel);
     color: var(--viewer-text);
     cursor: pointer;
     font: inherit;
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .viewer__fullscreen-btn--labelled {
     width: auto;
-    padding-inline: 10px;
+    padding-inline: 8px;
     border-color: transparent;
     background: transparent;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .viewer__fullscreen-btn :global(svg) {
-    width: 18px;
-    height: 18px;
+    width: 15px;
+    height: 15px;
   }
 
   .viewer__expand-sidebar {
@@ -449,7 +449,7 @@
   }
 
   .viewer__grid--controls {
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns: 196px minmax(0, 1fr);
     column-gap: 0;
   }
 
@@ -458,15 +458,15 @@
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left {
-    grid-template-columns: 220px minmax(320px, 410px) minmax(0, 1fr);
+    grid-template-columns: 196px minmax(300px, 390px) minmax(0, 1fr);
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--nav-compact:not(.viewer__grid--left) {
-    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-columns: 60px minmax(0, 1fr);
   }
 
   .viewer__grid.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
-    grid-template-columns: 72px minmax(320px, 410px) minmax(0, 1fr);
+    grid-template-columns: 60px minmax(300px, 390px) minmax(0, 1fr);
   }
 
   /* Headless: a host owns the frame, so the viewer is only its stage. */
@@ -483,19 +483,19 @@
   }
 
   .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls:not(.viewer__grid--left) {
-    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-columns: minmax(0, 1fr) 196px;
   }
 
   .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 410px) 220px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 390px) 196px;
   }
 
   .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--nav-compact:not(.viewer__grid--left) {
-    grid-template-columns: minmax(0, 1fr) 72px;
+    grid-template-columns: minmax(0, 1fr) 60px;
   }
 
   .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 410px) 72px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 390px) 60px;
   }
 
   .viewer__grid--sidebar-right > .stage {
@@ -527,7 +527,7 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
-    padding: 24px 14px 18px;
+    padding: 16px 10px 14px;
     overflow: hidden;
     border: 1px solid var(--viewer-panel-border);
     border-right: 0;
@@ -536,8 +536,8 @@
   }
 
   .viewer__grid--nav-compact > .viewer__control-rail {
-    width: 72px;
-    padding-inline: 10px;
+    width: 60px;
+    padding-inline: 8px;
   }
 
   .viewer__grid--sidebar-right > .viewer__control-rail {
@@ -641,7 +641,7 @@
   }
 
   .viewer :global(.viewer-sidebar__button) {
-    border-radius: 10px;
+    border-radius: 8px;
   }
 
   .panel-stack--right {
@@ -657,7 +657,7 @@
     .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--nav-compact:not(.viewer__grid--left),
     .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left,
     .viewer__grid.viewer__grid--sidebar-right.viewer__grid--controls.viewer__grid--left.viewer__grid--nav-compact {
-      grid-template-columns: 72px minmax(0, 1fr);
+      grid-template-columns: 60px minmax(0, 1fr);
     }
 
     .viewer__grid--controls > .stage,
@@ -676,8 +676,8 @@
     .viewer__grid :global(.panel-stack--left) {
       position: absolute;
       z-index: 20;
-      inset: 0 auto 0 72px;
-      width: min(360px, calc(100% - 72px));
+      inset: 0 auto 0 60px;
+      width: min(360px, calc(100% - 60px));
       box-shadow: 12px 0 32px rgba(0, 0, 0, 0.45);
     }
   }
@@ -749,8 +749,8 @@
     }
 
     .viewer__fullscreen-btn--labelled {
-      width: 36px;
-      min-width: 36px;
+      width: 30px;
+      min-width: 30px;
       padding: 0;
     }
 

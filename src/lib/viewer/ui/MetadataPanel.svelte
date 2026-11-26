@@ -240,7 +240,7 @@
   }
 
   .metadata__block-title {
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     color: var(--viewer-muted);
@@ -307,18 +307,18 @@
 
   .metadata--redesigned .metadata__description,
   .metadata--redesigned .metadata__block {
-    padding-block: 14px;
+    padding-block: 11px;
     border-bottom: 1px solid var(--viewer-panel-border);
   }
 
   .metadata--redesigned .metadata__block {
-    gap: 7px;
+    gap: 5px;
   }
 
   .metadata--redesigned .metadata__block-value,
   .metadata--redesigned .metadata__value {
-    font-size: 13px;
-    line-height: 1.55;
+    font-size: 12px;
+    line-height: 1.5;
   }
 
   .metadata--redesigned .metadata__list {
@@ -326,9 +326,9 @@
   }
 
   .metadata--redesigned .metadata__term {
-    padding-top: 14px;
+    padding-top: 11px;
     border-top: 1px solid var(--viewer-panel-border);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -340,7 +340,7 @@
   }
 
   .metadata--redesigned .metadata__value {
-    padding-block: 7px 14px;
+    padding-block: 5px 11px;
     margin: 0;
   }
 </style>

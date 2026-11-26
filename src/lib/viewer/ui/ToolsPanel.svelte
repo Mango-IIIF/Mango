@@ -147,22 +147,22 @@
 
 <style>
   .tools__note {
-    font-size: 12px;
+    font-size: 11.5px;
     color: var(--viewer-muted);
     margin-bottom: 10px;
   }
 
   .tools__group {
     display: grid;
-    gap: 6px;
-    margin-bottom: 12px;
+    gap: 5px;
+    margin-bottom: 10px;
   }
 
   .tools__label {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     color: var(--viewer-muted);
@@ -196,11 +196,11 @@
     justify-content: space-between;
     gap: 10px;
     padding: 6px 8px;
-    border-radius: 10px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.05);
-    font-size: 12px;
+    font-size: 11.5px;
     color: var(--viewer-text);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .tools__toggle input {
@@ -211,10 +211,10 @@
     margin-top: 8px;
     border: 1px solid var(--viewer-panel-border);
     border-radius: 999px;
-    padding: 6px 12px;
+    padding: 5px 11px;
     background: rgba(255, 255, 255, 0.08);
     color: var(--viewer-text);
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     cursor: pointer;
