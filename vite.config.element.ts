@@ -1,6 +1,6 @@
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { webcrypto } from 'node:crypto';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 
@@ -32,32 +32,27 @@ export default defineConfig({
     }),
     {
       name: 'mango-element-shadow-css',
-      buildStart() {
-        rmSync(resolve(import.meta.dirname, 'src/dist/standalone'), { recursive: true, force: true });
+      enforce: 'post',
+      generateBundle(_options, bundle) {
+        const jsChunk = bundle['mango-viewer-element.js'];
+        const cssAsset = bundle['mango-viewer-element.css'];
+        if (jsChunk?.type !== 'chunk' || cssAsset?.type !== 'asset') return;
+        if (jsChunk.code.includes('/* mango-css-injected */')) return;
+
+        const css =
+          typeof cssAsset.source === 'string'
+            ? cssAsset.source
+            : Buffer.from(cssAsset.source).toString('utf8');
+        jsChunk.code += `\n/* mango-css-injected */\n;if (typeof window !== 'undefined' && window.__setMangoViewerCss) { window.__setMangoViewerCss(${JSON.stringify(css)}); }`;
       },
-      closeBundle() {
-        const jsPath = resolve(import.meta.dirname, 'src/dist/mango-viewer-element.js');
-        const cssPath = resolve(import.meta.dirname, 'src/dist/mango-viewer-element.css');
-
-        console.log('[CSS Inject] Checking files:', jsPath, cssPath);
-        const jsExists = existsSync(jsPath);
-        const cssExists = existsSync(cssPath);
-        console.log('[CSS Inject] JS Exists:', jsExists, 'CSS Exists:', cssExists);
-
-        if (!jsExists || !cssExists) return;
-
-        const js = readFileSync(jsPath, 'utf8');
-        const alreadyPatched = js.includes('/* mango-css-injected */');
-        console.log('[CSS Inject] Already Patched?', alreadyPatched);
-        if (alreadyPatched) return;
-
-        const css = readFileSync(cssPath, 'utf8');
-        console.log('[CSS Inject] Injecting CSS of length:', css.length);
-        writeFileSync(
-          jsPath,
-          `${js}\n/* mango-css-injected */\n;if (typeof window !== 'undefined' && window.__setMangoViewerCss) { window.__setMangoViewerCss(${JSON.stringify(css)}); }`
-        );
-        console.log('[CSS Inject] Successfully injected CSS!');
+      writeBundle(_options, bundle) {
+        const standaloneDir = resolve(import.meta.dirname, 'src/dist/standalone');
+        if (!existsSync(standaloneDir)) return;
+        for (const entry of readdirSync(standaloneDir)) {
+          if (!(`standalone/${entry}` in bundle)) {
+            rmSync(join(standaloneDir, entry), { recursive: true, force: true });
+          }
+        }
       },
     },
   ],

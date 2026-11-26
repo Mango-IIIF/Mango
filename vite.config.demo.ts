@@ -3,7 +3,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 
 const root = resolve(import.meta.dirname, 'apps/demo');
-const demoDist = resolve(root, 'dist');
+const srcDist = resolve(import.meta.dirname, 'src/dist');
 
 const contentTypes: Record<string, string> = {
   '.css': 'text/css; charset=utf-8',
@@ -15,15 +15,22 @@ const contentTypes: Record<string, string> = {
 const serveDemoDistAsStatic = (): Plugin => ({
   name: 'serve-demo-dist-as-static',
   configureServer(server) {
-    server.watcher.add(demoDist);
-    server.watcher.on('change', (file) => {
-      if (file.startsWith(demoDist)) {
+    let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleReload = (file: string) => {
+      if (!file.startsWith(srcDist)) return;
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        reloadTimer = null;
         server.ws.send({
           type: 'full-reload',
           path: '*',
         });
-      }
-    });
+      }, 150);
+    };
+
+    server.watcher.add(srcDist);
+    server.watcher.on('change', scheduleReload);
+    server.watcher.on('add', scheduleReload);
 
     server.middlewares.use((request, response, next) => {
       const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
@@ -33,8 +40,8 @@ const serveDemoDistAsStatic = (): Plugin => ({
       }
 
       const relativePath = normalize(pathname.replace(/^\/dist\//, ''));
-      const filePath = join(demoDist, relativePath);
-      if (!filePath.startsWith(`${demoDist}${sep}`) || !existsSync(filePath)) {
+      const filePath = join(srcDist, relativePath);
+      if (!filePath.startsWith(`${srcDist}${sep}`) || !existsSync(filePath)) {
         next();
         return;
       }
@@ -43,6 +50,7 @@ const serveDemoDistAsStatic = (): Plugin => ({
         'Content-Type',
         contentTypes[extname(filePath)] ?? 'application/octet-stream',
       );
+      response.setHeader('Cache-Control', 'no-store');
       createReadStream(filePath).pipe(response);
     });
   },
